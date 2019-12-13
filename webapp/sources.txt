@@ -1,0 +1,9 @@
+About Flask:
+https://projects.raspberrypi.org/en/projects/python-web-server-with-flask
+https://www.tutorialspoint.com/flask/flask_templates.htm
+
+HTML calender:
+https://www.w3schools.com/html/html_form_input_types.asp
+
+HTML time:
+https://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_input_type_time

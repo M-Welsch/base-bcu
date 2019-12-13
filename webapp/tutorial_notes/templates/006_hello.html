@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+   <head>
+      <script type = "text/javascript" 
+         src = "{{ url_for('static', filename = 'hello.js') }}" ></script>
+   </head>
+   <body>
+   
+      <h1>Hello {{ name }}!</h1><br>
+      {% if user_index < 6 %}
+      You are user nr. {{ user_index }}
+      {% else %}
+      You are the superior user nr. {{ user_index }}
+      {% endif %}
+      <br>
+      <input type = "button" onclick = "sayHello()" value = "Say Hello" />
+   </body>
+</html>

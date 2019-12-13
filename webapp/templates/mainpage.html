@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+   <head>
+      <title>BaSe Webapp - {{page_name}}</title>
+      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+   </head>
+   <body>
+      <h1>Hello {{ user }}!</h1>
+      <br>
+      <b>What would you like to do</b><br>
+      <a href="/editconfig">edit configuration</a><br>
+      <a href="/communicator">control Server</a><br>
+      <a href="/logger">Show Logfile</a>
+   </body>
+</html>
