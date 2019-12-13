@@ -1,4 +1,5 @@
 {
 	"Daemon": {"dm_listens_to_port": "36271", "logfile": "base_daemon_log.txt",	"sleep_interval": "0.1"}, 
-	"Schedule":	{"backup_frequency": "Weekly", "day_of_month": "12", "day_of_week": "7", "hour": "14", "minute": "0"}
+	"Schedule":	{"backup_frequency": "Weekly", "day_of_month": "12", "day_of_week": "7", "hour": "14", "minute": "0"},
+	"HWCTRL": {"display_default_brightness": "100", "maximum_docking_time":"8", "docking_overcurrent_limit":"150"}
 }

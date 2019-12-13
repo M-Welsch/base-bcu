@@ -1,4 +1,4 @@
-
+import json
 import time
 import threading
 from lcd import *
@@ -43,17 +43,25 @@ class Current_Measurement(threading.Thread):
 		self._exit_flag = True
 
 class HWCTRL(threading.Thread):
-	def __init__(self, GPIO=None):
-		import RPi.GPIO as GPIO
+	def __init__(self, append_to_logfile, GPIO=None):
+		super(HWCTRL,self).__init__()
 		threading.Thread.__init__(self)
-		self.GPIO = GPIO
-		self.GPIO.setmode(GPIO.BOARD)
+		self.append_to_logfile = append_to_logfile
 		self.exitflag = False
 
-		self.maximum_docking_time = 10 #seconds
-		self.maximum_motor_current = 150 #empiric
+		# get configuration
+		with open('../config.json', 'r') as jf:
+		config = json.load(jf)
+		# todo: get overcurrent limits etc. from config file.
+
+		self.maximum_docking_time = 10 #seconds # todo: get from config file.
+		self.maximum_motor_current = 150 #empiric # todo: get from config file.
 
 		# init Pins
+		import RPi.GPIO as GPIO
+		self.GPIO = GPIO
+		self.GPIO.setmode(GPIO.BOARD)
+
 		self.GPIO.setup(SW_HDD_ON, GPIO.OUT)
 		self.GPIO.setup(Motordriver_R, GPIO.OUT)
 		self.GPIO.setup(Motordriver_L, GPIO.OUT)
@@ -68,7 +76,7 @@ class HWCTRL(threading.Thread):
 		self.GPIO.setup(Dis_PWM_Gate, GPIO.OUT)
 		self.dis_Brightness = 0.01
 		self.display_PWM = GPIO.PWM(Dis_PWM_Gate, 80)
-		self.display_PWM.start(100)
+		self.display_PWM.start(100) # todo: get from config file.
 
 		# init Display
 		self.lcd = Adafruit_CharLCD()
