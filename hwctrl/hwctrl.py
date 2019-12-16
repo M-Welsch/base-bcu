@@ -1,7 +1,7 @@
 import json
 import time
 import threading
-from lcd import *
+from base.hwctrl.lcd import *
 import smbus
 
 # physical (!) pin definitions (update after schematic change!!)
@@ -51,7 +51,7 @@ class HWCTRL(threading.Thread):
 
 		# get configuration
 		with open('../config.json', 'r') as jf:
-		config = json.load(jf)
+			config = json.load(jf)
 		# todo: get overcurrent limits etc. from config file.
 
 		self.maximum_docking_time = 10 #seconds # todo: get from config file.

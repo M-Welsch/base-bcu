@@ -1,18 +1,22 @@
-import os
-import daemon
+import sys, os
 
-from common.tcp import TCPServerThread
+path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(path_to_module)
+sys.path.append(path_to_module)
+
+from base.daemon.daemon import Daemon
 
 def main():
-	print("starting daemon...")
-	with daemon.DaemonContext(working_directory=os.getcwd()):
-		msg_from_tcp = ["0"]
+	d = Daemon()
+	# print("starting daemon...")
+	# with daemon.DaemonContext(working_directory=os.getcwd()):
+	# 	msg_from_tcp = ["0"]
 
-		srv = TCPServerThread(msg_from_tcp)
-		srv.start()
-		while not msg_from_tcp[-1] == "kill me":
-			continue
-		srv.terminate()
+	# 	srv = TCPServerThread(msg_from_tcp)
+	# 	srv.start()
+	# 	while not msg_from_tcp[-1] == "kill me":
+	# 		continue
+	# 	srv.terminate()
 
 if __name__ == '__main__':
 	main()

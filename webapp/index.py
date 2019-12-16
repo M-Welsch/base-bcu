@@ -3,6 +3,21 @@ import configparser
 import socket
 import os
 import json
+from threading import Thread
+from time import sleep
+
+class Webapp(Thread):
+	def __init__(self):
+		super(Webapp, self).__init__()
+		self._term_flag = False
+
+	def run(self):
+		while not self._term_flag:
+			sleep(1)
+
+	def terminate(self):
+		self._term_flag = True
+
 
 app = Flask(__name__)
 
