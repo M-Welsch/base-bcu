@@ -4,6 +4,7 @@ import threading
 from base.hwctrl.lcd import *
 import smbus
 from queue import Queue
+from base.common.base_queues import Current_Queue
 
 # physical (!) pin definitions (update after schematic change!!)
 SW_HDD_ON = 7
@@ -21,19 +22,11 @@ Motordriver_R = 19
 Taster_0 = 21
 Taster_1 = 23
 
-class Current_Queue(Queue):
-	def __init__(self, maxsize):
-		super(Current_Queue, self).__init__(maxsize = maxsize)
-
-	def put_current(self, current_value):
-		if self.full():
-			self.get()
-		self.put(current_value)
-
 class Current_Measurement(threading.Thread):
-	def __init__(self):
+	def __init__(self, sampling_interval):
 		print("Current Sensor is initializing")
 		threading.Thread.__init__(self)
+		self._samling_interval = sampling_interval
 		self._bus = smbus.SMBus(1)
 		self._exit_flag = False
 		self._peak_current = 0
@@ -47,7 +40,7 @@ class Current_Measurement(threading.Thread):
 			self._current = int(str(data[0]) + str(data[1]))
 			self._current_q.put_current(self._current)
 			if self.current > self._peak_current: self._peak_current = self._current
-			sleep(0.1)
+			sleep(self._samling_interval)
 
 	@property
 	def current(self):
@@ -66,7 +59,6 @@ class Current_Measurement(threading.Thread):
 		avg_current_10sec = avg_current_10sec/qsize
 		return avg_current_10sec
 	
-
 	def terminate(self):
 		self._exit_flag = True
 
@@ -75,17 +67,16 @@ class HWCTRL(threading.Thread):
 		super(HWCTRL,self).__init__()
 		threading.Thread.__init__(self)
 		self._feedback_flags = hardware_control_feedback_flags
-		self._append_to_logfile = append_to_logfile
+		self._hw_status = {}
+		self.append_to_logfile = append_to_logfile
 
 		self.exitflag = False
 
-		# get configuration
-		with open('base/config.json', 'r') as jf:
-			config = json.load(jf)
-		# todo: get overcurrent limits etc. from config file.
-
 		self.maximum_docking_time = 10 #seconds # todo: get from config file.
 		self.maximum_motor_current = 150 #empiric # todo: get from config file.
+		
+		# todo: get overcurrent limits etc. from config file.
+		self.load_configuration()
 
 		# init Pins
 		import RPi.GPIO as GPIO
@@ -113,6 +104,15 @@ class HWCTRL(threading.Thread):
 		self.lcd.clear()
 		self.lcd.message("Display up\nand ready")
 
+	def load_configuration(self):
+		with open('base/config.json', 'r') as jf:
+			config = json.load(jf)
+			# self.maximum_motor_current = config.get(['HWCTRL']['docking_overcurrent_limit'], None)
+			# if self.maximum_motor_current == None:
+			# 	self.append_to_logfile("unable to get motor overcurrent limit from config.json. Using default value 150.")
+			# fixme
+
+
 	def run(self):
 		while not self.exitflag:
 			print("T0: {}, T1: {}, SensDock: {}, SensUnd: {}".format(self.button_pressed(Taster_0),
@@ -135,18 +135,34 @@ class HWCTRL(threading.Thread):
 			sleep(1)
 
 	def terminate(self):
+		self.append_to_logfile("HWCTRL is shutting down. Current status: {}".format(self.hw_status))
 		self.exitflag = True
 		self.GPIO.cleanup()
 		# TODO: self.cur_meas.terminate() # maybe with try-statement
 
+	@property
+	def hw_status(self):
+		self._hw_status = {
+			"button_0 pr": self.putton_pressed(0),
+			"button_1 pr": self.putton_pressed(2),
+			"sensor_undocked": self.GPIO.input(nSensor_Undocked),
+			"sensor_docked": self.GPIO.input(nSensor_Docked),
+			"Motordriver_L": self.GPIO.input(Motordriver_L),
+			"Motordriver_R": self.GPIO.input(Motordriver_R),
+			"SW_HDD_ON": self.GPIO.input(SW_HDD_ON),
+			"Display_Br":self.dis_Brightness
+		}
+		return self._hw_status
+
 	def button_pressed(self, button):
+		self.append_to_logfile("Button {} pressed".format(button))
 		# buttons are low-active!
 		return not self.GPIO.input(button)
 
 	def dock(self):
 		# Motor Forward
 		start_time = time.time()
-		self.cur_meas = Current_Measurement()
+		self.cur_meas = Current_Measurement(0.1)
 		self.cur_meas.start()
 		self.GPIO.output(Motordriver_L, self.GPIO.HIGH)
 		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
@@ -168,15 +184,20 @@ class HWCTRL(threading.Thread):
 		# brake
 		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
 		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
-		print("maximum current: {}, avg_current_10sec: {}".format(self.cur_meas.peak_current, self.cur_meas.avg_current_10sec))
+
+		peak_current = self.cur_meas.peak_current
+		avg_current = self.cur_meas.avg_current_10sec
+
+		print("maximum current: {:.2f}, avg_current_10sec: {:.2f}".format(peak_current, avg_current))
 		self.cur_meas.terminate()
 
 		print("Docking Timeout !!!" if flag_docking_timeout else "Docked in %i seconds" % timeDiff)
+		self.append_to_logfile("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
 	def undock(self):
 		# Motor Backward
 		start_time = time.time()
-		self.cur_meas = Current_Measurement()
+		self.cur_meas = Current_Measurement(0.1)
 		self.cur_meas.start()
 		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
 		self.GPIO.output(Motordriver_R, self.GPIO.HIGH)
@@ -198,9 +219,14 @@ class HWCTRL(threading.Thread):
 		# brake
 		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
 		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
-		print("maximum current: {}, avg_current_10sec: {}".format(self.cur_meas.peak_current, self.cur_meas.avg_current_10sec))
 
+		peak_current = self.cur_meas.peak_current
+		avg_current = self.cur_meas.avg_current_10sec
 		self.cur_meas.terminate()
+
+		print("maximum current: {:.2f}, avg_current_10sec: {:.2f}".format(peak_current, avg_current))
+
+		self.append_to_logfile("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
 		if flag_docking_timeout:
 			print("Undocking Timeout !!!")
@@ -215,8 +241,12 @@ class HWCTRL(threading.Thread):
 		self.dis_Brightness = 0.01
 		self.changeDutyCycle(brightness)
 
-	def hdd_power(self,state):
-		if state == "on":
-			self.GPIO.output(SW_HDD_ON, self.GPIO.HIGH)
-		elif state == "off":
-			self.GPIO.output(SW_HDD_ON, self.GPIO.LOW)
+	def hdd_power_on(self):
+		self.append_to_logfile("Powering HDD")
+		self.cur_meas = Current_Measurement(1)
+		self.GPIO.output(SW_HDD_ON, self.GPIO.HIGH)
+
+	def hdd_power_off(self):
+		self.append_to_logfile("Unpowering HDD")
+		self.GPIO.output(SW_HDD_ON, self.GPIO.LOW)
+		self.cur_meas.terminate()

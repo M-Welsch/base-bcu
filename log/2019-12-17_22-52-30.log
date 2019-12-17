@@ -1,0 +1,27 @@
+DEBUG:root:started BaSe without daemon (debug-mode)
+DEBUG:root:Button 21 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 21 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 21 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 21 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Docked in 0.85 seconds, peak current: 53.00, average_current (over max 10s): 38.89
+DEBUG:root:Button 21 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 21 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 21 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Docked in 0.85 seconds, peak current: 75.00, average_current (over max 10s): 46.78
+DEBUG:root:Button 21 pressed
+DEBUG:root:Button 23 pressed
+DEBUG:root:Button 23 pressed
