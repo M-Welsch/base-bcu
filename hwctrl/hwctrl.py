@@ -3,6 +3,7 @@ import time
 import threading
 from base.hwctrl.lcd import *
 import smbus
+from queue import Queue
 
 # physical (!) pin definitions (update after schematic change!!)
 SW_HDD_ON = 7
@@ -20,37 +21,66 @@ Motordriver_R = 19
 Taster_0 = 21
 Taster_1 = 23
 
+class Current_Queue(Queue):
+	def __init__(self, maxsize):
+		super(Current_Queue, self).__init__(maxsize = maxsize)
+
+	def put_current(self, current_value):
+		if self.full():
+			self.get()
+		self.put(current_value)
+
 class Current_Measurement(threading.Thread):
 	def __init__(self):
 		print("Current Sensor is initializing")
 		threading.Thread.__init__(self)
 		self._bus = smbus.SMBus(1)
 		self._exit_flag = False
+		self._peak_current = 0
 		self._current = 0
+		self._current_q = Current_Queue(maxsize=100)
 
 	def run(self):
 		self._exit_flag = False
 		while not self._exit_flag: 
 			data = self._bus.read_i2c_block_data(0x4d,1)
 			self._current = int(str(data[0]) + str(data[1]))
+			self._current_q.put_current(self._current)
+			if self.current > self._peak_current: self._peak_current = self._current
 			sleep(0.1)
 
 	@property
 	def current(self):
 		return self._current
 
+	@property
+	def peak_current(self):
+		return self._peak_current
+
+	@property
+	def avg_current_10sec(self):
+		qsize = self._current_q.qsize()
+		avg_current_10sec = 0
+		while not self._current_q.empty():
+			avg_current_10sec = avg_current_10sec + self._current_q.get()
+		avg_current_10sec = avg_current_10sec/qsize
+		return avg_current_10sec
+	
+
 	def terminate(self):
 		self._exit_flag = True
 
 class HWCTRL(threading.Thread):
-	def __init__(self, append_to_logfile, GPIO=None):
+	def __init__(self, hardware_control_feedback_flags, append_to_logfile, GPIO=None):
 		super(HWCTRL,self).__init__()
 		threading.Thread.__init__(self)
-		self.append_to_logfile = append_to_logfile
+		self._feedback_flags = hardware_control_feedback_flags
+		self._append_to_logfile = append_to_logfile
+
 		self.exitflag = False
 
 		# get configuration
-		with open('../config.json', 'r') as jf:
+		with open('base/config.json', 'r') as jf:
 			config = json.load(jf)
 		# todo: get overcurrent limits etc. from config file.
 
@@ -138,6 +168,7 @@ class HWCTRL(threading.Thread):
 		# brake
 		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
 		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
+		print("maximum current: {}, avg_current_10sec: {}".format(self.cur_meas.peak_current, self.cur_meas.avg_current_10sec))
 		self.cur_meas.terminate()
 
 		print("Docking Timeout !!!" if flag_docking_timeout else "Docked in %i seconds" % timeDiff)
@@ -167,6 +198,8 @@ class HWCTRL(threading.Thread):
 		# brake
 		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
 		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
+		print("maximum current: {}, avg_current_10sec: {}".format(self.cur_meas.peak_current, self.cur_meas.avg_current_10sec))
+
 		self.cur_meas.terminate()
 
 		if flag_docking_timeout:
