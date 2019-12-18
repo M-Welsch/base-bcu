@@ -5,7 +5,6 @@ from datetime import datetime
 from collections import namedtuple
 
 LogMessage = namedtuple('LogMessage', 'content level')
-LogMessage.__new__.__defaults__ = ("", "debug")
 
 class Logger(Thread):
     def __init__(self, logging_queue, work_off_msg, directory="base/log"):
@@ -23,24 +22,21 @@ class Logger(Thread):
     def terminate(self):
         self._term_flag = True
 
-    def append_to_queue(self, msg):
-        self._logging_queue.put(msg)
-
     def log(self, msg):
         content, level = msg
         if level == "debug":
-            logging.debug(msg)
+            logging.debug(content)
         elif level == "info":
-            logging.info(msg)
+            logging.info(content)
         elif level == "warning":
-            logging.warning(msg)
+            logging.warning(content)
         elif level == "error":
-            logging.error(msg)
+            logging.error(content)
         elif level == "critical":
-            logging.critical(msg)
+            logging.critical(content)
         else:
             logging.warning("'{}' is not a valid log level! Defaulting to 'info'.".format(level))
-            logging.info(msg)
+            logging.info(content)
 
     def make_filepath(self, directory):
         filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')+".log"

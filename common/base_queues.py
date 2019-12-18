@@ -11,7 +11,7 @@ class LoggingQueue(Queue):
 			log_fn(msg)
 			self.task_done()
 
-	def push_msg(self, content, level):
+	def push_msg(self, content, level="info"):
 		self.put(LogMessage(content, level))
 
 class Current_Queue(Queue):

@@ -68,7 +68,7 @@ class HWCTRL(threading.Thread):
 		threading.Thread.__init__(self)
 		self._feedback_flags = hardware_control_feedback_flags
 		self._hw_status = {}
-		self.append_to_logfile = append_to_logfile
+		self._log = append_to_logfile
 
 		self.exitflag = False
 
@@ -109,7 +109,7 @@ class HWCTRL(threading.Thread):
 			config = json.load(jf)
 			# self.maximum_motor_current = config.get(['HWCTRL']['docking_overcurrent_limit'], None)
 			# if self.maximum_motor_current == None:
-			# 	self.append_to_logfile("unable to get motor overcurrent limit from config.json. Using default value 150.")
+			# 	self._log("unable to get motor overcurrent limit from config.json. Using default value 150.")
 			# fixme
 
 
@@ -135,7 +135,7 @@ class HWCTRL(threading.Thread):
 			sleep(1)
 
 	def terminate(self):
-		self.append_to_logfile("HWCTRL is shutting down. Current status: {}".format(self.hw_status))
+		self._log("HWCTRL is shutting down. Current status: {}".format(self.hw_status))
 		self.exitflag = True
 		self.GPIO.cleanup()
 		# TODO: self.cur_meas.terminate() # maybe with try-statement
@@ -155,7 +155,7 @@ class HWCTRL(threading.Thread):
 		return self._hw_status
 
 	def button_pressed(self, button):
-		self.append_to_logfile("Button {} pressed".format(button))
+		self._log("Button {} pressed".format(button))
 		# buttons are low-active!
 		return not self.GPIO.input(button)
 
@@ -192,7 +192,7 @@ class HWCTRL(threading.Thread):
 		self.cur_meas.terminate()
 
 		print("Docking Timeout !!!" if flag_docking_timeout else "Docked in %i seconds" % timeDiff)
-		self.append_to_logfile("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
+		self._log("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
 	def undock(self):
 		# Motor Backward
@@ -226,7 +226,7 @@ class HWCTRL(threading.Thread):
 
 		print("maximum current: {:.2f}, avg_current_10sec: {:.2f}".format(peak_current, avg_current))
 
-		self.append_to_logfile("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
+		self._log("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
 		if flag_docking_timeout:
 			print("Undocking Timeout !!!")
@@ -242,11 +242,11 @@ class HWCTRL(threading.Thread):
 		self.changeDutyCycle(brightness)
 
 	def hdd_power_on(self):
-		self.append_to_logfile("Powering HDD")
+		self._log("Powering HDD")
 		self.cur_meas = Current_Measurement(1)
 		self.GPIO.output(SW_HDD_ON, self.GPIO.HIGH)
 
 	def hdd_power_off(self):
-		self.append_to_logfile("Unpowering HDD")
+		self._log("Unpowering HDD")
 		self.GPIO.output(SW_HDD_ON, self.GPIO.LOW)
 		self.cur_meas.terminate()

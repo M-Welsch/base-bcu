@@ -15,6 +15,7 @@ class Daemon():
 		self._autostart_webapp = autostart_webapp
 		self._hardware_control_feedback_flags = {}
 		self._logging_queue = LoggingQueue()
+		self._log = self._logging_queue.push_msg
 		self._command_queue = Queue()
 		self._config = Config("base/config.json")
 		self._scheduler = Scheduler()
@@ -37,11 +38,11 @@ class Daemon():
 
 	def run_as_daemon(self):
 		print("starting daemon...")
-		self._logger.append_to_queue("started base as daemon")
+		self._log("started base as daemon")
 		with daemon.DaemonContext(working_directory=os.getcwd()):
 			self.start_threads()
 
 	def run_not_as_daemon(self):
-		self._logger.append_to_queue("started BaSe without daemon (debug-mode)")
+		self._log("started BaSe without daemon (debug-mode)")
 		print("starting daemon (not actually as daemon)...")
 		self.start_threads()
