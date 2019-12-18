@@ -1,4 +1,5 @@
 from queue import Queue
+from base.common.base_logging import LogMessage
 
 class LoggingQueue(Queue):
 	def __init__(self):
@@ -10,8 +11,8 @@ class LoggingQueue(Queue):
 			log_fn(msg)
 			self.task_done()
 
-	def push_msg(self, msg):
-		self.put(msg)
+	def push_msg(self, content, level):
+		self.put(LogMessage(content, level))
 
 class Current_Queue(Queue):
 	def __init__(self, maxsize):
