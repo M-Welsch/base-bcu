@@ -19,8 +19,8 @@ nSensor_Docked = 13
 nSensor_Undocked = 11
 Motordriver_L = 15
 Motordriver_R = 19
-Taster_0 = 21
-Taster_1 = 23
+button_0 = 21
+button_1 = 23
 
 class Current_Measurement(threading.Thread):
 	def __init__(self, sampling_interval):
@@ -63,11 +63,10 @@ class Current_Measurement(threading.Thread):
 		self._exit_flag = True
 
 class HWCTRL(threading.Thread):
-	def __init__(self, hardware_control_feedback_flags, append_to_logfile, GPIO=None):
+	def __init__(self, append_to_logfile, GPIO=None):
 		super(HWCTRL,self).__init__()
 		threading.Thread.__init__(self)
-		self._feedback_flags = hardware_control_feedback_flags
-		self._hw_status = {}
+		self._status = {}
 		self._log = append_to_logfile
 
 		self.exitflag = False
@@ -77,8 +76,10 @@ class HWCTRL(threading.Thread):
 		
 		# todo: get overcurrent limits etc. from config file.
 		self.load_configuration()
+		self.init_pins()
+		self.init_display()
 
-		# init Pins
+	def init_pins(self):
 		import RPi.GPIO as GPIO
 		self.GPIO = GPIO
 		self.GPIO.setmode(GPIO.BOARD)
@@ -91,15 +92,15 @@ class HWCTRL(threading.Thread):
 
 		self.GPIO.setup(nSensor_Docked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		self.GPIO.setup(nSensor_Undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		self.GPIO.setup(Taster_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		self.GPIO.setup(Taster_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		self.GPIO.setup(button_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		self.GPIO.setup(button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 		self.GPIO.setup(Dis_PWM_Gate, GPIO.OUT)
 		self.dis_Brightness = 0.01
 		self.display_PWM = GPIO.PWM(Dis_PWM_Gate, 80)
 		self.display_PWM.start(100) # todo: get from config file.
 
-		# init Display
+	def init_display(self):
 		self.lcd = Adafruit_CharLCD()
 		self.lcd.clear()
 		self.lcd.message("Display up\nand ready")
@@ -115,11 +116,11 @@ class HWCTRL(threading.Thread):
 
 	def run(self):
 		while not self.exitflag:
-			print("T0: {}, T1: {}, SensDock: {}, SensUnd: {}".format(self.button_pressed(Taster_0),
-																	 self.button_pressed(Taster_1),
+			print("T0: {}, T1: {}, SensDock: {}, SensUnd: {}".format(self.button_pressed(button_0),
+																	 self.button_pressed(button_1),
 																	 self.GPIO.input(nSensor_Docked),
 																	 self.GPIO.input(nSensor_Undocked)))
-			if(self.button_pressed(Taster_1)):
+			if(self.button_pressed(button_1)):
 				if not self.GPIO.input(nSensor_Docked):
 					print("nSensor_Docked = LOW => undocking")
 					self.lcd.clear()
@@ -135,16 +136,16 @@ class HWCTRL(threading.Thread):
 			sleep(1)
 
 	def terminate(self):
-		self._log("HWCTRL is shutting down. Current status: {}".format(self.hw_status))
+		self._log("HWCTRL is shutting down. Current status: {}".format(self._status))
 		self.exitflag = True
 		self.GPIO.cleanup()
 		# TODO: self.cur_meas.terminate() # maybe with try-statement
 
 	@property
-	def hw_status(self):
-		self._hw_status = {
-			"button_0 pr": self.putton_pressed(0),
-			"button_1 pr": self.putton_pressed(2),
+	def status(self):
+		self._status = {
+			"button_0 pr": self.button_pressed(button_0),
+			"button_1 pr": self.button_pressed(button_1),
 			"sensor_undocked": self.GPIO.input(nSensor_Undocked),
 			"sensor_docked": self.GPIO.input(nSensor_Docked),
 			"Motordriver_L": self.GPIO.input(Motordriver_L),
@@ -152,7 +153,7 @@ class HWCTRL(threading.Thread):
 			"SW_HDD_ON": self.GPIO.input(SW_HDD_ON),
 			"Display_Br":self.dis_Brightness
 		}
-		return self._hw_status
+		return self._status
 
 	def button_pressed(self, button):
 		self._log("Button {} pressed".format(button))

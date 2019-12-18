@@ -4,6 +4,7 @@ from base.common.base_logging import LogMessage
 class LoggingQueue(Queue):
 	def __init__(self):
 		super(LoggingQueue, self).__init__()
+		self.write = self.push_msg
 
 	def work_off_msg(self, log_fn):
 		if not self.empty():
@@ -13,6 +14,7 @@ class LoggingQueue(Queue):
 
 	def push_msg(self, content, level="info"):
 		self.put(LogMessage(content, level))
+
 
 class Current_Queue(Queue):
 	def __init__(self, maxsize):
