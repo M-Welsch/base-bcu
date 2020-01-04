@@ -6,7 +6,7 @@ import socket
 
 class TCPServerThread(threading.Thread):
 	def __init__(self, queue, push_msg, port=12345, max_requests=5):
-		threading.Thread.__init__(self)
+		super(TCPServerThread, self).__init__()
 		self._exit_flag = False
 		self._command_queue = queue
 

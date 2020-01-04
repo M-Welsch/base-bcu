@@ -22,10 +22,11 @@ Motordriver_R = 19
 button_0 = 21
 button_1 = 23
 
+
 class Current_Measurement(threading.Thread):
 	def __init__(self, sampling_interval):
 		print("Current Sensor is initializing")
-		threading.Thread.__init__(self)
+		super(Current_Measurement, self).__init__()
 		self._samling_interval = sampling_interval
 		self._bus = smbus.SMBus(1)
 		self._exit_flag = False
@@ -64,8 +65,7 @@ class Current_Measurement(threading.Thread):
 
 class HWCTRL(threading.Thread):
 	def __init__(self, append_to_logfile, GPIO=None):
-		super(HWCTRL,self).__init__()
-		threading.Thread.__init__(self)
+		super(HWCTRL, self).__init__()
 		self._status = {}
 		self._log = append_to_logfile
 
@@ -116,11 +116,11 @@ class HWCTRL(threading.Thread):
 
 	def run(self):
 		while not self.exitflag:
-			print("T0: {}, T1: {}, SensDock: {}, SensUnd: {}".format(self.button_pressed(button_0),
-																	 self.button_pressed(button_1),
+			print("T0: {}, T1: {}, SensDock: {}, SensUnd: {}".format(self._button_pressed(button_0),
+																	 self._button_pressed(button_1),
 																	 self.GPIO.input(nSensor_Docked),
 																	 self.GPIO.input(nSensor_Undocked)))
-			if(self.button_pressed(button_1)):
+			if(self._button_pressed(button_1)):
 				if not self.GPIO.input(nSensor_Docked):
 					print("nSensor_Docked = LOW => undocking")
 					self.lcd.clear()
@@ -144,8 +144,8 @@ class HWCTRL(threading.Thread):
 	@property
 	def status(self):
 		self._status = {
-			"button_0 pr": self.button_pressed(button_0),
-			"button_1 pr": self.button_pressed(button_1),
+			"button_0_pr": self._button_pressed(button_0),
+			"button_1_pr": self._button_pressed(button_1),
 			"sensor_undocked": self.GPIO.input(nSensor_Undocked),
 			"sensor_docked": self.GPIO.input(nSensor_Docked),
 			"Motordriver_L": self.GPIO.input(Motordriver_L),
@@ -155,10 +155,15 @@ class HWCTRL(threading.Thread):
 		}
 		return self._status
 
-	def button_pressed(self, button):
+	def _button_pressed(self, button):
 		self._log("Button {} pressed".format(button))
 		# buttons are low-active!
 		return not self.GPIO.input(button)
+
+	def pressed_buttons(self):
+		state_button_0 = self._button_pressed(button_0)
+		state_button_1 = self._button_pressed(button_1)
+		return state_button_0, state_button_1
 
 	def dock(self):
 		# Motor Forward
@@ -234,11 +239,11 @@ class HWCTRL(threading.Thread):
 		else:
 			print("Undocked in %i seconds" % timeDiff)
 
-	def write_to_display(self,message):
+	def write_to_display(self, message):
 		self.lcd.clear()
 		self.lcd.message(message)
 
-	def dim_display(self,brightness):
+	def dim_display(self, brightness):
 		self.dis_Brightness = 0.01
 		self.changeDutyCycle(brightness)
 
@@ -251,3 +256,12 @@ class HWCTRL(threading.Thread):
 		self._log("Unpowering HDD")
 		self.GPIO.output(SW_HDD_ON, self.GPIO.LOW)
 		self.cur_meas.terminate()
+
+	def dock_and_power(self):
+		self.dock()
+		self.hdd_power_on()
+
+	def unpower_and_undock(self):
+		self.hdd_power_off()
+		sleep(5)
+		self.undock()
