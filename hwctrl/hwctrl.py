@@ -57,7 +57,7 @@ class Current_Measurement(threading.Thread):
 		avg_current_10sec = 0
 		while not self._current_q.empty():
 			avg_current_10sec = avg_current_10sec + self._current_q.get()
-		avg_current_10sec = avg_current_10sec/qsize
+		avg_current_10sec = avg_current_10sec / qsize
 		return avg_current_10sec
 	
 	def terminate(self):
@@ -116,10 +116,10 @@ class HWCTRL(threading.Thread):
 
 	def run(self):
 		while not self.exitflag:
-			print("T0: {}, T1: {}, SensDock: {}, SensUnd: {}".format(self._button_pressed(button_0),
-																	 self._button_pressed(button_1),
-																	 self.GPIO.input(nSensor_Docked),
-																	 self.GPIO.input(nSensor_Undocked)))
+			# print("T0: {}, T1: {}, SensDock: {}, SensUnd: {}".format(self._button_pressed(button_0),
+			# 														 self._button_pressed(button_1),
+			# 														 self.GPIO.input(nSensor_Docked),
+			# 														 self.GPIO.input(nSensor_Undocked)))
 			if(self._button_pressed(button_1)):
 				if not self.GPIO.input(nSensor_Docked):
 					print("nSensor_Docked = LOW => undocking")
@@ -185,7 +185,7 @@ class HWCTRL(threading.Thread):
 			if current > self.maximum_motor_current:
 				print("Overcurrent!!")
 
-			print("Imotor = %s" % current)
+			# print("Imotor = %s" % current)
 			sleep(0.1)
 		# brake
 		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
@@ -220,7 +220,7 @@ class HWCTRL(threading.Thread):
 			if current > self.maximum_motor_current:
 				print("Overcurrent!!")
 
-			print("Imotor = %s" % self.cur_meas.current)
+			# print("Imotor = %s" % self.cur_meas.current)
 			sleep(0.1)
 		# brake
 		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
@@ -260,6 +260,12 @@ class HWCTRL(threading.Thread):
 	def dock_and_power(self):
 		self.dock()
 		self.hdd_power_on()
+		# TODO: Make function "delay" in common.utils and reuse after unmounting.
+		for i in range(5):  # TODO: Load from config["Mounting"]["timeout"]
+			if True:  # TODO: Write condition: "Mount file exists"
+				return
+			sleep(1)
+		raise RuntimeError("Timeout reached during dock procedure.")
 
 	def unpower_and_undock(self):
 		self.hdd_power_off()

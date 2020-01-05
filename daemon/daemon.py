@@ -6,21 +6,13 @@ from time import sleep
 
 from base.common.base_queues import LoggingQueue
 from base.common.config import Config
-from base.schedule.scheduler import Scheduler
 from base.common.base_logging import Logger
-from base.hwctrl.hwctrl import HWCTRL
 from base.common.tcp import TCPServerThread
+from base.hwctrl.hwctrl import HWCTRL
 from base.webapp.index import Webapp
+from base.schedule.scheduler import Scheduler
 from base.backup.backup import BackupManager
-
-class MountManager:
-	@staticmethod
-	def _mount():
-		pass  # TODO: implement
-
-	@staticmethod
-	def _unmount():
-		pass  # TODO: implement
+from base.daemon.mounting import MountManager
 
 
 def get_status():
@@ -36,6 +28,7 @@ class Daemon:
 		self._config = Config("base/config.json")
 		self._scheduler = Scheduler()
 		self._logger = Logger(self._logging_queue, self._logging_queue.work_off_msg)
+		self._mount_manager = MountManager(self._config.mounting_config)
 		self._hardware_control = HWCTRL(self._logging_queue.push_msg)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, push_msg=self._logging_queue.push_msg)
 		self._webapp = Webapp()
@@ -53,6 +46,12 @@ class Daemon:
 			self._webapp.start()
 		self.mainloop()
 
+	def stop_threads(self):
+		self._logger.terminate()
+		self._hardware_control.terminate()
+		self._tcp_server_thread.terminate()
+		self._webapp.terminate()
+
 	def run_as_daemon(self):
 		print("starting daemon...")
 		self._log("started base as daemon")
@@ -67,11 +66,13 @@ class Daemon:
 		self.start_threads_and_mainloop()
 
 	def mainloop(self):
-		while True:
+		terminate_flag = False
+		while not terminate_flag:
 			sleep(1)  # TODO: Use from logfile
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
-			self._execute_command_list(command_list)
+			terminate_flag = self._execute_command_list(command_list)
+		self.stop_threads()
 
 	def _look_up_status_quo(self):
 		status_quo = {}
@@ -87,12 +88,18 @@ class Daemon:
 
 	def _derive_command_list(self, status_quo):
 		command_list = []
+		if "test_mounting" in status_quo["tcp_commands"]:
+			return ["dock", "mount"]
+		if "test_unmounting" in status_quo["tcp_commands"]:
+			return ["unmount"]
 		if "reload_config" in status_quo["tcp_commands"]:
 			command_list.append("reload_config")
 		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
 		if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
 			command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
+		if "terminate_daemon" in status_quo["tcp_commands"]:
+			command_list.append("terminate_daemon")
 		return command_list
 
 	def _execute_command_list(self, command_list):
@@ -103,16 +110,19 @@ class Daemon:
 				elif command == "undock":
 					self._hardware_control.unpower_and_undock()
 				elif command == "mount":
-					MountManager._mount()
+					self._mount_manager.mount_hdds()
 				elif command == "unmount":
-					MountManager._unmount()
+					self._mount_manager.unmount_hdds()
 				elif command == "backup":
 					BackupManager.backup()
 				elif command == "reload_config":
 					self._config.reload()
 				elif command == "show_status_info":
 					get_status()
+				elif command == "terminate_daemon":
+					return True
 				else:
 					raise RuntimeError("'{}' is not a valid command!".format(command))
 			except Exception as e:
 				self._log("Some command went somehow wrong: {}".format(e), "error")
+		return False
