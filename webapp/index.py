@@ -6,19 +6,19 @@ import json
 from threading import Thread
 from time import sleep
 
-class Webapp(Thread):
-	def __init__(self, application):
-		super(Webapp, self).__init__() #<- test if this works
-		self.srv = make_server('0.0.0.0', 5000, application)
-		self.ctx = application.app_context()
-		self.ctx.push()
+# class Webapp(Thread):
+# 	def __init__(self, application):
+# 		super(Webapp, self).__init__() #<- test if this works
+# 		self.srv = make_server('0.0.0.0', 5000, application)
+# 		self.ctx = application.app_context()
+# 		self.ctx.push()
 
-	def run(self):
-		# Todo: good point to put a message into the logfile
-		self.srv.serve_forever()
+# 	def run(self):
+# 		# Todo: good point to put a message into the logfile
+# 		self.srv.serve_forever()
 
-	def terminate(self):
-		self.srv.shutdown()
+# 	def terminate(self):
+# 		self.srv.shutdown()
 
 application = Flask(__name__)
 
