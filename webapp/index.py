@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for, render_template, request
+from werkzeug.serving import make_server
 import socket
 import os
 import json
@@ -6,18 +7,18 @@ from threading import Thread
 from time import sleep
 
 class Webapp(Thread):
-	def __init__(self):
-		super(Webapp, self).__init__()
-		self._term_flag = False
+	def __init__(self, application):
+		super(Webapp, self).__init__() #<- test if this works
+		self.srv = make_server('0.0.0.0', 5000, application)
+		self.ctx = application.app_context()
+		self.ctx.push()
 
 	def run(self):
-		print("Depreached Control interface for webapp!")
-		while not self._term_flag:
-			sleep(1)
+		# Todo: good point to put a message into the logfile
+		self.srv.serve_forever()
 
 	def terminate(self):
-		self._term_flag = True
-
+		self.srv.shutdown()
 
 application = Flask(__name__)
 
@@ -27,28 +28,26 @@ def stylesheet():
 
 @application.route('/')
 def mainpage():
+	print("Bluttber")
 	return render_template('mainpage.html', page_name = 'Welcome', user = 'admin')
 
 @application.route('/shutdown')
 def shutdown_webapp():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
+	func = request.environ.get('werkzeug.server.shutdown')
+	if func is None:
+		raise RuntimeError('Not running with the Werkzeug Server')
+	func()
 
 @application.route('/shutdown', methods=['POST'])
 def shutdown():
-    shutdown_webapp()
-    return 'Server shutting down...'
+	shutdown_webapp()
+	return 'Server shutting down...'
 
 @application.route('/editconfig')
 def editconfig():
 	# load and parse config file
 	with open('../config.json', 'r') as jf:
 		config = json.load(jf)
-
-		#FIXME: ini-files remains open?
-
 		return render_template('editconfig.html', page_name = 'Edit Configuration', user = 'admin', data=config)
 
 def convert_to_nd_dict(d):

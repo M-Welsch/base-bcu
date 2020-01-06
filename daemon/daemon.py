@@ -9,7 +9,7 @@ from base.common.config import Config
 from base.common.base_logging import Logger
 from base.common.tcp import TCPServerThread
 from base.hwctrl.hwctrl import HWCTRL
-from base.webapp.index import Webapp
+from base.webapp.index import Webapp, application
 from base.schedule.scheduler import Scheduler
 from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
@@ -31,7 +31,7 @@ class Daemon:
 		self._mount_manager = MountManager(self._config.mounting_config)
 		self._hardware_control = HWCTRL(self._logging_queue.push_msg)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, push_msg=self._logging_queue.push_msg)
-		self._webapp = Webapp()
+		self._webapp = Webapp(application) #Fixme: is there a better way (without having to import the application just to hand it back again??)
 		if daemonize:
 			self.run_as_daemon()
 		else:
