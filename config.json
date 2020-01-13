@@ -1,8 +1,11 @@
 {
+    "Logging": {
+        "logs_directory": "base/log"
+    },
     "Daemon": {
-        "dm_listens_to_port": "36271",
+        "dm_listens_to_port": 36271,
         "logfile": "base_daemon_log.txt",
-        "sleep_interval": "0.1"
+        "main_loop_interval": 0.1
     },
     "Schedule": {
         "backup_frequency": "Weekly",
@@ -12,9 +15,9 @@
         "minute": "0"
     },
     "HWCTRL": {
-        "display_default_brightness": "100",
-        "maximum_docking_time": "8",
-        "docking_overcurrent_limit": "150"
+        "display_default_brightness": 100,
+        "maximum_docking_time": 8,
+        "docking_overcurrent_limit": 150
     },
     "Mounting": {
         "backup_hdd_device_file_path": "/dev/sda3",
@@ -22,6 +25,7 @@
         "backup_hdd_mount_point": "/media/BackupHDD",
         "server_hdd_remote_path": "//192.168.0.111/HDD/",
         "server_hdd_credentials_path": "/home/maxi/.scheunentor",
-        "server_hdd_mount_point": "/media/ServerHDD"
+        "server_hdd_mount_point": "/media/ServerHDD",
+        "backup_device_file_timeout": 20
     }
 }

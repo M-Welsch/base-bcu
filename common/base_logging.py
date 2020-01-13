@@ -1,28 +1,66 @@
 import os
+from time import sleep
 from threading import Thread
 import logging
 from datetime import datetime
 from collections import namedtuple
+from queue import Queue
 
 LogMessage = namedtuple('LogMessage', 'content level')
 
-class Logger(Thread):
-    def __init__(self, logging_queue, work_off_msg, directory="base/log"):
-        super(Logger, self).__init__()
+
+class Logger:
+    def __init__(self, logs_directory):
+        self._filename = self._make_filepath(logs_directory)
+        logging.basicConfig(filename=self._filename, level=logging.DEBUG)
+        self._queue = Queue()
+        self._worker = Worker(self._queue)
+        self._worker.start()
+
+    def debug(self, content):
+        self._queue.put(LogMessage(content, "debug"))
+
+    def info(self, content):
+        self._queue.put(LogMessage(content, "info"))
+
+    def warning(self, content):
+        self._queue.put(LogMessage(content, "warning"))
+
+    def error(self, content):
+        self._queue.put(LogMessage(content, "error"))
+
+    def critical(self, content):
+        self._queue.put(LogMessage(content, "critical"))
+
+    def shutdown(self):
+        self._worker.terminate()
+
+    def _make_filepath(self, directory):
+        filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')+".log"
+        return os.path.join(directory, filename)
+
+
+class Worker(Thread):
+    def __init__(self, queue):
+        super(Worker, self).__init__()
         self._term_flag = False
-        self._work_off_msg = work_off_msg
-        self._logging_queue = logging_queue
-        filepath = self.make_filepath(directory)
-        logging.basicConfig(filename=filepath,level=logging.DEBUG)
+        self._queue = queue
 
     def run(self):
         while not self._term_flag:
-            self._work_off_msg(self.log)
+            self._work_off_msg()
+            sleep(0.1)
 
     def terminate(self):
         self._term_flag = True
 
-    def log(self, msg):
+    def _work_off_msg(self):
+        if not self._queue.empty():
+            msg = self._queue.get(block=False)
+            self._write_to_log(msg)
+            self._queue.task_done()
+
+    def _write_to_log(self, msg):
         content, level = msg
         if level == "debug":
             logging.debug(content)
@@ -36,8 +74,3 @@ class Logger(Thread):
             logging.critical(content)
         else:
             logging.warning("'{}' is not a valid log level! Defaulting to 'info'.".format(level))
-            logging.info(content)
-
-    def make_filepath(self, directory):
-        filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')+".log"
-        return os.path.join(directory, filename)

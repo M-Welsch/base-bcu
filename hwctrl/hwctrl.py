@@ -64,20 +64,23 @@ class Current_Measurement(threading.Thread):
 		self._exit_flag = True
 
 class HWCTRL(threading.Thread):
-	def __init__(self, append_to_logfile, GPIO=None):
+	def __init__(self, config, logger, GPIO=None):
 		super(HWCTRL, self).__init__()
+		self._config = config
 		self._status = {}
-		self._log = append_to_logfile
+		self._logger = logger
+
+		self.cur_meas = Current_Measurement(1)
 
 		self.exitflag = False
 
-		self.maximum_docking_time = 10 #seconds # todo: get from config file.
-		self.maximum_motor_current = 150 #empiric # todo: get from config file.
+		self.maximum_docking_time = self._config["maximum_docking_time"]
+		self.docking_overcurrent_limit = self._config["docking_overcurrent_limit"]
 		
-		# todo: get overcurrent limits etc. from config file.
 		self.load_configuration()
 		self.init_pins()
-		self.init_display()
+		self.lcd = LCD()
+		self.display = self.lcd.display
 
 	def init_pins(self):
 		import RPi.GPIO as GPIO
@@ -96,21 +99,15 @@ class HWCTRL(threading.Thread):
 		self.GPIO.setup(button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 		self.GPIO.setup(Dis_PWM_Gate, GPIO.OUT)
-		self.dis_Brightness = 0.01
 		self.display_PWM = GPIO.PWM(Dis_PWM_Gate, 80)
-		self.display_PWM.start(100) # todo: get from config file.
-
-	def init_display(self):
-		self.lcd = Adafruit_CharLCD()
-		self.lcd.clear()
-		self.lcd.message("Display up\nand ready")
+		self.display_PWM.start(int(self._config["display_default_brightness"]))
 
 	def load_configuration(self):
 		with open('base/config.json', 'r') as jf:
 			config = json.load(jf)
-			# self.maximum_motor_current = config.get(['HWCTRL']['docking_overcurrent_limit'], None)
-			# if self.maximum_motor_current == None:
-			# 	self._log("unable to get motor overcurrent limit from config.json. Using default value 150.")
+			# self.docking_overcurrent_limit = config.get(['HWCTRL']['docking_overcurrent_limit'], None)
+			# if self.docking_overcurrent_limit == None:
+			# 	self._logger.info("unable to get motor overcurrent limit from config.json. Using default value 150.")
 			# fixme
 
 
@@ -136,10 +133,11 @@ class HWCTRL(threading.Thread):
 			sleep(1)
 
 	def terminate(self):
-		self._log("HWCTRL is shutting down. Current status: {}".format(self._status))
+		self._logger.info("HWCTRL is shutting down. Current status: {}".format(self._status))
 		self.exitflag = True
 		self.GPIO.cleanup()
-		# TODO: self.cur_meas.terminate() # maybe with try-statement
+		if self.cur_meas.is_alive():
+			self.cur_meas.terminate()
 
 	@property
 	def status(self):
@@ -156,7 +154,7 @@ class HWCTRL(threading.Thread):
 		return self._status
 
 	def _button_pressed(self, button):
-		self._log("Button {} pressed".format(button))
+		self._logger.info("Button {} pressed".format(button))
 		# buttons are low-active!
 		return not self.GPIO.input(button)
 
@@ -182,7 +180,7 @@ class HWCTRL(threading.Thread):
 				flag_docking_timeout = True
 
 			current = self.cur_meas.current
-			if current > self.maximum_motor_current:
+			if current > self.docking_overcurrent_limit:
 				print("Overcurrent!!")
 
 			# print("Imotor = %s" % current)
@@ -198,7 +196,7 @@ class HWCTRL(threading.Thread):
 		self.cur_meas.terminate()
 
 		print("Docking Timeout !!!" if flag_docking_timeout else "Docked in %i seconds" % timeDiff)
-		self._log("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
+		self._logger.error("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
 	def undock(self):
 		# Motor Backward
@@ -217,7 +215,7 @@ class HWCTRL(threading.Thread):
 				flag_docking_timeout = True
 
 			current = self.cur_meas.current
-			if current > self.maximum_motor_current:
+			if current > self.docking_overcurrent_limit:
 				print("Overcurrent!!")
 
 			# print("Imotor = %s" % self.cur_meas.current)
@@ -232,42 +230,50 @@ class HWCTRL(threading.Thread):
 
 		print("maximum current: {:.2f}, avg_current_10sec: {:.2f}".format(peak_current, avg_current))
 
-		self._log("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
+		self._logger.error("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
 		if flag_docking_timeout:
 			print("Undocking Timeout !!!")
 		else:
 			print("Undocked in %i seconds" % timeDiff)
 
-	def write_to_display(self, message):
-		self.lcd.clear()
-		self.lcd.message(message)
-
-	def dim_display(self, brightness):
-		self.dis_Brightness = 0.01
-		self.changeDutyCycle(brightness)
-
 	def hdd_power_on(self):
-		self._log("Powering HDD")
+		self._logger.info("Powering HDD")
 		self.cur_meas = Current_Measurement(1)
+		self.cur_meas.start()
 		self.GPIO.output(SW_HDD_ON, self.GPIO.HIGH)
 
 	def hdd_power_off(self):
-		self._log("Unpowering HDD")
+		self._logger.info("Unpowering HDD")
 		self.GPIO.output(SW_HDD_ON, self.GPIO.LOW)
 		self.cur_meas.terminate()
 
 	def dock_and_power(self):
 		self.dock()
 		self.hdd_power_on()
-		# TODO: Make function "delay" in common.utils and reuse after unmounting.
-		for i in range(5):  # TODO: Load from config["Mounting"]["timeout"]
-			if True:  # TODO: Write condition: "Mount file exists"
-				return
-			sleep(1)
-		raise RuntimeError("Timeout reached during dock procedure.")
 
 	def unpower_and_undock(self):
 		self.hdd_power_off()
 		sleep(5)
 		self.undock()
+
+
+class LCD(Adafruit_CharLCD):
+	def __init__(self):
+		super(LCD, self).__init__()
+		self.dis_Brightness = 0.01
+		self.clear()
+		self.message("Display up\nand ready")
+
+	def display(self, msg, duration):
+		self.dim_display(int(self._config["display_default_brightness"]))
+		self.write_to_display(msg)
+		sleep(duration)
+		self.dim_display(0)
+
+	def write_to_display(self, message):
+		self.clear()
+		self.message(message)
+
+	def dim_display(self, brightness):
+		self.changeDutyCycle(brightness)

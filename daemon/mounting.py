@@ -1,16 +1,25 @@
 from subprocess import run, PIPE
 
+from base.common.utils import wait_for_new_device_file
+
 
 class MountManager:
-	def __init__(self, config):
+	def __init__(self, config, logger):
+		self._logger = logger
 		self.b_hdd_device = config["backup_hdd_device_file_path"]
 		self.b_hdd_fsys = config["backup_hdd_file_system"]
 		self.b_hdd_mount = config["backup_hdd_mount_point"]
 		self.s_hdd_remote = config["server_hdd_remote_path"]
 		self.s_hdd_cred = config["server_hdd_credentials_path"]
 		self.s_hdd_mount = config["server_hdd_mount_point"]
+		self.b_timeout = config["backup_device_file_timeout"]
 
 	def mount_hdds(self):
+		try:
+			new_device_files = wait_for_new_device_file(self.b_timeout)
+			# TODO: Ensure that the right HDD is found. (identifier-file?)
+		except RuntimeError as e:
+			self._logger.error(e)
 		self._mount_backup_hdd()
 		self._mount_server_hdd()
 
