@@ -1,0 +1,11 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		},
+		{
+			"path": "/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test"
+		}
+	]
+}

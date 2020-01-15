@@ -4,34 +4,35 @@ from queue import Queue
 
 from time import sleep
 
-from base.common.base_queues import LoggingQueue
 from base.common.config import Config
 from base.common.base_logging import Logger
 from base.common.tcp import TCPServerThread
 from base.hwctrl.hwctrl import HWCTRL
-from base.webapp.index import application #Webapp
+from base.webapp.index import Webapp
 from base.schedule.scheduler import Scheduler
 from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
 
 
 def get_status():
-	pass  # TODO: implement
+	pass
+	# TODO: implement:
+	# next_bu_time = read_next_scheduled_backup_time()
+	next_bu_time = "leet!"
+	self._hardware_control.display(next_bu_time)
 
 
 class Daemon:
 	def __init__(self, autostart_webapp=True, daemonize=True):
 		self._autostart_webapp = autostart_webapp
-		self._logging_queue = LoggingQueue()
-		self._log = self._logging_queue.push_msg
 		self._command_queue = Queue()
 		self._config = Config("base/config.json")
 		self._scheduler = Scheduler()
-		self._logger = Logger(self._logging_queue, self._logging_queue.work_off_msg)
-		self._mount_manager = MountManager(self._config.mounting_config)
-		self._hardware_control = HWCTRL(self._logging_queue.push_msg)
-		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, push_msg=self._logging_queue.push_msg)
-		#self._webapp = Webapp(application) #Fixme: is there a better way (without having to import the application just to hand it back again??)
+		self._logger = Logger(self._config.logs_directory)
+		self._mount_manager = MountManager(self._config.mounting_config, self._logger)
+		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
+		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
+		self._webapp = Webapp(self._logger)
 		if daemonize:
 			self.run_as_daemon()
 		else:
@@ -39,37 +40,35 @@ class Daemon:
 
 
 	def start_threads_and_mainloop(self):
-		self._logger.start()
 		self._hardware_control.start()
 		self._tcp_server_thread.start()
 		if self._autostart_webapp:
-			application.run(host='0.0.0.0')
-			#self._webapp.start()
+			self._webapp.start()
 		self.mainloop()
 
 	def stop_threads(self):
-		self._logger.terminate()
+		self._logger.shutdown()
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
 
 	def run_as_daemon(self):
 		print("starting daemon...")
-		self._log("started base as daemon")
+		self._logger.info("started base as daemon")
 		with daemon.DaemonContext(working_directory=os.getcwd()):
 			# sys.stdout = self._logging_queue fixme
 			# sys.stderr = self._logging_queue fixme
 			self.start_threads_and_mainloop()
 
 	def run_not_as_daemon(self):
-		self._log("started BaSe without daemon (debug-mode)")
+		self._logger.info("started BaSe without daemon (debug-mode)")
 		print("starting daemon (not actually as daemon)...")
 		self.start_threads_and_mainloop()
 
 	def mainloop(self):
 		terminate_flag = False
 		while not terminate_flag:
-			sleep(1)  # TODO: Use from logfile
+			sleep(self._config.main_loop_interval)
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
 			terminate_flag = self._execute_command_list(command_list)
@@ -82,7 +81,7 @@ class Daemon:
 		while not self._command_queue.empty():
 			status_quo["tcp_commands"].append(self._command_queue.get())
 			self._command_queue.task_done()
-		self._log("Command Queue contents: {}".format(status_quo["tcp_commands"]), "debug")
+		self._logger.debug("Command Queue contents: {}".format(status_quo["tcp_commands"]))
 		status_quo["backup_scheduled_for_now"] = False  # TODO: consider schedule
 		# consider weather
 		return status_quo
@@ -125,5 +124,5 @@ class Daemon:
 				else:
 					raise RuntimeError("'{}' is not a valid command!".format(command))
 			except Exception as e:
-				self._log("Some command went somehow wrong: {}".format(e), "error")
+				self._logger.error("Some command went somehow wrong: {}".format(e))
 		return False
