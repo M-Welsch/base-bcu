@@ -3,7 +3,7 @@
         "logs_directory": "base/log"
     },
     "Daemon": {
-        "dm_listens_to_port": 36271,
+        "dm_listens_to_port": 12346,
         "logfile": "base_daemon_log.txt",
         "main_loop_interval": 0.1
     },

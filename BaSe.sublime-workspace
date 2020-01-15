@@ -551,20 +551,12 @@
 		"side_bar_visible": false,
 		"status_bar_visible": false
 	},
-	"expanded_folders":
-	[
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/hwctrl",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test"
-	],
 	"file_history":
 	[
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/daemon.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/webapp/webapp.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/mounting.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common/base_logging.py",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/daemon.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common/base_queues.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test/test005_stop_webapp.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test/test004_start_webapp.py",

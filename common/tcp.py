@@ -44,7 +44,7 @@ class TCPServerThread(threading.Thread):
 
 
 class TCPClientInterface:
-	def __init__(self, port=12345, max_bytes=1024):
+	def __init__(self, port=12346, max_bytes=1024):
 		self.host = socket.gethostname()
 		self.port = port
 		self.max_bytes = max_bytes
