@@ -32,7 +32,7 @@ class Daemon:
 		self._mount_manager = MountManager(self._config.mounting_config, self._logger)
 		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
-		self._webapp = Webapp()
+		self._webapp = Webapp(self._logger)
 		if daemonize:
 			self.run_as_daemon()
 		else:

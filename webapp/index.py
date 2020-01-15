@@ -1,42 +1,53 @@
 from flask import Flask, redirect, url_for, render_template, request
-import configparser
+from werkzeug.serving import make_server
 import socket
 import os
 import json
 from threading import Thread
 from time import sleep
 
-class Webapp(Thread):
-	def __init__(self):
-		super(Webapp, self).__init__()
-		self._term_flag = False
+# class Webapp(Thread):
+# 	def __init__(self, application):
+# 		super(Webapp, self).__init__() #<- test if this works
+# 		self.srv = make_server('0.0.0.0', 5000, application)
+# 		self.ctx = application.app_context()
+# 		self.ctx.push()
 
-	def run(self):
-		while not self._term_flag:
-			sleep(1)
+# 	def run(self):
+# 		# Todo: good point to put a message into the logfile
+# 		self.srv.serve_forever()
 
-	def terminate(self):
-		self._term_flag = True
+# 	def terminate(self):
+# 		self.srv.shutdown()
 
+application = Flask(__name__)
 
-app = Flask(__name__)
-
-@app.route('/style.css')
+@application.route('/style.css')
 def stylesheet():
 	return render_template('style.css')
 
-@app.route('/')
+@application.route('/')
 def mainpage():
+	print("Bluttber")
 	return render_template('mainpage.html', page_name = 'Welcome', user = 'admin')
 
-@app.route('/editconfig')
+@application.route('/shutdown')
+def shutdown_webapp():
+	func = request.environ.get('werkzeug.server.shutdown')
+	if func is None:
+		raise RuntimeError('Not running with the Werkzeug Server')
+	func()
+
+@application.route('/shutdown', methods=['POST'])
+def shutdown():
+	shutdown_webapp()
+	return 'Server shutting down...'
+
+@application.route('/editconfig')
 def editconfig():
 	# load and parse config file
 	with open('../config.json', 'r') as jf:
 		config = json.load(jf)
-
-		#FIXME: ini-files remains open?
-
 		return render_template('editconfig.html', page_name = 'Edit Configuration', user = 'admin', data=config)
 
 def convert_to_nd_dict(d):
@@ -58,7 +69,7 @@ def convert_to_nd_dict(d):
 
 	return nd_dict
 
-@app.route('/saveconfig', methods = ['POST'])
+@application.route('/saveconfig', methods = ['POST'])
 def saveconfig():
 	nd_dict = convert_to_nd_dict(request.form)
 	print(nd_dict)
@@ -70,7 +81,7 @@ def saveconfig():
 	# shows confirmation and ini-file content for review
 	return render_template('saveconfig.html', page_name = 'Save Configuration', user = 'admin', config_to_show = nd_dict)
 
-@app.route('/communicator', methods = ['POST', 'GET'])
+@application.route('/communicator', methods = ['POST', 'GET'])
 def communicator():
 	try: # if form data was sent
 		message_from_page = request.form
@@ -114,7 +125,7 @@ def communicator():
 	else:
 		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_error
 
-@app.route('/logger', methods = ['GET', 'POST'])
+@application.route('/logger', methods = ['GET', 'POST'])
 def logger():
 	available_logs = []
 	for file in os.listdir("../log"):
@@ -142,4 +153,4 @@ def logger():
 	return render_template('logger.html', page_name ='Logger', user='admin', logfile = log, years = available_logs, year_selected = year_selected)
 
 if __name__ == '__main__':
-   app.run(debug=True)
+   application.run(debug=True)
