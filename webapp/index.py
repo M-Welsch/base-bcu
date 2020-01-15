@@ -5,20 +5,7 @@ import os
 import json
 from threading import Thread
 from time import sleep
-
-# class Webapp(Thread):
-# 	def __init__(self, application):
-# 		super(Webapp, self).__init__() #<- test if this works
-# 		self.srv = make_server('0.0.0.0', 5000, application)
-# 		self.ctx = application.app_context()
-# 		self.ctx.push()
-
-# 	def run(self):
-# 		# Todo: good point to put a message into the logfile
-# 		self.srv.serve_forever()
-
-# 	def terminate(self):
-# 		self.srv.shutdown()
+#import pudb
 
 application = Flask(__name__)
 
@@ -28,7 +15,6 @@ def stylesheet():
 
 @application.route('/')
 def mainpage():
-	print("Bluttber")
 	return render_template('mainpage.html', page_name = 'Welcome', user = 'admin')
 
 @application.route('/shutdown')
@@ -128,17 +114,18 @@ def communicator():
 @application.route('/logger', methods = ['GET', 'POST'])
 def logger():
 	available_logs = []
+	# pudb.set_trace()
 	for file in os.listdir("../log"):
 		if file.endswith(".log"):
-			available_logs.append(file.split('.')[0].split('_')[1])
-	
+			#available_logs.append(file.split('.')[0].split('_')[1])
+			available_logs.append(file)
 	try:
 		form_data = request.form
-		year_selected = form_data['year']
+		filename_selected = form_data['filename']
 	except:
-		year_selected = available_logs[0]
+		filename_selected = available_logs[0]
 
-	logfile = open('../log/log_%s.log' % year_selected,'r')
+	logfile = open('../log/%s' % filename_selected,'r')
 	logfile_content = ''
 	logfile_content = logfile.readlines()
 	#logfile_content.reverse() #to have most current line first
@@ -150,7 +137,12 @@ def logger():
 			line = '<font color="blue">'+line+'</font>'
 		log.append(line)
 
-	return render_template('logger.html', page_name ='Logger', user='admin', logfile = log, years = available_logs, year_selected = year_selected)
+	return render_template('logger.html', 
+							page_name ='Logger', 
+							user='admin', 
+							logfile = log, 
+							filenames = available_logs, 
+							filename_selected = filename_selected)
 
 if __name__ == '__main__':
-   application.run(debug=True)
+   application.run('0.0.0.0', debug=True)

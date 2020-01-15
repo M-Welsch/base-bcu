@@ -15,13 +15,14 @@
    </head>
    <body>
       <h1>Hello {{ user }}!</h1>
-      <h2>Select Year</h2>
-         <form method="POST">
-            <select name="year" id="schoolContainer">
-               {% for year in years %}
-                  <option value="{{year}}" {% if year == year_selected %} selected {% endif %}>{{year}}</option>
+      <h2>Select Logfile</h2>
+         <form method="POST" action="logger" name="select_filename">
+            <select name="filename" id="schoolContainer">
+               {% for filename in filenames %}
+                  <option value="{{file}}" {% if filename == filename_selected %} selected {% endif %}>{{filename}}</option>
                {% endfor %}
             </select>
+            <input type="hidden" value="dummy">
             <input type="submit" value="show">
          </form><br>
          <a href="..">go back</a>
