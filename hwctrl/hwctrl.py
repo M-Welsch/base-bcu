@@ -1,29 +1,112 @@
+# creen
+# creenShots
+# XcreenShots
+# ScreenShots
+
 import json
 import time
-import threading
-from base.hwctrl.lcd import *
-import smbus
+from threading import Thread, Timer
 from queue import Queue
+import smbus
+import RPi.GPIO as GPIO
+
+from base.hwctrl.lcd import *
 from base.common.base_queues import Current_Queue
 
 # physical (!) pin definitions (update after schematic change!!)
-SW_HDD_ON = 7
-Dis_RS = 8
-Dis_E = 10
-Dis_DB4 = 12
-Dis_DB5 = 16
-Dis_DB6 = 18
-Dis_DB7 = 22
-Dis_PWM_Gate = 24
-nSensor_Docked = 13
-nSensor_Undocked = 11
-Motordriver_L = 15
-Motordriver_R = 19
-button_0 = 21
-button_1 = 23
+class Pin:
+	SW_HDD_ON = 7
+	Dis_RS = 8
+	Dis_E = 10
+	Dis_DB4 = 12
+	Dis_DB5 = 16
+	Dis_DB6 = 18
+	Dis_DB7 = 22
+	Dis_PWM_Gate = 24
+	nSensor_Docked = 13
+	nSensor_Undocked = 11
+	Motordriver_L = 15
+	Motordriver_R = 19
+	button_0 = 21
+	button_1 = 23
 
 
-class Current_Measurement(threading.Thread):
+class PinInterface:
+	def __init__(self, display_default_brightness, display_default_pw=80):
+		GPIO.setmode(GPIO.BOARD)
+
+		GPIO.setup(Pin.SW_HDD_ON, GPIO.OUT)
+		GPIO.setup(Pin.Motordriver_R, GPIO.OUT)
+		GPIO.setup(Pin.Motordriver_L, GPIO.OUT)
+		GPIO.output(Pin.Motordriver_L, GPIO.LOW)
+		GPIO.output(Pin.Motordriver_R, GPIO.LOW)
+
+		GPIO.setup(Pin.nSensor_Docked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		GPIO.setup(Pin.nSensor_Undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		GPIO.setup(Pin.button_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		GPIO.setup(Pin.button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+		GPIO.setup(Pin.Dis_PWM_Gate, GPIO.OUT)
+		self.display_PWM = GPIO.PWM(Pin.Dis_PWM_Gate, display_default_pw)
+		self.display_PWM.start(display_default_brightness)
+
+	@staticmethod
+	def cleanup():
+		GPIO.cleanup()
+
+	@property
+	def status(self):
+		return {
+			"button_0_pr": self.pin_interface._button_0_pressed(),
+			"button_1_pr": self.pin_interface._button_1_pressed(),
+			"sensor_undocked": GPIO.input(Pin.nSensor_Undocked),
+			"sensor_docked": GPIO.input(Pin.nSensor_Docked),
+			"Motordriver_L": GPIO.input(Pin.Motordriver_L),
+			"Motordriver_R": GPIO.input(Pin.Motordriver_R),
+			"SW_HDD_ON": GPIO.input(Pin.SW_HDD_ON)
+		}
+
+	@property
+	def docked_sensor_pin_high(self):
+		return GPIO.input(Pin.nSensor_Docked)
+
+	@property
+	def undocked_sensor_pin_high(self):
+		return GPIO.input(Pin.nSensor_Undocked)
+
+	@property
+	def button_0_pin_high(self):
+		return GPIO.input(Pin.button_0)
+
+	@property
+	def button_1_pin_high(self):
+		return GPIO.input(Pin.button_1)
+	
+	@staticmethod
+	def activate_hdd_pin():
+		GPIO.output(Pin.SW_HDD_ON, GPIO.HIGH)
+
+	@staticmethod
+	def deactivate_hdd_pin():
+		GPIO.output(Pin.SW_HDD_ON, GPIO.LOW)
+	
+	@staticmethod
+	def set_motor_pins_for_braking():
+		GPIO.output(Pin.Motordriver_L, GPIO.LOW)
+		GPIO.output(Pin.Motordriver_R, GPIO.LOW)
+	
+	@staticmethod
+	def set_motor_pins_for_docking():
+		GPIO.output(Pin.Motordriver_L, GPIO.HIGH)
+		GPIO.output(Pin.Motordriver_R, GPIO.LOW)
+
+	@staticmethod
+	def set_motor_pins_for_undocking():
+		GPIO.output(Pin.Motordriver_L, GPIO.LOW)
+		GPIO.output(Pin.Motordriver_R, GPIO.HIGH)
+
+
+class Current_Measurement(Thread):
 	def __init__(self, sampling_interval):
 		print("Current Sensor is initializing")
 		super(Current_Measurement, self).__init__()
@@ -63,8 +146,8 @@ class Current_Measurement(threading.Thread):
 	def terminate(self):
 		self._exit_flag = True
 
-class HWCTRL(threading.Thread):
-	def __init__(self, config, logger, GPIO=None):
+class HWCTRL(Thread):
+	def __init__(self, config, logger):
 		super(HWCTRL, self).__init__()
 		self._config = config
 		self._status = {}
@@ -77,104 +160,47 @@ class HWCTRL(threading.Thread):
 		self.maximum_docking_time = self._config["maximum_docking_time"]
 		self.docking_overcurrent_limit = self._config["docking_overcurrent_limit"]
 		
-		self.load_configuration()
-		self.init_pins()
-		self.lcd = LCD()
+		self.pin_interface = PinInterface(int(self._config["display_default_brightness"]))
+		self.lcd = LCD(int(self._config["display_default_brightness"]))
 		self.display = self.lcd.display
-
-	def init_pins(self):
-		import RPi.GPIO as GPIO
-		self.GPIO = GPIO
-		self.GPIO.setmode(GPIO.BOARD)
-
-		self.GPIO.setup(SW_HDD_ON, GPIO.OUT)
-		self.GPIO.setup(Motordriver_R, GPIO.OUT)
-		self.GPIO.setup(Motordriver_L, GPIO.OUT)
-		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
-		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
-
-		self.GPIO.setup(nSensor_Docked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		self.GPIO.setup(nSensor_Undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		self.GPIO.setup(button_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		self.GPIO.setup(button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-		self.GPIO.setup(Dis_PWM_Gate, GPIO.OUT)
-		self.display_PWM = GPIO.PWM(Dis_PWM_Gate, 80)
-		self.display_PWM.start(int(self._config["display_default_brightness"]))
-
-	def load_configuration(self):
-		with open('base/config.json', 'r') as jf:
-			config = json.load(jf)
-			# self.docking_overcurrent_limit = config.get(['HWCTRL']['docking_overcurrent_limit'], None)
-			# if self.docking_overcurrent_limit == None:
-			# 	self._logger.info("unable to get motor overcurrent limit from config.json. Using default value 150.")
-			# fixme
-
 
 	def run(self):
 		while not self.exitflag:
-			# print("T0: {}, T1: {}, SensDock: {}, SensUnd: {}".format(self._button_pressed(button_0),
-			# 														 self._button_pressed(button_1),
-			# 														 self.GPIO.input(nSensor_Docked),
-			# 														 self.GPIO.input(nSensor_Undocked)))
-			if(self._button_pressed(button_1)):
-				if not self.GPIO.input(nSensor_Docked):
-					print("nSensor_Docked = LOW => undocking")
-					self.lcd.clear()
-					self.lcd.message("Undocking ...")
-					self.undock()
-				elif not self.GPIO.input(nSensor_Undocked):
-					print("nSensor_Undocked = LOW => docking")
-					self.lcd.clear()
-					self.lcd.message("Docking ...")
-					self.dock()
-				self.lcd.clear()
-				self.lcd.message("Done.")
 			sleep(1)
 
 	def terminate(self):
 		self._logger.info("HWCTRL is shutting down. Current status: {}".format(self._status))
 		self.exitflag = True
-		self.GPIO.cleanup()
+		self.pin_interface.cleanup()
 		if self.cur_meas.is_alive():
 			self.cur_meas.terminate()
 
-	@property
-	def status(self):
-		self._status = {
-			"button_0_pr": self._button_pressed(button_0),
-			"button_1_pr": self._button_pressed(button_1),
-			"sensor_undocked": self.GPIO.input(nSensor_Undocked),
-			"sensor_docked": self.GPIO.input(nSensor_Docked),
-			"Motordriver_L": self.GPIO.input(Motordriver_L),
-			"Motordriver_R": self.GPIO.input(Motordriver_R),
-			"SW_HDD_ON": self.GPIO.input(SW_HDD_ON),
-			"Display_Br":self.dis_Brightness
-		}
-		return self._status
-
-	def _button_pressed(self, button):
-		self._logger.info("Button {} pressed".format(button))
+	def _button_0_pressed(self):
+		self._logger.info("Button 0 pressed")
 		# buttons are low-active!
-		return not self.GPIO.input(button)
+		return not self.pin_interface.button_0_pin_high
+
+	def _button_1_pressed(self):
+		self._logger.info("Button 1 pressed")
+		# buttons are low-active!
+		return not self.pin_interface.button_1_pin_high
 
 	def pressed_buttons(self):
-		state_button_0 = self._button_pressed(button_0)
-		state_button_1 = self._button_pressed(button_1)
-		return state_button_0, state_button_1
+		return self._button_0_pressed(), self._button_1_pressed()
 
 	def dock(self):
 		# Motor Forward
 		start_time = time.time()
 		self.cur_meas = Current_Measurement(0.1)
 		self.cur_meas.start()
-		self.GPIO.output(Motordriver_L, self.GPIO.HIGH)
-		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
+		self.pin_interface.set_motor_pins_for_docking()
 
 		timeDiff = 0
 		flag_overcurrent = False
 		flag_docking_timeout = False
-		while(self.GPIO.input(nSensor_Docked) and not flag_docking_timeout and not flag_overcurrent):
+		while(self.pin_interface.docked_sensor_pin_high and
+			    not flag_docking_timeout and
+			    not flag_overcurrent):
 			timeDiff = time.time()-start_time
 			if timeDiff > self.maximum_docking_time:
 				flag_docking_timeout = True
@@ -186,8 +212,7 @@ class HWCTRL(threading.Thread):
 			# print("Imotor = %s" % current)
 			sleep(0.1)
 		# brake
-		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
-		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
+		self.pin_interface.set_motor_pins_for_braking()
 
 		peak_current = self.cur_meas.peak_current
 		avg_current = self.cur_meas.avg_current_10sec
@@ -203,13 +228,12 @@ class HWCTRL(threading.Thread):
 		start_time = time.time()
 		self.cur_meas = Current_Measurement(0.1)
 		self.cur_meas.start()
-		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
-		self.GPIO.output(Motordriver_R, self.GPIO.HIGH)
+		self.pin_interface.set_motor_pins_for_undocking()
 
 		timeDiff = 0
 		flag_overcurrent = False
 		flag_docking_timeout = False
-		while(self.GPIO.input(nSensor_Undocked) and not flag_docking_timeout and not flag_overcurrent):
+		while(self.pin_interface.undocked_sensor_pin_high and not flag_docking_timeout and not flag_overcurrent):
 			timeDiff = time.time()-start_time
 			if timeDiff > self.maximum_docking_time:
 				flag_docking_timeout = True
@@ -221,8 +245,7 @@ class HWCTRL(threading.Thread):
 			# print("Imotor = %s" % self.cur_meas.current)
 			sleep(0.1)
 		# brake
-		self.GPIO.output(Motordriver_L, self.GPIO.LOW)
-		self.GPIO.output(Motordriver_R, self.GPIO.LOW)
+		self.pin_interface.set_motor_pins_for_braking()
 
 		peak_current = self.cur_meas.peak_current
 		avg_current = self.cur_meas.avg_current_10sec
@@ -241,11 +264,11 @@ class HWCTRL(threading.Thread):
 		self._logger.info("Powering HDD")
 		self.cur_meas = Current_Measurement(1)
 		self.cur_meas.start()
-		self.GPIO.output(SW_HDD_ON, self.GPIO.HIGH)
+		self.pin_interface.activate_hdd_pin()
 
 	def hdd_power_off(self):
 		self._logger.info("Unpowering HDD")
-		self.GPIO.output(SW_HDD_ON, self.GPIO.LOW)
+		self.pin_interface.deactivate_hdd_pin()
 		self.cur_meas.terminate()
 
 	def dock_and_power(self):
@@ -259,21 +282,26 @@ class HWCTRL(threading.Thread):
 
 
 class LCD(Adafruit_CharLCD):
-	def __init__(self):
+	def __init__(self, default_brightness):
 		super(LCD, self).__init__()
-		self.dis_Brightness = 0.01
+		self._default_brightness = default_brightness
+		self._current_brightness = default_brightness
 		self.clear()
 		self.message("Display up\nand ready")
 
-	def display(self, msg, duration):
-		self.dim_display(int(self._config["display_default_brightness"]))
-		self.write_to_display(msg)
-		sleep(duration)
-		self.dim_display(0)
+	@property
+	def current_brightness(self):
+		return self._current_brightness
 
-	def write_to_display(self, message):
+	def display(self, msg, duration):
+		self._dim(self._default_brightness)
+		self._write(msg)
+		Timer(duration, lambda: self._dim(0)).start()
+
+	def _write(self, message):
 		self.clear()
 		self.message(message)
 
-	def dim_display(self, brightness):
+	def _dim(self, brightness):
+		self._current_brightness = brightness
 		self.changeDutyCycle(brightness)

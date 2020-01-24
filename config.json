@@ -27,5 +27,8 @@
         "server_hdd_credentials_path": "/home/maxi/.scheunentor",
         "server_hdd_mount_point": "/media/ServerHDD",
         "backup_device_file_timeout": 20
+    },
+    "Backup": {
+        "loop_interval": 1
     }
 }

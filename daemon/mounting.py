@@ -1,6 +1,4 @@
-from subprocess import run, PIPE
-
-from base.common.utils import wait_for_new_device_file
+from base.common.utils import wait_for_new_device_file, run_external_command
 
 
 class MountManager:
@@ -34,7 +32,7 @@ class MountManager:
 				   self.b_hdd_device, self.b_hdd_mount]
 		success_msg = "Mounting backup HDD probably successful."
 		error_msg = "Failed mounting backup HDD. Traceback:"
-		self._run_external_command(command, success_msg, error_msg)
+		run_external_command(command, success_msg, error_msg)
 
 	def _mount_server_hdd(self):
 		print("Trying to mount server HDD...")
@@ -42,27 +40,18 @@ class MountManager:
 				   "-o", "credentials="+self.s_hdd_cred]
 		success_msg = "Mounting server HDD probably successful."
 		error_msg = "Failed mounting server HDD. Traceback:"
-		self._run_external_command(command, success_msg, error_msg)
+		run_external_command(command, success_msg, error_msg)
 
 	def _unmount_backup_hdd(self):
 		print("Trying to unmount backup HDD...")
 		command = ["sudo", "umount", self.b_hdd_mount]
 		success_msg = "Unmounting backup HDD probably successful."
 		error_msg = "Failed unmounting backup HDD. Traceback:"
-		self._run_external_command(command, success_msg, error_msg)
+		run_external_command(command, success_msg, error_msg)
 
 	def _unmount_server_hdd(self):
 		print("Trying to unmount server HDD...")
 		command = ["sudo", "umount", self.s_hdd_mount]
 		success_msg = "Unmounting server HDD probably successful."
 		error_msg = "Failed unmounting server HDD. Traceback:"
-		self._run_external_command(command, success_msg, error_msg)
-
-	@staticmethod
-	def _run_external_command(command, success_msg, error_msg):
-		cp = run(command, stdout=PIPE, stderr=PIPE)
-		if cp.stderr:
-			print(error_msg, cp.stderr)
-			raise RuntimeError(error_msg, cp.stderr)
-		else:
-			print(success_msg)
+		run_external_command(command, success_msg, error_msg)

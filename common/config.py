@@ -25,7 +25,11 @@ class Config:
 	@property
 	def mounting_config(self):
 		return self._config["Mounting"]
+
+	@property
+	def backup_config(self):
+		return self._config["Backup"]
 	
 
 	def reload(self):
-		pass  # TODO: implement
+		raise NotImplementedError  # TODO: implement config file reloading

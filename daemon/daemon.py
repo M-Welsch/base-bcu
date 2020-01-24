@@ -15,11 +15,11 @@ from base.daemon.mounting import MountManager
 
 
 def get_status():
-	pass
-	# TODO: implement:
+	raise NotImplementedError
+	# TODO: implement hardware status retrieval
 	# next_bu_time = read_next_scheduled_backup_time()
-	next_bu_time = "leet!"
-	self._hardware_control.display(next_bu_time)
+	# next_bu_time = "leet!"
+	# self._hardware_control.display(next_bu_time)
 
 
 class Daemon:
@@ -30,6 +30,7 @@ class Daemon:
 		self._scheduler = Scheduler()
 		self._logger = Logger(self._config.logs_directory)
 		self._mount_manager = MountManager(self._config.mounting_config, self._logger)
+		self._backup_manager = BackupManager(self._config.backup_config, self._logger)
 		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
@@ -83,7 +84,7 @@ class Daemon:
 			self._command_queue.task_done()
 		self._logger.debug("Command Queue contents: {}".format(status_quo["tcp_commands"]))
 		status_quo["backup_scheduled_for_now"] = False  # TODO: consider schedule
-		# consider weather
+		# TODO: consider weather
 		return status_quo
 
 	def _derive_command_list(self, status_quo):
@@ -114,7 +115,7 @@ class Daemon:
 				elif command == "unmount":
 					self._mount_manager.unmount_hdds()
 				elif command == "backup":
-					BackupManager.backup()
+					self._backup_manager.backup()
 				elif command == "reload_config":
 					self._config.reload()
 				elif command == "show_status_info":
@@ -125,4 +126,5 @@ class Daemon:
 					raise RuntimeError("'{}' is not a valid command!".format(command))
 			except Exception as e:
 				self._logger.error("Some command went somehow wrong: {}".format(e))
+				raise e
 		return False
