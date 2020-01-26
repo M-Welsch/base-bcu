@@ -29,6 +29,6 @@
         "backup_device_file_timeout": 20
     },
     "Backup": {
-        "loop_interval": 1
+        "sample_interval": 0.2
     }
 }
