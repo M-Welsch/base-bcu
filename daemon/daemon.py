@@ -9,12 +9,13 @@ from base.common.base_logging import Logger
 from base.common.tcp import TCPServerThread
 from base.hwctrl.hwctrl import HWCTRL
 from base.webapp.webapp import Webapp
-from base.schedule.scheduler import Scheduler
+from base.schedule.scheduler import BaseScheduler
 from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
 
 
 def get_status():
+	return "TODO: Fix hardware bug!"
 	raise NotImplementedError
 	# TODO: implement hardware status retrieval
 	# next_bu_time = read_next_scheduled_backup_time()
@@ -27,7 +28,7 @@ class Daemon:
 		self._autostart_webapp = autostart_webapp
 		self._command_queue = Queue()
 		self._config = Config("base/config.json")
-		self._scheduler = Scheduler()
+		self._scheduler = BaseScheduler()
 		self._logger = Logger(self._config.logs_directory)
 		self._mount_manager = MountManager(self._config.mounting_config, self._logger)
 		self._backup_manager = BackupManager(self._config.backup_config, self._logger)
@@ -83,7 +84,7 @@ class Daemon:
 			status_quo["tcp_commands"].append(self._command_queue.get())
 			self._command_queue.task_done()
 		self._logger.debug("Command Queue contents: {}".format(status_quo["tcp_commands"]))
-		status_quo["backup_scheduled_for_now"] = False  # TODO: consider schedule
+		status_quo["backup_scheduled_for_now"] = self._scheduler.is_backup_scheduled()
 		# TODO: consider weather
 		return status_quo
 
@@ -115,6 +116,7 @@ class Daemon:
 				elif command == "unmount":
 					self._mount_manager.unmount_hdds()
 				elif command == "backup":
+					self._schedule.backup_suggested = False
 					self._backup_manager.backup()
 				elif command == "reload_config":
 					self._config.reload()
