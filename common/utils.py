@@ -30,3 +30,21 @@ def run_external_command(command, success_msg, error_msg):
 def run_external_command_as_generator(command):
 	p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
 	return iter(p.stdout.readline, b'')
+
+
+def status_quo_not_empty(status_quo):
+	b = False
+	for value in status_quo.values():
+		b += or_up_values(value)
+	return b
+
+def or_up_values(value):
+	b = False
+	if type(value) == tuple:
+		for entry in value:
+			if entry == "False":
+				entry = False
+			b += bool(entry)
+	else:
+		b += bool(value)
+	return b

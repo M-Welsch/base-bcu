@@ -12,10 +12,10 @@ from base.webapp.webapp import Webapp
 from base.schedule.scheduler import BaseScheduler
 from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
+from base.common.utils import *
 
 
 def get_status():
-	return "TODO: Fix hardware bug!"
 	raise NotImplementedError
 	# TODO: implement hardware status retrieval
 	# next_bu_time = read_next_scheduled_backup_time()
@@ -83,10 +83,11 @@ class Daemon:
 		while not self._command_queue.empty():
 			status_quo["tcp_commands"].append(self._command_queue.get())
 			self._command_queue.task_done()
-		self._logger.debug("Command Queue contents: {}".format(status_quo["tcp_commands"]))
 		status_quo["backup_scheduled_for_now"] = self._scheduler.is_backup_scheduled()
 		# TODO: consider weather
+		if status_quo_not_empty(status_quo): self._logger.debug("Command Queue contents: {}".format(status_quo))
 		return status_quo
+
 
 	def _derive_command_list(self, status_quo):
 		command_list = []
@@ -116,7 +117,7 @@ class Daemon:
 				elif command == "unmount":
 					self._mount_manager.unmount_hdds()
 				elif command == "backup":
-					self._schedule.backup_suggested = False
+					self._scheduler.backup_suggested = False
 					self._backup_manager.backup()
 				elif command == "reload_config":
 					self._config.reload()

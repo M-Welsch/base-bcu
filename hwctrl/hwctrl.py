@@ -57,10 +57,10 @@ class PinInterface:
 	@property
 	def status(self):
 		return {
-			"button_0_pr": self.pin_interface._button_0_pressed(),
-			"button_1_pr": self.pin_interface._button_1_pressed(),
-			"sensor_undocked": GPIO.input(Pin.nSensor_Undocked),
-			"sensor_docked": GPIO.input(Pin.nSensor_Docked),
+			"button_0_pr": self.button_0_pin_high,
+			"button_1_pr": self.button_1_pin_high,
+			"sensor_undocked": self.undocked_sensor_pin_high,
+			"sensor_docked": self.docked_sensor_pin_high,
 			"Motordriver_L": GPIO.input(Pin.Motordriver_L),
 			"Motordriver_R": GPIO.input(Pin.Motordriver_R),
 			"SW_HDD_ON": GPIO.input(Pin.SW_HDD_ON)
@@ -169,6 +169,7 @@ class HWCTRL(Thread):
 			sleep(1)
 
 	def terminate(self):
+		print("HWCTRL shutting down")
 		self._logger.info("HWCTRL is shutting down. Current status: {}".format(self._status))
 		self.exitflag = True
 		self.pin_interface.cleanup()
@@ -176,14 +177,18 @@ class HWCTRL(Thread):
 			self.cur_meas.terminate()
 
 	def _button_0_pressed(self):
-		self._logger.info("Button 0 pressed")
 		# buttons are low-active!
-		return not self.pin_interface.button_0_pin_high
+		button_0_pressed = not self.pin_interface.button_0_pin_high
+		if button_0_pressed:
+			self._logger.info("Button 0 pressed")
+		return button_0_pressed
 
 	def _button_1_pressed(self):
-		self._logger.info("Button 1 pressed")
 		# buttons are low-active!
-		return not self.pin_interface.button_1_pin_high
+		button_1_pressed = not self.pin_interface.button_1_pin_high
+		if button_1_pressed:
+			self._logger.info("Button 1 pressed")
+		return button_1_pressed
 
 	def pressed_buttons(self):
 		return self._button_0_pressed(), self._button_1_pressed()
