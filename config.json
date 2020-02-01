@@ -30,5 +30,15 @@
     },
     "Backup": {
         "sample_interval": 0.2
+    },
+    "Webapp": {
+        "TCP_Codebook": {
+            "Shutdown Server":"terminate_daemon",
+            "Test Mounting":"test_mounting",
+            "Test Unounting":"test_unmounting",
+            "Dock":"test_docking",
+            "Unock":"test_undocking",
+            "Reload config-File":"reload_config"
+        }
     }
 }

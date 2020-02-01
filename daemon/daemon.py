@@ -94,6 +94,10 @@ class Daemon:
 			return ["dock", "mount"]
 		if "test_unmounting" in status_quo["tcp_commands"]:
 			return ["unmount"]
+		if "test_docking" in status_quo["tcp_commands"]:
+			return ["dock"]
+		if "test_undocking" in status_quo["tcp_commands"]:
+			return ["undock"]
 		if "reload_config" in status_quo["tcp_commands"]:
 			command_list.append("reload_config")
 		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
@@ -102,6 +106,7 @@ class Daemon:
 			command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
+
 		return command_list
 
 	def _execute_command_list(self, command_list):

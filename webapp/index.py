@@ -62,35 +62,42 @@ def saveconfig():
 	with open('../config.json', 'w') as jf:
 		json.dump(nd_dict, jf)
 
-	# TODO: this function does:
-	# - sends signal to daemon to re-read ini-file
-	# shows confirmation and ini-file content for review
 	return render_template('saveconfig.html', page_name = 'Save Configuration', user = 'admin', config_to_show = nd_dict)
+
+def get_port():
+	with open('../config.json', 'r') as jf:
+		jobj = json.load(jf)
+		port = jobj['Daemon']['dm_listens_to_port']
+	return port	
+
+def get_signal_to_send(request):
+	if request.method == "POST":
+		data_from_form = request.form
+		if(data_from_form['signal'] == 'sig_custom'):
+			signal_to_send = data_from_form['custom_signal_name']
+		else:
+			signal_to_send = data_from_form['signal']
+	else:
+		signal_to_send = "Hello Daemon"
+
+	return signal_to_send
+
+def get_codebook():
+	with open('../config.json', 'r') as jf:
+		jobj = json.load(jf)
+		codebook = jobj['Webapp']['TCP_Codebook']
+		jf.close()
+	return codebook
 
 @application.route('/communicator', methods = ['POST', 'GET'])
 def communicator():
-	try: # if form data was sent
-		message_from_page = request.form
-		if(message_from_page['signal'] == 'sig_custom'):
-			signal_to_send = message_from_page['custom_signal_name']
-		else:
-			signal_to_send = message_from_page['signal']
-
-	except:
-		message_from_page = ''
-		signal_to_send = "Hello Daemon"
-		answer_string = ''
-
-	# get port
-	with open('../config.json', 'r') as jf:
-		jobj = json.load(jf)
-		port = int(jobj['Daemon']['dm_listens_to_port'])
-
-	print("Port: %r" % port)
-
+	answer_string = ''
+	signal_to_send = get_signal_to_send(request)
 	connection_to_daemon = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	host = socket.gethostname()
+	codebook = get_codebook()
 
+	host = socket.gethostname()
+	port = get_port()
 	try:
 		connection_error = connection_to_daemon.connect((host,port)) 
 	except Exception as e:
@@ -107,7 +114,12 @@ def communicator():
 		connection_to_daemon.close()
 		# FIXME: blocks the webapp
 
-		return render_template('communicator.html', page_name ='Communicator', user='admin', recent_signal = signal_to_send, answer = answer_string)
+		return render_template('communicator.html', 
+								page_name ='Communicator', 
+								user='admin', 
+								recent_signal = signal_to_send, 
+								answer = answer_string, 
+								codebook = codebook)
 	else:
 		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_error
 

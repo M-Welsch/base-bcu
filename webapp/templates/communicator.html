@@ -16,9 +16,9 @@
       {% endif %}
       <form method="post">
       	<h2>Signal name:</h2>
-      	<input type="radio" name="signal" value="backup">Backup Now<br>
-         <input type="radio" name="signal" value="reload_config">Reload Config<br>
-         <input type="radio" name="signal" value="show_status_info">Show Status Info<br>
+         {% for command, code in codebook.items() %}
+      	<input type="radio" name="signal" value="{{code}}">{{command}}<br>
+         {% endfor %}
       	<input type="radio" name="signal" value="sig_custom"><input type="text" name="custom_signal_name">
       	<input type="submit" value="Send Signal">
       </form>

@@ -7,7 +7,7 @@ class BaseScheduler(Scheduler):
 		self.setup_schedule()
 
 	def setup_schedule(self):
-		self.every(10).seconds.do(self._suggest_backup)
+		self.every(1000).seconds.do(self._suggest_backup)
 
 	def _suggest_backup(self):
 		print("Suggesting backup...")
