@@ -15,14 +15,6 @@ from base.daemon.mounting import MountManager
 from base.common.utils import *
 
 
-def get_status():
-	raise NotImplementedError
-	# TODO: implement hardware status retrieval
-	# next_bu_time = read_next_scheduled_backup_time()
-	# next_bu_time = "leet!"
-	# self._hardware_control.display(next_bu_time)
-
-
 class Daemon:
 	def __init__(self, autostart_webapp=True, daemonize=True):
 		self._autostart_webapp = autostart_webapp
@@ -53,6 +45,13 @@ class Daemon:
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
+
+	def get_status(self):
+		#raise NotImplementedError
+		# TODO: implement hardware status retrieval
+		# next_bu_time = read_next_scheduled_backup_time()
+		next_bu_time = "leet!"
+		self._hardware_control.display(next_bu_time,2)
 
 	def run_as_daemon(self):
 		print("starting daemon...")
@@ -122,7 +121,7 @@ class Daemon:
 				elif command == "reload_config":
 					self._config.reload()
 				elif command == "show_status_info":
-					get_status()
+					self.get_status()
 				elif command == "terminate_daemon":
 					return True
 				else:

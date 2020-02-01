@@ -161,7 +161,7 @@ class HWCTRL(Thread):
 		self.docking_overcurrent_limit = self._config["docking_overcurrent_limit"]
 		
 		self.pin_interface = PinInterface(int(self._config["display_default_brightness"]))
-		self.lcd = LCD(int(self._config["display_default_brightness"]))
+		self.lcd = LCD(int(self._config["display_default_brightness"]), self.pin_interface)
 		self.display = self.lcd.display
 
 	def run(self):
@@ -287,10 +287,11 @@ class HWCTRL(Thread):
 
 
 class LCD(Adafruit_CharLCD):
-	def __init__(self, default_brightness):
+	def __init__(self, default_brightness, pin_interface):
 		super(LCD, self).__init__()
 		self._default_brightness = default_brightness
 		self._current_brightness = default_brightness
+		self._display_PWM = pin_interface.display_PWM
 		self.clear()
 		self.message("Display up\nand ready")
 
@@ -308,5 +309,9 @@ class LCD(Adafruit_CharLCD):
 		self.message(message)
 
 	def _dim(self, brightness):
+		if brightness > 100:
+			brightness = 100
+		elif brightness < 0:
+			brightness = 0
 		self._current_brightness = brightness
-		self.changeDutyCycle(brightness)
+		self._display_PWM.ChangeDutyCycle(brightness)
