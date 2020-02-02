@@ -1,4 +1,5 @@
 from base.common.utils import wait_for_new_device_file, run_external_command
+from os import path
 
 
 class MountManager:
@@ -22,8 +23,16 @@ class MountManager:
 		self._mount_server_hdd()
 
 	def unmount_hdds(self):
-		self._unmount_backup_hdd()
-		self._unmount_server_hdd()
+		if self._server_hdd_mounted():
+			self._unmount_backup_hdd()
+		if self._backup_hdd_mounted():
+			self._unmount_server_hdd()
+
+	def _server_hdd_mounted(self):
+		return path.ismount(self.s_hdd_mount)
+
+	def _backup_hdd_mounted(self):
+		return path.ismount(self.b_hdd_mount)
 
 
 	def _mount_backup_hdd(self):
