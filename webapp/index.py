@@ -98,11 +98,16 @@ def communicator():
 
 	host = socket.gethostname()
 	port = get_port()
-	try:
-		connection_error = connection_to_daemon.connect((host,port)) 
-	except Exception as e:
-		print("Connection error: %r" % e)
-		connection_error = e
+	connection_trials = 0
+	while connection_trials < 2:
+		try:
+			connection_error = connection_to_daemon.connect((host,port)) 
+			break
+		except Exception as e:
+			print("Connection error: %r" % e)
+			connection_error = e
+			port += 1
+			connection_trials += 1
 
 	if connection_error == None:
 		print("Signal_to_send before overwrite: %r" % signal_to_send)

@@ -91,7 +91,7 @@ class Daemon:
 	def _derive_command_list(self, status_quo):
 		command_list = []
 		if "test_mounting" in status_quo["tcp_commands"]:
-			return ["dock", "mount"]
+			return ["dock", "mount"] #Todo: remove "dock"??
 		if "test_unmounting" in status_quo["tcp_commands"]:
 			return ["unmount"]
 		if "test_docking" in status_quo["tcp_commands"]:

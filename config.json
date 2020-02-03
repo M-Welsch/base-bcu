@@ -20,10 +20,10 @@
         "docking_overcurrent_limit": 150
     },
     "Mounting": {
-        "backup_hdd_device_file_path": "/dev/sda3",
+        "backup_hdd_device_file_path": "/dev/sda1",
         "backup_hdd_file_system": "ext4",
         "backup_hdd_mount_point": "/media/BackupHDD",
-        "server_hdd_remote_path": "//192.168.0.111/HDD/",
+        "server_hdd_remote_path": "//192.168.0.43/HDD/",
         "server_hdd_credentials_path": "/home/maxi/.scheunentor",
         "server_hdd_mount_point": "/media/ServerHDD",
         "backup_device_file_timeout": 20

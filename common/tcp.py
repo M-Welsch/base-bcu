@@ -17,7 +17,16 @@ class TCPServerThread(threading.Thread):
 		self.max_requests = max_requests
 
 		self.sock.settimeout(1.0)
-		self.sock.bind((self.host, self.port))                                  
+		self.configure_server()
+
+	def configure_server(self):
+		try:
+			self.sock.bind((self.host, self.port))                                  
+		except OSError:
+			self.port += 1
+			print("Socket blocked. Using port {}".format(self.port))
+			self.sock.bind((self.host, self.port))
+
 
 	def run(self):
 		self.sock.listen(self.max_requests)

@@ -193,7 +193,17 @@ class HWCTRL(Thread):
 	def pressed_buttons(self):
 		return self._button_0_pressed(), self._button_1_pressed()
 
+	def docked(self):
+		return not self.pin_interface.docked_sensor_pin_high
+
+	def undocked(self):
+		return not self.pin_interface.undocked_sensor_pin_high
+
 	def dock(self):
+		if self.docked():
+			self._logger.warning("Tried to dock, but end-switch was already pressed. Skipping dock process.")
+			return
+		self.display("Docking ...", self.maximum_docking_time + 1)
 		# Motor Forward
 		start_time = time.time()
 		self.cur_meas = Current_Measurement(0.1)
@@ -214,8 +224,9 @@ class HWCTRL(Thread):
 			if current > self.docking_overcurrent_limit:
 				print("Overcurrent!!")
 
-			# print("Imotor = %s" % current)
+			self.display("Docking ...\n {:.2f}s, {:.2f}mA".format(timeDiff, current), 10)
 			sleep(0.1)
+
 		# brake
 		self.pin_interface.set_motor_pins_for_braking()
 
@@ -229,6 +240,10 @@ class HWCTRL(Thread):
 		self._logger.error("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
 	def undock(self):
+		if self.undocked():
+			self._logger.warning("Tried to undock, but end-switch was already pressed. Skipping undock process.")
+			return
+		self.display("Undocking ...", self.maximum_docking_time + 1)
 		# Motor Backward
 		start_time = time.time()
 		self.cur_meas = Current_Measurement(0.1)
@@ -247,8 +262,9 @@ class HWCTRL(Thread):
 			if current > self.docking_overcurrent_limit:
 				print("Overcurrent!!")
 
-			# print("Imotor = %s" % self.cur_meas.current)
+			self.display("Undocking ...\n {:.2f}s, {:.2f}mA".format(timeDiff, current), 10)
 			sleep(0.1)
+
 		# brake
 		self.pin_interface.set_motor_pins_for_braking()
 
