@@ -1,7 +1,6 @@
 import sys, os
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print(path_to_module)
 sys.path.append(path_to_module)
 
 from base.daemon.daemon import Daemon
