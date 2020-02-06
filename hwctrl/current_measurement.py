@@ -13,6 +13,7 @@ class Current_Measurement(Thread):
 		self._peak_current = 0
 		self._current = 0
 		self._current_q = Current_Queue(maxsize=100)
+		self._flag_measurement_series_running = False
 
 	def run(self):
 		self._exit_flag = False
@@ -21,6 +22,7 @@ class Current_Measurement(Thread):
 			self._current = int(str(data[0]) + str(data[1]))
 			self._current_q.put_current(self._current)
 			if self.current > self._peak_current: self._peak_current = self._current
+			self.process_measurement_series()
 			sleep(self._samling_interval)
 
 	@property
@@ -39,6 +41,31 @@ class Current_Measurement(Thread):
 			avg_current_10sec = avg_current_10sec + self._current_q.get()
 		avg_current_10sec = avg_current_10sec / qsize
 		return avg_current_10sec
-	
+
+	def start_measurements_series(self, amount_of_measurements):
+		self._flag_measurement_series_running = True
+		self._current_q_for_measurement_series = Current_Queue(maxsize = amount_of_measurements)
+
+	def process_measurement_series(self):
+		if self._flag_measurement_series_running:
+			self.add_measurement_to_series()
+
+	def add_measurement_to_series(self):
+		if self._current_q_for_measurement_series.full():
+			self._flag_measurement_series_running = False
+
+		if self._flag_measurement_series_running:
+			self._current_q_for_measurement_series.put(self._current)
+
+	@property
+	def flag_measurement_series_running(self):
+		return self._flag_measurement_series_running
+
+	@property
+	def current_series(self):
+		while not self._current_q_for_measurement_series.empty():
+			current_series.append(self._current_q_for_measurement_series.get())
+		return current_series
+
 	def terminate(self):
 		self._exit_flag = True
