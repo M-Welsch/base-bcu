@@ -70,7 +70,6 @@ class HWCTRL(Thread):
 			self._logger.warning("Tried to dock, but end-switch was already pressed. Skipping dock process.")
 			return
 		self.display("Docking ...", self.maximum_docking_time + 1)
-		# Motor Forward
 		start_time = time.time()
 		self.cur_meas = Current_Measurement(0.1)
 		self.cur_meas.start()
@@ -93,7 +92,6 @@ class HWCTRL(Thread):
 			self.display("Docking ...\n {:.2f}s, {:.2f}mA".format(timeDiff, current), 10)
 			sleep(0.1)
 
-		# brake
 		self.pin_interface.set_motor_pins_for_braking()
 
 		peak_current = self.cur_meas.peak_current
@@ -110,7 +108,6 @@ class HWCTRL(Thread):
 			self._logger.warning("Tried to undock, but end-switch was already pressed. Skipping undock process.")
 			return
 		self.display("Undocking ...", self.maximum_docking_time + 1)
-		# Motor Backward
 		start_time = time.time()
 		self.cur_meas = Current_Measurement(0.1)
 		self.cur_meas.start()
@@ -131,7 +128,6 @@ class HWCTRL(Thread):
 			self.display("Undocking ...\n {:.2f}s, {:.2f}mA".format(timeDiff, current), 10)
 			sleep(0.1)
 
-		# brake
 		self.pin_interface.set_motor_pins_for_braking()
 
 		peak_current = self.cur_meas.peak_current
