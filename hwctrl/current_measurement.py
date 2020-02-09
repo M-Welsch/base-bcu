@@ -18,8 +18,8 @@ class Current_Measurement(Thread):
 	def run(self):
 		self._exit_flag = False
 		while not self._exit_flag: 
-			data = self._bus.read_i2c_block_data(0x4d,1)
-			self._current = int(str(data[0]) + str(data[1]))
+			data = self._bus.read_i2c_block_data(0x4d,1) # reads lower byte first
+			self._current = data[0] * 255 + data[1]
 			self._current_q.put_current(self._current)
 			if self.current > self._peak_current: self._peak_current = self._current
 			self.process_measurement_series()

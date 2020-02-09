@@ -1,6 +1,5 @@
 import sys, os
 import numpy as np
-import matplotlib.pyplot as plt
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
@@ -17,9 +16,16 @@ class Current_Sensor_Calibrator():
 
 	def calibrate_current_sensor(self):
 		current_values_multimeter, current_values_adc = self.get_current_values()
-		self.calculate_linear_parameters(current_values_multimeter, current_values_adc)
-		print(self.lin_params)
-		self.output_result()
+		self.save_result(current_values_adc, current_values_multimeter, "table_adc_vs_measurement.csv")
+
+		lin_params = self.calculate_linear_parameters_by_least_squares(current_values_multimeter, current_values_adc)
+		appr_x, appr_y = self.compute_approximated_values(lin_params)
+		self.save_result(appr_x, appr_y, "table_adc_vs_measurement_appr.csv")
+
+		m = self.calculate_m_as_mean(current_values_multimeter, current_values_adc)
+		appr_x, appr_y = self.compute_approximated_values(m)
+		self.save_result(appr_x, appr_y, "table_adc_vs_measurement_appr_m.csv")
+
 
 	def get_current_values(self):
 		current_values_multimeter = []
@@ -82,32 +88,43 @@ class Current_Sensor_Calibrator():
 		self.cur_meas = Current_Measurement(0.05)
 		self.cur_meas.start()
 
-	def calculate_linear_parameters(self, current_values_multimeter, current_values_adc):
+	def calculate_m_as_mean(self, current_values_multimeter, current_values_adc):
+		m = []
+		for current_value_multimeter, current_value_adc in zip(current_values_multimeter, current_values_adc):
+			m.append(current_value_multimeter / current_value_adc)
+		return np.mean(m)
+
+	def calculate_linear_parameters_by_least_squares(self, current_values_multimeter, current_values_adc):
 		list_A = []
+		vector_y = []
+
 		for current_value_adc in current_values_adc:
 			list_A.append([current_value_adc, 1])
-		print(list_A)
+		# print(list_A)
 		matrix_A = np.array(list_A)
-		vector_y = np.array(current_values_multimeter)
+		vector_y.extend(np.array(current_values_multimeter))
 		matrix_At = np.transpose(matrix_A)
-		print(vector_y)
+		# print(vector_y)
 
-		self.lin_params = list(np.linalg.inv(matrix_At.dot(matrix_A)).dot(matrix_At).dot(vector_y))
+		return list(np.linalg.inv(matrix_At.dot(matrix_A)).dot(matrix_At).dot(vector_y))
 
-	def output_result(self):
+	def save_result(self, x_data, y_data, filename):
+		# print("x_data: {}, y_data {}".format(x_data, y_data))
+		with open(filename, "w") as f:
+			for x,y in zip(x_data, y_data):
+				# print("x_data {}, y_data {}\n".format(x_data[index], y_data[index]))
+				f.write("{}, {}\n".format(x,y))
+			f.close()
+
+	def compute_approximated_values(self, lin_params):
+		if not type(lin_params) == list:
+			lin_params = [lin_params, 0]
+		print("lin_params: m = {}, t = {}".format(lin_params[0], lin_params[1]))
 		x = list(range(1000))
-		fitted_y = self.compute_approximated_values(x)
-		plt.figure(num=None, figsize=(10, 6))
-		plt.xlabel('Rounds')
-		plt.ylabel('Points')
-		plt.plot(x, fitted_y, label='fitted', color='red')
-		plot.savefig("calib.png")
-
-	def compute_approximated_values(self, x):
 		y = []
 		for x_instance in x:
-			y.append(self.lin_params[0] * x_instance + self.lin_params[1])
-		return y
+			y.append(lin_params[0] * x_instance + lin_params[1])
+		return x,y
 
 if __name__ == '__main__':
 	CSC = Current_Sensor_Calibrator()
