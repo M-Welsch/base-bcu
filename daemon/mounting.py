@@ -14,13 +14,23 @@ class MountManager:
 		self.b_timeout = config["backup_device_file_timeout"]
 
 	def mount_hdds(self):
+		if not self._backup_hdd_mounted() and self.backup_hdd_available():
+			self._mount_backup_hdd()
+
+		if not self._server_hdd_mounted() and self.server_hdd_available():
+			self._mount_server_hdd()
+
+	def backup_hdd_available(self):
 		try:
 			new_device_files = wait_for_new_device_file(self.b_timeout)
 			# TODO: Ensure that the right HDD is found. (identifier-file?)
+			return True
 		except RuntimeError as e:
 			self._logger.error(e)
-		self._mount_backup_hdd()
-		self._mount_server_hdd()
+			return False
+
+	def server_hdd_available(self):
+		return True # TODO: implement! 
 
 	def unmount_hdds(self):
 		if self._server_hdd_mounted():

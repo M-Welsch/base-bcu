@@ -50,8 +50,10 @@ class Daemon:
 		#raise NotImplementedError
 		# TODO: implement hardware status retrieval
 		# next_bu_time = read_next_scheduled_backup_time()
-		next_bu_time = "leet!"
-		self._hardware_control.display(next_bu_time,2)
+		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
+		next_backup_scheduled = self._scheduler.next_backup_scheduled()
+		next_backup_scheduled_string = next_backup_scheduled.strftime("%d.%m.%Y %H:%M")
+		self._hardware_control.display("{}\nETA {}s".format(next_backup_scheduled_string, seconds_to_next_bu),2)
 
 	def run_as_daemon(self):
 		print("starting daemon...")

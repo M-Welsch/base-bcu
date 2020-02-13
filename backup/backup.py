@@ -26,6 +26,13 @@ class BackupThread(Thread):
 
 	def run(self):
 		start = time()
+
+		self._stop_services_on_nas()
+		self._free_space_on_backup_hdd_if_necessary()
+		self._create_folder_for_backup()
+		self._execute_backup_with_rsync()
+		self._restart_services_on_nas()
+
 		# for line in run_external_command_as_generator(["find", "/"]):
 		for line in run_external_command_as_generator(["grep", "-r", "-i", "e", "/home"]):
 			now = time()
@@ -33,6 +40,33 @@ class BackupThread(Thread):
 				print(line.strip())
 				# show on display
 				start = now
+
+	def _stop_services_on_nas(self):
+		# TODO: Implement
+		# - stop smbd, nginx (nextcloud)
+		pass
+
+	def _free_space_on_backup_hdd_if_necessary(self):
+		while not self.enough_space_for_full_backup():
+			self.delete_oldest_backup()
+
+	def enough_space_for_full_backup(self):
+		pass
+
+	def delete_oldest_backup(self):
+		# leave message in logfile
+		pass
+
+	def _create_folder_for_backup(self):
+		pass
+
+	def _execute_backup_with_rsync(self):
+		pass
+
+	def _restart_services_on_nas(self):
+		# TODO: Implement
+		# - stop smbd, nginx (nextcloud)
+		pass
 
 	def terminate(self):
 		# kill rsync

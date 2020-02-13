@@ -1,4 +1,5 @@
 from schedule import Scheduler as Scheduler
+from datetime import datetime
 
 class BaseScheduler(Scheduler):
 	def __init__(self):
@@ -17,3 +18,11 @@ class BaseScheduler(Scheduler):
 		self.run_pending()
 		result = self.backup_suggested
 		return result
+
+	def next_backup_scheduled(self):
+		# returns datetime-object
+		return self.next_run
+
+	def seconds_to_next_bu(self):
+		seconds_to_next_bu = self.idle_seconds
+		return seconds_to_next_bu

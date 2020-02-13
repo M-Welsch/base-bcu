@@ -5,7 +5,7 @@
 
 import json
 import time
-from threading import Thread, Timer
+from threading import Thread, Timer, get_ident
 from queue import Queue
 
 from base.hwctrl.hw_definitions import *
@@ -15,6 +15,7 @@ from base.hwctrl.lcd import *
 class HWCTRL(Thread):
 	def __init__(self, config, logger):
 		super(HWCTRL, self).__init__()
+
 		self._config = config
 		self._status = {}
 		self._logger = logger
