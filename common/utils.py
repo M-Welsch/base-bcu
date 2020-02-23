@@ -2,6 +2,8 @@ import os
 from time import time, sleep
 from subprocess import run, Popen, PIPE, STDOUT
 
+from paramiko import SSHClient
+
 
 def wait_for_new_device_file(seconds):
 	device_files_before = get_device_files()
@@ -30,6 +32,10 @@ def run_external_command(command, success_msg, error_msg):
 def run_external_command_as_generator(command):
 	p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
 	return iter(p.stdout.readline, b'')
+	
+def run_external_command_as_generator_2(command):
+	p = Popen(command, stdout=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True)
+	return p.stdout
 
 
 def status_quo_not_empty(status_quo):
@@ -48,3 +54,45 @@ def or_up_values(value):
 	else:
 		b += bool(value)
 	return b
+
+
+class SSHInterface:
+	def __init__(self, host, user):
+		self._client = SSHClient()
+		self._client.load_system_host_keys()
+		self._client.connect(host, username=user)
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, *args):
+		self._client.close()
+
+	def run(self, command):
+		stdin, stdout, stderr = self._client.exec_command(command)
+		stderr_lines = "\n".join([line.strip() for line in stderr])
+		if stderr_lines:
+			print(stderr_lines)
+		else:
+			print("".join([line for line in stdout]))
+
+	def run_and_raise(self, command):
+		stdin, stdout, stderr = self._client.exec_command(command)
+		stderr_lines = "\n".join([line.strip() for line in stderr])
+		if stderr_lines:
+			print(stderr_lines)
+			raise RuntimeError(stderr_lines)
+		else:
+			print("".join([line for line in stdout]))
+
+
+def run_commands_over_ssh(host, user, commands):
+	streams = {"stdout": [], "stderr": []}
+	with SSHClient() as client:
+		client.load_system_host_keys()
+		client.connect(host, username=user)
+		for command in commands:
+			stdin, stdout, stderr = client.exec_command(command)
+			streams["stdout"].append([line for line in stdout])
+			streams["stderr"].append([line for line in stderr])
+	return streams

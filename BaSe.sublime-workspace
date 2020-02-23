@@ -520,11 +520,11 @@
 	"buffers":
 	[
 		{
-			"file": "log/2020-02-23_13-36-16.log",
+			"file": "common/utils.py",
 			"settings":
 			{
-				"buffer_size": 1453,
-				"line_ending": "Unix"
+				"buffer_size": 2651,
+				"line_ending": "Windows"
 			}
 		}
 	],
@@ -561,14 +561,25 @@
 	},
 	"expanded_folders":
 	[
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base"
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/backup",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/hwctrl",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/schedule"
 	],
 	"file_history":
 	[
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/daemon.py",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/webapp/webapp.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/backup/backup.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/run_base.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-02-23_13-36-16.log",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/mounting.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/daemon.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common/utils.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/config.json",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/backup/__init__.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common/base_logging.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/webapp/webapp.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common/base_queues.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test/test005_stop_webapp.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test/test004_start_webapp.py",
@@ -606,7 +617,6 @@
 		"/home/max/myproject/myproject.conf",
 		"/home/max/myproject/wsgi.py",
 		"/home/max/Desktop/base_old/backup_server_rev0/backup-program.py",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/config.json",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common/config.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test/test001_mounting.py",
 		"/home/max/ownCloud/Tonne/AwesomePlot/AwesomePlot.py",
@@ -681,28 +691,24 @@
 		"/home/max/ownCloud/Projekte/r_Schnipsel_JavaScript/automatically_add_new_input_field_moreBasic.html",
 		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/confirm_deletion.html",
 		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/test_template.html",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/run_base.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-50-43.log",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-50-08.log",
 		"/home/max/testfile.txt",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-00-46.log",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-02-11.log",
 		"/home/max/Desktop/base/hwctrl/hwctrl.py",
-		"/home/max/Desktop/base/run_base.py",
-		"/home/max/Desktop/base/common/base_logging.py",
-		"/home/max/ownCloud/Projekte/r_Schnipsel_Python/flask_class.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/recipe_data_structures.py",
-		"/home/max/ownCloud/Projekte/r_Schnipsel_Python/test_flask.py"
+		"/home/max/Desktop/base/run_base.py"
 	],
 	"find":
 	{
-		"height": 24.0
+		"height": 40.0
 	},
 	"find_in_files":
 	{
 		"height": 102.0,
 		"where_history":
 		[
+			""
 		]
 	},
 	"find_state":
@@ -710,6 +716,7 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"or_up_values",
 			"manager"
 		],
 		"highlight": true,
@@ -733,24 +740,25 @@
 			[
 				{
 					"buffer": 0,
-					"file": "log/2020-02-23_13-36-16.log",
+					"file": "common/utils.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1453,
+						"buffer_size": 2651,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1453,
-								1453
+								1154,
+								1154
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -839,7 +847,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 256.0,
+	"side_bar_width": 377.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

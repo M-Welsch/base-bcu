@@ -1,13 +1,11 @@
+import sys
+path_to_module = "/home/maxi"
+sys.path.append(path_to_module)
+
 from time import sleep, time
 from threading import Thread
 
-from paramiko import SSHClient
-
-# from base.common.utils import run_external_command_as_generator
-from subprocess import run, Popen, PIPE, STDOUT
-def run_external_command_as_generator(command):
-	p = Popen(command, stdout=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True)
-	return p.stdout
+from base.common.utils import run_external_command_as_generator_2, SSHInterface
 
 
 class BackupManager:
@@ -32,36 +30,24 @@ class BackupThread(Thread):
 		start = time()
 
 		self._stop_services_on_nas()
-		# self._free_space_on_backup_hdd_if_necessary()
-		# self._create_folder_for_backup()
-		# self._execute_backup_with_rsync()
-		# self._restart_services_on_nas()
-
-		# # for line in run_external_command_as_generator(["find", "/"]):
-		# for line in run_external_command_as_generator(["grep", "-r", "-i", "e", "/home"]):
-		# 	now = time()
-		# 	if now - start >= self._sample_interval:
-		# 		print(line.strip())
-		# 		# show on display
-		# 		start = now
+		self._free_space_on_backup_hdd_if_necessary()
+		self._create_folder_for_backup()
+		self._execute_backup_with_rsync()
+		self._restart_services_on_nas()
 
 	def _stop_services_on_nas(self):
-		with SSHClient() as client:
-			client.load_system_host_keys()
-			client.connect(self._ssh_host, username=self._ssh_user)
-			stdin, stdout, stderr = client.exec_command('ls -la')
-			for line in stdout:
-				print(line)
-			print("fertig!")
-			# stdin, stdout, stderr = client.exec_command('systemctl stop smbd')
-			# stdin, stdout, stderr = client.exec_command('systemctl stop nginx')
+		with SSHInterface(self._ssh_host, self._ssh_user) as ssh:
+			ssh.run("echo raspberry | sudo -S systemctl stop smbd")
+			ssh.run("echo raspberry | sudo -S systemctl stop nginx")
 
 	def _free_space_on_backup_hdd_if_necessary(self):
 		while not self.enough_space_for_full_backup():
 			self.delete_oldest_backup()
 
 	def enough_space_for_full_backup(self):
-		pass
+		out = run_external_command_as_generator_2(["df", "--output=avail", "/media/BackupHDD", "|tail", "-n", "1"])  # TODO: Fix (tail doesn't work properly.)
+		print("\n".join([line.strip() for line in out]))
+		return True
 
 	def delete_oldest_backup(self):
 		# leave message in logfile
@@ -73,12 +59,18 @@ class BackupThread(Thread):
 	def _execute_backup_with_rsync(self):
 		"rsync -avHe ssh pi@192.168.0.43:/home/pi . --progress"
 
+		# # for line in run_external_command_as_generator_2(["find", "/"]):
+		# for line in run_external_command_as_generator_2(["grep", "-r", "-i", "e", "/home"]):
+		# 	now = time()
+		# 	if now - start >= self._sample_interval:
+		# 		print(line.strip())
+		# 		# show on display
+		# 		start = now
+
 	def _restart_services_on_nas(self):
-		with SSHClient() as client:
-			client.load_system_host_keys()
-			# client.connect(self._ssh_host, username="pi", password="", key_filename="/home/maxi/.ssh/id_rsa.pub")
-			# stdin, stdout, stderr = client.exec_command('systemctl start smbd')
-			# stdin, stdout, stderr = client.exec_command('systemctl start nginx')
+		with SSHInterface(self._ssh_host, self._ssh_user) as ssh:
+			ssh.run("echo raspberry | sudo -S systemctl start smbd")
+			ssh.run("echo raspberry | sudo -S systemctl start nginx")
 
 	def terminate(self):
 		# kill rsync
@@ -86,5 +78,7 @@ class BackupThread(Thread):
 
 
 if __name__ == "__main__":
+	path_to_module = "/home/maxi"
+	sys.path.append(path_to_module)
 	bm = BackupManager({"sample_interval": 0.2, "ssh_host": "192.168.0.43", "ssh_user": "pi"}, None)
 	bm.backup()
