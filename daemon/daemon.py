@@ -3,6 +3,7 @@ import daemon
 from queue import Queue
 
 from time import sleep
+from typing import Dict, List
 
 from base.common.config import Config
 from base.common.base_logging import Logger
@@ -16,7 +17,7 @@ from base.common.utils import *
 
 
 class Daemon:
-	def __init__(self, autostart_webapp=True, daemonize=True):
+	def __init__(self, autostart_webapp: bool = True, daemonize: bool = True):
 		self._autostart_webapp = autostart_webapp
 		self._command_queue = Queue()
 		self._config = Config("base/config.json")
@@ -32,6 +33,18 @@ class Daemon:
 		else:
 			self.run_not_as_daemon()
 
+	def run_as_daemon(self):
+		print("starting daemon...")
+		self._logger.info("started base as daemon")
+		with daemon.DaemonContext(working_directory=os.getcwd()):
+			# sys.stdout = self._logging_queue fixme
+			# sys.stderr = self._logging_queue fixme
+			self.start_threads_and_mainloop()
+
+	def run_not_as_daemon(self):
+		self._logger.info("started BaSe without daemon (debug-mode)")
+		print("starting daemon (not actually as daemon)...")
+		self.start_threads_and_mainloop()
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -46,28 +59,6 @@ class Daemon:
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
 
-	def get_status(self):
-		#raise NotImplementedError
-		# TODO: implement hardware status retrieval
-		# next_bu_time = read_next_scheduled_backup_time()
-		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
-		next_backup_scheduled = self._scheduler.next_backup_scheduled()
-		next_backup_scheduled_string = next_backup_scheduled.strftime("%d.%m.%Y %H:%M")
-		self._hardware_control.display("{}\nETA {}s".format(next_backup_scheduled_string, seconds_to_next_bu),2)
-
-	def run_as_daemon(self):
-		print("starting daemon...")
-		self._logger.info("started base as daemon")
-		with daemon.DaemonContext(working_directory=os.getcwd()):
-			# sys.stdout = self._logging_queue fixme
-			# sys.stderr = self._logging_queue fixme
-			self.start_threads_and_mainloop()
-
-	def run_not_as_daemon(self):
-		self._logger.info("started BaSe without daemon (debug-mode)")
-		print("starting daemon (not actually as daemon)...")
-		self.start_threads_and_mainloop()
-
 	def mainloop(self):
 		terminate_flag = False
 		while not terminate_flag:
@@ -77,7 +68,7 @@ class Daemon:
 			terminate_flag = self._execute_command_list(command_list)
 		self.stop_threads()
 
-	def _look_up_status_quo(self):
+	def _look_up_status_quo(self) -> Dict:
 		status_quo = {}
 		status_quo["pressed_buttons"] = self._hardware_control.pressed_buttons()
 		status_quo["tcp_commands"] = []
@@ -86,11 +77,12 @@ class Daemon:
 			self._command_queue.task_done()
 		status_quo["backup_scheduled_for_now"] = self._scheduler.is_backup_scheduled()
 		# TODO: consider weather
-		if status_quo_not_empty(status_quo): self._logger.debug("Command Queue contents: {}".format(status_quo))
+		if status_quo_not_empty(status_quo):
+			self._logger.debug(f"Command Queue contents: {status_quo}")
 		return status_quo
 
-
-	def _derive_command_list(self, status_quo):
+	@staticmethod
+	def _derive_command_list(status_quo: Dict) -> List[str]:
 		command_list = []
 		if "test_mounting" in status_quo["tcp_commands"]:
 			return ["dock", "mount"] #Todo: remove "dock"??
@@ -108,10 +100,9 @@ class Daemon:
 			command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
-
 		return command_list
 
-	def _execute_command_list(self, command_list):
+	def _execute_command_list(self, command_list: List[str]) -> bool:
 		for command in command_list:
 			try:
 				if command == "dock":
@@ -119,9 +110,9 @@ class Daemon:
 				elif command == "undock":
 					self._hardware_control.unpower_and_undock()
 				elif command == "mount":
-					self._mount_manager.mount_hdds()
+					self._mount_manager.mount_hdd()
 				elif command == "unmount":
-					self._mount_manager.unmount_hdds()
+					self._mount_manager.unmount_hdd()
 				elif command == "backup":
 					self._scheduler.backup_suggested = False
 					self._backup_manager.backup()
@@ -132,8 +123,17 @@ class Daemon:
 				elif command == "terminate_daemon":
 					return True
 				else:
-					raise RuntimeError("'{}' is not a valid command!".format(command))
+					raise RuntimeError(f"'{command}' is not a valid command!")
 			except Exception as e:
-				self._logger.error("Some command went somehow wrong: {}".format(e))
+				self._logger.error(f"Some command went somehow wrong: {e}")
 				raise e
 		return False
+
+	def get_status(self):
+		#raise NotImplementedError
+		# TODO: implement hardware status retrieval
+		# next_bu_time = read_next_scheduled_backup_time()
+		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
+		next_backup_scheduled = self._scheduler.next_backup_scheduled()
+		next_backup_scheduled_string = next_backup_scheduled.strftime("%d.%m.%Y %H:%M")
+		self._hardware_control.display("{}\nETA {}s".format(next_backup_scheduled_string, seconds_to_next_bu), 2)

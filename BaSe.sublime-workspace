@@ -519,6 +519,14 @@
 	},
 	"buffers":
 	[
+		{
+			"file": "log/2020-02-23_13-36-16.log",
+			"settings":
+			{
+				"buffer_size": 1453,
+				"line_ending": "Unix"
+			}
+		}
 	],
 	"build_system": "",
 	"build_system_choices":
@@ -551,6 +559,10 @@
 		"side_bar_visible": false,
 		"status_bar_visible": false
 	},
+	"expanded_folders":
+	[
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base"
+	],
 	"file_history":
 	[
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/daemon.py",
@@ -716,8 +728,37 @@
 	"groups":
 	[
 		{
+			"selected": 0,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "log/2020-02-23_13-36-16.log",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1453,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1453,
+								1453
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
 			]
 		}
 	],
