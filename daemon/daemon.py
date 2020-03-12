@@ -85,7 +85,7 @@ class Daemon:
 	def _derive_command_list(status_quo: Dict) -> List[str]:
 		command_list = []
 		if "test_mounting" in status_quo["tcp_commands"]:
-			return ["dock", "mount"] #Todo: remove "dock"??
+			return ["mount"] #Todo: remove "dock"??
 		if "test_unmounting" in status_quo["tcp_commands"]:
 			return ["unmount"]
 		if "test_docking" in status_quo["tcp_commands"]:
@@ -100,6 +100,8 @@ class Daemon:
 			command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
+		if command_list:
+			print("command list:", command_list)
 		return command_list
 
 	def _execute_command_list(self, command_list: List[str]) -> bool:
@@ -110,6 +112,7 @@ class Daemon:
 				elif command == "undock":
 					self._hardware_control.unpower_and_undock()
 				elif command == "mount":
+					print("_execute_command_list: mount")
 					self._mount_manager.mount_hdd()
 				elif command == "unmount":
 					self._mount_manager.unmount_hdd()

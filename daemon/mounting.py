@@ -12,6 +12,7 @@ class MountManager:
 		self.b_timeout = config["backup_device_file_timeout"]
 
 	def mount_hdd(self):
+		print("mount_hdd:", self._backup_hdd_mounted(), self._backup_hdd_available())
 		if not self._backup_hdd_mounted() and self._backup_hdd_available():
 			self._mount_backup_hdd()
 
@@ -32,7 +33,7 @@ class MountManager:
 			return False
 
 	def _mount_backup_hdd(self):
-		print("Trying to mount backup HDD...")
+		print("_mount_backup_hdd: Trying to mount backup HDD...")
 		command = ["mount", "-t", self.b_hdd_fsys,
 				   self.b_hdd_device, self.b_hdd_mount]
 		success_msg = "Mounting backup HDD probably successful."
