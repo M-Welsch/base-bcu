@@ -526,6 +526,24 @@
 				"buffer_size": 2651,
 				"line_ending": "Windows"
 			}
+		},
+		{
+			"file": "hwctrl/hwctrl.py",
+			"settings":
+			{
+				"buffer_size": 6152,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_Python/mytimer.py",
+			"settings":
+			{
+				"buffer_size": 645,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
 		}
 	],
 	"build_system": "",
@@ -561,15 +579,12 @@
 	},
 	"expanded_folders":
 	[
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/backup",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/hwctrl",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/schedule"
+		"/home/max/Desktop/base",
+		"/home/max/Desktop/base/hwctrl"
 	],
 	"file_history":
 	[
+		"/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_Python/input_nonblocking.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/backup/backup.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/run_base.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-02-23_13-36-16.log",
@@ -696,8 +711,7 @@
 		"/home/max/testfile.txt",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-00-46.log",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-02-11.log",
-		"/home/max/Desktop/base/hwctrl/hwctrl.py",
-		"/home/max/Desktop/base/run_base.py"
+		"/home/max/Desktop/base/hwctrl/hwctrl.py"
 	],
 	"find":
 	{
@@ -735,7 +749,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -764,7 +778,64 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "hwctrl/hwctrl.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6152,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								374,
+								374
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
 					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_Python/mytimer.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 645,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								327,
+								327
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
 					"type": "text"
 				}
 			]
