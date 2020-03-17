@@ -45,11 +45,33 @@ class BackupThread(Thread):
 			self.delete_oldest_backup()
 
 	def enough_space_for_full_backup(self):
-		out = run_external_command_as_generator_2(["df", "--output=avail", "/media/BackupHDD", "|tail", "-n", "1"])  # TODO: Fix (tail doesn't work properly.)
-		print("\n".join([line.strip() for line in out]))
-		return True
+		out = run_external_command_as_generator_2(["df", "--output=avail", "/media/BackupHDD"])
+		free_space_on_bu_hdd = self.remove_heading_from_df_output(out)
+		space_needed_for_full_bu = self.space_occupied_on_nas_hdd()
+		print("Space free on BU HDD: {}, Space needed: {}".format(free_space_on_bu_hdd, space_needed_for_full_bu))
+		#self._logger.info("Space free on BU HDD: {}, Space needed: {}".format(free_space_on_bu_hdd, space_needed_for_full_bu))
+		if free_space_on_bu_hdd > space_needed_for_full_bu:
+			return True
+		else:
+			return False
+
+	def remove_heading_from_df_output(self, df_output):
+		df_output_cleaned = ""
+		for line in df_output:
+			if not line.strip() == "Avail":
+				df_output_cleaned = int(line.strip())
+		return int(df_output_cleaned)
+
+
+	def space_occupied_on_nas_hdd(self):
+		with SSHInterface(self._ssh_host, self._ssh_user) as ssh:
+			space_occupied = int(ssh.run_and_raise('df --output="used" /media/HDD | tail -n 1'))
+		return space_occupied
+
 
 	def delete_oldest_backup(self):
+		oldest_backup = get_oldest_backup()
+		print("deleting {} to free space for new backup".format(oldest_backup))
 		# leave message in logfile
 		pass
 

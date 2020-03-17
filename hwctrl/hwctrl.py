@@ -171,9 +171,9 @@ class LCD(Adafruit_CharLCD):
 		self._default_brightness = default_brightness
 		self._current_brightness = default_brightness
 		self._display_PWM = pin_interface.display_PWM
-		self._timer = Timer()
+		self._timer = Timer(10, lambda: self._dim(0))
 		self.clear()
-		self.message("Display up\nand ready")
+		self.display("Display up\nand ready",10)
 
 	@property
 	def current_brightness(self):
@@ -187,7 +187,8 @@ class LCD(Adafruit_CharLCD):
 	def _set_dim_timer(self, duration):
 		if self._timer.isAlive():
 			self._timer.cancel()
-		self._timer = Timer(duration, lambda: self._dim(0)).start()
+		self._timer = Timer(duration, lambda: self._dim(0))
+		self._timer.start()
 
 	def _write(self, message):
 		self.clear()

@@ -140,3 +140,5 @@ class Daemon:
 		next_backup_scheduled = self._scheduler.next_backup_scheduled()
 		next_backup_scheduled_string = next_backup_scheduled.strftime("%d.%m.%Y %H:%M")
 		self._hardware_control.display("{}\nETA {}s".format(next_backup_scheduled_string, seconds_to_next_bu), 2)
+
+		backups_present = list_backups_by_age() # TODO: send to Webapp if it asks for status ...

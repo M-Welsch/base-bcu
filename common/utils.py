@@ -4,7 +4,7 @@ from subprocess import run, Popen, PIPE, STDOUT
 
 from paramiko import SSHClient
 
-
+# depreached
 def wait_for_new_device_file(seconds):
 	device_files_before = get_device_files()
 	for i in range(seconds):
@@ -18,6 +18,18 @@ def wait_for_new_device_file(seconds):
 def get_device_files():
 	all_device_files = os.listdir("/dev/")
 	return [f for f in all_device_files if f.startswith("sd")]
+
+
+def wait_for_device_file(device_file, timeout):
+	for counter in range(timeout):
+		if device_file_present(device_file):
+			return True
+		sleep(1)
+	return False
+
+
+def device_file_present(device_file):
+	return os.path.exists(device_file)
 
 
 def run_external_command(command, success_msg, error_msg):
@@ -55,6 +67,22 @@ def or_up_values(value):
 		b += bool(value)
 	return b
 
+def list_backups_by_age(bu_location):
+	# lowest index is the oldest
+	list_of_backups = []
+	for file in os.listdir(bu_location):
+		if file.startswith("backup"):
+			list_of_backups.append(file)
+	list_of_backups.sort()
+	return list_of_backups
+
+def get_oldest_backup():
+	backups = list_backups_by_age()
+	if backups:
+		return backups[0]
+	else:
+		raise RuntimeError("'get_oldest_backup': no backup done yet!")
+
 
 class SSHInterface:
 	def __init__(self, host, user):
@@ -69,21 +97,26 @@ class SSHInterface:
 		self._client.close()
 
 	def run(self, command):
+		response_stdout = ""
+		response_stderr = ""
 		stdin, stdout, stderr = self._client.exec_command(command)
 		stderr_lines = "\n".join([line.strip() for line in stderr])
 		if stderr_lines:
-			print(stderr_lines)
+			response_stderr = "".join([line for line in stderr])
+			if response_stderr:
+				print("Unraised Error in 'SSHInterface.run': {}".format(response_stderr))
 		else:
-			print("".join([line for line in stdout]))
+			response_stdout = "".join([line for line in stdout])
+		return response_stdout
+
 
 	def run_and_raise(self, command):
 		stdin, stdout, stderr = self._client.exec_command(command)
 		stderr_lines = "\n".join([line.strip() for line in stderr])
 		if stderr_lines:
-			print(stderr_lines)
 			raise RuntimeError(stderr_lines)
 		else:
-			print("".join([line for line in stdout]))
+			return "".join([line for line in stdout])
 
 
 def run_commands_over_ssh(host, user, commands):

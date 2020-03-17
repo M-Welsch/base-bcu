@@ -1,6 +1,6 @@
 from os import path
 
-from base.common.utils import wait_for_new_device_file, run_external_command
+from base.common.utils import wait_for_device_file, run_external_command, list_backups_by_age
 
 
 class MountManager:
@@ -25,7 +25,7 @@ class MountManager:
 
 	def _backup_hdd_available(self):
 		try:
-			new_device_files = wait_for_new_device_file(self.b_timeout)
+			wait_for_device_file(self.b_hdd_device, self.b_timeout)
 			# TODO: Ensure that the right HDD is found. (identifier-file?)
 			return True
 		except RuntimeError as e:
