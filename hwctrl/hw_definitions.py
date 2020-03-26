@@ -96,7 +96,7 @@ class Pin_Assignment():
 	def hw_Rev1_nRev2(self):
 		return self.Pin_hw_Rev1_nRev2[self.hw_rev]
 
-class PinInterface:
+class PinInterface():
 	def __init__(self, display_default_brightness, display_default_pw=80):
 		GPIO.setmode(GPIO.BOARD)
 		hw_rev = self.get_hw_revision()
@@ -172,25 +172,20 @@ class PinInterface:
 	def button_1_pin_high(self):
 		return GPIO.input(self.pin.button_1)
 	
-	@staticmethod
-	def activate_hdd_pin():
+	def activate_hdd_pin(self):
 		GPIO.output(self.pin.SW_HDD_ON, GPIO.HIGH)
 
-	@staticmethod
-	def deactivate_hdd_pin():
+	def deactivate_hdd_pin(self):
 		GPIO.output(self.pin.SW_HDD_ON, GPIO.LOW)
 	
-	@staticmethod
-	def set_motor_pins_for_braking():
+	def set_motor_pins_for_braking(self):
 		GPIO.output(self.pin.Motordriver_L, GPIO.LOW)
 		GPIO.output(self.pin.Motordriver_R, GPIO.LOW)
 	
-	@staticmethod
-	def set_motor_pins_for_docking():
+	def set_motor_pins_for_docking(self):
 		GPIO.output(self.pin.Motordriver_L, GPIO.HIGH)
 		GPIO.output(self.pin.Motordriver_R, GPIO.LOW)
 
-	@staticmethod
-	def set_motor_pins_for_undocking():
+	def set_motor_pins_for_undocking(self):
 		GPIO.output(self.pin.Motordriver_L, GPIO.LOW)
 		GPIO.output(self.pin.Motordriver_R, GPIO.HIGH)
