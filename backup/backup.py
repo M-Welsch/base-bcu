@@ -28,6 +28,8 @@ class BackupThread(Thread):
 
 	def run(self):
 		start = time()
+		
+		# TODO: check if nas is available at some point ...
 
 		self._stop_services_on_nas()
 		self._free_space_on_backup_hdd_if_necessary()

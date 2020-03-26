@@ -1,13 +1,28 @@
+import time
+from base.hwctrl.current_measurement import Current_Measurement
+
 class DockUndock():
-	def __init__(self, pin_interface, hw_rev):
+	def __init__(self, pin_interface, display, logger, config, hw_rev):
 		self.hw_rev = hw_rev
 		self.pin_interface = pin_interface
+		self.display = display
+		self._logger = logger
+		self._config = config
+
+		self.maximum_docking_time = self._config["maximum_docking_time"]
+		self.docking_overcurrent_limit = self._config["docking_overcurrent_limit"]
 
 	def dock(self):
 		if self.hw_rev == 'rev1':
 			self.dock_rev1()
 		if self.hw_rev == 'rev2':
 			self.dock_rev2()
+
+	def undock(self):
+		if self.hw_rev == 'rev1':
+			self.undock_rev1()
+		if self.hw_rev == 'rev2':
+			self.undock_rev2()
 
 	def dock_rev1(self):
 		if self.docked():
@@ -34,7 +49,7 @@ class DockUndock():
 				print("Overcurrent!!")
 
 			self.display("Docking ...\n {:.2f}s, {:.2f}mA".format(timeDiff, current), 10)
-			sleep(0.1)
+			time.sleep(0.1)
 
 		self.pin_interface.set_motor_pins_for_braking()
 
@@ -46,3 +61,55 @@ class DockUndock():
 
 		print("Docking Timeout !!!" if flag_docking_timeout else "Docked in %i seconds" % timeDiff)
 		self._logger.error("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
+
+	def dock_rev2(self):
+		raise NotImplementedError
+
+	def undock_rev1(self):
+		if self.undocked():
+			self._logger.warning("Tried to undock, but end-switch was already pressed. Skipping undock process.")
+			return
+		self.display("Undocking ...", self.maximum_docking_time + 1)
+		start_time = time.time()
+		self.cur_meas = Current_Measurement(0.1)
+		self.cur_meas.start()
+		self.pin_interface.set_motor_pins_for_undocking()
+
+		timeDiff = 0
+		flag_overcurrent = False
+		flag_docking_timeout = False
+		while(self.pin_interface.undocked_sensor_pin_high and not flag_docking_timeout and not flag_overcurrent):
+			timeDiff = time.time()-start_time
+			if timeDiff > self.maximum_docking_time:
+				flag_docking_timeout = True
+
+			current = self.cur_meas.current
+			if current > self.docking_overcurrent_limit:
+				print("Overcurrent!!")
+
+			self.display("Undocking ...\n {:.2f}s, {:.2f}mA".format(timeDiff, current), 10)
+			time.sleep(0.1)
+
+		self.pin_interface.set_motor_pins_for_braking()
+
+		peak_current = self.cur_meas.peak_current
+		avg_current = self.cur_meas.avg_current_10sec
+		self.cur_meas.terminate()
+
+		print("maximum current: {:.2f}, avg_current_10sec: {:.2f}".format(peak_current, avg_current))
+
+		self._logger.error("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
+
+		if flag_docking_timeout:
+			print("Undocking Timeout !!!")
+		else:
+			print("Undocked in %i seconds" % timeDiff)
+
+	def undock_rev2(self):
+		raise NotImplementedError
+
+	def docked(self):
+		return not self.pin_interface.docked_sensor_pin_high
+
+	def undocked(self):
+		return not self.pin_interface.undocked_sensor_pin_high
