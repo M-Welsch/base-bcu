@@ -11,6 +11,7 @@ from queue import Queue
 from base.hwctrl.hw_definitions import *
 from base.hwctrl.current_measurement import Current_Measurement
 from base.hwctrl.lcd import *
+from base.hwctrl.dock_undock import *
 
 class HWCTRL(Thread):
 	def __init__(self, config, logger):
@@ -30,6 +31,15 @@ class HWCTRL(Thread):
 		self.pin_interface = PinInterface(int(self._config["display_default_brightness"]))
 		self.lcd = LCD(int(self._config["display_default_brightness"]), self.pin_interface)
 		self.display = self.lcd.display
+
+		hw_rev = self.get_hw_revision()
+		self.dock_undock = DockUndock(self.pin_interface, hw_rev)
+
+
+	def get_hw_revision(self):
+		hw_rev = self.pin_interface.get_hw_revision()
+		print("HWCTRL recognized HW {}".format(hw_rev))
+		return hw_rev
 
 	def run(self):
 		while not self.exitflag:
