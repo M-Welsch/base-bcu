@@ -27,14 +27,19 @@ class HWCTRL(Thread):
 
 		self.maximum_docking_time = self._config["maximum_docking_time"]
 		self.docking_overcurrent_limit = self._config["docking_overcurrent_limit"]
-		
-		self.pin_interface = PinInterface(int(self._config["display_default_brightness"]))
-		self.lcd = LCD(int(self._config["display_default_brightness"]), self.pin_interface)
-		self.display = self.lcd.display
 
+		self.pin_interface = PinInterface(int(self._config["display_default_brightness"]))
 		hw_rev = self.get_hw_revision()
+		self.init_display(hw_rev)
 		self.dock_undock = DockUndock(self.pin_interface, self.display, self._logger, self._config, hw_rev)
 
+	def init_display(self, hw_rev):
+		if hw_rev == "rev2":
+			self.lcd = LCD(int(self._config["display_default_brightness"]), self.pin_interface)
+			self.display = self.lcd.display
+		if hw_rev == "rev3":
+			print("Display control via SBC ... not implemented yet!")
+			self.display = None
 
 	def get_hw_revision(self):
 		hw_rev = self.pin_interface.get_hw_revision()

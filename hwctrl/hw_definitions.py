@@ -1,4 +1,5 @@
 import RPi.GPIO as GPIO
+from time import sleep
 
 class Pin_Assignment():
 	def __init__(self, hw_rev):
@@ -115,6 +116,10 @@ class PinInterface():
 			GPIO.output(self.pin.Motordriver_L, GPIO.LOW)
 			GPIO.output(self.pin.Motordriver_R, GPIO.LOW)
 
+			GPIO.setup(self.pin.Dis_PWM_Gate, GPIO.OUT)
+			self.display_PWM = GPIO.PWM(self.pin.Dis_PWM_Gate, display_default_pw)
+			self.display_PWM.start(display_default_brightness)
+
 		if hw_rev == 'rev3':
 			GPIO.setup(self.pin.Stepper_Step, GPIO.OUT)
 			GPIO.setup(self.pin.Stepper_Dir, GPIO.OUT)
@@ -129,11 +134,6 @@ class PinInterface():
 		GPIO.setup(self.pin.nSensor_Undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(self.pin.button_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(self.pin.button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-
-		GPIO.setup(self.pin.Dis_PWM_Gate, GPIO.OUT)
-		self.display_PWM = GPIO.PWM(self.pin.Dis_PWM_Gate, display_default_pw)
-		self.display_PWM.start(display_default_brightness)
 
 	def get_hw_revision(self):
 		GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -168,6 +168,14 @@ class PinInterface():
 		return GPIO.input(self.pin.nSensor_Docked)
 
 	@property
+	def docked(self):
+		return not GPIO.input(self.pin.nSensor_Docked)
+
+	@property
+	def undocked(self):
+		return not GPIO.input(self.pin.nSensor_Undocked)
+
+	@property
 	def undocked_sensor_pin_high(self):
 		return GPIO.input(self.pin.nSensor_Undocked)
 
@@ -196,3 +204,40 @@ class PinInterface():
 	def set_motor_pins_for_undocking(self):
 		GPIO.output(self.pin.Motordriver_L, GPIO.LOW)
 		GPIO.output(self.pin.Motordriver_R, GPIO.HIGH)
+
+	def stepper_driver_on(self):
+		self.set_nreset_pin_high()
+
+	def stepper_driver_off(self):
+		self.set_nreset_pin_low()
+
+	def set_nreset_pin_high(self):
+		GPIO.output(self.pin.Stepper_nReset, GPIO.HIGH)
+
+	def set_nreset_pin_low(self):
+		GPIO.output(self.pin.Stepper_nReset, GPIO.LOW)
+
+	def stepper_step(self):
+		# TODO: Ramp
+		self.set_step_pin_high()
+		sleep(0.001)
+		self.set_step_pin_low()
+		sleep(0.001)	
+
+	def set_step_pin_high(self):
+		GPIO.output(self.pin.Stepper_Step, GPIO.HIGH)
+	
+	def set_step_pin_low(self):
+		GPIO.output(self.pin.Stepper_Step, GPIO.LOW)
+
+	def stepper_direction_docking(self):
+		self.set_direction_pin_low()
+
+	def stepper_direction_undocking(self):
+		self.set_direction_pin_high()
+
+	def set_direction_pin_high(self):
+		GPIO.output(self.pin.Stepper_Dir, GPIO.HIGH)
+
+	def set_direction_pin_low(self):
+		GPIO.output(self.pin.Stepper_Dir, GPIO.LOW)

@@ -9,6 +9,7 @@ from base.common.config import Config
 class Stepper_Tester():
 	def test_docking(self):
 		_hardware_control.dock()
+		_hardware_control.undock()
 
 
 if __name__ == "__main__":
