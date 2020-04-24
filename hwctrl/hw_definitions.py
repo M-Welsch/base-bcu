@@ -105,6 +105,7 @@ class Pin_Assignment():
 
 class PinInterface():
 	def __init__(self, display_default_brightness, display_default_pw=80):
+		self.step_interval_initial = 0.001 # this kind of disables the ramp. It sounds best ...
 		GPIO.setmode(GPIO.BOARD)
 		hw_rev = self.get_hw_revision()
 		self.pin = Pin_Assignment(hw_rev)
@@ -134,6 +135,7 @@ class PinInterface():
 		GPIO.setup(self.pin.nSensor_Undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(self.pin.button_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(self.pin.button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
 
 	def get_hw_revision(self):
 		GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -207,9 +209,11 @@ class PinInterface():
 
 	def stepper_driver_on(self):
 		self.set_nreset_pin_high()
+		self.step_interval = self.step_interval_initial
 
 	def stepper_driver_off(self):
 		self.set_nreset_pin_low()
+		self.step_interval = self.step_interval_initial
 
 	def set_nreset_pin_high(self):
 		GPIO.output(self.pin.Stepper_nReset, GPIO.HIGH)
@@ -218,11 +222,13 @@ class PinInterface():
 		GPIO.output(self.pin.Stepper_nReset, GPIO.LOW)
 
 	def stepper_step(self):
-		# TODO: Ramp
 		self.set_step_pin_high()
-		sleep(0.001)
+		sleep(self.step_interval)
 		self.set_step_pin_low()
-		sleep(0.001)	
+		sleep(self.step_interval)
+
+		if self.step_interval > 0.0005:
+			self.step_interval = self.step_interval/1.2
 
 	def set_step_pin_high(self):
 		GPIO.output(self.pin.Stepper_Step, GPIO.HIGH)

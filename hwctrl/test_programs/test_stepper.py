@@ -5,10 +5,12 @@ sys.path.append(path_to_module)
 from base.hwctrl.hwctrl import HWCTRL
 from base.common.base_logging import Logger
 from base.common.config import Config
+from time import sleep
 
 class Stepper_Tester():
 	def test_docking(self):
 		_hardware_control.dock()
+		sleep(1)
 		_hardware_control.undock()
 
 

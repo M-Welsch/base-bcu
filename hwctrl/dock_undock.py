@@ -2,8 +2,11 @@ import time
 from base.hwctrl.current_measurement import Current_Measurement
 
 class DockingError(Exception):
-	def __init__(self):
-		pass
+	def __init__(self, message):
+		self.message = message
+
+	def __str__(self):
+		return(repr(self.message))
 
 class DockUndock():
 	def __init__(self, pin_interface, display, logger, config, hw_rev):
@@ -17,16 +20,25 @@ class DockUndock():
 		self.docking_overcurrent_limit = self._config["docking_overcurrent_limit"]
 
 	def dock(self):
-		if self.hw_rev == 'rev2':
-			self.dock_rev2()
-		if self.hw_rev == 'rev3':
-			self.dock_rev3()
+		try:
+			if self.hw_rev == 'rev2':
+				self.dock_rev2()
+			if self.hw_rev == 'rev3':
+				self.dock_rev3()
+		except DockingError as e:
+			self._logger.error(e)
+			print(e)
 
 	def undock(self):
-		if self.hw_rev == 'rev2':
-			self.undock_rev2()
-		if self.hw_rev == 'rev3':
-			self.undock_rev3()
+		try:
+			if self.hw_rev == 'rev2':
+				self.undock_rev2()
+			if self.hw_rev == 'rev3':
+				self.undock_rev3()
+				self.dock_rev3()
+		except DockingError as e:
+			self._logger.error(e)
+			print(e)
 
 	def dock_rev2(self):
 		if self.docked():
@@ -87,8 +99,10 @@ class DockUndock():
 		self.pin_interface.stepper_driver_off()
 
 	def check_for_timeout(self, time_start):
-		if time.time() - time_start > self.maximum_docking_time:
-			raise DockingError
+		diff_time = time.time() - time_start
+		if diff_time > self.maximum_docking_time:
+			self.pin_interface.stepper_driver_off()
+			raise DockingError("Maximum Docking Time exceeded: {}".format(diff_time))
 
 	def undock_rev2(self):
 		if self.undocked():
