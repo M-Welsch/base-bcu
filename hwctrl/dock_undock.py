@@ -1,6 +1,13 @@
 import time
 from base.hwctrl.current_measurement import Current_Measurement
 
+class DockingError(Exception):
+	def __init__(self, message):
+		self.message = message
+
+	def __str__(self):
+		return(repr(self.message))
+
 class DockUndock():
 	def __init__(self, pin_interface, display, logger, config, hw_rev):
 		self.hw_rev = hw_rev
@@ -13,18 +20,27 @@ class DockUndock():
 		self.docking_overcurrent_limit = self._config["docking_overcurrent_limit"]
 
 	def dock(self):
-		if self.hw_rev == 'rev1':
-			self.dock_rev1()
-		if self.hw_rev == 'rev2':
-			self.dock_rev2()
+		try:
+			if self.hw_rev == 'rev2':
+				self.dock_rev2()
+			if self.hw_rev == 'rev3':
+				self.dock_rev3()
+		except DockingError as e:
+			self._logger.error(e)
+			print(e)
 
 	def undock(self):
-		if self.hw_rev == 'rev1':
-			self.undock_rev1()
-		if self.hw_rev == 'rev2':
-			self.undock_rev2()
+		try:
+			if self.hw_rev == 'rev2':
+				self.undock_rev2()
+			if self.hw_rev == 'rev3':
+				self.undock_rev3()
+				self.dock_rev3()
+		except DockingError as e:
+			self._logger.error(e)
+			print(e)
 
-	def dock_rev1(self):
+	def dock_rev2(self):
 		if self.docked():
 			self._logger.warning("Tried to dock, but end-switch was already pressed. Skipping dock process.")
 			return
@@ -62,10 +78,33 @@ class DockUndock():
 		print("Docking Timeout !!!" if flag_docking_timeout else "Docked in %i seconds" % timeDiff)
 		self._logger.error("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
-	def dock_rev2(self):
-		raise NotImplementedError
+	def dock_rev3(self):
+		self.pin_interface.stepper_driver_on()
+		self.pin_interface.stepper_direction_docking()
 
-	def undock_rev1(self):
+		time_start = time.time()
+		while not self.pin_interface.docked:
+			self.check_for_timeout(time_start)
+			self.pin_interface.stepper_step()
+		self.pin_interface.stepper_driver_off()
+
+	def undock_rev3(self):
+		self.pin_interface.stepper_driver_on()
+		self.pin_interface.stepper_direction_undocking()
+
+		time_start = time.time()
+		while not self.pin_interface.undocked:
+			self.check_for_timeout(time_start)
+			self.pin_interface.stepper_step()
+		self.pin_interface.stepper_driver_off()
+
+	def check_for_timeout(self, time_start):
+		diff_time = time.time() - time_start
+		if diff_time > self.maximum_docking_time:
+			self.pin_interface.stepper_driver_off()
+			raise DockingError("Maximum Docking Time exceeded: {}".format(diff_time))
+
+	def undock_rev2(self):
 		if self.undocked():
 			self._logger.warning("Tried to undock, but end-switch was already pressed. Skipping undock process.")
 			return
@@ -104,9 +143,6 @@ class DockUndock():
 			print("Undocking Timeout !!!")
 		else:
 			print("Undocked in %i seconds" % timeDiff)
-
-	def undock_rev2(self):
-		raise NotImplementedError
 
 	def docked(self):
 		return not self.pin_interface.docked_sensor_pin_high

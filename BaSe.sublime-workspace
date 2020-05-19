@@ -4,6 +4,118 @@
 		"selected_items":
 		[
 			[
+				"dock",
+				"dock_undock"
+			],
+			[
+				"mount",
+				"mounting_config"
+			],
+			[
+				"rev",
+				"rw_Rev1_nRev2"
+			],
+			[
+				"Stepper",
+				"Stepper_nReset"
+			],
+			[
+				"Stepp",
+				"Stepper_Dir"
+			],
+			[
+				"Mor",
+				"Motordriver_R"
+			],
+			[
+				"Moro",
+				"Motordriver_L"
+			],
+			[
+				"Dis_",
+				"Dis_PWM_Gate"
+			],
+			[
+				"nSen",
+				"nSensor_Undocked"
+			],
+			[
+				"pin",
+				"pin_assignemt"
+			],
+			[
+				"get",
+				"get_hw_revision"
+			],
+			[
+				"pull",
+				"pull_up_down"
+			],
+			[
+				"stepper",
+				"stepper_nReset"
+			],
+			[
+				"end",
+				"endswitch_undocked"
+			],
+			[
+				"endw",
+				"endswitch_docked"
+			],
+			[
+				"endsw",
+				"endswitch_undocked"
+			],
+			[
+				"step",
+				"stepper_step"
+			],
+			[
+				"Pin",
+				"PinInterface"
+			],
+			[
+				"setu",
+				"setup_endswitches_with_pullups"
+			],
+			[
+				"list",
+				"list_backups_by_age"
+			],
+			[
+				"backups_by",
+				"list_backups_by_age"
+			],
+			[
+				"free",
+				"free_space_on_bu_hdd"
+			],
+			[
+				"space",
+				"space_needed_for_full_bu"
+			],
+			[
+				"res",
+				"response_stderr"
+			],
+			[
+				"response",
+				"response_sterr"
+			],
+			[
+				"df_",
+				"df_output_cleaned"
+			],
+			[
+				"bu",
+				"bu_hdd_file_name"
+			],
+			[
+				"dev",
+				"device_files"
+			],
+			[
 				"all_re",
 				"all_recipes_with_ingredients"
 			],
@@ -90,10 +202,6 @@
 			[
 				"sl_",
 				"sl_names"
-			],
-			[
-				"get",
-				"get_all_shopping_lists"
 			],
 			[
 				"all_rec",
@@ -406,145 +514,11 @@
 			[
 				"log",
 				"logic_levels"
-			],
-			[
-				"fla",
-				"flag_level_change"
-			],
-			[
-				"out",
-				"output_string"
-			],
-			[
-				"EN",
-				"ENC_B"
-			],
-			[
-				"conve",
-				"convert_to_nd_dict"
-			],
-			[
-				"dock",
-				"flag_docking_timeout"
-			],
-			[
-				"time",
-				"timeDiff"
-			],
-			[
-				"st",
-				"stop_current_measurement"
-			],
-			[
-				"cur",
-				"cur_meas"
-			],
-			[
-				"Curr",
-				"Current_Measurement"
-			],
-			[
-				"lcd",
-				"lcd_string"
-			],
-			[
-				"mai",
-				"mainloop_counter"
-			],
-			[
-				"main",
-				"mainloop_counter2"
-			],
-			[
-				"waber",
-				"waberung_brightness"
-			],
-			[
-				"waberung",
-				"waberung_brightness"
-			],
-			[
-				"vol",
-				"voltage_to_set"
-			],
-			[
-				"set",
-				"set_poti_to_value"
-			],
-			[
-				"i2c_st",
-				"i2c_stop"
-			],
-			[
-				"AD",
-				"AD5272_WRITE"
-			],
-			[
-				"wab",
-				"waberung_depth"
-			],
-			[
-				"upd",
-				"update_adc_values"
-			],
-			[
-				"nS",
-				"nSensor_Undocked"
-			],
-			[
-				"button",
-				"button_pressed"
-			],
-			[
-				"S",
-				"nSensor_Docked"
-			],
-			[
-				"gp",
-				"gpio_pins"
-			],
-			[
-				"gpi",
-				"gpio_pins"
-			],
-			[
-				"gpio",
-				"gpio_pin"
-			],
-			[
-				"refre",
-				"refresh_interval"
 			]
 		]
 	},
 	"buffers":
 	[
-		{
-			"file": "common/utils.py",
-			"settings":
-			{
-				"buffer_size": 2651,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "hwctrl/hwctrl.py",
-			"settings":
-			{
-				"buffer_size": 6152,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_Python/mytimer.py",
-			"settings":
-			{
-				"buffer_size": 645,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		}
 	],
 	"build_system": "",
 	"build_system_choices":
@@ -580,18 +554,84 @@
 	"expanded_folders":
 	[
 		"/home/max/Desktop/base",
+		"/home/max/Desktop/base/backup",
+		"/home/max/Desktop/base/daemon",
 		"/home/max/Desktop/base/hwctrl"
 	],
 	"file_history":
 	[
-		"/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_Python/input_nonblocking.py",
+		"/home/max/Desktop/base/hwctrl/test_programs/test_stepper.py",
+		"/home/max/Desktop/base/hwctrl/hwctrl.py",
+		"/home/max/Desktop/base/daemon/daemon.py",
+		"/home/max/ownCloud/Notizen/200_Nicht_Projektbezogen/220_Software/226_Embedded_MCU/r_Atmega8 Funktionstests/Tutorials_ausm_Netz/AVR-Programming/Chapter15_Advanced-Motors/stepperWorkout/stepperWorkout.c",
+		"/home/max/ownCloud/2transfer/BaSe_Zusammenbau v30.stl",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.41/home/pi/minecraft/start.sh",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.41/home/pi/minecraft/crash-reports/crash-2020-04-16_21.03.00-server.txt",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.41/home/pi/minecraft/plugins/LimitPillagers/config.yml",
+		"/home/max/Desktop/base/hwctrl/hw_definitions.py",
+		"/home/max/ownCloud/Tonne/p_BackupServer/Hardware/Schaltplan/rev3_mitStepper/BaSe_SATA_Adapter_Carriage_V1_0/BaSe_SATA_Adapter_Carriage_V1_0.step",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.34/home/pi/spi_display_test/show_me.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.34/home/pi/spi_display_test/show_text.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.34/home/pi/spi_display_test/show_sysinfo.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.34/home/pi/spi_display_test/heltec.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.34/home/pi/spi_display_test/show_text_heltec.py",
+		"/home/max/ownCloud/Tonne/p_BackupServer/Hardware/Schaltplan/rev3_mitStepper/BaSe_SATA_Adapter_V1_0/BaSe_SATA_Adapter_V1_0/BaSe_SATA_Adapter_V1_0.step",
+		"/home/max/ownCloud/Bauteile/300_3D/10_Elektronik/Banana Pi.stp",
+		"/home/max/ownCloud/Tonne/p_BackupServer/Hardware/Schaltplan/rev3_mitStepper/BaSe_PWR_V3_0/sym-lib-table",
+		"/home/max/ownCloud/Tonne/p_BackupServer/Hardware/Schaltplan/rev3_mitStepper/BaSe_PWR_V3_1/sym-lib-table",
+		"/home/max/Desktop/remove_old_snaps.sh",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/Boms-Away/bomsaway.py",
+		"/home/max/ownCloud/Bauteile/300_3D/10_Elektronik/11_Steckverbinder/SATA_FEMALE_3M_Vertical5622-2222-XX_step.stp",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.41/home/pi/minecraft/crash-reports/crash-2020-04-07_23.09.12-server.txt",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.41/home/pi/minecraft/crash-reports/crash-2020-04-08_20.30.30-server.txt",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.41/home/pi/minecraft/logs/latest.log",
+		"/home/max/Desktop/minecraft_server/2020_04_08_Server/world/region/r.1.-2.mca",
+		"/home/max/ownCloud/Tonne/p_BackupServer/Hardware/Schaltplan/rev3_mitStepper/BaSe_PWR_V3_0/for_step_export.step",
+		"/home/max/ownCloud/Tonne/p_BackupServer/Hardware/Schaltplan/rev3_mitStepper/BackupServer",
+		"/home/max/ownCloud/Tonne/p_BackupServer/Hardware/Schaltplan/rev3_mitStepper/BaSe_HMI_V1_0/BaSe_HMI_V1_0/BaSe_HMI_V1_0.step",
+		"/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_c_mcu/rtc_ds1302/Bitte Lesen.txt",
+		"/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_c_mcu/rtc_ds1302/ds1302.c",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/KiCad_BOM_Wizard/Doc/shortcode.md",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/hwctrl/dock_undock.py",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/Boms-Away/boms_away/plugin_loader.py",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/Boms-Away/boms_away/datastore.py",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/Boms-Away/boms_away/kicad_helpers.py",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/Boms-Away/boms_away/sch.py",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/KiCad_BOM_Wizard/README.md",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/KiCad_BOM_Wizard/FAQ.md",
+		"/home/max/ownCloud/Projekte/KiCAD_Plugins/Boms-Away/boms_away/__init__.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/hwctrl/hwctrl.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/backup/backup.py",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/run_base.py",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-02-23_13-36-16.log",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/mounting.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/hwctrl/hw_definitions.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/daemon.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.16/home/pi/base/hwctrl/dock_undock.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.16/home/pi/base/hwctrl/hw_definitions.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.16/home/pi/base/config.json",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.16/home/pi/base/hwctrl/hwctrl.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.16/home/pi/base/common/tcp.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.43/home/pi/stepper/stepper_test.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.43/home/pi/stepper/base_mech_test.py",
+		"/media/truecrypt3/links/Plain Text.txt",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/daemon/mounting.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common/utils.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/config.json",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-03-12_21-47-23.log",
+		"/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_Python/mytimer.py",
+		"/home/max/ownCloud/Projekte/Try_and_Error/Stepper/RpiMotorLib-master/RpiMotorLib/RpiMotorLib.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.43/home/pi/stepper/RpiMotorLib-master/build/lib/RpiMotorLib/RpiMotorLib.py",
+		"/home/max/ownCloud/Projekte/Try_and_Error/Stepper/RpiMotorLib-master/RpiMotorLib/__init__.py",
+		"/home/max/ownCloud/Projekte/Try_and_Error/Stepper/RpiMotorLib-master/RpiMotorLib/rpi_pservo_lib.py",
+		"/home/max/ownCloud/Projekte/Try_and_Error/Stepper/RpiMotorLib-master/RpiMotorLib/RpiMotorScriptLib.py",
+		"/home/max/ownCloud/Projekte/Try_and_Error/Stepper/RpiMotorLib-master/RpiMotorLib/rpi_dc_lib.py",
+		"/home/max/ownCloud/Projekte/Try_and_Error/Stepper/RpiMotorLib-master/setup.cfg",
+		"/home/max/ownCloud/Projekte/Try_and_Error/Stepper/RpiMotorLib-master/README.md",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.43/home/pi/stepper/RpiMotorLib-master/build/lib/RpiMotorLib/rpi_dc_lib.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.43/home/pi/stepper/RpiMotorLib-master/build/lib/RpiMotorLib/__init__.py",
+		"/home/max/Desktop/base/common/utils.py",
+		"/home/max/Documents/Zim/Projekte/Waberinator/Rev1.txt",
+		"/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_Python/input_nonblocking.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/run_base.py",
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-02-23_13-36-16.log",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/backup/__init__.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/common/base_logging.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/webapp/webapp.py",
@@ -600,7 +640,6 @@
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test/test004_start_webapp.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/webapp/index.py",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/webapp/wsgi.py",
-		"/home/max/Desktop/base/daemon/daemon.py",
 		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/wsgi.py",
 		"/home/max/ownCloud/Projekte/r_Schnipsel_Python/flask/test_flask.py",
 		"/home/max/Desktop/test_flask_gunicorn/wsgi.py",
@@ -648,70 +687,7 @@
 		"/home/max/Desktop/base/common/base_queues.py",
 		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/top_menue.html",
 		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/test/server_client_testbox/tutorialspoint/client_minimal.py",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-01-04_22-38-58.log",
-		"/home/max/Desktop/base/webapp/templates/communicator.html",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-01-04_22-16-04.log",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-01-04_22-22-29.log",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-01-04_22-17-53.log",
-		"/home/max/ownCloud/Projekte/r_Schnipsel_Python/server_client_testbox/tutorialspoint/client_minimal.py",
-		"/home/max/Desktop/base_old/backup_server_rev0/doBackup.py",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/webapp/templates/communicator.html",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/__init__.py",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/hwctrl/hwctrl.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/show_shopping_list.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/message.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/new_recipe.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/info.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev0/web_frontend/templates/search_by_ingredient.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/.gitignore",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/remove_dead_recipes.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/03_documentation/conf.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/03_documentation/source/conf.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/03_documentation/source/Database_Communicator.rst",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/search_recipe.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/search_shopping_lists.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/sl_edit.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/index.rst",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/01_Vorentwicklung/js_add_categories.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/static/css/style.css",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/test_dbc.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/01_Vorentwicklung/searchable_table/searchable_table.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/delete_recipe.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/01_Vorentwicklung/searchable_table/function.js",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/01_Vorentwicklung/searchable_table/style.css",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/01_Vorentwicklung/searchable_table.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/01_Vorentwicklung/css_spielwiese.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/show_recipe.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/empty.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/import_recipe_from_chefkoch.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/Chefkoch_De_Parser.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev0/web_frontend/web_fronted.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/show_all_recipes.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/test_rp.py",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/index.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev0/web_frontend/templates/create_recipe_review.html",
-		"/home/max/sketchbook/libraries/readme.txt",
-		"/home/max/ownCloud/Projekte/temp_logger/anleitung.txt",
-		"/home/max/ownCloud/Projekte/sprintf_example",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/01_Vorentwicklung/js_color_textfield.html",
-		"/home/max/ownCloud/Projekte/r_Schnipsel_JavaScript/learning/check_form.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev0/web_frontend/templates/create_recipe.html",
-		"/home/max/ownCloud/Projekte/r_Schnipsel_JavaScript/learning/change_link.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev0/web_frontend/Database_Communicator.py",
-		"/home/max/ownCloud/Projekte/r_Schnipsel_JavaScript/learning/add_element.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/create_recipe_old.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/create_recipe_review.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/edit_recipe.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/new_recipe_old.html",
-		"/home/max/ownCloud/Projekte/r_Schnipsel_JavaScript/automatically_add_new_input_field_moreBasic.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/confirm_deletion.html",
-		"/home/max/ownCloud/Projekte/Rezepte_Datenbank/rev1/web_frontend/templates/test_template.html",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-50-43.log",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-50-08.log",
-		"/home/max/testfile.txt",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-00-46.log",
-		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2019-12-18_21-02-11.log",
-		"/home/max/Desktop/base/hwctrl/hwctrl.py"
+		"/run/user/1000/gvfs/sftp:host=192.168.0.37/home/maxi/base/log/2020-01-04_22-38-58.log"
 	],
 	"find":
 	{
@@ -730,6 +706,39 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"Pin_hw_Rev1_nRev2",
+			"rev1",
+			"rev2",
+			"config_dir",
+			"Datastore",
+			"mounting_config",
+			"list_backups_by_age",
+			"return",
+			"self.",
+			")",
+			"7",
+			":,",
+			"pin_assignment",
+			"(self.hw_rev)",
+			"(self",
+			"Stepper_Step",
+			"pin_assignemt",
+			"=",
+			"button_0",
+			"Dis_DB7",
+			":",
+			"SW_HDD_ON",
+			"=",
+			" =",
+			"Pin",
+			"pin",
+			"Pin",
+			"pin",
+			"response_sterr",
+			"response",
+			"output",
+			"wait_for_new_device_file",
+			"bu_hdd_file_name",
 			"or_up_values",
 			"manager"
 		],
@@ -749,95 +758,8 @@
 	"groups":
 	[
 		{
-			"selected": 1,
 			"sheets":
 			[
-				{
-					"buffer": 0,
-					"file": "common/utils.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2651,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1154,
-								1154
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "hwctrl/hwctrl.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 6152,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								374,
-								374
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "/home/max/ownCloud/Notizen/02_Elektronik_Software/r_Schnipsel_Python/mytimer.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 645,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								327,
-								327
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				}
 			]
 		}
 	],
@@ -872,6 +794,10 @@
 		]
 	},
 	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 51.0
+	},
 	"output.find_results":
 	{
 		"height": 0.0
@@ -918,7 +844,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 377.0,
+	"side_bar_width": 178.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

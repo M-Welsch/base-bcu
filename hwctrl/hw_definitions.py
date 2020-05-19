@@ -1,28 +1,35 @@
 import RPi.GPIO as GPIO
+from time import sleep
 
 class Pin_Assignment():
 	def __init__(self, hw_rev):
 		self.hw_rev = hw_rev
 		print("Setting up for hw {}".format(hw_rev))
 
-		self.Pin_SW_HDD_ON = {'rev1':7, 'rev2':7}
-		self.Pin_Dis_RS = {'rev1':8, 'rev2':27}
-		self.Pin_Dis_E = {'rev1':10, 'rev2':28}
-		self.Pin_Dis_DB4 = {'rev1':12, 'rev2':12}
-		self.Pin_Dis_DB5 = {'rev1':16, 'rev2':16}
-		self.Pin_Dis_DB6 = {'rev1':18, 'rev2':18}
-		self.Pin_Dis_DB7 = {'rev1':22, 'rev2':22}
-		self.Pin_Dis_PWM_Gate = {'rev1':24, 'rev2':24}
-		self.Pin_nSensor_Docked = {'rev1':13, 'rev2':13}
-		self.Pin_nSensor_Undocked = {'rev1':11, 'rev2':11}
-		self.Pin_Motordriver_L = {'rev1':15, 'rev2':None}
-		self.Pin_Motordriver_R = {'rev1':19, 'rev2':None}
-		self.Pin_Stepper_Step = {'rev1':None, 'rev2':15}
-		self.Pin_Stepper_Dir = {'rev1':None, 'rev2':19}
-		self.Pin_Stepper_nReset = {'rev1':None, 'rev2':31}
-		self.Pin_button_0 = {'rev1':21, 'rev2':21}
-		self.Pin_button_1 = {'rev1':23, 'rev2':23}
-		self.Pin_hw_Rev1_nRev2 = {'rev1':26, 'rev2':26}
+		# General Comments on the changes between rev2 (blue Breadboard) and rev3 (Stepper):
+		# Display was moved from BPi to external controller (attiny816)
+		# A dual coil latched relais was used that requires two control signals
+		self.Pin_SW_HDD_ON = {'rev2':7, 'rev3':7}
+		self.Pin_SW_HDD_OFF = {'rev2':None, 'rev3':16}
+		self.Pin_Dis_RS = {'rev2':8, 'rev3':None}
+		self.Pin_Dis_E = {'rev2':10, 'rev3':None}
+		self.Pin_Dis_DB4 = {'rev2':12, 'rev3':None}
+		self.Pin_Dis_DB5 = {'rev2':16, 'rev3':None}
+		self.Pin_Dis_DB6 = {'rev2':18, 'rev3':None}
+		self.Pin_Dis_DB7 = {'rev2':22, 'rev3':None}
+		self.Pin_Dis_PWM_Gate = {'rev2':24, 'rev3':None}
+		self.Pin_nSensor_Docked = {'rev2':13, 'rev3':13}
+		self.Pin_nSensor_Undocked = {'rev2':11, 'rev3':11}
+		self.Pin_Motordriver_L = {'rev2':15, 'rev3':None}
+		self.Pin_Motordriver_R = {'rev2':19, 'rev3':None}
+		self.Pin_Stepper_Step = {'rev2':None, 'rev3':15}
+		self.Pin_Stepper_Dir = {'rev2':None, 'rev3':19}
+		self.Pin_Stepper_nReset = {'rev2':None, 'rev3':12}
+		self.Pin_button_0 = {'rev2':21, 'rev3':21}
+		self.Pin_button_1 = {'rev2':23, 'rev3':23}
+		self.Pin_hw_Rev2_nRev3 = {'rev2':26, 'rev3':26}
+		self.Pin_attiny_nReset = {'rev2':None, 'rev3':18}
+
 
 	@property
 	def SW_HDD_ON(self):
@@ -94,22 +101,27 @@ class Pin_Assignment():
 
 	@property
 	def hw_Rev1_nRev2(self):
-		return self.Pin_hw_Rev1_nRev2[self.hw_rev]
+		return self.Pin_hw_Rev2_nRev3[self.hw_rev]
 
 class PinInterface():
 	def __init__(self, display_default_brightness, display_default_pw=80):
+		self.step_interval_initial = 0.001 # this kind of disables the ramp. It sounds best ...
 		GPIO.setmode(GPIO.BOARD)
 		hw_rev = self.get_hw_revision()
 		self.pin = Pin_Assignment(hw_rev)
 
 		GPIO.setup(self.pin.SW_HDD_ON, GPIO.OUT)
-		if hw_rev == 'rev1':
+		if hw_rev == 'rev2':
 			GPIO.setup(self.pin.Motordriver_R, GPIO.OUT)
 			GPIO.setup(self.pin.Motordriver_L, GPIO.OUT)
 			GPIO.output(self.pin.Motordriver_L, GPIO.LOW)
 			GPIO.output(self.pin.Motordriver_R, GPIO.LOW)
 
-		if hw_rev == 'rev2':
+			GPIO.setup(self.pin.Dis_PWM_Gate, GPIO.OUT)
+			self.display_PWM = GPIO.PWM(self.pin.Dis_PWM_Gate, display_default_pw)
+			self.display_PWM.start(display_default_brightness)
+
+		if hw_rev == 'rev3':
 			GPIO.setup(self.pin.Stepper_Step, GPIO.OUT)
 			GPIO.setup(self.pin.Stepper_Dir, GPIO.OUT)
 			GPIO.setup(self.pin.Stepper_nReset, GPIO.OUT)
@@ -125,18 +137,15 @@ class PinInterface():
 		GPIO.setup(self.pin.button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
-		GPIO.setup(self.pin.Dis_PWM_Gate, GPIO.OUT)
-		self.display_PWM = GPIO.PWM(self.pin.Dis_PWM_Gate, display_default_pw)
-		self.display_PWM.start(display_default_brightness)
-
 	def get_hw_revision(self):
 		GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		# rev 1 is not respected here.
 		if GPIO.input(26):
 			# in HW revision 1 (With LEGO Motor) pin 26 is floating and will be read HIGH with the internal pullup
-			return "rev1"
+			return "rev2"
 		else:
 			# in HW revision 2 (With Sepper) Pin 26 is shorted to GND
-			return "rev2"
+			return "rev3"
 		# deactivate pullup to save some power
 		GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
@@ -159,6 +168,14 @@ class PinInterface():
 	@property
 	def docked_sensor_pin_high(self):
 		return GPIO.input(self.pin.nSensor_Docked)
+
+	@property
+	def docked(self):
+		return not GPIO.input(self.pin.nSensor_Docked)
+
+	@property
+	def undocked(self):
+		return not GPIO.input(self.pin.nSensor_Undocked)
 
 	@property
 	def undocked_sensor_pin_high(self):
@@ -189,3 +206,44 @@ class PinInterface():
 	def set_motor_pins_for_undocking(self):
 		GPIO.output(self.pin.Motordriver_L, GPIO.LOW)
 		GPIO.output(self.pin.Motordriver_R, GPIO.HIGH)
+
+	def stepper_driver_on(self):
+		self.set_nreset_pin_high()
+		self.step_interval = self.step_interval_initial
+
+	def stepper_driver_off(self):
+		self.set_nreset_pin_low()
+		self.step_interval = self.step_interval_initial
+
+	def set_nreset_pin_high(self):
+		GPIO.output(self.pin.Stepper_nReset, GPIO.HIGH)
+
+	def set_nreset_pin_low(self):
+		GPIO.output(self.pin.Stepper_nReset, GPIO.LOW)
+
+	def stepper_step(self):
+		self.set_step_pin_high()
+		sleep(self.step_interval)
+		self.set_step_pin_low()
+		sleep(self.step_interval)
+
+		if self.step_interval > 0.0005:
+			self.step_interval = self.step_interval/1.2
+
+	def set_step_pin_high(self):
+		GPIO.output(self.pin.Stepper_Step, GPIO.HIGH)
+	
+	def set_step_pin_low(self):
+		GPIO.output(self.pin.Stepper_Step, GPIO.LOW)
+
+	def stepper_direction_docking(self):
+		self.set_direction_pin_low()
+
+	def stepper_direction_undocking(self):
+		self.set_direction_pin_high()
+
+	def set_direction_pin_high(self):
+		GPIO.output(self.pin.Stepper_Dir, GPIO.HIGH)
+
+	def set_direction_pin_low(self):
+		GPIO.output(self.pin.Stepper_Dir, GPIO.LOW)
