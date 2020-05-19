@@ -3,13 +3,18 @@ from werkzeug.serving import make_server
 from werkzeug.utils import secure_filename
 import socket
 import os
+import sys
 import json
 from threading import Thread
 from time import sleep
 #import pudb
 
+path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(path_to_module)
+from base.common.tcp import TCPClientInterface
+
 application = Flask(__name__)
-application.config['SBC_FW_FOLDER'] = "{}/SBC_FW_Uploads".format(os.path.dirname(os.path.abspath(__file__)))
+application.config['SBC_FW_FOLDER'] = "{}/sbc_fw_uploads".format(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 @application.route('/style.css')
 def stylesheet():
@@ -92,7 +97,7 @@ def get_codebook():
 	return codebook
 
 @application.route('/communicator', methods = ['POST', 'GET'])
-def communicator():
+def communicator_old():
 	answer_string = ''
 	signal_to_send = get_signal_to_send(request)
 	connection_to_daemon = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -129,6 +134,25 @@ def communicator():
 								codebook = codebook)
 	else:
 		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_error
+
+@application.route('/communicator_rev2', methods = ['POST', 'GET'])
+
+def communicator():
+	answer_string = ''
+	codebook = get_codebook()
+	signal_to_send = get_signal_to_send(request)
+	port = get_port()
+	TCP_Client = TCPClientInterface(port = port)
+	answer_string = TCP_Client.send(signal_to_send)
+	#Todo: what if server doesn't answer?
+
+	return render_template('communicator.html', 
+								page_name ='Communicator', 
+								user='admin', 
+								recent_signal = signal_to_send, 
+								answer = answer_string, 
+								codebook = codebook)
+
 
 @application.route('/logger', methods = ['GET', 'POST'])
 def logger():
@@ -178,7 +202,17 @@ def upload_and_flash_fw_to_sbc():
 		return e
 	sbc_fw_filename = secure_filename(sbc_fw_file.filename)
 	sbc_fw_file.save(os.path.join(application.config['SBC_FW_FOLDER'], sbc_fw_filename))
+	tell_daemon_about_new_sbc_fw(sbc_fw_filename)
+	# now the daemon must change the owner according to whoever needs the file
+	# todo: the daemon needs the information where the file is located
+	# todo: the daemon needs to flash the hex-file to the attiny816
+
 	return "File sucessfully uploaded"
+
+def tell_daemon_about_new_sbc_fw(sbc_fw_filename):
+	port = get_port()
+	TCP_Client = TCPClientInterface(port)
+	TCP_Client.send("update_sbc_with_{}".format(sbc_fw_filename))
 
 def get_sbc_fw_file_from_request(request):
 	if request.method == 'POST':

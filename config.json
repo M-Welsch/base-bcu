@@ -37,7 +37,8 @@
             "Test Unounting":"test_unmounting",
             "Dock":"test_docking",
             "Unock":"test_undocking",
-            "Reload config-File":"reload_config"
+            "Reload config-File":"reload_config",
+            "update_sbc":"update_sbc"
         }
     }
 }
