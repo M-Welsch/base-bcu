@@ -1,5 +1,6 @@
 from flask import Flask, redirect, url_for, render_template, request
 from werkzeug.serving import make_server
+from werkzeug.utils import secure_filename
 import socket
 import os
 import json
@@ -8,6 +9,7 @@ from time import sleep
 #import pudb
 
 application = Flask(__name__)
+application.config['SBC_FW_FOLDER'] = "{}/SBC_FW_Uploads".format(os.path.dirname(os.path.abspath(__file__)))
 
 @application.route('/style.css')
 def stylesheet():
@@ -160,6 +162,35 @@ def logger():
 							logfile = log, 
 							filenames = available_logs, 
 							filename_selected = filename_selected)
+
+@application.route('/update_sbc_fw')
+def update_sbc_fw():
+	return render_template('update_sbc_fw.html',
+						    page_name = 'Update SBC Firmware',
+						    user='admin')
+
+@application.route('/upload_and_flash_fw_to_sbc', methods=['POST'])
+def upload_and_flash_fw_to_sbc():
+	try:
+		sbc_fw_file = get_sbc_fw_file_from_request(request)
+		check_sbc_fw_filename(sbc_fw_file.filename)
+	except ValueError as e:
+		return e
+	sbc_fw_filename = secure_filename(sbc_fw_file.filename)
+	sbc_fw_file.save(os.path.join(application.config['SBC_FW_FOLDER'], sbc_fw_filename))
+	return "File sucessfully uploaded"
+
+def get_sbc_fw_file_from_request(request):
+	if request.method == 'POST':
+		if 'sbc_fw_file' not in request.files:
+			raise ValueError('no sbc fw file uploaded') 
+		return request.files['sbc_fw_file']
+
+def check_sbc_fw_filename(sbc_fw_filename):
+	if sbc_fw_filename.rsplit('.')[1] == 'hex':
+		return True
+	else:
+		raise ValueError('uploaded file is no hex-file')
 
 if __name__ == '__main__':
    application.run('0.0.0.0', debug=True)

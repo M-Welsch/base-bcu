@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+   <head>
+      <title>BaSe Webapp - {{page_name}}</title>
+      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+      <style>
+         p.normal {
+            font-style: normal;
+         }
+         p.code {
+            font-family: monospace;
+         }
+
+      </style>
+   </head>
+   <body>
+      <h1>Hello {{ user }}!</h1>
+
+      <h2>Upload SBC Firmware File (*.hex)</h2>
+         <form method="post" enctype="multipart/form-data" action="upload_and_flash_fw_to_sbc">
+            <input type="file" name="sbc_fw_file">
+            <input type="submit" value="Upload">
+         </form>
+   </body>
+</html>
