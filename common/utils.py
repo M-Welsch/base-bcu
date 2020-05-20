@@ -129,3 +129,6 @@ def run_commands_over_ssh(host, user, commands):
 			streams["stdout"].append([line for line in stdout])
 			streams["stderr"].append([line for line in stderr])
 	return streams
+
+def get_sbc_fw_uploads_folder():
+	return "{}/sbc_interface/sbc_fw_uploads".format(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

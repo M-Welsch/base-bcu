@@ -14,7 +14,7 @@ sys.path.append(path_to_module)
 from base.common.tcp import TCPClientInterface
 
 application = Flask(__name__)
-application.config['SBC_FW_FOLDER'] = "{}/sbc_fw_uploads".format(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+application.config['SBC_FW_FOLDER'] = "{}/sbc_interface/sbc_fw_uploads".format(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 @application.route('/style.css')
 def stylesheet():
@@ -138,20 +138,19 @@ def communicator_old():
 @application.route('/communicator_rev2', methods = ['POST', 'GET'])
 
 def communicator():
+	signal_to_send = get_signal_to_send(request)
 	answer_string = ''
 	codebook = get_codebook()
-	signal_to_send = get_signal_to_send(request)
-	port = get_port()
-	TCP_Client = TCPClientInterface(port = port)
-	answer_string = TCP_Client.send(signal_to_send)
-	#Todo: what if server doesn't answer?
-
-	return render_template('communicator.html', 
+	connection_success = send_tcp_message_to_daemon_or_return_error(signal_to_send)
+	if connection_success:
+		return render_template('communicator.html', 
 								page_name ='Communicator', 
 								user='admin', 
 								recent_signal = signal_to_send, 
 								answer = answer_string, 
 								codebook = codebook)
+	else:
+		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_error 
 
 
 @application.route('/logger', methods = ['GET', 'POST'])
@@ -211,8 +210,22 @@ def upload_and_flash_fw_to_sbc():
 
 def tell_daemon_about_new_sbc_fw(sbc_fw_filename):
 	port = get_port()
-	TCP_Client = TCPClientInterface(port)
-	TCP_Client.send("update_sbc_with_{}".format(sbc_fw_filename))
+	send_tcp_message_to_daemon_or_return_error("update_sbc")
+
+def send_tcp_message_to_daemon_or_return_error(message):
+	port = get_port()
+	connection_trials = 0
+	while connection_trials < 2:
+		try:
+			TCP_Client = TCPClientInterface(port = port)
+			answer_string = TCP_Client.send(message)
+			connection_success = True
+			break
+		except ConnectionRefusedError as e:
+			port += 1
+			connection_success = e
+		connection_trials += 1
+	return connection_success
 
 def get_sbc_fw_file_from_request(request):
 	if request.method == 'POST':

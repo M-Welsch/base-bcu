@@ -61,7 +61,10 @@ class TCPClientInterface:
 
 	def send(self, msg):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-		sock.connect((self.host, self.port))
+		try:
+			sock.connect((self.host, self.port))
+		except ConnectionRefusedError:
+			raise ConnectionRefusedError
 		sock.send(msg.encode("utf8"))
 		ans = sock.recv(self.max_bytes)
 		sock.close()

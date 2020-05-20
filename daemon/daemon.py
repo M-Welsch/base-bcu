@@ -14,6 +14,7 @@ from base.schedule.scheduler import BaseScheduler
 from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
 from base.common.utils import *
+from base.sbc_interface.sbc_updater import *
 
 
 class Daemon:
@@ -85,7 +86,7 @@ class Daemon:
 	def _derive_command_list(status_quo: Dict) -> List[str]:
 		command_list = []
 		if "test_mounting" in status_quo["tcp_commands"]:
-			return ["mount"] #Todo: remove "dock"??
+			return ["mount"]
 		if "test_unmounting" in status_quo["tcp_commands"]:
 			return ["unmount"]
 		if "test_docking" in status_quo["tcp_commands"]:
@@ -94,6 +95,8 @@ class Daemon:
 			return ["undock"]
 		if "reload_config" in status_quo["tcp_commands"]:
 			command_list.append("reload_config")
+		if "update_sbc" in status_quo["tcp_commands"]:
+			return ["update_sbc"]
 		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
 		if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
@@ -103,6 +106,13 @@ class Daemon:
 		if command_list:
 			print("command list:", command_list)
 		return command_list
+
+	@staticmethod
+	def _extract_sbc_filename_from_commmand(status_quo_tcp_commands: List) -> str:
+		for entry in status_quo_tcp_commands:
+			if entry[:10] == "update_sbc":
+				sbc_filename = entry[:14]
+		return filename
 
 	def _execute_command_list(self, command_list: List[str]) -> bool:
 		for command in command_list:
@@ -125,6 +135,8 @@ class Daemon:
 					self.get_status()
 				elif command == "terminate_daemon":
 					return True
+				elif command == "update_sbc":
+					self.update_sbc()
 				else:
 					raise RuntimeError(f"'{command}' is not a valid command!")
 			except Exception as e:
@@ -133,7 +145,6 @@ class Daemon:
 		return False
 
 	def get_status(self):
-		#raise NotImplementedError
 		# TODO: implement hardware status retrieval
 		# next_bu_time = read_next_scheduled_backup_time()
 		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
@@ -142,3 +153,7 @@ class Daemon:
 		self._hardware_control.display("{}\nETA {}s".format(next_backup_scheduled_string, seconds_to_next_bu), 2)
 
 		backups_present = list_backups_by_age(self._config.mounting_config["backup_hdd_mount_point"]) # TODO: send to Webapp if it asks for status ...
+
+	def update_sbc(self):
+		SBC_U = SBC_Updater()
+		SBC_U.update_sbc()
