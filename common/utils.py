@@ -46,7 +46,7 @@ def run_external_command_as_generator(command):
 	return iter(p.stdout.readline, b'')
 	
 def run_external_command_as_generator_2(command):
-	p = Popen(command, stdout=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True)
+	p = Popen(command, stdout=PIPE, stderr=STDOUT, bufsize=1, universal_newlines=True)
 	return p.stdout
 
 

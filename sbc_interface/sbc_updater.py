@@ -17,6 +17,7 @@ class SBC_Updater():
 
 	def _flash_hex_file_to_sbc(self, sbc_fw_filename):
 		print("Updating SBC with {}".format(sbc_fw_filename))
-		sbc_flash_command = ['pyupdi.py','-d','tiny816','-c','/dev/ttyS1','-f',sbc_fw_filename]
+		sbc_flash_command = ['su','-','max','-c','pyupdi.py -d tiny816 -c /dev/ttyUSB0 -f {}'.format(sbc_fw_filename)] # fixme: why can pyupdi not be run as root?
 		outcome = run_external_command_as_generator_2(sbc_flash_command)
-		print(outcome)
+		for line in outcome:
+			print(line)
