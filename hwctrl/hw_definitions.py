@@ -7,10 +7,10 @@ class Pin_Assignment():
 		print("Setting up for hw {}".format(hw_rev))
 
 		# General Comments on the changes between rev2 (blue Breadboard) and rev3 (Stepper):
-		# Display was moved from BPi to external controller (attiny816)
+		# Display was moved from BPi to external controller (attiny816 aka SBC)
 		# A dual coil latched relais was used that requires two control signals
 		self.Pin_SW_HDD_ON = {'rev2':7, 'rev3':7}
-		self.Pin_SW_HDD_OFF = {'rev2':None, 'rev3':16}
+		self.Pin_SW_HDD_OFF = {'rev2':None, 'rev3':18}
 		self.Pin_Dis_RS = {'rev2':8, 'rev3':None}
 		self.Pin_Dis_E = {'rev2':10, 'rev3':None}
 		self.Pin_Dis_DB4 = {'rev2':12, 'rev3':None}
@@ -28,8 +28,7 @@ class Pin_Assignment():
 		self.Pin_button_0 = {'rev2':21, 'rev3':21}
 		self.Pin_button_1 = {'rev2':23, 'rev3':23}
 		self.Pin_hw_Rev2_nRev3 = {'rev2':26, 'rev3':26}
-		self.Pin_attiny_nReset = {'rev2':None, 'rev3':18}
-
+		self.Pin_atting_program_ncommunicate = {'rev2':None, 'rev3':16}
 
 	@property
 	def SW_HDD_ON(self):
@@ -103,6 +102,11 @@ class Pin_Assignment():
 	def hw_Rev1_nRev2(self):
 		return self.Pin_hw_Rev2_nRev3[self.hw_rev]
 
+	@property
+	def attiny_program_ncommunicate(self):
+		return self.Pin_atting_program_ncommunicate[self.hw_rev]
+	
+
 class PinInterface():
 	def __init__(self, display_default_brightness, display_default_pw=80):
 		self.step_interval_initial = 0.001 # this kind of disables the ramp. It sounds best ...
@@ -129,12 +133,15 @@ class PinInterface():
 			GPIO.output(self.pin.Stepper_Step, GPIO.LOW)
 			GPIO.output(self.pin.Stepper_Dir, GPIO.LOW)
 			GPIO.output(self.pin.Stepper_nReset, GPIO.LOW)
+			GPIO.setup(self.pin.attiny_program_ncommunicate, GPIO.OUT)
 
 
 		GPIO.setup(self.pin.nSensor_Docked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(self.pin.nSensor_Undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(self.pin.button_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(self.pin.button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+		self.set_attiny_serial_path_to_communication()
 
 
 	def get_hw_revision(self):
@@ -247,3 +254,9 @@ class PinInterface():
 
 	def set_direction_pin_low(self):
 		GPIO.output(self.pin.Stepper_Dir, GPIO.LOW)
+
+	def set_attiny_serial_path_to_sbc_fw_update(self):
+		GPIO.output(self.pin.attiny_program_ncommunicate, GPIO.HIGH)
+
+	def set_attiny_serial_path_to_communication(self):
+		GPIO.output(self.pin.attiny_program_ncommunicate, GPIO.LOW)

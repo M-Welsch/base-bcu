@@ -108,6 +108,12 @@ class HWCTRL(Thread):
 		sleep(5)
 		self.undock()
 
+	def set_attiny_serial_path_to_sbc_fw_update(self):
+		self.pin_interface.set_attiny_serial_path_to_sbc_fw_update()
+
+	def set_attiny_serial_path_to_communication(self):
+		self.pin_interface.set_attiny_serial_path_to_communication()
+
 
 class LCD(Adafruit_CharLCD):
 	def __init__(self, default_brightness, pin_interface):

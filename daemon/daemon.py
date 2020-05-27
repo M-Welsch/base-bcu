@@ -155,5 +155,7 @@ class Daemon:
 		backups_present = list_backups_by_age(self._config.mounting_config["backup_hdd_mount_point"]) # TODO: send to Webapp if it asks for status ...
 
 	def update_sbc(self):
-		SBC_U = SBC_Updater()
-		SBC_U.update_sbc()
+		# Fixme: that crashes the ttyS1 for some reason
+		print("Ready for SBC FW Update. Stop BaSe and run cd /home/maxi/base/sbc_interface && sudo python3 sbc_updater.py")
+		# SBC_U = SBC_Updater()
+		# SBC_U.update_sbc()

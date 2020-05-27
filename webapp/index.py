@@ -206,7 +206,9 @@ def upload_and_flash_fw_to_sbc():
 	# todo: the daemon needs the information where the file is located
 	# todo: the daemon needs to flash the hex-file to the attiny816
 
-	return "File sucessfully uploaded"
+	return render_template('sbc_fw_uploaded_success_message_and_next_steps.html',
+						    page_name = 'SBC Firmware Update Success Message',
+						    user='admin')
 
 def tell_daemon_about_new_sbc_fw(sbc_fw_filename):
 	port = get_port()

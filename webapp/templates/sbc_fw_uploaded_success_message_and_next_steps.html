@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+   <head>
+      <title>BaSe Webapp - {{page_name}}</title>
+      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+      <style>
+         p.normal {
+            font-style: normal;
+         }
+         p.code {
+            font-family: monospace;
+         }
+
+      </style>
+   </head>
+   <body>
+      <h1>Hello {{ user }}!</h1>
+
+      You sucessfully uploaded your hex-file
+
+      <h2>Here are the next steps</h2>
+         The serial communication required for flashing the SBC cannot be established for some reason inside BaSe.<br>
+         To flash a new firmware you have to follow these steps:<br>
+         1. Stop BaSe (<a href="/communicator">here</a>)<br>
+         2. Log on your BaSe via your SSH Client
+         3. change to the folder /home/maxi/base/sbc_interface/<br>
+         4. run sudo python3 sbc_updater.py<br>
+         5. restart BaSe<br>
+   </body>
+</html>
