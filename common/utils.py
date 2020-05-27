@@ -40,6 +40,9 @@ def run_external_command(command, success_msg, error_msg):
 	else:
 		print(success_msg)
 
+def run_external_command_string_input(command):
+	cp = run(command, shell=True, stdout=PIPE, stderr=STDOUT)
+	return cp
 
 def run_external_command_as_generator(command):
 	p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
