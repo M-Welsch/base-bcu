@@ -29,6 +29,8 @@ class Pin_Assignment():
 		self.Pin_button_1 = {'rev2':23, 'rev3':23}
 		self.Pin_hw_Rev2_nRev3 = {'rev2':26, 'rev3':26}
 		self.Pin_atting_program_ncommunicate = {'rev2':None, 'rev3':16}
+		self.Pin_En_attiny_link = {'rev2':None, 'rev3':22}
+		self.Pin_Heartbeat = {'rev2':None, 'rev3':24}
 
 	@property
 	def SW_HDD_ON(self):
@@ -105,6 +107,16 @@ class Pin_Assignment():
 	@property
 	def attiny_program_ncommunicate(self):
 		return self.Pin_atting_program_ncommunicate[self.hw_rev]
+
+	@property
+	def En_attiny_link(self):
+		return self.Pin_En_attiny_link[self.hw_rev]
+
+	@property
+	def heartbeat(self):
+		return self.Pin_Heartbeat[self.hw_rev]
+	
+	
 	
 
 class PinInterface():
@@ -134,6 +146,8 @@ class PinInterface():
 			GPIO.output(self.pin.Stepper_Dir, GPIO.LOW)
 			GPIO.output(self.pin.Stepper_nReset, GPIO.LOW)
 			GPIO.setup(self.pin.attiny_program_ncommunicate, GPIO.OUT)
+			GPIO.setup(self.pin.En_attiny_link, GPIO.OUT)
+			GPIO.setup(self.pin.heartbeat, GPIO.OUT)
 
 
 		GPIO.setup(self.pin.nSensor_Docked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -260,3 +274,15 @@ class PinInterface():
 
 	def set_attiny_serial_path_to_communication(self):
 		GPIO.output(self.pin.attiny_program_ncommunicate, GPIO.LOW)
+
+	def enable_receiving_messages_from_attiny(self):
+		GPIO.output(self.pin.En_attiny_link, GPIO.HIGH)
+
+	def disable_receiving_messages_from_attiny(self):
+		GPIO.output(self.pin.En_attiny_link, GPIO.LOW)
+
+	def set_heartbeat_high(self):
+		GPIO.output(self.pin.heartbeat, GPIO.HIGH)
+
+	def set_heartbeat_low(self):
+		GPIO.output(self.pin.heartbeat, GPIO.LOW)

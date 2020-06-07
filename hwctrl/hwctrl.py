@@ -32,6 +32,7 @@ class HWCTRL(Thread):
 		hw_rev = self.get_hw_revision()
 		self.init_display(hw_rev)
 		self.dock_undock = DockUndock(self.pin_interface, self.display, self._logger, self._config, hw_rev)
+		self.start_heartbeat()
 
 	def init_display(self, hw_rev):
 		if hw_rev == "rev2":
@@ -54,6 +55,8 @@ class HWCTRL(Thread):
 		print("HWCTRL shutting down")
 		self._logger.info("HWCTRL is shutting down. Current status: {}".format(self._status))
 		self.exitflag = True
+		self.disable_receiving_messages_from_attiny()
+		self.HB.terminate()
 		self.pin_interface.cleanup()
 		if self.cur_meas.is_alive():
 			self.cur_meas.terminate()
@@ -114,6 +117,38 @@ class HWCTRL(Thread):
 	def set_attiny_serial_path_to_communication(self):
 		self.pin_interface.set_attiny_serial_path_to_communication()
 
+	def enable_receiving_messages_from_attiny(self):
+		self._logger.info("Enabling receiving Messages from SBC by setting signal EN_attiny_link = HIGH. WARNING! This signal has to be set LOW before BPi goes to sleep! Hazard of Current flowing in the Rx-Pin of the BPi and destroying it!")
+		self.pin_interface.enable_receiving_messages_from_attiny()
+
+	def disable_receiving_messages_from_attiny(self):
+		self._logger.info("Disabling receiving Messages from SBC by setting signal EN_attiny_link = LOW")
+		self.pin_interface.disable_receiving_messages_from_attiny()
+
+	def start_heartbeat(self):
+		self.HB = Heartbeat(self.pin_interface.set_heartbeat_high, self.pin_interface.set_heartbeat_low)
+		self.HB.start()
+
+class Heartbeat(Thread):
+	def __init__(self, fkt_heartbeat_high, fkt_heartbeat_low):
+		super(Heartbeat, self).__init__()
+		self._fkt_heartbeat_high = fkt_heartbeat_high
+		self._fkt_heartbeat_low = fkt_heartbeat_low
+		self._heartbeat_state = 0
+		self._exitflag = False
+
+	def run(self):
+		while not self._exitflag:
+			if self._heartbeat_state:
+				self._heartbeat_state = 0
+				self._fkt_heartbeat_low()
+			else:
+				self._fkt_heartbeat_high()
+				self._heartbeat_state = 1
+			sleep(0.01)
+
+	def terminate(self):
+		self._exitflag = True
 
 class LCD(Adafruit_CharLCD):
 	def __init__(self, default_brightness, pin_interface):
