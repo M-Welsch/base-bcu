@@ -35,7 +35,6 @@ class DockUndock():
 				self.undock_rev2()
 			if self.hw_rev == 'rev3':
 				self.undock_rev3()
-				self.dock_rev3()
 		except DockingError as e:
 			self._logger.error(e)
 			print(e)

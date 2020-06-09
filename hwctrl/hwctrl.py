@@ -29,16 +29,16 @@ class HWCTRL(Thread):
 		self.docking_overcurrent_limit = self._config["docking_overcurrent_limit"]
 
 		self.pin_interface = PinInterface(int(self._config["display_default_brightness"]))
-		hw_rev = self.get_hw_revision()
-		self.init_display(hw_rev)
-		self.dock_undock = DockUndock(self.pin_interface, self.display, self._logger, self._config, hw_rev)
+		self._hw_rev = self.get_hw_revision()
+		self.init_display()
+		self.dock_undock = DockUndock(self.pin_interface, self.display, self._logger, self._config, self._hw_rev)
 		self.start_heartbeat()
 
-	def init_display(self, hw_rev):
-		if hw_rev == "rev2":
+	def init_display(self):
+		if self._hw_rev == "rev2":
 			self.lcd = LCD(int(self._config["display_default_brightness"]), self.pin_interface)
 			self.display = self.lcd.display
-		if hw_rev == "rev3":
+		if self._hw_rev == "rev3":
 			print("Display control via SBC ... not implemented yet!")
 			self.display = None
 
@@ -92,14 +92,16 @@ class HWCTRL(Thread):
 
 	def hdd_power_on(self):
 		self._logger.info("Powering HDD")
-		self.cur_meas = Current_Measurement(1)
-		self.cur_meas.start()
+		if self._hw_rev == 'rev2':
+			self.cur_meas = Current_Measurement(1)
+			self.cur_meas.start()
 		self.pin_interface.activate_hdd_pin()
 
 	def hdd_power_off(self):
 		self._logger.info("Unpowering HDD")
 		self.pin_interface.deactivate_hdd_pin()
-		self.cur_meas.terminate()
+		if self._hw_rev == 'rev2':
+			self.cur_meas.terminate()
 
 	def dock_and_power(self):
 		# self.dock()

@@ -35,6 +35,10 @@ class Pin_Assignment():
 	@property
 	def SW_HDD_ON(self):
 		return self.Pin_SW_HDD_ON[self.hw_rev]
+
+	@property
+	def SW_HDD_OFF(self):
+		return self.Pin_SW_HDD_OFF[self.hw_rev]
 	
 	@property
 	def Dis_RS(self):
@@ -123,11 +127,11 @@ class PinInterface():
 	def __init__(self, display_default_brightness, display_default_pw=80):
 		self.step_interval_initial = 0.001 # this kind of disables the ramp. It sounds best ...
 		GPIO.setmode(GPIO.BOARD)
-		hw_rev = self.get_hw_revision()
-		self.pin = Pin_Assignment(hw_rev)
+		self._hw_rev = self.get_hw_revision()
+		self.pin = Pin_Assignment(self._hw_rev)
 
 		GPIO.setup(self.pin.SW_HDD_ON, GPIO.OUT)
-		if hw_rev == 'rev2':
+		if self._hw_rev == 'rev2':
 			GPIO.setup(self.pin.Motordriver_R, GPIO.OUT)
 			GPIO.setup(self.pin.Motordriver_L, GPIO.OUT)
 			GPIO.output(self.pin.Motordriver_L, GPIO.LOW)
@@ -137,7 +141,9 @@ class PinInterface():
 			self.display_PWM = GPIO.PWM(self.pin.Dis_PWM_Gate, display_default_pw)
 			self.display_PWM.start(display_default_brightness)
 
-		if hw_rev == 'rev3':
+		if self._hw_rev == 'rev3':
+			GPIO.setup(self.pin.SW_HDD_OFF, GPIO.OUT)
+
 			GPIO.setup(self.pin.Stepper_Step, GPIO.OUT)
 			GPIO.setup(self.pin.Stepper_Dir, GPIO.OUT)
 			GPIO.setup(self.pin.Stepper_nReset, GPIO.OUT)
@@ -211,10 +217,23 @@ class PinInterface():
 		return GPIO.input(self.pin.button_1)
 	
 	def activate_hdd_pin(self):
-		GPIO.output(self.pin.SW_HDD_ON, GPIO.HIGH)
+		if self._hw_rev == 'rev2':
+			GPIO.output(self.pin.SW_HDD_ON, GPIO.HIGH)
+		if self._hw_rev == 'rev3':
+			# rev3 uses a bistable relais with two coils. These have to be powered for at least 4ms. We use 10ms to be safe.
+			GPIO.output(self.pin.SW_HDD_ON, GPIO.HIGH)
+			sleep(0.01)
+			GPIO.output(self.pin.SW_HDD_ON, GPIO.LOW)
 
 	def deactivate_hdd_pin(self):
-		GPIO.output(self.pin.SW_HDD_ON, GPIO.LOW)
+		if self._hw_rev == 'rev2':
+			GPIO.output(self.pin.SW_HDD_ON, GPIO.LOW)
+		if self._hw_rev == 'rev3':
+			# rev3 uses a bistable relais with two coils. These have to be powered for at least 4ms. We use 10ms to be safe.
+
+			GPIO.output(self.pin.SW_HDD_OFF, GPIO.HIGH)
+			sleep(0.01)
+			GPIO.output(self.pin.SW_HDD_OFF, GPIO.LOW)
 	
 	def set_motor_pins_for_braking(self):
 		GPIO.output(self.pin.Motordriver_L, GPIO.LOW)
@@ -258,10 +277,10 @@ class PinInterface():
 		GPIO.output(self.pin.Stepper_Step, GPIO.LOW)
 
 	def stepper_direction_docking(self):
-		self.set_direction_pin_low()
+		self.set_direction_pin_high()
 
 	def stepper_direction_undocking(self):
-		self.set_direction_pin_high()
+		self.set_direction_pin_low()
 
 	def set_direction_pin_high(self):
 		GPIO.output(self.pin.Stepper_Dir, GPIO.HIGH)
