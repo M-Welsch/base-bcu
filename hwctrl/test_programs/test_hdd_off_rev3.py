@@ -31,9 +31,9 @@ if __name__ == "__main__":
 		GPIO.setmode(GPIO.BOARD)
 		GPIO.setup(7, GPIO.OUT) #on
 		GPIO.setup(18, GPIO.OUT) #off
-		GPIO.output(7, GPIO.HIGH)
+		GPIO.output(18, GPIO.HIGH)
 		sleep(0.01)
-		GPIO.output(7, GPIO.LOW)
+		GPIO.output(18, GPIO.LOW)
 		GPIO.cleanup()
 
 
