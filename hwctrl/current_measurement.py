@@ -1,7 +1,11 @@
-import smbus
 from threading import Thread
 from time import sleep
 from base.common.base_queues import Current_Queue
+try:
+	import smbus
+except ImportError:
+	print("smbus not found. Using mockup.")
+	
 
 class Current_Measurement(Thread):
 	def __init__(self, sampling_interval):
