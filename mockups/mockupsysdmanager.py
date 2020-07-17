@@ -1,7 +1,4 @@
 class SystemdManager:
-	def __init__(self):
-		pass
-		
 	def is_active(self, service):
 		print("Systemd Mockup: pretending to check activeness of {}".format(service))
 		
