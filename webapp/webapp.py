@@ -1,5 +1,5 @@
 from platform import system
-if system == "Linux":
+if system() == "Linux":
 	from sysdmanager import SystemdManager
 else:
 	from base.mockups.mockupsysdmanager import SystemdManager

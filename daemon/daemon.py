@@ -1,5 +1,6 @@
 import os
 from queue import Queue
+import pudb
 
 from time import sleep
 from typing import Dict, List
@@ -83,6 +84,7 @@ class Daemon:
 		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
 		if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
+			# pudb.set_trace()
 			command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
