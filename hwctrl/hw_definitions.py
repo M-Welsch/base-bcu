@@ -4,7 +4,7 @@ try:
 	import RPi.GPIO as GPIO
 except ImportError:
 	print("RPi.GPIO is not available. Switching to mockup mode")
-	from base.hwctrl.mockupgpio import GPIO
+	from base.mockups.mockupgpio import GPIO
 
 class Pin_Assignment():
 	def __init__(self, hw_rev):

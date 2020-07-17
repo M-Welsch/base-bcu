@@ -1,5 +1,4 @@
 import os
-import daemon
 from queue import Queue
 
 from time import sleep
@@ -18,7 +17,7 @@ from base.sbc_interface.sbc_updater import *
 
 
 class Daemon:
-	def __init__(self, autostart_webapp: bool = True, daemonize: bool = True):
+	def __init__(self, autostart_webapp: bool = True):
 		self._autostart_webapp = autostart_webapp
 		self._command_queue = Queue()
 		self._config = Config("base/config.json")
@@ -29,22 +28,6 @@ class Daemon:
 		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
-		if daemonize:
-			self.run_as_daemon()
-		else:
-			self.run_not_as_daemon()
-
-	def run_as_daemon(self):
-		print("starting daemon...")
-		self._logger.info("started base as daemon")
-		with daemon.DaemonContext(working_directory=os.getcwd()):
-			# sys.stdout = self._logging_queue fixme
-			# sys.stderr = self._logging_queue fixme
-			self.start_threads_and_mainloop()
-
-	def run_not_as_daemon(self):
-		self._logger.info("started BaSe without daemon (debug-mode)")
-		print("starting daemon (not actually as daemon)...")
 		self.start_threads_and_mainloop()
 
 	def start_threads_and_mainloop(self):

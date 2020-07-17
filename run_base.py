@@ -6,7 +6,7 @@ sys.path.append(path_to_module)
 from base.daemon.daemon import Daemon
 
 def main():
-	d = Daemon(daemonize=False)
+	d = Daemon()
 	# print("starting daemon...")
 	# with daemon.DaemonContext(working_directory=os.getcwd()):
 	# 	msg_from_tcp = ["0"]

@@ -1,9 +1,16 @@
-from sysdmanager import SystemdManager
+from platform import system
 
 class Webapp:
 	def __init__(self, logger):
+		if self.on_linux():
+			from sysdmanager import SystemdManager
+		else:
+			from base.mockups.mockupsysdmanager import SystemdManager
 		self._manager = SystemdManager()
 		self.logger = logger
+
+	def on_linux(self):
+		return system == "Linux"
 
 	def start(self):
 		if not self._manager.is_active("base-webapp.service"):
@@ -18,4 +25,3 @@ class Webapp:
 			self._manager.stop_unit("base-webapp.service")
 		else:
 			print("base-webapp not running")
-

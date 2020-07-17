@@ -5,6 +5,7 @@ try:
 	import smbus
 except ImportError:
 	print("smbus not found. Using mockup.")
+	import base.mockups.mockupsmbus as smbus
 	
 
 class Current_Measurement(Thread):
