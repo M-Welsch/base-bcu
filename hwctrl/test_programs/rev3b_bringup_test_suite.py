@@ -4,6 +4,11 @@ path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
 
 from base.hwctrl.hw_definitions import *
+from base.hwctrl.hwctrl import *
+from base.sbc_interface.sbc_communicator import *
+from base.common.config import Config
+from base.common.base_logging import Logger
+
 
 class rev3b_endswitch_tester():
 	def __init__(self, pin_interface):
@@ -22,6 +27,25 @@ class rev3b_endswitch_tester():
 
 	def print_endswitches_status(self):
 		print("Endsw. Docked: {}, Endsw. Undocked: {} (End w. Ctrl+C)".format(self._pin_interface.docked_sensor_pin_high, self._pin_interface.undocked_sensor_pin_high))
+
+class rev3b_pushbutton_tester():
+	def __init__(self, pin_interface):
+		self._pin_interface = pin_interface
+
+	def test(self):
+		print("The Pushbuttons can only be read if the SBC has its internal pullups on the button signals activated!")
+		try:
+			self.poll_button_status_periodically(0.2)
+		except KeyboardInterrupt:
+			print("End.")	
+
+	def	poll_button_status_periodically(self, period):
+		while True:
+			self.print_endswitches_status()
+			sleep(period)		
+
+	def print_endswitches_status(self):
+		print("Button 0: {}, Button 1: {} (End w. Ctrl+C)".format(self._pin_interface.button_0_pin_high, self._pin_interface.button_1_pin_high))
 
 class rev3b_stepper_tester():
 	def __init__(self, pin_interface):
@@ -61,11 +85,42 @@ class rev3b_stepper_tester():
 	def deactivate_stepper_driver(self):
 		self._pin_interface.stepper_driver_off()
 
+class rev3b_serial_receive_tester():
+	def __init__(self):
+		hwctrl = self._init_hwctrl()
+		self._SBCC = self._init_SBC_Communicator(hwctrl)
+
+	def test(self):
+		print("This test only print outs the Heartbeat Count sent by the SBC")
+		try:
+			self._writeout_from_sbc_queue_periodically(0.2)
+		except KeyboardInterrupt:
+			self._SBCC.terminate()
+			print("End.")		
+
+	def _init_hwctrl(self):
+		config = Config("/home/maxi/base/config.json")
+		logger = Logger("/home/maxi/base/log")
+		return HWCTRL(config.hwctrl_config, logger)
+
+	def _init_SBC_Communicator(self, hwctrl):
+		self._from_SBC_queue = []
+		self._to_SBC_queue = []
+		SBCC = SBC_Communicator(hwctrl, self._to_SBC_queue, self._from_SBC_queue)
+		SBCC.start()
+		return SBCC
+
+	def _writeout_from_sbc_queue_periodically(self, period):
+		while True:
+			while self._from_SBC_queue:
+				print(self._from_SBC_queue.pop())
+			sleep(period)
+
 class rev3b_bringup_test_suite():
 	def __init__(self):
 		self.display_brightness = 1
 		self._pin_interface = PinInterface(self.display_brightness)
-		self.testcases = ["test_endswitches", "test_pushbuttons", "test_stepper"]
+		self.testcases = ["test_endswitches", "test_pushbuttons", "test_stepper", "test_SBC_heartbear_receive"]
 
 	def run(self):
 		Tester = None
@@ -78,8 +133,14 @@ class rev3b_bringup_test_suite():
 			if user_choice in ["0","test_endswitches"]:
 				Tester = rev3b_endswitch_tester(self._pin_interface)
 
+			if user_choice in ["1","test_pushbuttons"]:
+				Tester = rev3b_pushbutton_tester(self._pin_interface)
+
 			if user_choice in ["2","test_stepper"]:
 				Tester = rev3b_stepper_tester(self._pin_interface)
+
+			if user_choice in ["3", "test_SBC_heartbear_receive"]:
+				Tester = rev3b_serial_receive_tester()
 
 			if(Tester):
 				Tester.test()

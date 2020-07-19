@@ -19,7 +19,7 @@ class SBC_Communicator(threading.Thread):
 		self._hwctrl.enable_receiving_messages_from_attiny() # necessary
 		self._serial_connection.open()
 		while not self.exitflag:
-			for entry in to_SBC_queue:
+			for entry in self.to_SBC_queue:
 				self._serial_connection.write(entry)
 				self.from_SBC_queue.append(self._serial_connection.read_until()) # read response
 				print(from_SBC_queue[-1])
@@ -30,7 +30,6 @@ class SBC_Communicator(threading.Thread):
 		self._hwctrl.disable_receiving_messages_from_attiny() # forgetting this may destroy the BPi's serial interface!
 
 	def terminate(self):
-
 		self.exitflag = True
 
 if __name__ == '__main__':
@@ -50,7 +49,6 @@ if __name__ == '__main__':
 	SBCC = SBC_Communicator(hardware_control, to_SBC_queue, from_SBC_queue)
 	SBCC.start()
 	while True:
-		print(bool(from_SBC_queue))
 		while from_SBC_queue:
 			print(from_SBC_queue.pop())
 		sleep(0.05)
