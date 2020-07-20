@@ -9,6 +9,13 @@ from base.sbc_interface.sbc_communicator import *
 from base.common.config import Config
 from base.common.base_logging import Logger
 
+class tester():
+	def warn_user_and_ask_whether_to_continue(self, warning):
+		user_choice = input("{} Continue [y/N]".format(warning))
+		if user_choice not in ["y", "Y", "Yes"]:
+			return False
+		else:
+			return True 
 
 class rev3b_endswitch_tester():
 	def __init__(self, pin_interface):
@@ -47,12 +54,12 @@ class rev3b_pushbutton_tester():
 	def print_endswitches_status(self):
 		print("Button 0: {}, Button 1: {} (End w. Ctrl+C)".format(self._pin_interface.button_0_pin_high, self._pin_interface.button_1_pin_high))
 
-class rev3b_stepper_tester():
+class rev3b_stepper_tester(tester):
 	def __init__(self, pin_interface):
 		self._pin_interface = pin_interface
 
 	def test(self):
-		if self.warn_user_and_ask_whether_to_continue():
+		if self.warn_user_and_ask_whether_to_continue("Stepper Tester: Warning. This test moves the stepper. First in docking, then in undocking direction. However it doesn't care about the endswitches!"):
 			self.active_stepper_driver()
 			self.move_towards_docking()
 			self.move_towards_undocking()
@@ -60,34 +67,26 @@ class rev3b_stepper_tester():
 		else:
 			print("Stepper Tester: aborting ...")
 
-	def warn_user_and_ask_whether_to_continue(self):
-		user_choice = input("Stepper Tester: Warning. This test moves the stepper. However it doesn't care about the endswitches! Continue [y/N]")
-		if user_choice not in ["y", "Y", "Yes"]:
-			return False
-		else:
-			return True
-
 	def active_stepper_driver(self):
 		self._pin_interface.stepper_driver_on()
 
 	def move_towards_docking(self):
 		print("Stepper Tester: Moving towords Dock Position")
 		self._pin_interface.stepper_direction_docking()
-		for i in range(1000):
+		for i in range(200):
 			self._pin_interface.stepper_step()
 
 	def move_towards_undocking(self):
 		print("Stepper Tester: Moving towords Undock Position")
 		self._pin_interface.stepper_direction_undocking()
-		for i in range(1000):
+		for i in range(200):
 			self._pin_interface.stepper_step()
 
 	def deactivate_stepper_driver(self):
 		self._pin_interface.stepper_driver_off()
 
 class rev3b_serial_receive_tester():
-	def __init__(self):
-		hwctrl = self._init_hwctrl()
+	def __init__(self, hwctrl):
 		self._SBCC = self._init_SBC_Communicator(hwctrl)
 
 	def test(self):
@@ -97,11 +96,6 @@ class rev3b_serial_receive_tester():
 		except KeyboardInterrupt:
 			self._SBCC.terminate()
 			print("End.")		
-
-	def _init_hwctrl(self):
-		config = Config("/home/maxi/base/config.json")
-		logger = Logger("/home/maxi/base/log")
-		return HWCTRL(config.hwctrl_config, logger)
 
 	def _init_SBC_Communicator(self, hwctrl):
 		self._from_SBC_queue = []
@@ -116,11 +110,36 @@ class rev3b_serial_receive_tester():
 				print(self._from_SBC_queue.pop())
 			sleep(period)
 
+class rev3b_docking_undocking_tester(tester):
+	def __init__(self, hwctrl):
+		self._hwctrl = hwctrl
+
+	def test(self):
+		if self.warn_user_and_ask_whether_to_continue("Docks and undocks the SATA-Connection. It senses the endswitches and otherwise waits for timeout. If the endswitches don't work, it may damage your BaSe mechanically!"):
+			self._hwctrl.dock()
+			self._hwctrl.undock()
+
+class rev3b_power_hdd_tester(tester):
+	def __init__(self, hwctrl):
+		self._hwctrl = hwctrl
+
+	def test(self):
+		if self.warn_user_and_ask_whether_to_continue("Powers the HDD. This will apply 12V and 5V on some pins of the SATA Adapter!"):
+			self._hwctrl.hdd_power_on()
+		if self.warn_user_and_ask_whether_to_continue("Unowers the HDD. Please make sure, the HDD (if any) is properly unmounted!"):
+			self._hwctrl.hdd_power_off()
+
 class rev3b_bringup_test_suite():
 	def __init__(self):
 		self.display_brightness = 1
 		self._pin_interface = PinInterface(self.display_brightness)
-		self.testcases = ["test_endswitches", "test_pushbuttons", "test_stepper", "test_SBC_heartbear_receive"]
+		self.testcases = ["test_endswitches", "test_pushbuttons", "test_stepper", "test_SBC_heartbear_receive", "rev3b_docking_undocking_test", "rev3b_power_hdd_test"]
+		self._hwctrl = self._init_hwctrl()
+
+	def _init_hwctrl(self):
+		config = Config("/home/maxi/base/config.json")
+		logger = Logger("/home/maxi/base/log")
+		return HWCTRL(config.hwctrl_config, logger)
 
 	def run(self):
 		Tester = None
@@ -140,13 +159,20 @@ class rev3b_bringup_test_suite():
 				Tester = rev3b_stepper_tester(self._pin_interface)
 
 			if user_choice in ["3", "test_SBC_heartbear_receive"]:
-				Tester = rev3b_serial_receive_tester()
+				Tester = rev3b_serial_receive_tester(self._hwctrl)
+
+			if user_choice in ["4", "rev3b_docking_undocking_test"]:
+				Tester = rev3b_docking_undocking_tester(self._hwctrl)
+
+			if user_choice in ["5", "rev3b_power_hdd_test"]:
+				Tester = rev3b_power_hdd_tester(self._hwctrl)
 
 			if(Tester):
 				Tester.test()
 				Tester = None
 
 		self._pin_interface.cleanup
+		self._hwctrl.terminate()
 
 
 	def ask_user_for_testcase(self):
