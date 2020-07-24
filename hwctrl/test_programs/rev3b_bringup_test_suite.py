@@ -129,6 +129,11 @@ class rev3b_power_hdd_tester(tester):
 		if self.warn_user_and_ask_whether_to_continue("Unowers the HDD. Please make sure, the HDD (if any) is properly unmounted!"):
 			self._hwctrl.hdd_power_off()
 
+class rev3b_serial_send_tester_wo_hwctrl():
+	def __init__(self):
+		import RPi.GPIO as GPIO
+
+
 class rev3b_bringup_test_suite():
 	def __init__(self):
 		self.display_brightness = 1

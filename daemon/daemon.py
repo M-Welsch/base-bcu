@@ -30,14 +30,16 @@ class Daemon:
 		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
-		self._start_sbc_communictor_on_hw_rev3()
+		self._start_sbc_communictor_on_hw_rev3_and_set_SBCs_RTC()
 		self.start_threads_and_mainloop()
 
-	def _start_sbc_communictor_on_hw_rev3(self):
+	def _start_sbc_communictor_on_hw_rev3_and_set_SBCs_RTC(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
 			self._to_SBC_queue = []
 			self._from_SBC_queue = []
 			self._sbc_communicator = SBC_Communicator(self._hardware_control, self._to_SBC_queue, self._from_SBC_queue)
+			self._sbc_communicator.start()
+			self._sbc_communicator.send_current_timestamp()
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -60,6 +62,9 @@ class Daemon:
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
 			terminate_flag = self._execute_command_list(command_list)
+			# for debug
+			self._sbc_communicator.send_current_timestamp()
+
 		self.stop_threads()
 
 	def _look_up_status_quo(self) -> Dict:
@@ -95,7 +100,7 @@ class Daemon:
 		# if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
 		#	command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
 		if status_quo["pressed_buttons"][1]: # demo
-			command_list.append(["dock", "undock"])
+			command_list.extend(["dock", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
 		if command_list:

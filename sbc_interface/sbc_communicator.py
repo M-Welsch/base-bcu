@@ -1,6 +1,7 @@
 import serial
 import threading
 from time import sleep
+from datetime import datetime
 
 class SBC_Communicator(threading.Thread):
 	def __init__(self, hwctrl, to_SBC_queue, from_SBC_queue):
@@ -20,9 +21,11 @@ class SBC_Communicator(threading.Thread):
 		self._serial_connection.open()
 		while not self.exitflag:
 			for entry in self.to_SBC_queue:
-				self._serial_connection.write(entry)
+				# print("working off to_SBC_queue with: {}".format(entry))
+				self._serial_connection.write(entry.encode())
 				self.from_SBC_queue.append(self._serial_connection.read_until()) # read response
-				print(from_SBC_queue[-1])
+				if self.from_SBC_queue:
+					print(self.from_SBC_queue[-1])
 			sleep(0.1)
 			self.from_SBC_queue.append(self._serial_connection.read_until()) # read stuff that SBC sends without invitation
 
@@ -31,6 +34,11 @@ class SBC_Communicator(threading.Thread):
 
 	def terminate(self):
 		self.exitflag = True
+
+	def send_current_timestamp(self):
+		now = datetime.now()
+		timestamp_for_sbc = now.strftime("%Y-%m-%d %H:%M:%S")
+		self.to_SBC_queue.append("CT:{}".format(timestamp_for_sbc))
 
 if __name__ == '__main__':
 	import sys

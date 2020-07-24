@@ -62,15 +62,25 @@ class HWCTRL(Thread):
 			self.cur_meas.terminate()
 
 	def _button_0_pressed(self):
-		# buttons are low-active!
-		button_0_pressed = not self.pin_interface.button_0_pin_high
+		if self._hw_rev == 'rev2':
+			# buttons are low-active on rev2!
+			button_0_pressed = not self.pin_interface.button_0_pin_high
+		elif self._hw_rev == 'rev3':
+			# buttons are high-active on rev3 (thanks to sbc)
+			button_0_pressed = self.pin_interface.button_0_pin_high
+
 		if button_0_pressed:
 			self._logger.info("Button 0 pressed")
 		return button_0_pressed
 
 	def _button_1_pressed(self):
-		# buttons are low-active!
-		button_1_pressed = not self.pin_interface.button_1_pin_high
+		if self._hw_rev == 'rev2':
+			# buttons are low-active!
+			button_1_pressed = not self.pin_interface.button_1_pin_high
+		elif self._hw_rev == 'rev3':
+			# buttons are high-active on rev3 (thanks to sbc)
+			button_1_pressed =  self.pin_interface.button_1_pin_high
+
 		if button_1_pressed:
 			self._logger.info("Button 1 pressed")
 		return button_1_pressed
