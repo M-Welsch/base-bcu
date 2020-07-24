@@ -15,6 +15,7 @@ from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
 from base.common.utils import *
 from base.sbc_interface.sbc_updater import *
+from base.sbc_interface.sbc_communicator import *
 
 
 class Daemon:
@@ -29,7 +30,14 @@ class Daemon:
 		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
+		self._start_sbc_communictor_on_hw_rev3()
 		self.start_threads_and_mainloop()
+
+	def _start_sbc_communictor_on_hw_rev3(self):
+		if self._hardware_control.get_hw_revision() == 'rev3':
+			self._to_SBC_queue = []
+			self._from_SBC_queue = []
+			self._sbc_communicator = SBC_Communicator(self._hardware_control, self._to_SBC_queue, self._from_SBC_queue)
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -39,10 +47,11 @@ class Daemon:
 		self.mainloop()
 
 	def stop_threads(self):
-		self._logger.shutdown()
+		self._sbc_communicator.terminate() # needs active hwctrl to shutdown cleanly!
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
+		self._logger.shutdown()
 
 	def mainloop(self):
 		terminate_flag = False
@@ -83,9 +92,10 @@ class Daemon:
 			return ["update_sbc"]
 		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
-		if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
-			# pudb.set_trace()
-			command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
+		# if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
+		#	command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
+		if status_quo["pressed_buttons"][1]: # demo
+			command_list.append(["dock", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
 		if command_list:

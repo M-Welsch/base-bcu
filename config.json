@@ -16,7 +16,7 @@
     },
     "HWCTRL": {
         "display_default_brightness": 100,
-        "maximum_docking_time": 10,
+        "maximum_docking_time": 1,
         "docking_overcurrent_limit": 150
     },
     "Mounting": {
