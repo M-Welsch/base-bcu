@@ -21,16 +21,27 @@ class SBC_Communicator(threading.Thread):
 		self._serial_connection.open()
 		while not self.exitflag:
 			for entry in self.to_SBC_queue:
-				# print("working off to_SBC_queue with: {}".format(entry))
+				entry = self._check_for_line_ending(entry, "report")
+				print("working off to_SBC_queue with: {}".format(entry))
 				self._serial_connection.write(entry.encode())
 				self.from_SBC_queue.append(self._serial_connection.read_until()) # read response
 				if self.from_SBC_queue:
 					print(self.from_SBC_queue[-1])
+				self.to_SBC_queue.pop()
 			sleep(0.1)
 			self.from_SBC_queue.append(self._serial_connection.read_until()) # read stuff that SBC sends without invitation
 
 		print("SBC Communicator is terminating. So long and thanks for all the bytes!")
 		self._hwctrl.disable_receiving_messages_from_attiny() # forgetting this may destroy the BPi's serial interface!
+
+	def _check_for_line_ending(self, entry, mode):
+		if not entry[-1:] == '\n':
+			if mode == 'strict':
+				raise Exception
+			if mode == 'report':
+				print("line ending added to message to sbc: {}".format(entry))
+			entry = entry + '\n'
+		return entry
 
 	def terminate(self):
 		self.exitflag = True
@@ -38,7 +49,7 @@ class SBC_Communicator(threading.Thread):
 	def send_current_timestamp(self):
 		now = datetime.now()
 		timestamp_for_sbc = now.strftime("%Y-%m-%d %H:%M:%S")
-		self.to_SBC_queue.append("CT:{}".format(timestamp_for_sbc))
+		self.to_SBC_queue.append("CT:{}\n".format(timestamp_for_sbc))
 
 if __name__ == '__main__':
 	import sys

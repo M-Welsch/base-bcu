@@ -62,8 +62,6 @@ class Daemon:
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
 			terminate_flag = self._execute_command_list(command_list)
-			# for debug
-			self._sbc_communicator.send_current_timestamp()
 
 		self.stop_threads()
 
