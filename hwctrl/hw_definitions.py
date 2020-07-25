@@ -227,7 +227,7 @@ class PinInterface():
 		if self._hw_rev == 'rev3':
 			# rev3 uses a bistable relais with two coils. These have to be powered for at least 4ms. We use 10ms to be safe.
 			GPIO.output(self.pin.SW_HDD_ON, GPIO.HIGH)
-			sleep(0.01)
+			sleep(0.1)
 			GPIO.output(self.pin.SW_HDD_ON, GPIO.LOW)
 
 	def deactivate_hdd_pin(self):
@@ -237,7 +237,7 @@ class PinInterface():
 			# rev3 uses a bistable relais with two coils. These have to be powered for at least 4ms. We use 10ms to be safe.
 
 			GPIO.output(self.pin.SW_HDD_OFF, GPIO.HIGH)
-			sleep(0.01)
+			sleep(0.1)
 			GPIO.output(self.pin.SW_HDD_OFF, GPIO.LOW)
 	
 	def set_motor_pins_for_braking(self):

@@ -133,12 +133,26 @@ class rev3b_serial_send_tester_wo_hwctrl():
 	def __init__(self):
 		import RPi.GPIO as GPIO
 
+class rev3b_dock_tester(tester):
+	def __init__(self, hwctrl):
+		self._hwctrl = hwctrl
+
+	def test(self):
+		if self.warn_user_and_ask_whether_to_continue("Docks and undocks the SATA-Connection. It senses the endswitches and otherwise waits for timeout. If the endswitches don't work, it may damage your BaSe mechanically!"):
+			self._hwctrl.dock()
 
 class rev3b_bringup_test_suite():
 	def __init__(self):
 		self.display_brightness = 1
 		self._pin_interface = PinInterface(self.display_brightness)
-		self.testcases = ["test_endswitches", "test_pushbuttons", "test_stepper", "test_SBC_heartbear_receive", "rev3b_docking_undocking_test", "rev3b_power_hdd_test"]
+		self.testcases = ["test_endswitches", 
+						  "test_pushbuttons", 
+						  "test_stepper", 
+						  "test_SBC_heartbear_receive", 
+						  "rev3b_docking_undocking_test", 
+						  "rev3b_power_hdd_test",
+						  "rev3b_serial_send_tester_wo_hwctrl",
+						  "rev3b_dock_test"]
 		self._hwctrl = self._init_hwctrl()
 
 	def _init_hwctrl(self):
@@ -171,6 +185,12 @@ class rev3b_bringup_test_suite():
 
 			if user_choice in ["5", "rev3b_power_hdd_test"]:
 				Tester = rev3b_power_hdd_tester(self._hwctrl)
+
+			if user_choice in ["6", "rev3b_serial_send_tester_wo_hwctrl"]:
+				Tester = rev3b_serial_send_tester_wo_hwctrl()
+
+			if user_choice in ["7", "rev3b_dock_test"]:
+				Tester = rev3b_dock_tester(self._hwctrl)
 
 			if(Tester):
 				Tester.test()

@@ -100,7 +100,7 @@ class Daemon:
 		# if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
 		#	command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
 		if status_quo["pressed_buttons"][1]: # demo
-			command_list.extend(["dock", "undock"])
+			command_list.extend(["dock", "wait", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
 		if command_list:
@@ -119,6 +119,8 @@ class Daemon:
 			try:
 				if command == "dock":
 					self._hardware_control.dock_and_power()
+				elif command == "wait":
+					self._wait_for_seconds(10)
 				elif command == "undock":
 					self._hardware_control.unpower_and_undock()
 				elif command == "mount":
@@ -143,6 +145,9 @@ class Daemon:
 				self._logger.error(f"Some command went somehow wrong: {e}")
 				raise e
 		return False
+
+	def _wait_for_seconds(self, pause_duration):
+		sleep(pause_duration)
 
 	def get_status(self):
 		# TODO: implement hardware status retrieval
