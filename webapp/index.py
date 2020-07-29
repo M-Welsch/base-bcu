@@ -136,13 +136,12 @@ def communicator_old():
 		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_error
 
 @application.route('/communicator_rev2', methods = ['POST', 'GET'])
-
 def communicator():
 	signal_to_send = get_signal_to_send(request)
 	answer_string = ''
 	codebook = get_codebook()
-	connection_success = send_tcp_message_to_daemon_or_return_error(signal_to_send)
-	if connection_success:
+	[connection_success, answer_string] = send_tcp_message_to_daemon_and_return_answer_or_error(signal_to_send)
+	if connection_success ==  True:
 		return render_template('communicator.html', 
 								page_name ='Communicator', 
 								user='admin', 
@@ -212,9 +211,9 @@ def upload_and_flash_fw_to_sbc():
 
 def tell_daemon_about_new_sbc_fw(sbc_fw_filename):
 	port = get_port()
-	send_tcp_message_to_daemon_or_return_error("update_sbc")
+	send_tcp_message_to_daemon_and_return_answer_or_error("update_sbc")
 
-def send_tcp_message_to_daemon_or_return_error(message):
+def send_tcp_message_to_daemon_and_return_answer_or_error(message):
 	port = get_port()
 	connection_trials = 0
 	while connection_trials < 2:
@@ -225,9 +224,10 @@ def send_tcp_message_to_daemon_or_return_error(message):
 			break
 		except ConnectionRefusedError as e:
 			port += 1
+			answer_string = ''
 			connection_success = e
 		connection_trials += 1
-	return connection_success
+	return [connection_success, answer_string]
 
 def get_sbc_fw_file_from_request(request):
 	if request.method == 'POST':
@@ -240,6 +240,24 @@ def check_sbc_fw_filename(sbc_fw_filename):
 		return True
 	else:
 		raise ValueError('uploaded file is no hex-file')
+
+@application.route('/setup_backup_hdd')
+def setup_backup_hdd_step_1():
+	return render_template("setup_backup_hdd_step_1.html",
+						    page_name = 'Setup Backup HDD',
+						    user='admin')
+
+@application.route('/setup_backup_hdd_step_2')
+def setup_backup_hdd_step_2():
+	[connection_success, answer_string] = send_tcp_message_to_daemon_and_return_answer_or_error("test_docking")
+	if connection_success != True:
+		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_success
+ 	else:
+ 		return "Here's where the readout of the hdd-parameters should take place"
+
+	return render_template("setup_backup_hdd_step_2.html",
+						    page_name = 'Setup Backup HDD',
+						    user='admin')
 
 if __name__ == '__main__':
    application.run('0.0.0.0', debug=True)
