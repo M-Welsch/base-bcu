@@ -40,17 +40,43 @@ def run_external_command(command, success_msg, error_msg):
 	else:
 		print(success_msg)
 
+
 def run_external_command_string_input(command):
 	cp = run(command, shell=True, stdout=PIPE, stderr=STDOUT)
 	return cp
 
+
 def run_external_command_as_generator(command):
 	p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
 	return iter(p.stdout.readline, b'')
-	
+
+
+def run_external_command_and_return_string(command):
+	response = ""
+	for line in run_external_command_as_generator(command):
+		response += line.decode('utf-8') + '\n'
+	return response
+
+
 def run_external_command_as_generator_2(command):
 	p = Popen(command, stdout=PIPE, stderr=STDOUT, bufsize=1, universal_newlines=True)
 	return p.stdout
+
+
+def readout_hdd_parameters():
+	#Todo: take a device identifier like sda as parameter
+	model_number = "No Model Number found"
+	serial_number = "No Serial Number found"
+	for line in run_external_command_as_generator("sudo hdparm -I /dev/sda"):
+		line = str(line)
+		contains_model_number = line.find("Model Number")
+		if not contains_model_number == -1:
+			model_number = line[contains_model_number + 13:].strip()
+
+		contains_serial_number = line.find("Serial Number")
+		if not contains_serial_number == -1:
+			serial_number = line[contains_serial_number + 14:].strip()
+	return [model_number, serial_number]
 
 
 def status_quo_not_empty(status_quo):
