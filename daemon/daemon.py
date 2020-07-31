@@ -140,7 +140,7 @@ class Daemon:
 				elif command == "update_sbc":
 					self.update_sbc()
 				elif command == "readout_hdd_parameters":
-					self.readout_hdd_parameters()
+					self.read_and_send_hdd_parameters()
 				else:
 					raise RuntimeError(f"'{command}' is not a valid command!")
 			except Exception as e:
@@ -168,10 +168,12 @@ class Daemon:
 		# SBC_U = SBC_Updater()
 		# SBC_U.update_sbc()
 
-	def readout_hdd_parameters(self):
+	def read_and_send_hdd_parameters(self):
+		# pudb.set_trace()
 		try:
-			wait_for_new_device_file(10)
+			wait_for_new_device_file(8)
 		except RuntimeError as e:
 			print(e)
 		[model_number, serial_number] = readout_hdd_parameters()
-		print("Model Number: {} Serial Number: {}".format(model_number, serial_number))
+		answer = '{"Model Number":"' + model_number + '", "Serial Number":"' + serial_number + '"}'
+		self._tcp_server_thread.write_answer(answer)

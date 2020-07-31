@@ -3,6 +3,10 @@
 import threading
 import socket
 from collections import namedtuple
+from time import sleep
+
+class TCPCodebook():
+	commands_awaiting_response = ["readout_hdd_parameters"]
 
 
 class TCPServerThread(threading.Thread):
@@ -17,6 +21,8 @@ class TCPServerThread(threading.Thread):
 		self.host = socket.gethostname()                           
 		self.port = port
 		self.max_requests = max_requests
+		self._codebook = TCPCodebook
+		self.answer_string = ""
 
 		self.sock.settimeout(1.0)
 		self.configure_server()
@@ -32,6 +38,7 @@ class TCPServerThread(threading.Thread):
 
 	def run(self):
 		self.sock.listen(self.max_requests)
+		
 		print("Listening to port %i" % self.port)
 		while not self._exit_flag:
 			# establish a connection
@@ -42,16 +49,33 @@ class TCPServerThread(threading.Thread):
 
 			print("Got a connection from %s" % str(addr))
 
-			data = clientsocket.recv(1024).decode("utf-8")
-			print(data)
-			self._command_queue.put(data)
+			incoming_message = clientsocket.recv(1024).decode("utf-8")
+			print(incoming_message)
+			self._command_queue.put(incoming_message)
+			answer_message = self._compose_answer(incoming_message)
 
-			msg = "Action " + str(data) + " successful!\n"
-			clientsocket.send(msg.encode('utf-8'))
+			clientsocket.send(answer_message.encode('utf-8'))
 			clientsocket.close()
+
+
+	def _compose_answer(self, incoming_message):
+		if incoming_message in self._codebook.commands_awaiting_response:
+			while not self.answer_string:
+				sleep(0.1)
+			answer_message = self.answer_string
+			self.answer_string = ""
+
+		else:
+			answer_message = "Action " + str(incoming_message) + " successful!\n"
+		return answer_message
+
 
 	def terminate(self):
 		self._exit_flag = True
+
+
+	def write_answer(self, answer_string):
+		self.answer_string = answer_string
 
 
 class TCPClientInterface:

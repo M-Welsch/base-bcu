@@ -111,46 +111,6 @@ def get_codebook():
 
 
 @application.route('/communicator', methods=['POST', 'GET'])
-def communicator_old():
-	answer_string = ''
-	signal_to_send = get_signal_to_send(request)
-	connection_to_daemon = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	codebook = get_codebook()
-
-	host = socket.gethostname()
-	port = get_port()
-	connection_trials = 0
-	while connection_trials < 2:
-		try:
-			connection_error = connection_to_daemon.connect((host, port))
-			break
-		except Exception as e:
-			print("Connection error: %r" % e)
-			connection_error = e
-			port += 1
-			connection_trials += 1
-
-	if connection_error == None:
-		print("Signal_to_send before overwrite: %r" % signal_to_send)
-		connection_to_daemon.send(signal_to_send.encode("utf8"))
-		answer_bytes = connection_to_daemon.recv(1024)
-		print("Answer Bytes = %r" % answer_bytes)
-		answer_string = answer_bytes.decode("utf8")
-		print("Answer String = %s" % answer_string)
-		connection_to_daemon.close()
-		# FIXME: blocks the webapp
-
-		return render_template('communicator.html',
-							   page_name='Communicator',
-							   user='admin',
-							   recent_signal=signal_to_send,
-							   answer=answer_string,
-							   codebook=codebook)
-	else:
-		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_error
-
-
-@application.route('/communicator_rev2', methods=['POST', 'GET'])
 def communicator():
 	signal_to_send = get_signal_to_send(request)
 	answer_string = ''
@@ -281,16 +241,17 @@ def setup_backup_hdd_step_2():
 		except RuntimeError as e:
 			# return str(e)
 			pass
-		hdd_parameters = readout_hdd_parameters()
+		hdd_parameters = request_hdd_parameters()
 		return hdd_parameters
 		#return render_template("setup_backup_hdd_step_2.html",
 		#					   page_name='Setup Backup HDD',
 		#					   user='admin')
 
 
-def readout_hdd_parameters():
+def request_hdd_parameters():
 	[connection_success, hdd_parameters_raw] = send_tcp_message_to_daemon_and_return_answer_or_error("readout_hdd_parameters")
-	return hdd_parameters_raw
+	hdd_parameters = json.loads(hdd_parameters_raw)
+	return hdd_parameters
 
 
 if __name__ == '__main__':
