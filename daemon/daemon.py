@@ -14,6 +14,7 @@ from base.schedule.scheduler import BaseScheduler
 from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
 from base.common.utils import *
+from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
 from base.sbc_interface.sbc_updater import *
 from base.sbc_interface.sbc_communicator import *
 
@@ -174,6 +175,5 @@ class Daemon:
 			wait_for_new_device_file(8)
 		except RuntimeError as e:
 			print(e)
-		[model_number, serial_number] = readout_hdd_parameters()
-		answer = '{"Model Number":"' + model_number + '", "Serial Number":"' + serial_number + '"}'
+		answer = readout_parameters_of_all_hdds()
 		self._tcp_server_thread.write_answer(answer)

@@ -61,40 +61,6 @@ def run_external_command_as_generator_2(command):
 	return p.stdout
 
 
-def readout_hdd_parameters():
-	#Todo: take a device identifier like sda as parameter
-	model_number = "hdparm did not respond anything that would overwrite this string for model number"
-	serial_number = "hdparm did not respond anything that would overwrite this string for serial number"
-	for line in run_external_command_as_generator("sudo hdparm -I /dev/sda"):
-		line = str(line)
-		try:
-			model_number = extract_model_number(line)
-		except:
-			pass
-
-		try:
-			serial_number = extract_serial_number(line)
-		except:
-			pass
-
-	return [model_number, serial_number]
-
-
-def extract_model_number(line):
-	return extract_value_from_line(line, "Model Number")
-
-
-def extract_serial_number(line):
-	return extract_value_from_line(line, "Serial Number")
-
-
-def extract_value_from_line(line, key):
-	index_found = line.find(key)
-	if not index_found == -1:
-		value = line[index_found + len(key) + 1:-3].strip()
-	return value
-
-
 def status_quo_not_empty(status_quo):
 	b = False
 	for value in status_quo.values():

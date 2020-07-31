@@ -244,8 +244,9 @@ def setup_backup_hdd_step_2():
 		hdd_parameters = request_hdd_parameters()
 		return hdd_parameters
 		#return render_template("setup_backup_hdd_step_2.html",
-		#					   page_name='Setup Backup HDD',
-		#					   user='admin')
+							   # page_name='Setup Backup HDD',
+							   # user='admin',
+							   # hdd_parameters = hdd_parameters)
 
 
 def request_hdd_parameters():
