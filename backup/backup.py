@@ -5,7 +5,8 @@ sys.path.append(path_to_module)
 from time import sleep, time
 from threading import Thread
 
-from base.common.utils import run_external_command_as_generator_2, SSHInterface
+from base.common.utils import run_external_command_as_generator_2
+from base.common.ssh_interface import SSHInterface
 
 
 class BackupManager:

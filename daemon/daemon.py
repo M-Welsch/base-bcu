@@ -93,6 +93,8 @@ class Daemon:
 			command_list.append("reload_config")
 		if "update_sbc" in status_quo["tcp_commands"]:
 			return ["update_sbc"]
+		if "readout_hdd_parameters" in status_quo["tcp_commands"]:
+			return ["readout_hdd_parameters"]
 		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
 		# if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
@@ -137,6 +139,8 @@ class Daemon:
 					return True
 				elif command == "update_sbc":
 					self.update_sbc()
+				elif command == "readout_hdd_parameters":
+					self.readout_hdd_parameters()
 				else:
 					raise RuntimeError(f"'{command}' is not a valid command!")
 			except Exception as e:
@@ -163,3 +167,11 @@ class Daemon:
 		print("Ready for SBC FW Update. Stop BaSe and run cd /home/maxi/base/sbc_interface && sudo python3 sbc_updater.py")
 		# SBC_U = SBC_Updater()
 		# SBC_U.update_sbc()
+
+	def readout_hdd_parameters(self):
+		try:
+			wait_for_new_device_file(10)
+		except RuntimeError as e:
+			print(e)
+		[model_number, serial_number] = readout_hdd_parameters()
+		print("Model Number: {} Serial Number: {}".format(model_number, serial_number))
