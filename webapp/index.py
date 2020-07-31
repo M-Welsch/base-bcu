@@ -242,12 +242,28 @@ def setup_backup_hdd_step_2():
 			# return str(e)
 			pass
 		hdd_parameters = request_hdd_parameters()
-		return hdd_parameters
-		#return render_template("setup_backup_hdd_step_2.html",
-							   # page_name='Setup Backup HDD',
-							   # user='admin',
-							   # hdd_parameters = hdd_parameters)
+		#return hdd_parameters
+		return render_template("setup_backup_hdd_step_2.html",
+							   page_name='Setup Backup HDD',
+							   user='admin',
+							   hdd_parameters = hdd_parameters)
 
+@application.route('/setup_backup_hdd_step_3', methods=['POST'])
+def setup_backup_hdd_step_3():
+	if request.method == 'POST':
+		data = request.form
+		return data["device_for_BUHDD"]
+
+
+
+@application.route('/test_hdd_parameter_display')
+def test_hdd_parameter_display():
+	mockup_answer_string = '{"sda": {"Model Number": "WDC WD20EFRX-68AX9N0", "Serial Number": "WD-WMC300945476", "device size with M = 1000*1000": "2000398 MBytes (2000 GB)"}, "sdb": {"Model Number": "something", "Serial Number": "something else", "device size with M = 1000*1000": "11520507389987 MBytes (11520507389 GB)"}}'
+	hdd_parameters = json.loads(mockup_answer_string)
+	return render_template("setup_backup_hdd_step_2.html",
+					   page_name='Setup Backup HDD',
+					   user='admin',
+					   hdd_parameters = hdd_parameters)
 
 def request_hdd_parameters():
 	[connection_success, hdd_parameters_raw] = send_tcp_message_to_daemon_and_return_answer_or_error("readout_hdd_parameters")

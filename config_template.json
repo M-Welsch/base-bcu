@@ -40,13 +40,5 @@
             "Reload config-File":"reload_config",
             "update_sbc":"update_sbc"
         }
-    },
-    "Device Specific": {
-        "UART Interface for SBC Communication":"ttyS1",
-        "Backup HDD Device Signature":{
-            "Model Number":"",
-            "Serial Number":"",
-            "device size with M = 1000*1000":""
-        }
     }
 }
