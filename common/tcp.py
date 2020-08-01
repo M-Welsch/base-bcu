@@ -5,8 +5,7 @@ import socket
 from collections import namedtuple
 from time import sleep
 
-class TCPCodebook():
-	commands_awaiting_response = ["readout_hdd_parameters"]
+from base.codebooks.codebooks import TCP_Codebook
 
 
 class TCPServerThread(threading.Thread):
@@ -21,7 +20,7 @@ class TCPServerThread(threading.Thread):
 		self.host = socket.gethostname()                           
 		self.port = port
 		self.max_requests = max_requests
-		self._codebook = TCPCodebook
+		self._codebook = TCP_Codebook
 		self.answer_string = ""
 
 		self.sock.settimeout(1.0)
