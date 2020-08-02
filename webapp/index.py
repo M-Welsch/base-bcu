@@ -242,18 +242,63 @@ def setup_backup_hdd_step_2():
 			# return str(e)
 			pass
 		hdd_parameters = request_hdd_parameters()
+		save_hdd_params_to_temp_file(hdd_parameters)
 		#return hdd_parameters
 		return render_template("setup_backup_hdd_step_2.html",
 							   page_name='Setup Backup HDD',
 							   user='admin',
 							   hdd_parameters = hdd_parameters)
 
+def save_hdd_params_to_temp_file(hdd_parameters):
+	hdd_params_str = str(hdd_parameters).replace("'",'"')
+	save_to_temporary_file(hdd_params_str,"/tmp/hdd_parameters_tmp")
+
+
+def save_to_temporary_file(content, filename):
+	f = open(filename, "w")
+	f.write(content)
+	f.close()
+
+def read_and_delete_temporary_file(filename):
+	f = open(filename, "r")
+	content = f.read()
+	f.close()
+	os.remove(filename)
+	return content
+
+
 @application.route('/setup_backup_hdd_step_3', methods=['POST'])
 def setup_backup_hdd_step_3():
 	if request.method == 'POST':
 		data = request.form
-		return data["device_for_BUHDD"]
 
+	hdd_parameters = get_mn_sn_from_sd_file(data["device_for_BUHDD"])
+	# write_BUHDD_parameter_to_config_file(hdd_parameters)
+	return render_template("setup_backup_hdd_step_3.html",
+						   page_name='Setup Backup HDD',
+						   user='admin',
+						   hdd_parameters = hdd_parameters)	
+
+
+
+def get_mn_sn_from_sd_file(sd_file):
+	try:
+		hdd_params_str = read_and_delete_temporary_file("/tmp/hdd_parameters_tmp")
+	except FileNotFoundError as e:
+		return 'Temporary file "/tmp/hdd_parameters_tmp" could not be accessed: ' + str(e)
+	hdd_params_dict = json.loads(hdd_params_str)
+	return hdd_params_dict[sd_file]
+
+
+def write_BUHDD_parameter_to_config_file(hdd_parameters):
+	# fixme: destroys config file!
+	with open('../config.json', 'w') as jf:
+		jobj = json.load(jf)
+		jobj['Device Specific']['Backup HDD Device Signature']['Model Number'] = hdd_parameters["Model Number"]
+		jobj['Device Specific']['Backup HDD Device Signature']['Serial Number'] = hdd_parameters["Serial Number"]
+		jf.seek(0) # necessary due to https://stackoverflow.com/questions/13949637/how-to-update-json-file-with-python
+		json.dump(jobj, jf)
+		jf.truncate()
 
 
 @application.route('/test_hdd_parameter_display')
@@ -265,11 +310,10 @@ def test_hdd_parameter_display():
 					   user='admin',
 					   hdd_parameters = hdd_parameters)
 
-def request_hdd_parameters():
+def request_hdd_parameters() -> dict:
 	[connection_success, hdd_parameters_raw] = send_tcp_message_to_daemon_and_return_answer_or_error("readout_hdd_parameters")
 	hdd_parameters = json.loads(hdd_parameters_raw)
 	return hdd_parameters
-
 
 if __name__ == '__main__':
 	application.run('0.0.0.0', debug=True)
