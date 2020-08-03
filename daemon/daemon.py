@@ -96,6 +96,8 @@ class Daemon:
 			return ["update_sbc"]
 		if "readout_hdd_parameters" in status_quo["tcp_commands"]:
 			return ["readout_hdd_parameters"]
+		if "new_buhdd" in status_quo["tcp_commands"]:
+			return ["enter_new_buhdd_in_config.json"]
 		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
 		# if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
@@ -142,6 +144,8 @@ class Daemon:
 					self.update_sbc()
 				elif command == "readout_hdd_parameters":
 					self.read_and_send_hdd_parameters()
+				elif command == "enter_new_buhdd_in_config.json":
+					self._config.write_BUHDD_parameter_to_tmp_config_file()
 				else:
 					raise RuntimeError(f"'{command}' is not a valid command!")
 			except Exception as e:

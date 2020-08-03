@@ -127,8 +127,8 @@ def communicator():
 		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_error
 
 
-@application.route('/logger', methods=['GET', 'POST'])
-def logger():
+@application.route('/logfile_viewer', methods=['GET', 'POST'])
+def logfile_viewer():
 	available_logs = []
 	# pudb.set_trace()
 	for file in os.listdir("../log"):
@@ -153,7 +153,7 @@ def logger():
 			line = '<font color="blue">' + line + '</font>'
 		log.append(line)
 
-	return render_template('logger.html',
+	return render_template('logfile_viewer.html',
 						   page_name='Logger',
 						   user='admin',
 						   logfile=log,
@@ -242,16 +242,16 @@ def setup_backup_hdd_step_2():
 			# return str(e)
 			pass
 		hdd_parameters = request_hdd_parameters()
-		save_hdd_params_to_temp_file(hdd_parameters)
+		save_hdd_params_to_temp_file(hdd_parameters,"/tmp/hdd_parameters_tmp")
 		#return hdd_parameters
 		return render_template("setup_backup_hdd_step_2.html",
 							   page_name='Setup Backup HDD',
 							   user='admin',
 							   hdd_parameters = hdd_parameters)
 
-def save_hdd_params_to_temp_file(hdd_parameters):
+def save_hdd_params_to_temp_file(hdd_parameters, filename):
 	hdd_params_str = str(hdd_parameters).replace("'",'"')
-	save_to_temporary_file(hdd_params_str,"/tmp/hdd_parameters_tmp")
+	save_to_temporary_file(hdd_params_str, filename)
 
 
 def save_to_temporary_file(content, filename):
@@ -259,7 +259,7 @@ def save_to_temporary_file(content, filename):
 	f.write(content)
 	f.close()
 
-def read_and_delete_temporary_file(filename):
+def read_and_remove_temporary_file(filename):
 	f = open(filename, "r")
 	content = f.read()
 	f.close()
@@ -272,33 +272,27 @@ def setup_backup_hdd_step_3():
 	if request.method == 'POST':
 		data = request.form
 
-	hdd_parameters = get_mn_sn_from_sd_file(data["device_for_BUHDD"])
-	# write_BUHDD_parameter_to_config_file(hdd_parameters)
+	hdd_parameters_of_buhdd_to_use = get_mn_sn_from_sd_file(data["device_for_BUHDD"])
+	save_hdd_params_to_temp_file(hdd_parameters_of_buhdd_to_use, "/tmp/hdd_parameters_of_buhdd_to_use") #fixme:file is not being created for some reason
+	tell_daemon_to_use_new_buhdd()
 	return render_template("setup_backup_hdd_step_3.html",
 						   page_name='Setup Backup HDD',
 						   user='admin',
-						   hdd_parameters = hdd_parameters)	
+						   hdd_parameters = hdd_parameters_of_buhdd_to_use)	
 
+def tell_daemon_to_use_new_buhdd():
+	[connection_success, answer_string] = send_tcp_message_to_daemon_and_return_answer_or_error("new_buhdd")
+	if not connection_success:
+		return 'Daemon does not respond: %r<br><a href="..">go back</a>' % connection_success
 
 
 def get_mn_sn_from_sd_file(sd_file):
 	try:
-		hdd_params_str = read_and_delete_temporary_file("/tmp/hdd_parameters_tmp")
+		hdd_params_str = read_and_remove_temporary_file("/tmp/hdd_parameters_tmp")
 	except FileNotFoundError as e:
 		return 'Temporary file "/tmp/hdd_parameters_tmp" could not be accessed: ' + str(e)
 	hdd_params_dict = json.loads(hdd_params_str)
 	return hdd_params_dict[sd_file]
-
-
-def write_BUHDD_parameter_to_config_file(hdd_parameters):
-	# fixme: destroys config file!
-	with open('../config.json', 'w') as jf:
-		jobj = json.load(jf)
-		jobj['Device Specific']['Backup HDD Device Signature']['Model Number'] = hdd_parameters["Model Number"]
-		jobj['Device Specific']['Backup HDD Device Signature']['Serial Number'] = hdd_parameters["Serial Number"]
-		jf.seek(0) # necessary due to https://stackoverflow.com/questions/13949637/how-to-update-json-file-with-python
-		json.dump(jobj, jf)
-		jf.truncate()
 
 
 @application.route('/test_hdd_parameter_display')
