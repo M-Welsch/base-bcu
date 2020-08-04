@@ -20,7 +20,7 @@ class TCPServerThread(threading.Thread):
 		self.host = socket.gethostname()
 		self.port = port
 		self.max_requests = max_requests
-		self._codebook = TCP_Codebook
+		self._codebook = TCP_Codebook()
 		self.answer_string = ""
 
 		self.sock.settimeout(1.0)
@@ -50,7 +50,6 @@ class TCPServerThread(threading.Thread):
 			incoming_message = clientsocket.recv(1024).decode("utf-8")
 			print(incoming_message)
 			self._command_queue.put(incoming_message)
-			self._wait_for_answer_string(incoming_message, 3)
 			answer_message = self._compose_answer(incoming_message)
 			self._send_message(answer_message, clientsocket)
 			clientsocket.close()
@@ -62,6 +61,16 @@ class TCPServerThread(threading.Thread):
 	def terminate(self):
 			self._exit_flag = True
 
+	def _compose_answer(self, incoming_message):
+		#pudb.set_trace()
+		if incoming_message in self._codebook.commands_awaiting_response:
+			self._wait_for_answer_string(incoming_message, self._codebook.commands[incoming_message].Timeout)
+			answer_message = self.answer_string
+			self.answer_string = ""
+		else:
+			answer_message = "Action " + str(incoming_message) + " successful!\n"
+		return answer_message
+
 	def _wait_for_answer_string(self, incoming_message, timeout):
 		start = time()
 		while not self.answer_string:
@@ -69,15 +78,6 @@ class TCPServerThread(threading.Thread):
 				print("Answer to {} was not set after {}s".format(incoming_message, timeout))
 				break
 			sleep(0.1)
-
-	def _compose_answer(self, incoming_message):
-		if incoming_message in self._codebook.commands_awaiting_response:
-
-			answer_message = self.answer_string
-			self.answer_string = ""
-		else:
-			answer_message = "Action " + str(incoming_message) + " successful!\n"
-		return answer_message
 
 	def write_answer(self, answer_string):
 		self.answer_string = answer_string

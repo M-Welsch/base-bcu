@@ -3,6 +3,9 @@ import json
 class Config:
 	def __init__(self, path):
 		self._path = path
+		self._load()
+
+	def _load(self):
 		with open(self._path, 'r') as cf:
 			self._config = json.load(cf)
 
@@ -29,20 +32,19 @@ class Config:
 	@property
 	def backup_config(self):
 		return self._config["Backup"]
-	
 
+	def _update(self):
+		with open(self._path, 'w') as cf:
+			json.dump(self._config, cf)
+	
 	def reload(self):
-		raise NotImplementedError  # TODO: implement config file reloading
+		self._load()
 
 	def write_BUHDD_parameter_to_tmp_config_file(self):
 		f = open("/tmp/hdd_parameters_of_buhdd_to_use", "r")
 		hdd_params_str = f.read()
 		f.close()
 		hdd_parameters = json.loads(hdd_params_str)
-		print(hdd_parameters)
-		# fixme: destroys config file!
 		self._config['Device Specific']['Backup HDD Device Signature']['Model Number'] = hdd_parameters["Model Number"]
 		self._config['Device Specific']['Backup HDD Device Signature']['Serial Number'] = hdd_parameters["Serial Number"]
-		#jf.seek(0) # necessary due to https://stackoverflow.com/questions/13949637/how-to-update-json-file-with-python
-		#json.dump(jobj, jf)
-		#jf.truncate()
+		self._update()

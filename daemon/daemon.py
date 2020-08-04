@@ -5,6 +5,7 @@ import pudb
 from time import sleep
 from typing import Dict, List
 
+from base.codebooks.codebooks import *
 from base.common.config import Config
 from base.common.base_logging import Logger
 from base.common.tcp import TCPServerThread
@@ -23,6 +24,7 @@ class Daemon:
 	def __init__(self, autostart_webapp: bool = True):
 		self._autostart_webapp = autostart_webapp
 		self._command_queue = Queue()
+		self._tcp_codebook = TCP_Codebook()
 		self._config = Config("base/config.json")
 		self._scheduler = BaseScheduler()
 		self._logger = Logger(self._config.logs_directory)
@@ -145,7 +147,7 @@ class Daemon:
 				elif command == "readout_hdd_parameters":
 					self.read_and_send_hdd_parameters()
 				elif command == "enter_new_buhdd_in_config.json":
-					self._config.write_BUHDD_parameter_to_tmp_config_file()
+					self.update_bu_hdd_in_config_file()
 				else:
 					raise RuntimeError(f"'{command}' is not a valid command!")
 			except Exception as e:
@@ -176,8 +178,12 @@ class Daemon:
 	def read_and_send_hdd_parameters(self):
 		# pudb.set_trace()
 		try:
-			wait_for_new_device_file(8)
+			timeout = self._tcp_codebook.commands["readout_hdd_parameters"].Timeout - 1 # request the result one second before TCP Server's timeout elapses
+			wait_for_new_device_file(timeout)
 		except RuntimeError as e:
 			print(e)
 		answer = readout_parameters_of_all_hdds()
 		self._tcp_server_thread.write_answer(answer)
+
+	def update_bu_hdd_in_config_file(self):
+		self._config.write_BUHDD_parameter_to_tmp_config_file()
