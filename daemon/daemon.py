@@ -56,7 +56,7 @@ class Daemon:
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
-		self._logger.shutdown()
+		self._logger.terminate()
 
 	def mainloop(self):
 		terminate_flag = False

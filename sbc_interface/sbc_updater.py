@@ -35,12 +35,14 @@ if __name__ == '__main__':
 	_config = Config("/home/maxi/base/config.json")
 	_logger = Logger("/home/maxi/base/log")
 	_hardware_control = HWCTRL(_config.hwctrl_config, _logger)
+	_hardware_control.enable_receiving_messages_from_attiny()
 	_hardware_control.set_attiny_serial_path_to_sbc_fw_update()
 
 	SBCU = SBC_Updater()
 	SBCU.update_sbc()
 
+	_hardware_control.disable_receiving_messages_from_attiny()
 	_hardware_control.set_attiny_serial_path_to_communication()
 	_hardware_control.terminate()
-	_logger.shutdown()
+	_logger.terminate()
 

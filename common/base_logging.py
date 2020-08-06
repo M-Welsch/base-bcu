@@ -32,7 +32,7 @@ class Logger:
     def critical(self, content):
         self._queue.put(LogMessage(content, "critical"))
 
-    def shutdown(self):
+    def terminate(self):
         self._worker.terminate()
 
     def _make_filepath(self, directory):
