@@ -14,7 +14,7 @@ class SBC_UART_Finder():
 			self._logger.info("SBC answers on UART Interface {}".format(uart_sbc))
 		else:
 			self._logger.warning("SBC doesn't respond on any UART Interface!")
-		self._prepare_uart_sbc_for_fw_update(uart_sbc)
+		# self._prepare_uart_sbc_for_fw_update(uart_sbc)
 		return uart_sbc
 
 	def _get_available_uart_interfaces(self):

@@ -38,11 +38,11 @@ class Daemon:
 
 	def _start_sbc_communictor_on_hw_rev3_and_set_SBCs_RTC(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
-			self._to_SBC_queue = []
 			self._from_SBC_queue = []
-			self._sbc_communicator = SBC_Communicator(self._hardware_control, self._to_SBC_queue, self._from_SBC_queue)
+			self._sbc_communicator = SBC_Communicator(self._hardware_control, self._logger)
 			self._sbc_communicator.start()
 			self._sbc_communicator.send_current_timestamp()
+			self._sbc_communicator.append_to_sbc_communication_queue("DS:BCU Started")
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -52,6 +52,7 @@ class Daemon:
 		self.mainloop()
 
 	def stop_threads(self):
+		self._sbc_communicator.append_to_sbc_communication_queue("DS:BCU Stopping")
 		self._sbc_communicator.terminate() # needs active hwctrl to shutdown cleanly!
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
