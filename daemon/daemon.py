@@ -41,8 +41,7 @@ class Daemon:
 			self._from_SBC_queue = []
 			self._sbc_communicator = SBC_Communicator(self._hardware_control, self._logger)
 			self._sbc_communicator.start()
-			self._sbc_communicator.send_current_timestamp()
-			self._sbc_communicator.append_to_sbc_communication_queue("DS:BCU Started")
+			self._sbc_communicator.write_to_display("Hi","BPU ready")
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -52,7 +51,7 @@ class Daemon:
 		self.mainloop()
 
 	def stop_threads(self):
-		self._sbc_communicator.append_to_sbc_communication_queue("DS:BCU Stopping")
+		self._sbc_communicator.write_to_display("Goodbye","BPU stopping")
 		self._sbc_communicator.terminate() # needs active hwctrl to shutdown cleanly!
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
@@ -66,8 +65,13 @@ class Daemon:
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
 			terminate_flag = self._execute_command_list(command_list)
-
+		self._communicate_shutdown_intention_to_sbu()
 		self.stop_threads()
+
+	def _communicate_shutdown_intention_to_sbu(self):
+		self._sbc_communicator.send_shutdown_request()
+		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
+		self._sbc_communicator.append_to_sbc_communication_queue("BU:{}".format(seconds_to_next_bu))
 
 	def _look_up_status_quo(self) -> Dict:
 		status_quo = {}

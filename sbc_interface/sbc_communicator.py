@@ -82,10 +82,15 @@ class SBC_Communicator(threading.Thread):
 			timediff = time() - start
 			sleep(0.1)
 
-	def send_current_timestamp(self):
-		now = datetime.now()
-		timestamp_for_sbc = now.strftime("%Y-%m-%d %H:%M:%S")
-		self.append_to_sbc_communication_queue("CT:{}\n".format(timestamp_for_sbc))
+	def send_seconds_to_next_bu_to_sbc(self, seconds):
+		self.append_to_sbc_communication_queue("BU:{}\0".format(seconds))
+
+	def write_to_display(self, line1, line2):
+		self.append_to_sbc_communication_queue("D1:{}\0".format(line1))
+		self.append_to_sbc_communication_queue("D2:{}\0".format(line2))
+
+	def send_shutdown_request(self):
+		self.append_to_sbc_communication_queue("SR:")
 
 if __name__ == '__main__':
 	import sys
@@ -107,5 +112,6 @@ if __name__ == '__main__':
 		while messages_from_sbc:
 			print(messages_from_sbc.pop())
 		sleep(1)
-		SBCC.append_to_sbc_communication_queue("DS:Test{}".format(testcounter))
+		SBCC.append_to_sbc_communication_queue("D1:Test{}".format(testcounter))
+		SBCC.append_to_sbc_communication_queue("D2:Test{}".format(testcounter+1))
 		testcounter += 1
