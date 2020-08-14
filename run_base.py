@@ -5,6 +5,7 @@ sys.path.append(path_to_module)
 
 from base.daemon.daemon import Daemon
 
+
 def main():
 	d = Daemon()
 	# print("starting daemon...")
@@ -16,6 +17,7 @@ def main():
 	# 	while not msg_from_tcp[-1] == "kill me":
 	# 		continue
 	# 	srv.terminate()
+
 
 if __name__ == '__main__':
 	main()

@@ -3,3 +3,4 @@ __pycache__
 log
 *.sublime-project
 *.sublime-workspace
+*.idea

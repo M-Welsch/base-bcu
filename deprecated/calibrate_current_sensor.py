@@ -17,7 +17,8 @@ class Current_Sensor_Calibrator():
 
 	def calibrate_current_sensor(self):
 		current_values = self.get_current_values()
-		self.save_result(list(current_values.keys()), list(current_values.values()), "table_adc_vs_measurement.csv")
+		self.save_result(list(current_values.keys()), list(current_values.values()),
+						 "table_adc_vs_measurement.csv")
 
 		lin_params = self.calculate_linear_parameters_by_least_squares(current_values)
 		appr_x, appr_y = self.compute_approximated_values(lin_params, current_values)

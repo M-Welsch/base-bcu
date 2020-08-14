@@ -1,6 +1,4 @@
-import os
 from queue import Queue
-import pudb
 
 from time import sleep
 from typing import Dict, List
@@ -33,13 +31,13 @@ class Daemon:
 		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
-		self._start_sbc_communictor_on_hw_rev3_and_set_SBCs_RTC()
+		self._start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc()
 		self.start_threads_and_mainloop()
 
-	def _start_sbc_communictor_on_hw_rev3_and_set_SBCs_RTC(self):
+	def _start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
 			self._from_SBC_queue = []
-			self._sbc_communicator = SBC_Communicator(self._hardware_control, self._logger)
+			self._sbc_communicator = SbcCommunicator(self._hardware_control, self._logger)
 			self._sbc_communicator.start()
 			self._sbc_communicator.write_to_display("Hi","BPU ready")
 
@@ -74,9 +72,10 @@ class Daemon:
 		self._sbc_communicator.append_to_sbc_communication_queue("BU:{}".format(seconds_to_next_bu))
 
 	def _look_up_status_quo(self) -> Dict:
-		status_quo = {}
-		status_quo["pressed_buttons"] = self._hardware_control.pressed_buttons()
-		status_quo["tcp_commands"] = []
+		status_quo = {
+			"pressed_buttons": self._hardware_control.pressed_buttons(),
+			"tcp_commands": []
+		}
 		while not self._command_queue.empty():
 			status_quo["tcp_commands"].append(self._command_queue.get())
 			self._command_queue.task_done()
@@ -107,8 +106,12 @@ class Daemon:
 			return ["enter_new_buhdd_in_config.json"]
 		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
-		# if status_quo["pressed_buttons"][1] or "backup" in status_quo["tcp_commands"] or status_quo["backup_scheduled_for_now"]:
-		#	command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
+		# if (
+		# 		status_quo["pressed_buttons"][1] or
+		# 		"backup" in status_quo["tcp_commands"] or
+		# 		status_quo["backup_scheduled_for_now"
+		# ):
+		#  command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
 		if status_quo["pressed_buttons"][1]: # demo
 			command_list.extend(["dock", "wait", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
@@ -119,10 +122,11 @@ class Daemon:
 
 	@staticmethod
 	def _extract_sbc_filename_from_commmand(status_quo_tcp_commands: List) -> str:
+		sbc_filename = None
 		for entry in status_quo_tcp_commands:
 			if entry[:10] == "update_sbc":
 				sbc_filename = entry[:14]
-		return filename
+		return sbc_filename
 
 	def _execute_command_list(self, command_list: List[str]) -> bool:
 		for command in command_list:
@@ -172,9 +176,11 @@ class Daemon:
 		# self._hardware_control.display("{}\nETA {}s".format(next_backup_scheduled_string, seconds_to_next_bu), 2)
 		# uncomment line above once SBC-Display forwarding works!
 
-		backups_present = list_backups_by_age(self._config.mounting_config["backup_hdd_mount_point"]) # TODO: send to Webapp if it asks for status ...
+		# TODO: send to Webapp if it asks for status ...
+		backups_present = list_backups_by_age(self._config.mounting_config["backup_hdd_mount_point"])
 
-	def update_sbc(self):
+	@staticmethod
+	def update_sbc():
 		# Fixme: that crashes the ttyS1 for some reason
 		print("Ready for SBC FW Update. Stop BaSe and run cd /home/maxi/base/sbc_interface && sudo python3 sbc_updater.py")
 		# SBC_U = SBC_Updater()
@@ -183,7 +189,8 @@ class Daemon:
 	def read_and_send_hdd_parameters(self):
 		# pudb.set_trace()
 		try:
-			timeout = self._tcp_codebook.commands["readout_hdd_parameters"].Timeout - 1 # request the result one second before TCP Server's timeout elapses
+			# request the result one second before TCP Server's timeout elapses
+			timeout = self._tcp_codebook.commands["readout_hdd_parameters"].Timeout - 1
 			wait_for_new_device_file(timeout)
 		except RuntimeError as e:
 			print(e)
