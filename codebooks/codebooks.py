@@ -4,7 +4,10 @@ class TCP_Codebook():
 	def __init__(self):
 		Command = namedtuple('Command', 'Awaiting_Response, Timeout')
 		self._commands = {"readout_hdd_parameters":Command(Awaiting_Response = True, Timeout = 10),
-						  "test_mounting":Command(Awaiting_Response = False, Timeout = 10)}
+						  "test_mounting":Command(Awaiting_Response = False, Timeout = 10),
+						  "seconds_to_next_bu_to_sbc":Command(Awaiting_Response = False, Timeout = 10),
+						  "shutdown_base":Command(Awaiting_Response = False, Timeout = 10)
+						  }
 		self._create_list_of_commands_awaiting_response()
 
 	def _create_list_of_commands_awaiting_response(self):

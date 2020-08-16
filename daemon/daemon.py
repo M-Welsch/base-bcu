@@ -63,11 +63,13 @@ class Daemon:
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
 			terminate_flag = self._execute_command_list(command_list)
-		self._communicate_shutdown_intention_to_sbu()
 		self.stop_threads()
 
 	def _communicate_shutdown_intention_to_sbu(self):
 		self._sbc_communicator.send_shutdown_request()
+		self._seconds_to_next_bu_to_sbc()
+
+	def _seconds_to_next_bu_to_sbc(self):
 		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
 		self._sbc_communicator.append_to_sbc_communication_queue("BU:{}".format(seconds_to_next_bu))
 
@@ -116,6 +118,10 @@ class Daemon:
 			command_list.extend(["dock", "wait", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
+		if "seconds_to_next_bu_to_sbc" in status_quo["tcp_commands"]:
+			self._seconds_to_next_bu_to_sbc()
+		if "shutdown_base" in status_quo["tcp_commands"]:
+			self._communicate_shutdown_intention_to_sbu()
 		if command_list:
 			print("command list:", command_list)
 		return command_list
