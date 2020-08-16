@@ -17,7 +17,7 @@ class SbcCommunicator(threading.Thread):
         self._from_SBC_queue = Queue()
         self._to_sbc_queue = Queue()
         self._flush_to_sbc_queue()
-        self.exitflag = False
+        self._exitflag = False
         self._serial_connection = self._prepare_serial_connection()
 
     def _prepare_serial_connection(self):
@@ -34,21 +34,18 @@ class SbcCommunicator(threading.Thread):
         self.append_to_sbc_communication_queue('\0')
 
     def _get_uart_line_to_sbc(self):
-        self._hwctrl.set_attiny_serial_path_to_communication()
-        self._hwctrl.enable_receiving_messages_from_attiny()
         uart_line_to_sbc = SbcUartFinder(self._logger).get_uart_line_to_sbc()
-        self._hwctrl.disable_receiving_messages_from_attiny()
-        self._hwctrl.set_attiny_serial_path_to_sbc_fw_update()
         print(uart_line_to_sbc)
         return uart_line_to_sbc
 
     def run(self):
         self._hwctrl.set_attiny_serial_path_to_communication()
         self._hwctrl.enable_receiving_messages_from_attiny()  # necessary
-        if self._get_uart_line_to_sbc() is not None:
-            self._serial_connection.port = self._get_uart_line_to_sbc()
+        uart_line_to_sbc = self._get_uart_line_to_sbc()
+        if uart_line_to_sbc is not None:
+            self._serial_connection.port = uart_line_to_sbc
             self._serial_connection.open()
-            while not self.exitflag:
+            while not self._exitflag:
                 if not self._to_sbc_queue.empty():
                     entry = self._to_sbc_queue.get()
                     entry = self._check_for_line_ending(entry, "report")
@@ -84,7 +81,7 @@ class SbcCommunicator(threading.Thread):
 
     def terminate(self):
         self._wait_for_queues_to_empty()
-        self.exitflag = True
+        self._exitflag = True
 
     def _wait_for_queues_to_empty(self):
         start = time()

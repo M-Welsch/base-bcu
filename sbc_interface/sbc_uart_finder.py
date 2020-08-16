@@ -36,11 +36,13 @@ class SbcUartFinder:
             print("{} could not be opened".format(uart_interface))
             return False
         else:
+            print(f"Challanged {uart_interface}, responded {response}.")
             return response.endswith(b"Echo")
 
     @staticmethod
     def _challenge_interface(uart_interface):
         with serial.Serial(uart_interface, 9600, timeout=1) as ser:
+            ser.reset_input_buffer()
             ser.write(b"Test\0")
             response = ser.read_until(b"Echo")
             ser.reset_input_buffer()
@@ -62,7 +64,7 @@ if __name__ == "__main__":
     sbc_uart_finder = SbcUartFinder(_logger)
     uart_sbc = sbc_uart_finder.get_uart_line_to_sbc()
     print(uart_sbc)
-    _hardware_control.disable_receiving_messages_from_attiny()
-    _hardware_control.set_attiny_serial_path_to_sbc_fw_update()
+    #_hardware_control.disable_receiving_messages_from_attiny()
+    #_hardware_control.set_attiny_serial_path_to_sbc_fw_update()
     _hardware_control.terminate()
     _logger.terminate()

@@ -169,15 +169,16 @@ class PinInterface:
 		GPIO.setup(self.pin.En_attiny_link, GPIO.OUT)
 		GPIO.setup(self.pin.heartbeat, GPIO.OUT)
 		self.set_attiny_serial_path_to_communication()
+		self.enable_receiving_messages_from_attiny()
 
 	def get_hw_revision(self):
 		GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		# rev 1 is not respected here.
 		if GPIO.input(26):
-			# in HW revision 1 (With LEGO Motor) pin 26 is floating and will be read HIGH with the internal pullup
+			# in HW revision 2 (With LEGO Motor) pin 26 is floating and will be read HIGH with the internal pullup
 			return "rev2"
 		else:
-			# in HW revision 2 (With Sepper) Pin 26 is shorted to GND
+			# in HW revision 3 (rev3a and rev3b - with Sepper) Pin 26 is shorted to GND
 			return "rev3"
 		# deactivate pullup to save some power
 		GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
