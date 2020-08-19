@@ -43,6 +43,7 @@ class SbcUartFinder:
     def _challenge_interface(uart_interface):
         with serial.Serial(uart_interface, 9600, timeout=1) as ser:
             ser.reset_input_buffer()
+            ser.write(b'\0')
             ser.write(b"Test\0")
             response = ser.read_until(b"Echo")
             ser.reset_input_buffer()

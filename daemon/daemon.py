@@ -32,6 +32,7 @@ class Daemon:
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
 		self._start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc()
+		self._shutdown_flag = False
 		self.start_threads_and_mainloop()
 
 	def _start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc(self):
@@ -62,12 +63,12 @@ class Daemon:
 			sleep(self._config.main_loop_interval)
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
-			terminate_flag = self._execute_command_list(command_list)
-		self.stop_threads()
-
-	def _communicate_shutdown_intention_to_sbu(self):
-		self._sbc_communicator.send_shutdown_request()
-		self._seconds_to_next_bu_to_sbc()
+			self._execute_command_list(command_list)
+			
+		if self._shutdown_flag:
+			self._initiate_shutdown_process()
+		else:
+			self.stop_threads()
 
 	def _seconds_to_next_bu_to_sbc(self):
 		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
@@ -118,6 +119,8 @@ class Daemon:
 			command_list.extend(["dock", "wait", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon")
+		if "terminate_daemon_and_shutdown" in status_quo["tcp_commands"]:
+			command_list.append("terminate_daemon_and_shutdown")
 		if "seconds_to_next_bu_to_sbc" in status_quo["tcp_commands"]:
 			self._seconds_to_next_bu_to_sbc()
 		if "shutdown_base" in status_quo["tcp_commands"]:
@@ -134,7 +137,7 @@ class Daemon:
 				sbc_filename = entry[:14]
 		return sbc_filename
 
-	def _execute_command_list(self, command_list: List[str]) -> bool:
+	def _execute_command_list(self, command_list: List[str]):
 		for command in command_list:
 			try:
 				if command == "dock":
@@ -156,6 +159,10 @@ class Daemon:
 				elif command == "show_status_info":
 					self.get_status()
 				elif command == "terminate_daemon":
+					return True
+				elif command == "terminate_daemon_and_shutdown":
+					self._initiate_shutdown_process()
+					self._shutdown_flag = True
 					return True
 				elif command == "update_sbc":
 					self.update_sbc()
@@ -205,3 +212,14 @@ class Daemon:
 
 	def update_bu_hdd_in_config_file(self):
 		self._config.write_BUHDD_parameter_to_tmp_config_file()
+
+	def _initiate_shutdown_process(self):
+		self._logger.info("Shutting down")
+		self._sbc_communicator.send_shutdown_request()
+		self._seconds_to_next_bu_to_sbc()
+		self.stop_threads()
+		self._shutdown_base()
+
+	def _shutdown_base(self):
+		os.system("shutdown -h now")
+		

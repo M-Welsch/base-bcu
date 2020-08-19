@@ -6,7 +6,7 @@ class TCP_Codebook():
 		self._commands = {"readout_hdd_parameters":Command(Awaiting_Response = True, Timeout = 10),
 						  "test_mounting":Command(Awaiting_Response = False, Timeout = 10),
 						  "seconds_to_next_bu_to_sbc":Command(Awaiting_Response = False, Timeout = 10),
-						  "shutdown_base":Command(Awaiting_Response = False, Timeout = 10)
+						  "terminate_daemon_and_shutdown":Command(Awaiting_Response = False, Timeout = 10)
 						  }
 		self._create_list_of_commands_awaiting_response()
 
@@ -31,6 +31,7 @@ class SBC_Codebook():
 	command_prefixes = {"Display Write String":"DS:",
 						"Display Dim":"DD:",
 						"LED Dim":"LD",
-						"Current Consumption":"CC"
+						"Current Consumption":"CC",
+						"Temperature":"TP"
 						}
 	commands = {"Shutdown Request":"SR"}
