@@ -16,15 +16,17 @@
    <body>
       <h1>Hello {{ user }}!</h1>
       <h2>Select Logfile</h2>
-         <form method="POST" action="logger" name="select_filename">
+
+         <form method="POST" action="logfile_viewer" name="select_filename">
             <select name="filename" id="schoolContainer">
                {% for filename in filenames %}
-                  <option value="{{file}}" {% if filename == filename_selected %} selected {% endif %}>{{filename}}</option>
+                  <option value="{{filename}}" {% if filename == logfile_selected %} selected {% endif %}>{{filename}}</option>
                {% endfor %}
             </select>
             <input type="hidden" value="dummy">
             <input type="submit" value="show">
          </form><br>
+
          <a href="..">go back</a>
       <h2>Logfile</h2>
          {% autoescape off %}
