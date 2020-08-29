@@ -1,6 +1,7 @@
 import os
-from time import time, sleep
+from time import sleep
 from subprocess import run, Popen, PIPE, STDOUT
+
 
 # deprecated
 def wait_for_new_device_file(seconds):
@@ -18,16 +19,16 @@ def get_device_files():
 	return [f for f in all_device_files if f.startswith("sd")]
 
 
-def wait_for_device_file(device_file, timeout):
+def wait_for_device_file(device_file_path, timeout):
 	for counter in range(timeout):
-		if device_file_present(device_file):
+		if device_file_present(device_file_path):
 			return True
 		sleep(1)
 	return False
 
 
-def device_file_present(device_file):
-	return os.path.exists(device_file)
+def device_file_present(device_file_path):
+	return os.path.exists(device_file_path)
 
 
 def run_external_command(command, success_msg, error_msg):
@@ -50,10 +51,8 @@ def run_external_command_as_generator(command):
 
 
 def run_external_command_and_return_string(command):
-	response = ""
-	for line in run_external_command_as_generator(command):
-		response += line.decode('utf-8') + '\n'
-	return response
+	iterator = run_external_command_as_generator(command)
+	return "\n".join(line.decode('utf-8') for line in iterator)
 
 
 def run_external_command_as_generator_2(command):
