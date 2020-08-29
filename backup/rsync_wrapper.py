@@ -6,7 +6,7 @@ from threading import Thread
 from time import sleep
 
 
-class SshRsync(Thread):
+class SshRsync:
     def __init__(self, host, user, remote_source_path, local_target_path):
         self._command = f"sudo rsync -avHe ssh {user}@{host}:{remote_source_path} {local_target_path} --progress".split()
         self._process = None
