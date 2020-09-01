@@ -14,7 +14,7 @@ class SshRsync:
         self._process = None
 
     def __enter__(self):
-        self._process = Popen(self._command, bufsize=0, stdout=PIPE, stderr=STDOUT)
+        self._process = Popen(self._command, bufsize=0, stdout=PIPE, stderr=STDOUT, text=True)
         return self._output_generator()
 
     def __exit__(self, *args):
@@ -24,7 +24,7 @@ class SshRsync:
             pass
 
     def _output_generator(self):
-        chars = b""
+        chars = ""
         while True:
             char = self._process.stdout.read(1)
             chars += char
@@ -36,9 +36,9 @@ class SshRsync:
                 else:
                     continue
 
-            if char in {b"\r", b"\n"}:
+            if char in {"\r", "\n"}:
                 line = chars
-                chars = b""
+                chars = ""
                 yield line
 
     def terminate(self):
@@ -50,7 +50,7 @@ class SshRsync:
 
 
 def print_generator_line(g_line):
-    print(g_line.decode("utf-8"), end='')
+    print(g_line, end='')
     # sys.stdout.flush()
 
 
