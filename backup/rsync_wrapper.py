@@ -8,11 +8,13 @@ from time import sleep
 
 class SshRsync:
     def __init__(self, host, user, remote_source_path, local_target_path):
-        self._command = f"sudo rsync -avHe ssh {user}@{host}:{remote_source_path} {local_target_path} --progress".split()
+        self._command = (
+            f"sudo rsync -avHe ssh {user}@{host}:{remote_source_path} {local_target_path} --outbuf=N --info=progress2"
+        ).split()
         self._process = None
 
     def __enter__(self):
-        self._process = Popen(self._command, stdout=PIPE, stderr=STDOUT)
+        self._process = Popen(self._command, bufsize=0, stdout=PIPE, stderr=STDOUT)
         return self._output_generator()
 
     def __exit__(self, *args):
@@ -44,7 +46,7 @@ class SshRsync:
 
 def print_generator_line(g_line):
     print(g_line.decode("utf-8"), end='')
-    sys.stdout.flush()
+    # sys.stdout.flush()
 
 
 class RsyncWrapperThread(Thread):
@@ -65,28 +67,28 @@ class RsyncWrapperThread(Thread):
 
 
 if __name__ == "__main__":
-    # ssh_rsync = SshRsync(
-    #     host="staabc.spdns.de",
-    #     user="root",
-    #     remote_source_path="/home/maximilian/testfiles",
-    #     local_target_path="/home/maxi/target/"
-    # )
-    #
-    # with ssh_rsync as output_generator:
-    #     for i, line in enumerate(output_generator):
-    #         print_generator_line(line)
-    #         # if i == 6:
-    #         #     print("######################################## NOW KILLING...")
-    #         #     ssh_rsync.terminate()
-
-    sync_thread = RsyncWrapperThread(
+    ssh_rsync = SshRsync(
         host="staabc.spdns.de",
         user="root",
         remote_source_path="/home/maximilian/testfiles",
         local_target_path="/home/maxi/target/"
     )
 
-    sync_thread.start()
+    with ssh_rsync as output_generator:
+        for i, line in enumerate(output_generator):
+            print_generator_line(line)
+            # if i == 6:
+            #     print("######################################## NOW KILLING...")
+            #     ssh_rsync.terminate()
 
-    sleep(10)
-    sync_thread.terminate()
+    # sync_thread = RsyncWrapperThread(
+    #     host="staabc.spdns.de",
+    #     user="root",
+    #     remote_source_path="/home/maximilian/testfiles",
+    #     local_target_path="/home/maxi/target/"
+    # )
+    #
+    # sync_thread.start()
+    #
+    # sleep(10)
+    # sync_thread.terminate()
