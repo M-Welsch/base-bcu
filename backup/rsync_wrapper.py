@@ -24,17 +24,22 @@ class SshRsync:
             pass
 
     def _output_generator(self):
+        chars = b""
         while True:
-            line = self._process.stdout.readline()
+            char = self._process.stdout.read(1)
+            chars += char
             code = self._process.poll()
 
-            if not line:
+            if not char:
                 if code is not None:
                     break
                 else:
                     continue
 
-            yield line
+            if char in {b"\r", b"\n"}:
+                line = chars
+                chars = b""
+                yield line
 
     def terminate(self):
         os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
