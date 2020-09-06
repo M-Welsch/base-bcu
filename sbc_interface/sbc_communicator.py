@@ -34,15 +34,20 @@ class SbcCommunicator(threading.Thread):
         self.append_to_sbc_communication_queue('\0')
 
     def _get_uart_line_to_sbc(self):
+        self._prepare_hardware_for_sbu_communication()
         uart_line_to_sbc = SbcUartFinder(self._logger).get_uart_line_to_sbc()
-        print(uart_line_to_sbc)
+        # print(uart_line_to_sbc)
         return uart_line_to_sbc
 
-    def run(self):
+    def _prepare_hardware_for_sbu_communication(self):
         self._hwctrl.set_attiny_serial_path_to_communication()
         self._hwctrl.enable_receiving_messages_from_attiny()  # necessary
+
+    def run(self):
         uart_line_to_sbc = self._get_uart_line_to_sbc()
-        if uart_line_to_sbc is not None:
+        if uart_line_to_sbc == None:
+            print("WARNING! Serial port to SBC could not found! Display and buttons will not work!")
+        else:
             self._serial_connection.port = uart_line_to_sbc
             self._serial_connection.open()
             while not self._exitflag:
@@ -58,8 +63,6 @@ class SbcCommunicator(threading.Thread):
             self._serial_connection.close()
             print("SBC Communicator is terminating. So long and thanks for all the bytes!")
             self._hwctrl.disable_receiving_messages_from_attiny()  # forgetting this may destroy the BPi's serial interface!
-        else:
-            print("WARNING! Serial port to SBC could not found! Display and buttons will not work!")
 
     def append_to_sbc_communication_queue(self, new_entry):
         self._to_sbc_queue.put(new_entry)
@@ -91,15 +94,55 @@ class SbcCommunicator(threading.Thread):
             sleep(0.1)
 
     def send_seconds_to_next_bu_to_sbc(self, seconds):
-        self.append_to_sbc_communication_queue("BU:{}\0".format(seconds))
+        amount_32_sec_packages = seconds/32
+        self.append_to_sbc_communication_queue("BU:{}\0".format(amount_32_sec_packages))
 
     def write_to_display(self, line1, line2):
         self.append_to_sbc_communication_queue("D1:{}\0".format(line1))
         self.append_to_sbc_communication_queue("D2:{}\0".format(line2))
 
     def send_shutdown_request(self):
-        self.append_to_sbc_communication_queue("SR:")
+        self.append_to_sbc_communication_queue("SR:\n")
 
+    def set_display_brightness_16bit(self, display_brightness_16bit):
+        display_brightness_16bit = self._condition_brightness_value(display_brightness_16bit, "display")
+        self.append_to_sbc_communication_queue(f"DB:{display_brightness_16bit}\n")
+
+    def set_display_brightness_percent(self, display_brightness_in_percent):
+        display_brightness_16bit = display_brightness_in_percent / 100 * 65535
+        self.set_display_brightness_16bit(display_brightness_16bit)
+
+    def set_led_brightness_16bit(self, led_brightness_16bit):
+        led_brightness_16bit = self._condition_brightness_value(led_brightness_16bit, "HMI LED")
+        self.append_to_sbc_communication_queue("LB:{led_brightness_16bit}\n")
+
+    def set_led_brightness_percent(self, led_brightness_precent):
+        led_brightness_16bit = led_brightness_precent / 100 * 65535
+        self.set_led_brightness_16bit(led_brightness_16bit)
+
+    def _condition_brightness_value(self, brightness_16bit, brightness_type):
+        maximum_brightness = 65535  # 16bit
+        if not type(brightness_16bit) == int:
+            warning_msg = f"wrong datatype for {brightness_type}_brighness_16bit. It has to be integer, however it is {type(brightness_16bit)}"
+            print(warning_msg)
+            self._logger.warning(warning_msg)
+            brightness_16bit = int(brightness_16bit)
+        if brightness_16bit > maximum_brightness:
+            warning_msg = f"{brightness_type} brightness value too high. Maximum is {maximum_brightness}, however {brightness_16bit} was given. Clipping to maximum."
+            print(warning_msg)
+            self._logger.warning(warning_msg)
+            brightness_16bit = maximum_brightness
+        elif brightness_16bit < 0:
+            warning_msg = f"{brightness_type} Brightness shall not be negative. Clipping to zero."
+            print(warning_msg)
+            self._logger.warning(warning_msg)
+            brightness_16bit = 0
+        return brightness_16bit
+
+    def current_measurement(self):
+        self.append_to_sbc_communication_queue("CC{}\0")
+
+        return current_in_Ampere
 
 if __name__ == '__main__':
     import sys
