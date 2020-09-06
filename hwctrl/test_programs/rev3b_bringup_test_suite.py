@@ -168,6 +168,31 @@ class rev3b_dock_tester:
         ):
             self._hwctrl.dock()
 
+class rev3b_sbu_communication_tester:
+    def __init__(self, hwctrl, logger):
+        self._SBCC = self._init_SBC_Communicator(hwctrl, logger)
+
+    def _init_SBC_Communicator(self, hwctrl, logger):
+        self._from_SBC_queue = []
+        self._to_SBC_queue = []
+        SBCC = SbcCommunicator(hwctrl, logger)
+        while not SBCC.sbu_ready:
+            sleep(0.1)
+        return SBCC
+
+    def test(self):
+        self._measure_current()
+        self._test_write_display()
+        self._SBCC.terminate()
+
+    def _measure_current(self):
+        print("SBU Communicator Testcase: Current Measurement")
+        current = self._SBCC.current_measurement()
+        print(f"Current Measurement Result: {current}")
+
+    def _test_write_display(self):
+        print("SBU Communicator Testcase: Write to Display")
+        self._SBCC.write_to_display("Test Line 1", "Test Line 2")
 
 class rev3b_bringup_test_suite:
     def __init__(self):
@@ -182,13 +207,14 @@ class rev3b_bringup_test_suite:
             "rev3b_power_hdd_test",
             "rev3b_serial_send_tester_wo_hwctrl",
             "rev3b_dock_test",
+            "rev3b_sbu_communication_tester"
         ]
         self._hwctrl = self._init_hwctrl()
 
     def _init_hwctrl(self):
         config = Config("/home/maxi/base/config.json")
-        logger = Logger("/home/maxi/base/log")
-        return HWCTRL(config.hwctrl_config, logger)
+        self._logger = Logger("/home/maxi/base/log")
+        return HWCTRL(config.hwctrl_config, self._logger)
 
     def run(self):
         Tester = None
@@ -221,6 +247,9 @@ class rev3b_bringup_test_suite:
 
             if user_choice in ["7", "rev3b_dock_test"]:
                 Tester = rev3b_dock_tester(self._hwctrl)
+
+            if user_choice in ["8", "rev3b_sbu_communication_tester"]:
+                Tester = rev3b_sbu_communication_tester(self._hwctrl, self._logger)
 
             if Tester:
                 Tester.test()

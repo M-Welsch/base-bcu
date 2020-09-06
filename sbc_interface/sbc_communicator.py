@@ -1,5 +1,4 @@
 import serial
-import threading
 from time import sleep, time
 from datetime import datetime
 from queue import Queue
@@ -9,16 +8,14 @@ sys.path.append(path_to_module)
 from base.sbc_interface.sbc_uart_finder import SbcUartFinder
 
 
-class SbcCommunicator(threading.Thread):
+class SbcCommunicator():
     def __init__(self, hwctrl, logger):
-        super(SbcCommunicator, self).__init__()
         self._hwctrl = hwctrl
         self._logger = logger
-        self._from_SBC_queue = Queue()
-        self._to_sbc_queue = Queue()
-        self._flush_to_sbc_queue()
-        self._exitflag = False
+        self._channel_busy = True
+        self._sbu_ready = False
         self._serial_connection = self._prepare_serial_connection()
+        self._open_serial_connection()
 
     def _prepare_serial_connection(self):
         serial_connection = serial.Serial()
@@ -28,10 +25,18 @@ class SbcCommunicator(threading.Thread):
 
     @property
     def is_serial_connection_open(self):
-        return self._serial_connection.is_open()
+        return self._serial_connection.is_open
 
-    def _flush_to_sbc_queue(self):
-        self.append_to_sbc_communication_queue('\0')
+    @property
+    def sbu_ready(self):
+        return self._sbu_ready
+
+    def _send_message_to_sbu(self, message):
+        message = message + '\0'
+        self._serial_connection.write(message.encode())
+
+    def _flush_sbc_channel(self):
+        self._send_message_to_sbu('\0')
 
     def _get_uart_line_to_sbc(self):
         self._prepare_hardware_for_sbu_communication()
@@ -43,35 +48,16 @@ class SbcCommunicator(threading.Thread):
         self._hwctrl.set_attiny_serial_path_to_communication()
         self._hwctrl.enable_receiving_messages_from_attiny()  # necessary
 
-    def run(self):
+    def _open_serial_connection(self):
         uart_line_to_sbc = self._get_uart_line_to_sbc()
         if uart_line_to_sbc == None:
             print("WARNING! Serial port to SBC could not found! Display and buttons will not work!")
         else:
             self._serial_connection.port = uart_line_to_sbc
             self._serial_connection.open()
-            while not self._exitflag:
-                if not self._to_sbc_queue.empty():
-                    entry = self._to_sbc_queue.get()
-                    entry = self._check_for_line_ending(entry, "report")
-                    print("working off to_SBC_queue with: {}".format(entry))
-                    self._serial_connection.write(entry.encode())
-                    self._from_SBC_queue.put(self._serial_connection.read_until())  # read response
-                sleep(0.1)
-                self._from_SBC_queue.put(self._serial_connection.read_until())  # read stuff that SBC sends without invitation
-
-            self._serial_connection.close()
-            print("SBC Communicator is terminating. So long and thanks for all the bytes!")
-            self._hwctrl.disable_receiving_messages_from_attiny()  # forgetting this may destroy the BPi's serial interface!
-
-    def append_to_sbc_communication_queue(self, new_entry):
-        self._to_sbc_queue.put(new_entry)
-
-    def get_messages_from_sbc(self):
-        messages_from_sbc = []
-        while not self._from_SBC_queue.empty():
-            messages_from_sbc.append(self._from_SBC_queue.get())
-        return messages_from_sbc
+            self._flush_sbc_channel()
+            self._channel_busy = False
+            self._sbu_ready = True
 
     def _check_for_line_ending(self, entry, mode):
         if not entry[-1:] == '\0':
@@ -83,23 +69,20 @@ class SbcCommunicator(threading.Thread):
         return entry
 
     def terminate(self):
-        self._wait_for_queues_to_empty()
-        self._exitflag = True
-
-    def _wait_for_queues_to_empty(self):
-        start = time()
-        timediff = 0
-        while not self._to_sbc_queue.empty() and timediff < 2:
-            timediff = time() - start
-            sleep(0.1)
+        print("SBC Communicator is terminating. So long and thanks for all the bytes!")
+        self._serial_connection.close()
+        self._hwctrl.disable_receiving_messages_from_attiny()  # forgetting this may destroy the BPi's serial interface!
 
     def send_seconds_to_next_bu_to_sbc(self, seconds):
         amount_32_sec_packages = seconds/32
         self.append_to_sbc_communication_queue("BU:{}\0".format(amount_32_sec_packages))
 
     def write_to_display(self, line1, line2):
-        self.append_to_sbc_communication_queue("D1:{}\0".format(line1))
-        self.append_to_sbc_communication_queue("D2:{}\0".format(line2))
+        self._wait_for_channel()
+        self._channel_busy = True
+        self._send_message_to_sbu(f"D1:{line1}")
+        self._send_message_to_sbu(f"D2:{line2}")
+        self._channel_busy = False
 
     def send_shutdown_request(self):
         self.append_to_sbc_communication_queue("SR:\n")
@@ -140,9 +123,34 @@ class SbcCommunicator(threading.Thread):
         return brightness_16bit
 
     def current_measurement(self):
-        self.append_to_sbc_communication_queue("CC{}\0")
-
+        self._wait_for_channel()
+        self._channel_busy = True
+        self._send_message_to_sbu("CC:")
+        current_16bit = self._wait_for_current_meas_result("CC")
+        self._channel_busy = False
+        current_in_Ampere = current_16bit
         return current_in_Ampere
+
+    def _wait_for_channel(self):
+        while self._channel_busy:
+            # print(f"waiting for sbu_channel: busy={self._channel_busy}, open={self.is_serial_connection_open:}")
+            sleep(0.1)
+
+    def _wait_for_current_meas_result(self, measType):
+        timeStart = time()
+        timeDiff = 0
+        timeout = 10
+        while timeDiff < timeout:
+            tmp = self._serial_connection.read_until('\n').decode()
+            print(f"sbcc: tmp: {tmp}")
+            if not tmp.find(measType) == -1:
+                try:
+                    # meas_result = tmp.split(f"{measType}:")[1]
+                    meas_result = tmp[tmp.find(measType):]
+                except:
+                    meas_result = None
+                return meas_result
+            timeDiff = time() - timeStart
 
 if __name__ == '__main__':
     import sys
