@@ -1,8 +1,8 @@
 import serial
+import os
 from time import sleep, time
 from datetime import datetime
 import re
-from queue import Queue
 import sys
 path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
@@ -10,10 +10,11 @@ from base.sbc_interface.sbc_uart_finder import SbcUartFinder
 
 
 class SbcCommunicator():
-    def __init__(self, hwctrl, logger):
+    def __init__(self, hwctrl, logger, config_sbuc):
         self._serial_connection = None
         self._hwctrl = hwctrl
         self._logger = logger
+        self._config_sbuc = config_sbuc
         self._channel_busy = True
         self._sbu_ready = False
         self._sbuc_logfile = self._open_logfile()
@@ -27,7 +28,6 @@ class SbcCommunicator():
             print("WARNING! Serial port to SBC could not found! Display and buttons will not work!")
             self._append_to_sbu_logfile("SBU not found!")
         else:
-
             self._append_to_sbu_logfile(f"Opening USART interface {sbu_uart_interface}")
             self._serial_connection.port = sbu_uart_interface
             self._serial_connection.open()
@@ -53,7 +53,9 @@ class SbcCommunicator():
         
     def _open_logfile(self):
         filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + "sbu_communicator.log"
-        return open(f"../log/{filename}","w")
+        directory = self._config_sbuc["logs_directory"]
+        path = os.path.join(directory, filename)
+        return open(path,"w")
 
     def _append_to_sbu_logfile(self, message):
         now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -77,6 +79,49 @@ class SbcCommunicator():
     def _flush_sbc_channel(self):
         self._send_message_to_sbu('\0')
 
+    def _transfer_command_acknowledged(self, message_code, payload=""):
+        self._append_to_sbu_logfile(f"Command: message_code = {message_code}, payload = {payload}")
+        self._send_message_to_sbu(f"{message_code}:{payload}")
+        acknowledge_delay = self._wait_for_acknowledge(message_code)
+        ready_delay = self._wait_for_sbu_ready()
+        self._append_to_sbu_logfile(f"{message_code} acknowledged after {acknowledge_delay}s, ready after {ready_delay}")
+
+
+    def _wait_for_acknowledge(self, message_code):
+        time_start = time()
+        timeout = 1
+        while time() - time_start < timeout:
+            tmp = self._serial_connection.read_until().decode()
+            if f"ACK:{message_code}" in tmp:
+                break
+            sleep(0.05)
+        return time()-time_start
+
+    def _wait_for_sbu_ready(self):
+        time_start = time()
+        timeout = 1
+        while time() - time_start < timeout:
+            tmp = self._serial_connection.read_until().decode()
+            if f"Ready" in tmp:
+                break
+            sleep(0.05)
+        return time()-time_start
+
+    def _wait_for_special_string(self, special_string):
+        time_start = time()
+        timeout = 1
+        while time() - time_start < timeout:
+            tmp = self._serial_connection.read_until().decode()
+            if special_string in tmp:
+                break
+            sleep(0.05)
+        return [tmp, time() - time_start]
+
+    def _wait_for_channel_free(self):
+        while self._channel_busy or not self._sbu_ready:
+            # print(f"waiting for sbu_channel: busy={self._channel_busy}, open={self.is_serial_connection_open:}")
+            sleep(0.05)
+
     def terminate(self):
         print("SBC Communicator is terminating. So long and thanks for all the bytes!")
         self._serial_connection.close()
@@ -84,8 +129,20 @@ class SbcCommunicator():
         self._close_logfile()
 
     def send_seconds_to_next_bu_to_sbc(self, seconds):
-        amount_32_sec_packages = seconds/32
-        self._transfer_command_acknowledged("BU", amount_32_sec_packages)
+        message_code = "BU"
+        payload = int(seconds)
+        self._append_to_sbu_logfile(f"Command: message_code = {message_code}, payload = {payload}")
+        print(f"Command to SBU: {message_code}:{payload}")
+        self._send_message_to_sbu(f"{message_code}:{payload}")
+        acknowledge_delay = self._wait_for_acknowledge(message_code)
+        [callback, callback_delay] = self._wait_for_special_string("CMP")
+        ready_delay = self._wait_for_sbu_ready()
+        self._append_to_sbu_logfile(f"{message_code} acknowledged after {acknowledge_delay}s, ready after {ready_delay}. Callback: {callback} after {callback_delay}s")
+        print(f"{message_code} acknowledged after {acknowledge_delay}s, ready after {ready_delay}. Callback: {callback} after {callback_delay}s")
+
+
+    def send_human_readable_timestamp_next_bu(self, timestamp_hr):
+        self._transfer_command_acknowledged("BR",timestamp_hr)
 
     def write_to_display(self, line1, line2):
         self._wait_for_channel_free()
@@ -93,27 +150,6 @@ class SbcCommunicator():
         self._transfer_command_acknowledged("D1", line1)
         self._transfer_command_acknowledged("D2", line2)
         self._channel_busy = False
-
-    def _transfer_command_acknowledged(self, message_code, payload=""):
-        self._append_to_sbu_logfile(f"Command: message_code = {message_code}, payload = {payload}")
-        self._send_message_to_sbu(f"{message_code}:{payload}")
-        self._append_to_sbu_logfile(f"{message_code} acknowledged)
-        self._wait_for_acknowledge(message_code)
-
-    def _wait_for_acknowledge(self, message_code):
-        time_start = time()
-        timeout = 1
-        while time() - time_start < timeout:
-            tmp = self._serial_connection.read_until().decode()
-            print(tmp)
-            if f"ACK:{message_code}" in tmp:
-                break
-            sleep(0.1)
-
-    def _wait_for_channel_free(self):
-        while self._channel_busy:
-            # print(f"waiting for sbu_channel: busy={self._channel_busy}, open={self.is_serial_connection_open:}")
-            sleep(0.1)
 
     def send_shutdown_request(self):
         self._transfer_command_acknowledged("SR")
@@ -157,17 +193,31 @@ class SbcCommunicator():
         self._wait_for_channel_free()
         self._channel_busy = True
         self._transfer_command_acknowledged("CC")
-        current_16bit = self._wait_for_current_meas_result("CC")
+        current_16bit = self._wait_for_meas_result("CC")
         self._channel_busy = False
-        return self._convert_16bit_result_to_ampere(current_16bit)
+        if current_16bit is None:
+            current = None
+        else:
+            current = self._convert_16bit_result_to_ampere(current_16bit)
+        return current
 
-    def _wait_for_current_meas_result(self, measType):
-        timeStart = time()
-        timeDiff = 0
-        timeout = 10
-        while timeDiff < timeout:
+    def vcc3v_measurement(self):
+        self._wait_for_channel_free()
+        self._channel_busy = True
+        self._transfer_command_acknowledged("3V")
+        vcc3v_16bit = self._wait_for_meas_result("3V")
+        self._channel_busy = False
+        if vcc3v_16bit is None:
+            vcc3v = None
+        else:
+            vcc3v = self._convert_16bit_3v_result_to_volts(vcc3v_16bit)
+        return vcc3v
+
+    def _wait_for_meas_result(self, measType):
+        time_start = time()
+        timeout = 2
+        while time() - time_start < timeout:
             tmp = self._serial_connection.read_until('\n').decode()
-            print(f"sbcc: tmp: {tmp}")
             if measType in tmp:
                 try:
                     meas_result_payload = tmp.split(":")[1]
@@ -178,12 +228,16 @@ class SbcCommunicator():
                     meas_result_16bit = None
                 self._append_to_sbu_logfile(f"current measurement 16 bit value: {meas_result_16bit}")
                 return meas_result_16bit
-            timeDiff = time() - timeStart
 
     @staticmethod
     def _convert_16bit_result_to_ampere(current_measurement_16bit):
         # Fixme: do properly!
         return current_measurement_16bit * 0.00234
+
+    @staticmethod
+    def _convert_16bit_3v_result_to_volts(vcc3v_meas_result_16bit):
+        # Fixme: do properly!
+        return vcc3v_meas_result_16bit * 3.234 / 1008
 
 if __name__ == '__main__':
     import sys
@@ -198,9 +252,9 @@ if __name__ == '__main__':
     hardware_control = HWCTRL(config.hwctrl_config, logger)
 
     SBCC = SbcCommunicator(hardware_control, logger)
-    testcounter = 0
     while True:
-        sleep(1)
-        SBCC.write_to_display("D1:Test{}".format(testcounter), "D2:Test{}".format(testcounter+1))
-        print(SBCC.current_measurement())
-        testcounter += 1
+        cc = SBCC.current_measurement()
+        vcc3v = SBCC.vcc3v_measurement()
+        content = [f"Iin = {cc}A", f"VCC3V = {vcc3v}V"]
+        SBCC.write_to_display(content[0], content[1])
+        print(content)

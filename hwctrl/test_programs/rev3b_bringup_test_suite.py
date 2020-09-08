@@ -1,14 +1,14 @@
 import sys
-from time import sleep
+from datetime import datetime, timedelta
 
 path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
 
-from base.hwctrl.hw_definitions import *
 from base.hwctrl.hwctrl import *
 from base.sbc_interface.sbc_communicator import *
 from base.common.config import Config
 from base.common.base_logging import Logger
+from base.common.utils import shutdown_bcu
 
 
 def warn_user_and_ask_whether_to_continue(warning):
@@ -18,6 +18,10 @@ def warn_user_and_ask_whether_to_continue(warning):
     else:
         return True
 
+
+def create_human_readable_timestamp(seconds):
+    f = datetime.now() + timedelta(seconds)
+    return f.strftime('%d.%m.%Y %H:%M')
 
 class rev3b_endswitch_tester:
     def __init__(self, pin_interface):
@@ -167,54 +171,112 @@ class rev3b_dock_tester:
             "Docks and undocks the SATA-Connection. It senses the endswitches and otherwise waits for timeout. If the endswitches don't work, it may damage your BaSe mechanically!"
         ):
             self._hwctrl.dock()
+            
+class rev3b_sbu_tester:
+    def __init__(self, hwctrl, logger, config_sbuc):
+        self._SBCC = self._init_SBC_Communicator(hwctrl, logger, config_sbuc)
 
-class rev3b_sbu_communication_tester:
-    def __init__(self, hwctrl, logger):
-        self._SBCC = self._init_SBC_Communicator(hwctrl, logger)
-
-    def _init_SBC_Communicator(self, hwctrl, logger):
-        self._from_SBC_queue = []
-        self._to_SBC_queue = []
-        SBCC = SbcCommunicator(hwctrl, logger)
+    def _init_SBC_Communicator(self, hwctrl, logger, config_sbuc):
+        SBCC = SbcCommunicator(hwctrl, logger, config_sbuc)
         while not SBCC.sbu_ready:
             sleep(0.1)
         return SBCC
 
+class rev3b_sbu_communication_tester(rev3b_sbu_tester):
+    def __init__(self, hwctrl, logger, config_sbuc):
+        super(rev3b_sbu_communication_tester, self).__init__(hwctrl, logger, config_sbuc)
+
     def test(self):
-        self._measure_current()
-        self._test_write_display()
+        current = self._measure_current()
+        vcc3v = self._measure_vcc3v()
+        self._test_write_display(current, vcc3v)
         self._SBCC.terminate()
 
     def _measure_current(self):
         print("SBU Communicator Testcase: Current Measurement")
         current = self._SBCC.current_measurement()
-        print(f"Current Measurement Result: {current}")
+        print(f"Current Measurement Result: {current}A")
+        return current
 
-    def _test_write_display(self):
+    def _measure_vcc3v(self):
+        print("SBU Communicator Testcase: VCC3V3_SBY Measurement")
+        vcc3v = self._SBCC.vcc3v_measurement()
+        print(f"VCC3V3_SBY Measurement Result: {vcc3v}V")
+        return vcc3v
+
+    def _test_write_display(self, current, vcc3v):
         print("SBU Communicator Testcase: Write to Display")
-        self._SBCC.write_to_display("Test Line 1", "Test Line 2")
+        self._SBCC.write_to_display(f"Iin = {current}A", f"VCC3V = {vcc3v}V")
+
+class rev3b_sbu_shutdown_process_tester(rev3b_sbu_tester):
+    def __init__(self, hwctrl, logger, config_sbuc):
+        super(rev3b_sbu_shutdown_process_tester, self).__init__(hwctrl, logger, config_sbuc)
+
+    def test(self):
+        if warn_user_and_ask_whether_to_continue("This will shutdown the BCU! Is everything saved?"):
+            self._SBCC.send_shutdown_request()
+            self._SBCC.terminate()
+            self._shutdown_bcu()
+
+    def _shutdown_bcu(self):
+        shutdown_bcu()
+
+
+class rev3b_sbu_send_hr_timestamp_tester(rev3b_sbu_tester):
+    def __init__(self, hwctrl, logger, config_sbuc):
+        super(rev3b_sbu_send_hr_timestamp_tester, self).__init__(hwctrl, logger, config_sbuc)
+
+    def test(self):
+        wake_after = 300 #seconds
+        timestamp_hr = create_human_readable_timestamp(wake_after)
+        self._SBCC.send_human_readable_timestamp_next_bu(timestamp_hr)
+
+class rev3b_sbu_send_seconds_to_next_bu_tester(rev3b_sbu_tester):
+    def __init__(self, hwctrl, logger, config_sbuc):
+        super(rev3b_sbu_send_seconds_to_next_bu_tester, self).__init__(hwctrl, logger, config_sbuc)
+
+    def test(self):
+        self._SBCC.send_seconds_to_next_bu_to_sbc(32)
+            
+class rev3b_sbu_shutdown_and_wake_after_500s_tester(rev3b_sbu_tester):
+    def __init__(self, hwctrl, logger, config_sbuc):
+        super(rev3b_sbu_shutdown_and_wake_after_500s_tester, self).__init__(hwctrl, logger, config_sbuc)
+
+    def test(self):
+        wake_after = 300 #seconds
+        timestamp_hr = create_human_readable_timestamp(wake_after)
+        self._SBCC.send_human_readable_timestamp_next_bu(timestamp_hr)
+        self._SBCC.send_seconds_to_next_bu_to_sbc(wake_after)
+        self._SBCC.send_shutdown_request()
+        shutdown_bcu()
+
 
 class rev3b_bringup_test_suite:
     def __init__(self):
         self.display_brightness = 1
         self._pin_interface = PinInterface(self.display_brightness)
-        self.testcases = [
-            "test_endswitches",
-            "test_pushbuttons",
-            "test_stepper",
-            "test_SBC_heartbear_receive",
-            "rev3b_docking_undocking_test",
-            "rev3b_power_hdd_test",
-            "rev3b_serial_send_tester_wo_hwctrl",
-            "rev3b_dock_test",
-            "rev3b_sbu_communication_tester"
-        ]
+        self.testcases = {
+            "test_endswitches":["0","test_endswitches"],
+            "test_pushbuttons":["1","test_pushbuttons"],
+            "test_stepper":["2","test_stepper"],
+            "test_SBC_heartbear_receive":["3","test_SBC_heartbear_receive"],
+            "rev3b_docking_undocking_test":["4","rev3b_docking_undocking_test"],
+            "rev3b_power_hdd_test":["5","rev3b_power_hdd_test"],
+            "rev3b_serial_send_tester_wo_hwctrl":["6","rev3b_serial_send_tester_wo_hwctrl"],
+            "rev3b_dock_test":["7","rev3b_dock_test"],
+            "rev3b_sbu_communication_tester":["8","rev3b_sbu_communication_tester"],
+            "rev3b_sbu_shutdown_process_tester":["9","rev3b_sbu_shutdown_process_tester"],
+            "rev3b_sbu_send_hr_timestamp_tester":["a","rev3b_sbu_send_hr_timestamp_tester"],
+            "rev3b_sbu_send_seconds_to_next_bu_tester":["b","rev3b_sbu_send_seconds_to_next_bu_tester"],
+            "rev3b_sbu_shutdown_and_wake_after_500s_tester":["c","rev3b_sbu_shutdown_and_wake_after_500s_tester"]
+        }
+
+        self._config = Config("/home/maxi/base/config.json")
         self._hwctrl = self._init_hwctrl()
 
     def _init_hwctrl(self):
-        config = Config("/home/maxi/base/config.json")
         self._logger = Logger("/home/maxi/base/log")
-        return HWCTRL(config.hwctrl_config, self._logger)
+        return HWCTRL(self._config.hwctrl_config, self._logger)
 
     def run(self):
         Tester = None
@@ -224,7 +286,7 @@ class rev3b_bringup_test_suite:
             if user_choice in ["q", "Quit"]:
                 exitflag = True
 
-            if user_choice in ["0", "test_endswitches"]:
+            if user_choice in self.testcases["test_endswitches"]:
                 Tester = rev3b_endswitch_tester(self._pin_interface)
 
             if user_choice in ["1", "test_pushbuttons"]:
@@ -249,7 +311,19 @@ class rev3b_bringup_test_suite:
                 Tester = rev3b_dock_tester(self._hwctrl)
 
             if user_choice in ["8", "rev3b_sbu_communication_tester"]:
-                Tester = rev3b_sbu_communication_tester(self._hwctrl, self._logger)
+                Tester = rev3b_sbu_communication_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+
+            if user_choice in ["9", "rev3b_sbu_shutdown_process_tester"]:
+                Tester = rev3b_sbu_shutdown_process_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+
+            if user_choice in self.testcases["rev3b_sbu_send_hr_timestamp_tester"]:
+                Tester = rev3b_sbu_send_hr_timestamp_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+
+            if user_choice in self.testcases["rev3b_sbu_send_seconds_to_next_bu_tester"]:
+                Tester = rev3b_sbu_send_seconds_to_next_bu_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+
+            if user_choice in self.testcases["rev3b_sbu_shutdown_and_wake_after_500s_tester"]:
+                Tester = rev3b_sbu_shutdown_and_wake_after_500s_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
 
             if Tester:
                 Tester.test()
@@ -257,6 +331,7 @@ class rev3b_bringup_test_suite:
 
         self._pin_interface.cleanup
         self._hwctrl.terminate()
+        self._logger.terminate()
 
     def ask_user_for_testcase(self):
         print("Choose a testcase by number:\n{}".format(self.list_of_testcases()))
@@ -270,18 +345,16 @@ class rev3b_bringup_test_suite:
 
     def list_of_testcases(self):
         list_of_testcases = ""
-        testcase_index = 0
-        for testcase in self.testcases:
-            line = "({}) {}".format(testcase_index, testcase)
+        for testcase_name, testcase in self.testcases.items():
+            line = f"({testcase[0]}) {testcase[1]}"
             list_of_testcases += line + "\n"
-            testcase_index += 1
         list_of_testcases += "(q) Quit"
         return list_of_testcases
 
     def valid_choices(self):
         valid_choices = ["q"]
-        for choice in range(0, len(self.testcases)):
-            valid_choices.extend(str(choice))
+        for testcase_name, testcase in self.testcases.items():
+            valid_choices.extend(testcase)
         return valid_choices
 
 
