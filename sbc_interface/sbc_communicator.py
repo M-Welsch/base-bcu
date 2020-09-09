@@ -81,6 +81,7 @@ class SbcCommunicator():
 
     def _transfer_command_acknowledged(self, message_code, payload=""):
         self._append_to_sbu_logfile(f"Command: message_code = {message_code}, payload = {payload}")
+        print(f"Command: message_code = {message_code}, payload = {payload}")
         self._send_message_to_sbu(f"{message_code}:{payload}")
         acknowledge_delay = self._wait_for_acknowledge(message_code)
         ready_delay = self._wait_for_sbu_ready()
@@ -129,6 +130,7 @@ class SbcCommunicator():
         self._close_logfile()
 
     def send_seconds_to_next_bu_to_sbc(self, seconds):
+        # Todo: cleanup this mess
         message_code = "BU"
         payload = int(seconds)
         self._append_to_sbu_logfile(f"Command: message_code = {message_code}, payload = {payload}")
@@ -159,15 +161,15 @@ class SbcCommunicator():
         self._transfer_command_acknowledged("DB",display_brightness_16bit)
 
     def set_display_brightness_percent(self, display_brightness_in_percent):
-        display_brightness_16bit = display_brightness_in_percent / 100 * 65535
+        display_brightness_16bit = int(display_brightness_in_percent / 100 * 65535)
         self.set_display_brightness_16bit(display_brightness_16bit)
 
     def set_led_brightness_16bit(self, led_brightness_16bit):
         led_brightness_16bit = self._condition_brightness_value(led_brightness_16bit, "HMI LED")
-        self._transfer_command_acknowledged("LB", led_brightness_16bit)
+        self._transfer_command_acknowledged("DL", led_brightness_16bit)
 
     def set_led_brightness_percent(self, led_brightness_precent):
-        led_brightness_16bit = led_brightness_precent / 100 * 65535
+        led_brightness_16bit = int(led_brightness_precent / 100 * 65535)
         self.set_led_brightness_16bit(led_brightness_16bit)
 
     def _condition_brightness_value(self, brightness_16bit, brightness_type):

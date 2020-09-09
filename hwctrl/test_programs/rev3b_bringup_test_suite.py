@@ -20,7 +20,7 @@ def warn_user_and_ask_whether_to_continue(warning):
 
 
 def create_human_readable_timestamp(seconds):
-    f = datetime.now() + timedelta(seconds)
+    f = datetime.now() + timedelta(seconds = seconds)
     return f.strftime('%d.%m.%Y %H:%M')
 
 class rev3b_endswitch_tester:
@@ -236,20 +236,40 @@ class rev3b_sbu_send_seconds_to_next_bu_tester(rev3b_sbu_tester):
         super(rev3b_sbu_send_seconds_to_next_bu_tester, self).__init__(hwctrl, logger, config_sbuc)
 
     def test(self):
-        self._SBCC.send_seconds_to_next_bu_to_sbc(32)
+        self._SBCC.send_seconds_to_next_bu_to_sbc(2097152)
             
 class rev3b_sbu_shutdown_and_wake_after_500s_tester(rev3b_sbu_tester):
     def __init__(self, hwctrl, logger, config_sbuc):
         super(rev3b_sbu_shutdown_and_wake_after_500s_tester, self).__init__(hwctrl, logger, config_sbuc)
 
     def test(self):
-        wake_after = 300 #seconds
+        wake_after = 120*32 #seconds * 32. Factor 32 because for debugging purposes the rtc counts 32 times as fast
         timestamp_hr = create_human_readable_timestamp(wake_after)
         self._SBCC.send_human_readable_timestamp_next_bu(timestamp_hr)
         self._SBCC.send_seconds_to_next_bu_to_sbc(wake_after)
         self._SBCC.send_shutdown_request()
         shutdown_bcu()
 
+
+class rev3b_sbu_display_dimming_tester(rev3b_sbu_tester):
+    def __init__(self, hwctrl, logger, config_sbuc):
+        super(rev3b_sbu_display_dimming_tester, self).__init__(hwctrl, logger, config_sbuc)
+
+    def test(self):
+        for i in range(100,0,-10):
+            self._SBCC.set_display_brightness_percent(i)
+        for i in range(0,100,10):
+            self._SBCC.set_display_brightness_percent(i)
+
+class rev3b_sbu_hmi_led_dimming_tester(rev3b_sbu_tester):
+    def __init__(self, hwctrl, logger, config_sbuc):
+        super(rev3b_sbu_hmi_led_dimming_tester, self).__init__(hwctrl, logger, config_sbuc)
+
+    def test(self):
+        for i in range(100,0,-10):
+            self._SBCC.set_led_brightness_percent(i)
+        for i in range(0,100,10):
+            self._SBCC.set_led_brightness_percent(i)
 
 class rev3b_bringup_test_suite:
     def __init__(self):
@@ -268,7 +288,9 @@ class rev3b_bringup_test_suite:
             "rev3b_sbu_shutdown_process_tester":["9","rev3b_sbu_shutdown_process_tester"],
             "rev3b_sbu_send_hr_timestamp_tester":["a","rev3b_sbu_send_hr_timestamp_tester"],
             "rev3b_sbu_send_seconds_to_next_bu_tester":["b","rev3b_sbu_send_seconds_to_next_bu_tester"],
-            "rev3b_sbu_shutdown_and_wake_after_500s_tester":["c","rev3b_sbu_shutdown_and_wake_after_500s_tester"]
+            "rev3b_sbu_shutdown_and_wake_after_500s_tester":["c","rev3b_sbu_shutdown_and_wake_after_500s_tester"],
+            "rev3b_sbu_display_dimming_tester":["d","rev3b_sbu_display_dimming_tester"],
+            "rev3b_sbu_hmi_led_dimming_tester":["e","rev3b_sbu_hmi_led_dimming_tester"]
         }
 
         self._config = Config("/home/maxi/base/config.json")
@@ -324,6 +346,13 @@ class rev3b_bringup_test_suite:
 
             if user_choice in self.testcases["rev3b_sbu_shutdown_and_wake_after_500s_tester"]:
                 Tester = rev3b_sbu_shutdown_and_wake_after_500s_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+
+            if user_choice in self.testcases["rev3b_sbu_display_dimming_tester"]:
+                Tester = rev3b_sbu_display_dimming_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+
+            if user_choice in self.testcases["rev3b_sbu_hmi_led_dimming_tester"]:
+                Tester = rev3b_sbu_hmi_led_dimming_tester(self._hwctrl, self._logger,
+                                                          self._config.sbu_communicator_config)
 
             if Tester:
                 Tester.test()
