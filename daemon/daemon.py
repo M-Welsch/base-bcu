@@ -33,14 +33,14 @@ class Daemon:
 		self._webapp = Webapp(self._logger)
 		self._start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc()
 		self._shutdown_flag = False
+		self._display_menu_pointer = 'Main'
 		self.start_threads_and_mainloop()
 
 	def _start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
 			self._from_SBC_queue = []
-			self._sbc_communicator = SbcCommunicator(self._hardware_control, self._logger)
-			self._sbc_communicator.start()
-			self._sbc_communicator.write_to_display("Hi","BPU ready")
+			self._sbc_communicator = SbcCommunicator(self._hardware_control, self._logger, self._config.sbu_communicator_config)
+			self._sbc_communicator.write_to_display("BaSe   show IP > ","          Demo >")
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -107,7 +107,7 @@ class Daemon:
 			return ["readout_hdd_parameters"]
 		if "new_buhdd" in status_quo["tcp_commands"]:
 			return ["enter_new_buhdd_in_config.json"]
-		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
+		if "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
 		# if (
 		# 		status_quo["pressed_buttons"][1] or
@@ -115,6 +115,9 @@ class Daemon:
 		# 		status_quo["backup_scheduled_for_now"
 		# ):
 		#  command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
+
+		if status_quo["pressed_buttons"][0]: # show IP Adress on Display
+			command_list.append("show_ip_on_display")
 		if status_quo["pressed_buttons"][1]: # demo
 			command_list.extend(["dock", "wait", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
@@ -158,6 +161,8 @@ class Daemon:
 					self._config.reload()
 				elif command == "show_status_info":
 					self.get_status()
+				elif command == "show_ip_on_display":
+					self.show_ip_address_on_display()
 				elif command == "terminate_daemon":
 					return True
 				elif command == "terminate_daemon_and_shutdown":
@@ -191,6 +196,15 @@ class Daemon:
 
 		# TODO: send to Webapp if it asks for status ...
 		backups_present = list_backups_by_age(self._config.mounting_config["backup_hdd_mount_point"])
+
+	def show_ip_address_on_display(self):
+		if self._display_menu_pointer == 'IP':
+			self._sbc_communicator.write_to_display("BaSe   show IP > ","          Demo >")
+			self._display_menu_pointer = 'Main'
+		else:
+			IP = get_ip_address()
+			self._sbc_communicator.write_to_display('Local IP: back >',IP)
+			self._display_menu_pointer = 'IP'
 
 	@staticmethod
 	def update_sbc():
