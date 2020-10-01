@@ -8,7 +8,7 @@ class SbcUartFinder:
     def __init__(self, logger):
         self._logger = logger
 
-    def get_uart_line_to_sbc(self):
+    def get_sbu_uart_interface(self):
         uart_interfaces = self._get_available_uart_interfaces()
         uart_sbc = self._test_uart_interfaces_for_echo(uart_interfaces)
         if uart_sbc:

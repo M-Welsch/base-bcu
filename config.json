@@ -19,6 +19,9 @@
         "maximum_docking_time": 1,
         "docking_overcurrent_limit": 150
     },
+    "SBU_Communicator": {
+        "logs_directory": "base/log"
+    },
     "Mounting": {
         "backup_hdd_device_file_path": "/dev/sda1",
         "backup_hdd_file_system": "ext4",
