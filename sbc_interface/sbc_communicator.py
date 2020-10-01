@@ -4,7 +4,8 @@ from time import sleep, time
 from datetime import datetime
 import re
 import sys
-path_to_module = "/home/maxi"
+# path_to_module = "/home/maxi"
+path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 from base.sbc_interface.sbc_uart_finder import SbcUartFinder
 
@@ -226,9 +227,10 @@ class SbcCommunicator():
                     meas_result_pattern = '[0-9]+'
                     meas_result_match = re.search(meas_result_pattern, meas_result_payload).group(0)
                     meas_result_16bit = int(meas_result_match)
+                	self._append_to_sbu_logfile(f"current measurement 16 bit value: {meas_result_16bit}")
                 except:
                     meas_result_16bit = None
-                self._append_to_sbu_logfile(f"current measurement 16 bit value: {meas_result_16bit}")
+                    self._append_to_sbu_logfile(f"current measurement received invalid value: {tmp}. Returning None")
                 return meas_result_16bit
 
     @staticmethod
