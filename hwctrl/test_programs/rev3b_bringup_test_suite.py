@@ -236,7 +236,7 @@ class rev3b_sbu_send_seconds_to_next_bu_tester(rev3b_sbu_tester):
         super(rev3b_sbu_send_seconds_to_next_bu_tester, self).__init__(hwctrl, logger, config_sbuc)
 
     def test(self):
-        self._SBCC.send_seconds_to_next_bu_to_sbc(2097152)
+        self._SBCC.send_seconds_to_next_bu_to_sbu(2097152)
             
 class rev3b_sbu_shutdown_and_wake_after_500s_tester(rev3b_sbu_tester):
     def __init__(self, hwctrl, logger, config_sbuc):
@@ -246,7 +246,7 @@ class rev3b_sbu_shutdown_and_wake_after_500s_tester(rev3b_sbu_tester):
         wake_after = 120*32 #seconds * 32. Factor 32 because for debugging purposes the rtc counts 32 times as fast
         timestamp_hr = create_human_readable_timestamp(wake_after)
         self._SBCC.send_human_readable_timestamp_next_bu(timestamp_hr)
-        self._SBCC.send_seconds_to_next_bu_to_sbc(wake_after)
+        self._SBCC.send_seconds_to_next_bu_to_sbu(wake_after)
         self._SBCC.send_shutdown_request()
         shutdown_bcu()
 

@@ -9,7 +9,7 @@ sys.path.append(path_to_module)
 from base.sbc_interface.sbc_uart_finder import SbcUartFinder
 
 
-class SbcCommunicator():
+class SbuCommunicator():
     def __init__(self, hwctrl, logger, config_sbuc):
         self._serial_connection = None
         self._hwctrl = hwctrl
@@ -111,6 +111,7 @@ class SbcCommunicator():
     def _wait_for_special_string(self, special_string):
         time_start = time()
         timeout = 1
+        tmp = None
         while time() - time_start < timeout:
             tmp = self._serial_connection.read_until().decode()
             if special_string in tmp:
@@ -129,7 +130,7 @@ class SbcCommunicator():
         self._hwctrl.disable_receiving_messages_from_attiny()  # forgetting this may destroy the BPi's serial interface!
         self._close_logfile()
 
-    def send_seconds_to_next_bu_to_sbc(self, seconds):
+    def send_seconds_to_next_bu_to_sbu(self, seconds):
         # Todo: cleanup this mess
         message_code = "BU"
         payload = int(seconds)
@@ -253,10 +254,10 @@ if __name__ == '__main__':
     logger = Logger("/home/maxi/base/log")
     hardware_control = HWCTRL(config.hwctrl_config, logger)
 
-    SBCC = SbcCommunicator(hardware_control, logger)
+    SBUC = SbuCommunicator(hardware_control, logger)
     while True:
-        cc = SBCC.current_measurement()
-        vcc3v = SBCC.vcc3v_measurement()
+        cc = SBUC.current_measurement()
+        vcc3v = SBUC.vcc3v_measurement()
         content = [f"Iin = {cc}A", f"VCC3V = {vcc3v}V"]
-        SBCC.write_to_display(content[0], content[1])
+        SBUC.write_to_display(content[0], content[1])
         print(content)

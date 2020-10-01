@@ -14,8 +14,9 @@ from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
 from base.common.utils import *
 from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
-from base.sbc_interface.sbc_updater import *
-from base.sbc_interface.sbc_communicator import *
+from base.sbu_interface.sbu_updater import *
+from base.sbu_interface.sbu_communicator import *
+from base.hwctrl.display import *
 
 
 class Daemon:
@@ -31,16 +32,17 @@ class Daemon:
 		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
-		self._start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc()
+		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
 		self._shutdown_flag = False
 		self._display_menu_pointer = 'Main'
+		self._display = Display
 		self.start_threads_and_mainloop()
 
-	def _start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc(self):
+	def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
-			self._from_SBC_queue = []
-			self._sbc_communicator = SbcCommunicator(self._hardware_control, self._logger, self._config.sbu_communicator_config)
-			self._sbc_communicator.write_to_display("BaSe   show IP > ","          Demo >")
+			self._from_SBU_queue = []
+			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._logger, self._config.sbu_communicator_config)
+			self._display.write("BaSe   show IP > ", "          Demo >")
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -50,8 +52,8 @@ class Daemon:
 		self.mainloop()
 
 	def stop_threads(self):
-		self._sbc_communicator.write_to_display("Goodbye","BPU stopping")
-		self._sbc_communicator.terminate() # needs active hwctrl to shutdown cleanly!
+		self._display.write("Goodbye", "BPU stopping")
+		self._sbu_communicator.terminate() # needs active hwctrl to shutdown cleanly!
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
@@ -70,9 +72,9 @@ class Daemon:
 		else:
 			self.stop_threads()
 
-	def _seconds_to_next_bu_to_sbc(self):
+	def _seconds_to_next_bu_to_sbu(self):
 		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
-		self._sbc_communicator.append_to_sbc_communication_queue("BU:{}".format(seconds_to_next_bu))
+		self._sbu_communicator.append_to_sbc_communication_queue("BU:{}".format(seconds_to_next_bu))
 
 	def _look_up_status_quo(self) -> Dict:
 		status_quo = {
@@ -125,7 +127,7 @@ class Daemon:
 		if "terminate_daemon_and_shutdown" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon_and_shutdown")
 		if "seconds_to_next_bu_to_sbc" in status_quo["tcp_commands"]:
-			self._seconds_to_next_bu_to_sbc()
+			self._seconds_to_next_bu_to_sbu()
 		if "shutdown_base" in status_quo["tcp_commands"]:
 			self._communicate_shutdown_intention_to_sbu()
 		if command_list:
@@ -199,17 +201,17 @@ class Daemon:
 
 	def show_ip_address_on_display(self):
 		if self._display_menu_pointer == 'IP':
-			self._sbc_communicator.write_to_display("BaSe   show IP > ","          Demo >")
+			self._display.write("BaSe   show IP > ", "          Demo >")
 			self._display_menu_pointer = 'Main'
 		else:
 			IP = get_ip_address()
-			self._sbc_communicator.write_to_display('Local IP: back >',IP)
+			self._display.write('Local IP: back >', IP)
 			self._display_menu_pointer = 'IP'
 
 	@staticmethod
 	def update_sbc():
 		# Fixme: that crashes the ttyS1 for some reason
-		print("Ready for SBC FW Update. Stop BaSe and run cd /home/maxi/base/sbc_interface && sudo python3 sbc_updater.py")
+		print("Ready for SBC FW Update. Stop BaSe and run cd /home/maxi/base/sbu_interface && sudo python3 sbc_updater.py")
 		# SBC_U = SBC_Updater()
 		# SBC_U.update_sbc()
 
@@ -229,8 +231,8 @@ class Daemon:
 
 	def _initiate_shutdown_process(self):
 		self._logger.info("Shutting down")
-		self._sbc_communicator.send_shutdown_request()
-		self._seconds_to_next_bu_to_sbc()
+		self._sbu_communicator.send_shutdown_request()
+		self._seconds_to_next_bu_to_sbu()
 		self.stop_threads()
 		self._shutdown_base()
 

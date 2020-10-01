@@ -6,7 +6,7 @@ sys.path.append(path_to_module)
 
 from base.common.utils import get_sbc_fw_uploads_folder, run_external_command_as_generator_2, run_external_command_string_input
 
-class SBC_Updater():
+class SbuUpdater():
 	def __init__(self):
 		pass
 
@@ -38,8 +38,8 @@ if __name__ == '__main__':
 	_hardware_control.enable_receiving_messages_from_attiny()
 	_hardware_control.set_attiny_serial_path_to_sbc_fw_update()
 
-	SBCU = SBC_Updater()
-	SBCU.update_sbc()
+	SBUU = SbuUpdater()
+	SBUU.update_sbc()
 
 	_hardware_control.disable_receiving_messages_from_attiny()
 	_hardware_control.set_attiny_serial_path_to_communication()

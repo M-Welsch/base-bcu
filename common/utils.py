@@ -107,7 +107,7 @@ def get_ip_address():
 	return IP
 
 def get_sbc_fw_uploads_folder():
-	return "{}/sbc_interface/sbc_fw_uploads".format(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+	return "{}/sbu_interface/sbc_fw_uploads".format(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def shutdown_bcu():
 	os.system("shutdown -h now")

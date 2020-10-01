@@ -10,7 +10,6 @@ from queue import Queue
 
 from base.hwctrl.hw_definitions import *
 from base.hwctrl.current_measurement import Current_Measurement
-from base.hwctrl.lcd import *
 from base.hwctrl.dock_undock import *
 
 class HWCTRL(Thread):
@@ -30,17 +29,12 @@ class HWCTRL(Thread):
 
 		self.pin_interface = PinInterface(int(self._config["display_default_brightness"]))
 		self._hw_rev = self.get_hw_revision()
-		self.init_display()
-		self.dock_undock = DockUndock(self.pin_interface, self.display, self._logger, self._config, self._hw_rev)
+		self.dock_undock = DockUndock(self.pin_interface, self._logger, self._config, self._hw_rev)
 		self.start_heartbeat()
 
-	def init_display(self):
-		if self._hw_rev == "rev2":
-			self.lcd = LCD(int(self._config["display_default_brightness"]), self.pin_interface)
-			self.display = self.lcd.display
-		if self._hw_rev == "rev3":
-			print("Display control via SBC ... not implemented yet!")
-			self.display = None
+	@property
+	def pin_interface(self):
+		return self.pin_interface
 
 	def get_hw_revision(self):
 		hw_rev = self.pin_interface.get_hw_revision()
