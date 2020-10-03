@@ -33,16 +33,16 @@ class Daemon:
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
 		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
+		self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
 		self._shutdown_flag = False
 		self._display_menu_pointer = 'Main'
-		self._display = Display
 		self.start_threads_and_mainloop()
 
 	def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
 			self._from_SBU_queue = []
 			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._logger, self._config.sbu_communicator_config)
-			self._display.write("BaSe   show IP > ", "          Demo >")
+
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -52,7 +52,7 @@ class Daemon:
 		self.mainloop()
 
 	def stop_threads(self):
-		self._display.write("Goodbye", "BPU stopping")
+		self._display.write("Goodbye", "BCU stopping")
 		self._sbu_communicator.terminate() # needs active hwctrl to shutdown cleanly!
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
@@ -60,8 +60,9 @@ class Daemon:
 		self._logger.terminate()
 
 	def mainloop(self):
-		terminate_flag = False
-		while not terminate_flag:
+		self._display.write("BaSe   show IP > ", "          Demo >")
+		self._terminate_flag = False
+		while not self._terminate_flag:
 			sleep(self._config.main_loop_interval)
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
@@ -166,6 +167,7 @@ class Daemon:
 				elif command == "show_ip_on_display":
 					self.show_ip_address_on_display()
 				elif command == "terminate_daemon":
+					self._terminate_flag = True
 					return True
 				elif command == "terminate_daemon_and_shutdown":
 					self._initiate_shutdown_process()

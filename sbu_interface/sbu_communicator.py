@@ -6,7 +6,7 @@ import re
 import sys
 path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
-from base.sbc_interface.sbc_uart_finder import SbcUartFinder
+from base.sbu_interface.sbu_uart_finder import SbuUartFinder
 
 
 class SbuCommunicator():
@@ -31,7 +31,7 @@ class SbuCommunicator():
             self._append_to_sbu_logfile(f"Opening USART interface {sbu_uart_interface}")
             self._serial_connection.port = sbu_uart_interface
             self._serial_connection.open()
-            self._flush_sbc_channel()
+            self._flush_sbu_channel()
             self._channel_busy = False
             self._sbu_ready = True
 
@@ -43,8 +43,7 @@ class SbuCommunicator():
 
     def _get_sbu_uart_interface(self):
         self._prepare_hardware_for_sbu_communication()
-        sbu_uart_interface = SbcUartFinder(self._logger).get_sbu_uart_interface()
-        # print(uart_line_to_sbc)
+        sbu_uart_interface = SbuUartFinder(self._logger).get_sbu_uart_interface()
         return sbu_uart_interface
 
     def _prepare_hardware_for_sbu_communication(self):
@@ -76,7 +75,7 @@ class SbuCommunicator():
         message = message + '\0'
         self._serial_connection.write(message.encode())
 
-    def _flush_sbc_channel(self):
+    def _flush_sbu_channel(self):
         self._send_message_to_sbu('\0')
 
     def _transfer_command_acknowledged(self, message_code, payload=""):

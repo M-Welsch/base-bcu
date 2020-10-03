@@ -4,7 +4,7 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 sys.path.append(path_to_module)
 
 
-class SbcUartFinder:
+class SbuUartFinder:
     def __init__(self, logger):
         self._logger = logger
 
@@ -22,16 +22,16 @@ class SbcUartFinder:
         return glob.glob("/dev/ttyS*")
 
     def _test_uart_interfaces_for_echo(self, uart_interfaces):
-        sbc_uart_interface = None
+        sbu_uart_interface = None
         for uart_interface in uart_interfaces:
             if self._test_uart_interface_for_echo(uart_interface):
-                sbc_uart_interface = uart_interface
-        return sbc_uart_interface
+                sbu_uart_interface = uart_interface
+        return sbu_uart_interface
 
     @staticmethod
     def _test_uart_interface_for_echo(uart_interface):
         try:
-            response = SbcUartFinder._challenge_interface(uart_interface)
+            response = SbuUartFinder._challenge_interface(uart_interface)
         except serial.SerialException:
             print("{} could not be opened".format(uart_interface))
             return False
