@@ -9,10 +9,9 @@ class DockingError(Exception):
 		return(repr(self.message))
 
 class DockUndock():
-	def __init__(self, pin_interface, display, logger, config, hw_rev):
+	def __init__(self, pin_interface, logger, config, hw_rev):
 		self.hw_rev = hw_rev
 		self.pin_interface = pin_interface
-		self.display = display
 		self._logger = logger
 		self._config = config
 
@@ -43,7 +42,6 @@ class DockUndock():
 		if self.docked():
 			self._logger.warning("Tried to dock, but end-switch was already pressed. Skipping dock process.")
 			return
-		self.display("Docking ...", self.maximum_docking_time + 1)
 		start_time = time.time()
 		self.cur_meas = Current_Measurement(0.1)
 		self.cur_meas.start()
@@ -63,7 +61,6 @@ class DockUndock():
 			if current > self.docking_overcurrent_limit:
 				print("Overcurrent!!")
 
-			self.display("Docking ...\n {:.2f}s, {:.2f}mA".format(timeDiff, current), 10)
 			time.sleep(0.1)
 
 		self.pin_interface.set_motor_pins_for_braking()
@@ -107,7 +104,6 @@ class DockUndock():
 		if self.undocked():
 			self._logger.warning("Tried to undock, but end-switch was already pressed. Skipping undock process.")
 			return
-		self.display("Undocking ...", self.maximum_docking_time + 1)
 		start_time = time.time()
 		self.cur_meas = Current_Measurement(0.1)
 		self.cur_meas.start()
@@ -125,7 +121,6 @@ class DockUndock():
 			if current > self.docking_overcurrent_limit:
 				print("Overcurrent!!")
 
-			self.display("Undocking ...\n {:.2f}s, {:.2f}mA".format(timeDiff, current), 10)
 			time.sleep(0.1)
 
 		self.pin_interface.set_motor_pins_for_braking()

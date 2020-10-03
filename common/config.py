@@ -26,6 +26,10 @@ class Config:
 		return self._config["HWCTRL"]
 
 	@property
+	def sbu_communicator_config(self):
+		return self._config["SBU_Communicator"]
+
+	@property
 	def mounting_config(self):
 		return self._config["Mounting"]
 

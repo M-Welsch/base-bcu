@@ -14,8 +14,9 @@ from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
 from base.common.utils import *
 from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
-from base.sbc_interface.sbc_updater import *
-from base.sbc_interface.sbc_communicator import *
+from base.sbu_interface.sbu_updater import *
+from base.sbu_interface.sbu_communicator import *
+from base.hwctrl.display import *
 
 
 class Daemon:
@@ -31,16 +32,17 @@ class Daemon:
 		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
-		self._start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc()
+		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
+		self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
 		self._shutdown_flag = False
+		self._display_menu_pointer = 'Main'
 		self.start_threads_and_mainloop()
 
-	def _start_sbc_communictor_on_hw_rev3_and_set_sbcs_rtc(self):
+	def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
-			self._from_SBC_queue = []
-			self._sbc_communicator = SbcCommunicator(self._hardware_control, self._logger)
-			self._sbc_communicator.start()
-			self._sbc_communicator.write_to_display("Hi","BPU ready")
+			self._from_SBU_queue = []
+			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._logger, self._config.sbu_communicator_config)
+
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -50,16 +52,17 @@ class Daemon:
 		self.mainloop()
 
 	def stop_threads(self):
-		self._sbc_communicator.write_to_display("Goodbye","BPU stopping")
-		self._sbc_communicator.terminate() # needs active hwctrl to shutdown cleanly!
+		self._display.write("Goodbye", "BCU stopping")
+		self._sbu_communicator.terminate() # needs active hwctrl to shutdown cleanly!
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
 		self._logger.terminate()
 
 	def mainloop(self):
-		terminate_flag = False
-		while not terminate_flag:
+		self._display.write("BaSe   show IP > ", "          Demo >")
+		self._terminate_flag = False
+		while not self._terminate_flag:
 			sleep(self._config.main_loop_interval)
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
@@ -70,9 +73,9 @@ class Daemon:
 		else:
 			self.stop_threads()
 
-	def _seconds_to_next_bu_to_sbc(self):
+	def _seconds_to_next_bu_to_sbu(self):
 		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
-		self._sbc_communicator.append_to_sbc_communication_queue("BU:{}".format(seconds_to_next_bu))
+		self._sbu_communicator.append_to_sbc_communication_queue("BU:{}".format(seconds_to_next_bu))
 
 	def _look_up_status_quo(self) -> Dict:
 		status_quo = {
@@ -107,7 +110,7 @@ class Daemon:
 			return ["readout_hdd_parameters"]
 		if "new_buhdd" in status_quo["tcp_commands"]:
 			return ["enter_new_buhdd_in_config.json"]
-		if status_quo["pressed_buttons"][0] or "show_status_info" in status_quo["tcp_commands"]:
+		if "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
 		# if (
 		# 		status_quo["pressed_buttons"][1] or
@@ -115,6 +118,9 @@ class Daemon:
 		# 		status_quo["backup_scheduled_for_now"
 		# ):
 		#  command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
+
+		if status_quo["pressed_buttons"][0]: # show IP Adress on Display
+			command_list.append("show_ip_on_display")
 		if status_quo["pressed_buttons"][1]: # demo
 			command_list.extend(["dock", "wait", "undock"])
 		if "terminate_daemon" in status_quo["tcp_commands"]:
@@ -122,7 +128,7 @@ class Daemon:
 		if "terminate_daemon_and_shutdown" in status_quo["tcp_commands"]:
 			command_list.append("terminate_daemon_and_shutdown")
 		if "seconds_to_next_bu_to_sbc" in status_quo["tcp_commands"]:
-			self._seconds_to_next_bu_to_sbc()
+			self._seconds_to_next_bu_to_sbu()
 		if "shutdown_base" in status_quo["tcp_commands"]:
 			self._communicate_shutdown_intention_to_sbu()
 		if command_list:
@@ -158,7 +164,10 @@ class Daemon:
 					self._config.reload()
 				elif command == "show_status_info":
 					self.get_status()
+				elif command == "show_ip_on_display":
+					self.show_ip_address_on_display()
 				elif command == "terminate_daemon":
+					self._terminate_flag = True
 					return True
 				elif command == "terminate_daemon_and_shutdown":
 					self._initiate_shutdown_process()
@@ -192,10 +201,19 @@ class Daemon:
 		# TODO: send to Webapp if it asks for status ...
 		backups_present = list_backups_by_age(self._config.mounting_config["backup_hdd_mount_point"])
 
+	def show_ip_address_on_display(self):
+		if self._display_menu_pointer == 'IP':
+			self._display.write("BaSe   show IP > ", "          Demo >")
+			self._display_menu_pointer = 'Main'
+		else:
+			IP = get_ip_address()
+			self._display.write('Local IP: back >', IP)
+			self._display_menu_pointer = 'IP'
+
 	@staticmethod
 	def update_sbc():
 		# Fixme: that crashes the ttyS1 for some reason
-		print("Ready for SBC FW Update. Stop BaSe and run cd /home/maxi/base/sbc_interface && sudo python3 sbc_updater.py")
+		print("Ready for SBC FW Update. Stop BaSe and run cd /home/maxi/base/sbu_interface && sudo python3 sbc_updater.py")
 		# SBC_U = SBC_Updater()
 		# SBC_U.update_sbc()
 
@@ -215,8 +233,8 @@ class Daemon:
 
 	def _initiate_shutdown_process(self):
 		self._logger.info("Shutting down")
-		self._sbc_communicator.send_shutdown_request()
-		self._seconds_to_next_bu_to_sbc()
+		self._sbu_communicator.send_shutdown_request()
+		self._seconds_to_next_bu_to_sbu()
 		self.stop_threads()
 		self._shutdown_base()
 

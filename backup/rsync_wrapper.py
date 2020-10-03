@@ -127,10 +127,10 @@ if __name__ == "__main__":
     #         #     ssh_rsync.terminate()
 
     sync_thread = RsyncWrapperThread(
-        host="staabc.spdns.de",
-        user="root",
-        remote_source_path="/home/maximilian/testfiles",
-        local_target_path="/home/maxi/target/"
+        host="192.168.0.52",
+        user="max",
+        remote_source_path="/home/max/testfiles",
+        local_target_path="/home/maxi/target"
     )
 
     sync_thread.start()

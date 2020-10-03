@@ -10,8 +10,8 @@ LogMessage = namedtuple('LogMessage', 'content level')
 
 
 class Logger:
-    def __init__(self, logs_directory):
-        self._filename = self._make_filepath(logs_directory)
+    def __init__(self, logs_directory, logfile_prefix=""):
+        self._filename = self._make_filepath(logs_directory, logfile_prefix)
         logging.basicConfig(filename=self._filename, level=logging.DEBUG)
         self._queue = Queue()
         self._worker = Worker(self._queue)
@@ -35,8 +35,8 @@ class Logger:
     def terminate(self):
         self._worker.terminate()
 
-    def _make_filepath(self, directory):
-        filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')+".log"
+    def _make_filepath(self, directory, prefix):
+        filename = f"{prefix}{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
         return os.path.join(directory, filename)
 
 
