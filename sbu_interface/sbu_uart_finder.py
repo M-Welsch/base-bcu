@@ -33,10 +33,10 @@ class SbuUartFinder:
         try:
             response = SbuUartFinder._challenge_interface(uart_interface)
         except serial.SerialException:
-            print("{} could not be opened".format(uart_interface))
+            # print("{} could not be opened".format(uart_interface))
             return False
         else:
-            print(f"Challanged {uart_interface}, responded {response}.")
+            # print(f"Challanged {uart_interface}, responded {response}.")
             return response.endswith(b"Echo")
 
     @staticmethod

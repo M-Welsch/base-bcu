@@ -103,7 +103,7 @@ class TCPClientInterface:
 
 class TCPClientThread(threading.Thread):
 	def __init__(self):
-		super(TCPServerThread, self).__init__()
+		super(TCPClientThread, self).__init__()
 		self._exit_flag = False
 		self._host = socket.gethostname()
 		self._setup_communication_queue()

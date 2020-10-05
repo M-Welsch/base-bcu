@@ -20,7 +20,7 @@
         "docking_overcurrent_limit": 150
     },
     "SBU_Communicator": {
-        "logs_directory": "base/log"
+        "logs_directory": "/home/base/base/log"
     },
     "Mounting": {
         "backup_hdd_device_file_path": "/dev/sda1",

@@ -29,6 +29,7 @@ class SbuCommunicator():
             print("WARNING! Serial port to SBC could not found! Display and buttons will not work!")
             self._append_to_sbu_logfile("SBU not found!")
         else:
+            print(f"SBU answered on {sbu_uart_interface}")
             self._append_to_sbu_logfile(f"Opening USART interface {sbu_uart_interface}")
             self._serial_connection.port = sbu_uart_interface
             self._serial_connection.open()
@@ -54,7 +55,7 @@ class SbuCommunicator():
     def _open_logfile(self):
         filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + "sbu_communicator.log"
         directory = self._config_sbuc["logs_directory"]
-        path = os.path.join(directory, filename)
+        path = directory+filename
         return open(path,"w")
 
     def _append_to_sbu_logfile(self, message):
