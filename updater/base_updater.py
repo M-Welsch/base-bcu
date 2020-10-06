@@ -11,6 +11,7 @@ from base.common.utils import *
 from base.sbu_interface.sbu_communicator import *
 from base.sbu_interface.sbu_updater import *
 from sysdmanager import SystemdManager
+import git
 
 
 class BaseUpdater:
@@ -18,12 +19,19 @@ class BaseUpdater:
         pass
 
     def update_all(self):
-        self._terminate_base()
-        self._take_over_display()
-        self._update_base()
-        self._give_back_serial_connection()
-        self._update_sbu()
-        self._reboot()
+        if self.update_available():
+            self._terminate_base()
+            self._take_over_display()
+            self._update_base()
+            self._give_back_serial_connection()
+            self._update_sbu()
+            self._reboot()
+        else:
+            print("base already up to date")
+
+    def update_available(self):
+        repo = git.Repo('/home/base/base/')
+        return False
 
     def _terminate_base(self):
         tcp_port_orig = self._get_tcp_port()
