@@ -16,7 +16,7 @@ import git
 
 class BaseUpdater:
     def __init__(self):
-        pass
+        self._base_repo = git.Repo('/home/base/base/')
 
     def update_all(self):
         if self.update_available():
@@ -30,8 +30,8 @@ class BaseUpdater:
             print("base already up to date")
 
     def update_available(self):
-        repo = git.Repo('/home/base/base/')
-        return False
+        self._base_repo.git.checkout('master')
+        return self._base_repo.is_dirty(untracked_files=True)
 
     def _terminate_base(self):
         tcp_port_orig = self._get_tcp_port()
@@ -67,7 +67,7 @@ class BaseUpdater:
 
     def _get_new_files_from_repo(self):
         # Todo: git pull @branch release or stable or ... tbd
-        pass
+        print(self._base_repo.remotes.origin.pull())
 
     def _give_back_serial_connection(self):
         self._sbuc.terminate()
