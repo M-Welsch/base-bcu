@@ -1,11 +1,11 @@
 import sys
 from datetime import datetime, timedelta
 
-path_to_module = "/home/maxi"
+path_to_module = "/home/base"
 sys.path.append(path_to_module)
 
 from base.hwctrl.hwctrl import *
-from base.sbc_interface.sbc_communicator import *
+from base.sbu_interface.sbu_communicator import *
 from base.common.config import Config
 from base.common.base_logging import Logger
 from base.common.utils import shutdown_bcu
@@ -23,7 +23,8 @@ def create_human_readable_timestamp(seconds):
     f = datetime.now() + timedelta(seconds = seconds)
     return f.strftime('%d.%m.%Y %H:%M')
 
-class rev3b_endswitch_tester:
+
+class rev3bEndswitchTester:
     def __init__(self, pin_interface):
         self._pin_interface = pin_interface
 
@@ -51,7 +52,7 @@ class rev3b_pushbutton_tester:
         self._pin_interface = pin_interface
 
     def test(self):
-        print("The Pushbuttons can only be read if the SBC has its internal pullups on the button signals activated!")
+        print("The Pushbuttons can only be read if the sbu has its internal pullups on the button signals activated!")
         try:
             self.poll_button_status_periodically(0.2)
         except KeyboardInterrupt:
@@ -106,27 +107,27 @@ class rev3b_stepper_tester:
 
 class rev3b_serial_receive_tester:
     def __init__(self, hwctrl):
-        self._SBCC = self._init_SBC_Communicator(hwctrl)
+        self._sbuC = self._init_sbu_Communicator(hwctrl)
 
     def test(self):
-        print("This test only print outs the Heartbeat Count sent by the SBC")
+        print("This test only print outs the Heartbeat Count sent by the sbu")
         try:
-            self._writeout_from_sbc_queue_periodically(0.2)
+            self._writeout_from_sbu_queue_periodically(0.2)
         except KeyboardInterrupt:
-            self._SBCC.terminate()
+            self._sbuC.terminate()
             print("End.")
 
-    def _init_SBC_Communicator(self, hwctrl):
-        self._from_SBC_queue = []
-        self._to_SBC_queue = []
-        SBCC = SbcCommunicator(hwctrl, self._to_SBC_queue, self._from_SBC_queue)
-        SBCC.start()
-        return SBCC
+    def _init_sbu_Communicator(self, hwctrl):
+        self._from_sbu_queue = []
+        self._to_sbu_queue = []
+        sbuC = SbuCommunicator(hwctrl, self._to_sbu_queue, self._from_sbu_queue)
+        sbuC.start()
+        return sbuC
 
-    def _writeout_from_sbc_queue_periodically(self, period):
+    def _writeout_from_sbu_queue_periodically(self, period):
         while True:
-            while self._from_SBC_queue:
-                print(self._from_SBC_queue.pop())
+            while self._from_sbu_queue:
+                print(self._from_sbu_queue.pop())
             sleep(period)
 
 
@@ -174,13 +175,13 @@ class rev3b_dock_tester:
             
 class rev3b_sbu_tester:
     def __init__(self, hwctrl, logger, config_sbuc):
-        self._SBCC = self._init_SBC_Communicator(hwctrl, logger, config_sbuc)
+        self._sbuC = self._init_sbu_Communicator(hwctrl, logger, config_sbuc)
 
-    def _init_SBC_Communicator(self, hwctrl, logger, config_sbuc):
-        SBCC = SbcCommunicator(hwctrl, logger, config_sbuc)
-        while not SBCC.sbu_ready:
+    def _init_sbu_Communicator(self, hwctrl, logger, config_sbuc):
+        sbuC = SbuCommunicator(hwctrl, logger, config_sbuc)
+        while not sbuC.sbu_ready:
             sleep(0.1)
-        return SBCC
+        return sbuC
 
 class rev3b_sbu_communication_tester(rev3b_sbu_tester):
     def __init__(self, hwctrl, logger, config_sbuc):
@@ -190,23 +191,23 @@ class rev3b_sbu_communication_tester(rev3b_sbu_tester):
         current = self._measure_current()
         vcc3v = self._measure_vcc3v()
         self._test_write_display(current, vcc3v)
-        self._SBCC.terminate()
+        self._sbuC.terminate()
 
     def _measure_current(self):
         print("SBU Communicator Testcase: Current Measurement")
-        current = self._SBCC.current_measurement()
+        current = self._sbuC.current_measurement()
         print(f"Current Measurement Result: {current}A")
         return current
 
     def _measure_vcc3v(self):
         print("SBU Communicator Testcase: VCC3V3_SBY Measurement")
-        vcc3v = self._SBCC.vcc3v_measurement()
+        vcc3v = self._sbuC.vcc3v_measurement()
         print(f"VCC3V3_SBY Measurement Result: {vcc3v}V")
         return vcc3v
 
     def _test_write_display(self, current, vcc3v):
         print("SBU Communicator Testcase: Write to Display")
-        self._SBCC.write_to_display(f"Iin = {current}A", f"VCC3V = {vcc3v}V")
+        self._sbuC.write_to_display(f"Iin = {current:.2f}A", f"VCC3V = {vcc3v:.2f}V")
 
 class rev3b_sbu_shutdown_process_tester(rev3b_sbu_tester):
     def __init__(self, hwctrl, logger, config_sbuc):
@@ -214,8 +215,8 @@ class rev3b_sbu_shutdown_process_tester(rev3b_sbu_tester):
 
     def test(self):
         if warn_user_and_ask_whether_to_continue("This will shutdown the BCU! Is everything saved?"):
-            self._SBCC.send_shutdown_request()
-            self._SBCC.terminate()
+            self._sbuC.send_shutdown_request()
+            self._sbuC.terminate()
             self._shutdown_bcu()
 
     def _shutdown_bcu(self):
@@ -229,14 +230,14 @@ class rev3b_sbu_send_hr_timestamp_tester(rev3b_sbu_tester):
     def test(self):
         wake_after = 300 #seconds
         timestamp_hr = create_human_readable_timestamp(wake_after)
-        self._SBCC.send_human_readable_timestamp_next_bu(timestamp_hr)
+        self._sbuC.send_human_readable_timestamp_next_bu(timestamp_hr)
 
 class rev3b_sbu_send_seconds_to_next_bu_tester(rev3b_sbu_tester):
     def __init__(self, hwctrl, logger, config_sbuc):
         super(rev3b_sbu_send_seconds_to_next_bu_tester, self).__init__(hwctrl, logger, config_sbuc)
 
     def test(self):
-        self._SBCC.send_seconds_to_next_bu_to_sbu(2097152)
+        self._sbuC.send_seconds_to_next_bu_to_sbu(2097152)
             
 class rev3b_sbu_shutdown_and_wake_after_500s_tester(rev3b_sbu_tester):
     def __init__(self, hwctrl, logger, config_sbuc):
@@ -245,9 +246,9 @@ class rev3b_sbu_shutdown_and_wake_after_500s_tester(rev3b_sbu_tester):
     def test(self):
         wake_after = 120*32 #seconds * 32. Factor 32 because for debugging purposes the rtc counts 32 times as fast
         timestamp_hr = create_human_readable_timestamp(wake_after)
-        self._SBCC.send_human_readable_timestamp_next_bu(timestamp_hr)
-        self._SBCC.send_seconds_to_next_bu_to_sbu(wake_after)
-        self._SBCC.send_shutdown_request()
+        self._sbuC.send_human_readable_timestamp_next_bu(timestamp_hr)
+        self._sbuC.send_seconds_to_next_bu_to_sbu(wake_after)
+        self._sbuC.send_shutdown_request()
         shutdown_bcu()
 
 
@@ -257,9 +258,9 @@ class rev3b_sbu_display_dimming_tester(rev3b_sbu_tester):
 
     def test(self):
         for i in range(100,0,-10):
-            self._SBCC.set_display_brightness_percent(i)
+            self._sbuC.set_display_brightness_percent(i)
         for i in range(0,100,10):
-            self._SBCC.set_display_brightness_percent(i)
+            self._sbuC.set_display_brightness_percent(i)
 
 class rev3b_sbu_hmi_led_dimming_tester(rev3b_sbu_tester):
     def __init__(self, hwctrl, logger, config_sbuc):
@@ -267,9 +268,9 @@ class rev3b_sbu_hmi_led_dimming_tester(rev3b_sbu_tester):
 
     def test(self):
         for i in range(100,0,-10):
-            self._SBCC.set_led_brightness_percent(i)
+            self._sbuC.set_led_brightness_percent(i)
         for i in range(0,100,10):
-            self._SBCC.set_led_brightness_percent(i)
+            self._sbuC.set_led_brightness_percent(i)
 
 class rev3b_bringup_test_suite:
     def __init__(self):
@@ -279,7 +280,7 @@ class rev3b_bringup_test_suite:
             "test_endswitches":["0","test_endswitches"],
             "test_pushbuttons":["1","test_pushbuttons"],
             "test_stepper":["2","test_stepper"],
-            "test_SBC_heartbear_receive":["3","test_SBC_heartbear_receive"],
+            "test_sbu_heartbear_receive":["3","test_sbu_heartbear_receive"],
             "rev3b_docking_undocking_test":["4","rev3b_docking_undocking_test"],
             "rev3b_power_hdd_test":["5","rev3b_power_hdd_test"],
             "rev3b_serial_send_tester_wo_hwctrl":["6","rev3b_serial_send_tester_wo_hwctrl"],
@@ -293,11 +294,11 @@ class rev3b_bringup_test_suite:
             "rev3b_sbu_hmi_led_dimming_tester":["e","rev3b_sbu_hmi_led_dimming_tester"]
         }
 
-        self._config = Config("/home/maxi/base/config.json")
+        self._config = Config("/home/base/base/config.json")
         self._hwctrl = self._init_hwctrl()
 
     def _init_hwctrl(self):
-        self._logger = Logger("/home/maxi/base/log")
+        self._logger = Logger("/home/base/base/log")
         return HWCTRL(self._config.hwctrl_config, self._logger)
 
     def run(self):
@@ -309,7 +310,7 @@ class rev3b_bringup_test_suite:
                 exitflag = True
 
             if user_choice in self.testcases["test_endswitches"]:
-                Tester = rev3b_endswitch_tester(self._pin_interface)
+                Tester = rev3bEndswitchTester(self._pin_interface)
 
             if user_choice in ["1", "test_pushbuttons"]:
                 Tester = rev3b_pushbutton_tester(self._pin_interface)
@@ -317,7 +318,7 @@ class rev3b_bringup_test_suite:
             if user_choice in ["2", "test_stepper"]:
                 Tester = rev3b_stepper_tester(self._pin_interface)
 
-            if user_choice in ["3", "test_SBC_heartbear_receive"]:
+            if user_choice in ["3", "test_sbu_heartbear_receive"]:
                 Tester = rev3b_serial_receive_tester(self._hwctrl)
 
             if user_choice in ["4", "rev3b_docking_undocking_test"]:

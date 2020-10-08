@@ -35,7 +35,8 @@
     },
     "Webapp": {
         "TCP_Codebook": {
-            "Shutdown Server": "terminate_daemon",
+            "Terminate Backup Control Unit": "terminate_daemon",
+            "Shutdown Server": "terminate_daemon_and_shutdown",
             "Test Mounting": "test_mounting",
             "Test Unounting": "test_unmounting",
             "Dock": "test_docking",

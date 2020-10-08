@@ -1,0 +1,6 @@
+2020-10-08_21-29-26: Opening USART interface /dev/ttyS1
+2020-10-08_21-29-26: Command: message_code = CC, payload = 
+2020-10-08_21-29-26: CC acknowledged after 0.20947813987731934s, ready after 0.059244632720947266
+2020-10-08_21-29-28: Command: message_code = 3V, payload = 
+2020-10-08_21-29-28: 3V acknowledged after 0.13365864753723145s, ready after 0.060262203216552734
+2020-10-08_21-29-30: Command: message_code = D1, payload = Iin = NoneA

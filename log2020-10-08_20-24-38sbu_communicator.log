@@ -1,0 +1,7 @@
+2020-10-08_20-24-40: Opening USART interface /dev/ttyS1
+2020-10-08_20-24-41: Command: message_code = D1, payload = BaSe   show IP > 
+2020-10-08_20-24-42: D1 acknowledged after 0.2480480670928955s, ready after 1.0515389442443848
+2020-10-08_20-24-42: Command: message_code = D2, payload =           Demo >
+2020-10-08_20-24-42: D2 acknowledged after 0.1819303035736084s, ready after 0.044233083724975586
+2020-10-08_20-24-57: Command: message_code = SR, payload = 
+2020-10-08_20-24-59: SR acknowledged after 1.0515549182891846s, ready after 1.0513670444488525

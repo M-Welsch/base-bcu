@@ -40,7 +40,6 @@ class Daemon:
 
 	def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
-			self._from_SBU_queue = []
 			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._logger, self._config.sbu_communicator_config)
 
 
@@ -60,7 +59,8 @@ class Daemon:
 		self._logger.terminate()
 
 	def mainloop(self):
-		self._display.write("BaSe   show IP > ", "          Demo >")
+		self._sbu_communicator.set_display_brightness_percent(100)
+		self._hmi_show_main_menu()
 		self._terminate_flag = False
 		while not self._terminate_flag:
 			sleep(self._config.main_loop_interval)
@@ -73,9 +73,12 @@ class Daemon:
 		else:
 			self.stop_threads()
 
+	def _hmi_show_main_menu(self):
+		self._display.write("BaSe   show IP > ", "          Demo >")
+
 	def _seconds_to_next_bu_to_sbu(self):
 		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
-		self._sbu_communicator.append_to_sbc_communication_queue("BU:{}".format(seconds_to_next_bu))
+		self._sbu_communicator.send_seconds_to_next_bu_to_sbu(seconds_to_next_bu)
 
 	def _look_up_status_quo(self) -> Dict:
 		status_quo = {
@@ -203,22 +206,26 @@ class Daemon:
 
 	def show_ip_address_on_display(self):
 		if self._display_menu_pointer == 'IP':
-			self._display.write("BaSe   show IP > ", "          Demo >")
+			self._hmi_show_main_menu()
 			self._display_menu_pointer = 'Main'
 		else:
 			IP = get_ip_address()
 			self._display.write('Local IP: back >', IP)
 			self._display_menu_pointer = 'IP'
 
-	@staticmethod
-	def update_sbc():
+	def update_sbc(self):
 		# Fixme: that crashes the ttyS1 for some reason
-		print("Ready for SBC FW Update. Stop BaSe and run cd /home/maxi/base/sbu_interface && sudo python3 sbc_updater.py")
+		print("updating SBU")
+		self._display.write("Updating SBU","Firmware")
+		self._sbu_communicator.terminate()
+		self._sbu_updater = SbuUpdater(self._hardware_control)
+		self._sbu_updater.update_sbu()
+		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
+		self._hmi_show_main_menu()
 		# SBC_U = SBC_Updater()
 		# SBC_U.update_sbc()
 
 	def read_and_send_hdd_parameters(self):
-		# pudb.set_trace()
 		try:
 			# request the result one second before TCP Server's timeout elapses
 			timeout = self._tcp_codebook.commands["readout_hdd_parameters"].Timeout - 1
@@ -240,4 +247,3 @@ class Daemon:
 
 	def _shutdown_base(self):
 		os.system("shutdown -h now")
-		
