@@ -1,0 +1,8 @@
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/base
+ExecStart=sudo python3 base/
+
+[Install]
+WantedBy=multi-user.target
