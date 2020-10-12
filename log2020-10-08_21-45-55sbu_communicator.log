@@ -1,7 +1,0 @@
-2020-10-08_21-45-57: Opening USART interface /dev/ttyS1
-2020-10-08_21-45-57: Command: message_code = CC, payload = 
-2020-10-08_21-45-58: current measurement 16 bit value: 88
-2020-10-08_21-45-59: Command: message_code = 3V, payload = 
-2020-10-08_21-46-00: current measurement 16 bit value: 1023
-2020-10-08_21-46-01: Command: message_code = D1, payload = Iin = 0.205920A
-2020-10-08_21-46-03: D1 acknowledged after 0.1401824951171875s, ready after 1.0523474216461182

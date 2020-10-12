@@ -1,9 +1,0 @@
-2020-10-05_21-16-27: Opening USART interface /dev/ttyS1
-2020-10-05_21-16-27: Command: message_code = D1, payload = BaSe   show IP > 
-2020-10-05_21-16-28: D1 acknowledged after 0.27600860595703125s, ready after 1.051699161529541
-2020-10-05_21-16-28: Command: message_code = D2, payload =           Demo >
-2020-10-05_21-16-28: D2 acknowledged after 0.18103861808776855s, ready after 0.04425954818725586
-2020-10-05_21-16-31: Command: message_code = D1, payload = Goodbye
-2020-10-05_21-16-32: D1 acknowledged after 0.09633064270019531s, ready after 1.0519232749938965
-2020-10-05_21-16-32: Command: message_code = D2, payload = BCU stopping
-2020-10-05_21-16-32: D2 acknowledged after 0.1773698329925537s, ready after 0.04082441329956055

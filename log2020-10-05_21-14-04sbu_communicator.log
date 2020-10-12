@@ -1,5 +1,0 @@
-2020-10-05_21-14-06: Opening USART interface /dev/ttyS1
-2020-10-05_21-14-06: Command: message_code = D1, payload = Getting new
-2020-10-05_21-14-08: D1 acknowledged after 0.2193455696105957s, ready after 1.0510010719299316
-2020-10-05_21-14-08: Command: message_code = D2, payload = Files ...
-2020-10-05_21-14-08: D2 acknowledged after 0.1729888916015625s, ready after 0.040155887603759766
