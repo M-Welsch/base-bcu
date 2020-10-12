@@ -3,10 +3,11 @@ import os
 class LogfileProcessor():
 	def __init__(self, form_data):
 		self._form_data = form_data
+		self._available_logfiles = []
 		self._prepare_logfile_data()
 
 	def _prepare_logfile_data(self):
-		self._available_logfiles = self._get_available_logfiles()
+		self._get_available_logfiles()
 		self._logfile_selected = self._get_logfile_name_from_form()
 		logfile_content = self._get_logfile_content()
 		self._logfile_content = self._beautify_logfile_content(logfile_content)
@@ -28,13 +29,13 @@ class LogfileProcessor():
 		for file in os.listdir("../log"):
 			if file.endswith(".log"):
 				available_logs.append(file)
-		return available_logs
+		self._available_logfiles = available_logs
 
 	def _get_logfile_name_from_form(self):
 		try:
 			logfile_selected = self._form_data['filename']
 		except:
-			logfile_selected = available_logs[0]
+			logfile_selected = self._available_logfiles[0]
 		return logfile_selected
 
 	def _get_logfile_content(self):
@@ -49,7 +50,7 @@ class LogfileProcessor():
 		for line in logfile_content:
 			if "ERROR" in line:
 				line = color_line(line, "red")
-			if "WARINING" in line:
+			if "WARNING" in line:
 				line = color_line(line, "orange")
 			if "closed" in line or "opened" in line:
 				line = color_line(line, "green")
