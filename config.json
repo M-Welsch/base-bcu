@@ -42,7 +42,7 @@
             "Dock": "test_docking",
             "Unock": "test_undocking",
             "Reload config-File": "reload_config",
-            "update_sbc": "update_sbc"
+            "update_sbc": "update_sbu"
         }
     },
     "Device Specific": {

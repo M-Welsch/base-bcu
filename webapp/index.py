@@ -17,7 +17,7 @@ from base.common.utils import wait_for_new_device_file, run_external_command_as_
 from base.webapp.logfile_viewer import *
 
 application = Flask(__name__)
-application.config['SBC_FW_FOLDER'] = "{}/sbu_interface/sbc_fw_uploads".format(
+application.config['SBC_FW_FOLDER'] = "{}/sbu_interface/sbu_fw_uploads".format(
 	os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 

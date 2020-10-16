@@ -42,7 +42,6 @@ class Daemon:
 		if self._hardware_control.get_hw_revision() == 'rev3':
 			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._logger, self._config.sbu_communicator_config)
 
-
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
 		self._tcp_server_thread.start()
@@ -107,8 +106,8 @@ class Daemon:
 			return ["undock"]
 		if "reload_config" in status_quo["tcp_commands"]:
 			command_list.append("reload_config")
-		if "update_sbc" in status_quo["tcp_commands"]:
-			return ["update_sbc"]
+		if "update_sbu" in status_quo["tcp_commands"]:
+			return ["update_sbu"]
 		if "readout_hdd_parameters" in status_quo["tcp_commands"]:
 			return ["readout_hdd_parameters"]
 		if "new_buhdd" in status_quo["tcp_commands"]:
@@ -176,8 +175,8 @@ class Daemon:
 					self._initiate_shutdown_process()
 					self._shutdown_flag = True
 					return True
-				elif command == "update_sbc":
-					self.update_sbc()
+				elif command == "update_sbu":
+					self.update_sbu()
 				elif command == "readout_hdd_parameters":
 					self.read_and_send_hdd_parameters()
 				elif command == "enter_new_buhdd_in_config.json":
@@ -213,10 +212,10 @@ class Daemon:
 			self._display.write('Local IP: back >', IP)
 			self._display_menu_pointer = 'IP'
 
-	def update_sbc(self):
+	def update_sbu(self):
 		# Fixme: that crashes the ttyS1 for some reason
 		print("updating SBU")
-		self._display.write("Updating SBU","Firmware")
+		self._display.write("Updating SBU", "Firmware")
 		self._sbu_communicator.terminate()
 		self._sbu_updater = SbuUpdater(self._hardware_control)
 		self._sbu_updater.update_sbu()

@@ -4,7 +4,7 @@ import glob
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
-from base.common.utils import get_sbc_fw_uploads_folder, run_external_command_as_generator_2, run_external_command_string_input
+from base.common.utils import get_sbu_fw_uploads_folder, run_external_command_as_generator_2, run_external_command_string_input
 
 class SbuUpdater():
 	def __init__(self, hwctrl):
@@ -20,7 +20,7 @@ class SbuUpdater():
 		self._hwctrl.set_attiny_serial_path_to_communication()
 
 	def _get_filename_of_newest_hex_file(self):
-		list_of_sbc_fw_files = glob.glob("{}/*".format(get_sbc_fw_uploads_folder()))
+		list_of_sbc_fw_files = glob.glob("{}/*".format(get_sbu_fw_uploads_folder()))
 		latest_sbc_fw_file = max(list_of_sbc_fw_files, key=os.path.getctime)
 		return latest_sbc_fw_file
 
