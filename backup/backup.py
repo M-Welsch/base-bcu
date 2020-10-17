@@ -31,12 +31,12 @@ class BackupThread(Thread):
 		start = time()
 		
 		# TODO: check if nas is available at some point ...
-
-		self._stop_services_on_nas()
-		self._free_space_on_backup_hdd_if_necessary()
-		self._create_folder_for_backup()
-		self._execute_backup_with_rsync()
-		self._restart_services_on_nas()
+		if self._nas_available():
+			self._stop_services_on_nas()
+			self._free_space_on_backup_hdd_if_necessary()
+			self._create_folder_for_backup()
+			self._execute_backup_with_rsync()
+			self._restart_services_on_nas()
 
 	def _stop_services_on_nas(self):
 		with SSHInterface(self._ssh_host, self._ssh_user) as ssh:

@@ -144,3 +144,29 @@ class TCPClientThread(threading.Thread):
 	@property
 	def communication_queue(self):
 		return self._communication_queue.pop()
+
+class NasFinder:
+	def __init__(self, logger):
+		self._logger = logger
+
+	def nas_avaliable(self, target_ip):
+		if self._nas_ip_available(target_ip) and self._nas_correct(target_ip):
+			print("Yeah!")
+
+	def _nas_ip_available(self, target_ip):
+		t_IP = socket.gethostbyname(target_ip)
+		ssh_port = 22
+		s = socket.\
+			socket(socket.AF_INET, socket.SOCK_STREAM)
+
+		conn = s.connect_ex((t_IP, ssh_port))
+		if (conn == 0):
+			self._logger.info(f"NAS Finder: {target_ip}:{ssh_port} open!")
+			print(f"NAS Finder: {target_ip}:{ssh_port} open!")
+		else:
+			self._logger.warning(f"NAS Finder: {target_ip}:{ssh_port} is not open!")
+			print(f"NAS Finder: {target_ip}:{ssh_port} is not open!")
+		s.close()
+
+	def _nas_correct(self, target_ip):
+		g

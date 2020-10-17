@@ -52,6 +52,8 @@ class Worker(Thread):
             sleep(0.1)
 
     def terminate(self):
+        while not self._queue.empty():
+            sleep(0.1)
         self._term_flag = True
 
     def _work_off_msg(self):
