@@ -1,0 +1,12 @@
+{
+	"DietPi": {
+		"root_access": true,
+		"username": "root",
+		"services": ["smbd"]
+	},
+	"bananapi": {
+		"root_access": false,
+		"username": "max",
+		"services": ["smbd", "nginx"]
+	}
+}

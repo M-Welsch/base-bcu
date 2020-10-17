@@ -30,8 +30,8 @@
     },
     "Backup": {
         "sample_interval": 0.2,
-        "ssh_host": "192.168.0.43",
-        "ssh_user": "pi"
+        "ssh_host": "192.168.0.34",
+        "ssh_user": "root"
     },
     "Webapp": {
         "TCP_Codebook": {

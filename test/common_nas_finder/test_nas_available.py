@@ -1,5 +1,4 @@
 import os, sys
-from time import sleep
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 print(path_to_module)
@@ -7,7 +6,7 @@ sys.path.append(path_to_module)
 
 from base.common.config import Config
 from base.common.base_logging import Logger
-from base.common.tcp import NasFinder
+from base.common.nas_finder import NasFinder
 
 if __name__ == '__main__':
     config = Config("/home/base/base/config.json")
