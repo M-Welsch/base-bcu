@@ -6,6 +6,7 @@ sys.path.append(path_to_module)
 
 from time import sleep, time
 from threading import Thread
+from datetime import datetime
 
 from base.common.utils import run_external_command_as_generator_2
 from base.common.ssh_interface import SSHInterface
@@ -27,61 +28,54 @@ class BackupThread(Thread):
 	def __init__(self, backup_config, logger):
 		super(BackupThread, self).__init__()
 		self._logger = logger
+		self._backup_config = backup_config
 		self._sample_interval = backup_config["sample_interval"]
 		self._ssh_host = backup_config["ssh_host"]
 		self._ssh_user = backup_config["ssh_user"]
-		self._get_nas_variants()
-
-	def _get_nas_variants(self):
-		path_to_variants_description = os.path.dirname(os.path.abspath(__file__))
-		with open(f"{path_to_variants_description}/nas_variants.json", 'r') as cf:
-			self._nas_variants = json.load(cf)
+		self._new_backup_folder = None
+		self._nas_properties = None
 
 	def run(self):
-		start = time()
-		
-		# TODO: check if nas is available at some point ...
 		if self._nas_available():
 			self._stop_services_on_nas()
 			self._free_space_on_backup_hdd_if_necessary()
 			self._create_folder_for_backup()
 			self._execute_backup_with_rsync()
-			self._restart_services_on_nas()
+			self._start_services_on_nas()
 
 	def _nas_available(self):
 		nas_finder = NasFinder(self._logger)
-		return nas_finder.nas_available(self._ssh_host, self._ssh_user )
+		return nas_finder.nas_available(self._ssh_host, self._ssh_user)
 
 	def _stop_services_on_nas(self):
 		with SSHInterface(self._logger) as ssh:
 			ssh.connect(self._ssh_host, self._ssh_user)
-			nas_variant = self._get_nas_version(ssh)
-			self._stop_services_on_nas_variantspecific(ssh, nas_variant)
+			self._enquire_nas_properties(ssh)
+			self._enquire_services_to_stop_on_nas()
+			if not self._list_of_services:
+				self._list_of_services = ["smbd", "nginx"]
+				self._logger.warning(f"Services on NAS to be stopped/restarted is not clearly stated. Stopping {self._list_of_services}")
+			self._stop_list_of_services_on_nas(ssh)
 
-	def _get_nas_services_to_stop_during_backup(self, nas_variant):
-		services_to_stop = self._nas_variants[nas_variant]
-		return services_to_stop
+	def _enquire_services_to_stop_on_nas(self):
+		self._list_of_services = self._nas_properties["services_to_stop"]
 
-	def _stop_services_on_nas_variantspecific(self, ssh, nas_variant):
-		for service in self._get_nas_services_to_stop_during_backup(nas_variant):
-			if self._nas_variants[nas_variant]["root_access"]:
+	def _enquire_nas_properties(self, ssh):
+		stdout, stderr = ssh.run('cat nas_for_backup')
+		try:
+			nas_properties = json.loads(stdout)
+			self._logger.info(f"NAS variant is identified as {nas_properties['name']}")
+		except json.JSONDecodeError:
+			nas_properties = None
+			self._logger.warning("NAS variant could not be identified!")
+		self._nas_properties = nas_properties
+
+	def _stop_list_of_services_on_nas(self, ssh):
+		for service in self._list_of_services:
+			if self._ssh_user == "root":
 				ssh.run(f"systemctl stop {service}")
 			else:
-				username = self._nas_variants[nas_variant]["username"]
-				ssh.run(f"echo {username} | sudo -S systemctl stop {service}")
-
-
-	def _get_nas_version(self, ssh):
-		stdout, stderr = ssh.run('cat nas_for_backup')
-		if 'DietPi' in stdout:
-			self._logger.info("Detected NAS as one with DietPi on it")
-			return 'DietPi'
-		elif 'RaspberryPi' in stdout:
-			self._logger.info("Detected NAS as some kind of Raspberry Pi")
-			return 'RaspberryPi'
-		else:
-			self._logger.error("No valid nas Variant detected!!")
-			return None
+				ssh.run(f"echo {self._ssh_user} | sudo -S systemctl stop {service}")
 
 	def _free_space_on_backup_hdd_if_necessary(self):
 		while not self.enough_space_for_full_backup():
@@ -105,41 +99,74 @@ class BackupThread(Thread):
 				df_output_cleaned = int(line.strip())
 		return int(df_output_cleaned)
 
-
 	def space_occupied_on_nas_hdd(self):
-		with SSHInterface(self._ssh_host, self._ssh_user) as ssh:
-			space_occupied = int(ssh.run_and_raise('df --output="used" /media/HDD | tail -n 1'))
+		with SSHInterface(self._logger) as ssh:
+			ssh.connect(self._ssh_host, self._ssh_user)
+			space_occupied = int(ssh.run_and_raise('df --output="used" /mnt/HDD | tail -n 1'))
 		return space_occupied
 
-
 	def delete_oldest_backup(self):
-		oldest_backup = get_oldest_backup()
-		print("deleting {} to free space for new backup".format(oldest_backup))
-		# leave message in logfile
+		with BackupLister(self._backup_config) as bl:
+			oldest_backup = bl.get_oldest_backup()
+		self._logger.info("deleting {} to free space for new backup".format(oldest_backup))
 		pass
 
 	def _create_folder_for_backup(self):
-		pass
+		timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M")
+		path = os.path.join(self._backup_config["backup_location"],f"backup_{timestamp}")
+		try:
+			os.mkdir(path)
+			self._new_backup_folder = path
+		except OSError:
+			self._logger.error(f'Could not create directory for new backup in {self._backup_config["backup_location"]}')
 
 	def _execute_backup_with_rsync(self):
-		"rsync -avHe ssh pi@192.168.0.43:/home/pi . --progress"
+		# Todo: use rsync_wrapper.py here
+		print("doing backup ... or pretending to")
 
-		# # for line in run_external_command_as_generator_2(["find", "/"]):
-		# for line in run_external_command_as_generator_2(["grep", "-r", "-i", "e", "/home"]):
-		# 	now = time()
-		# 	if now - start >= self._sample_interval:
-		# 		print(line.strip())
-		# 		# show on display
-		# 		start = now
+	def _start_services_on_nas(self):
+		with SSHInterface(self._logger) as ssh:
+			self._logger.info(f"Starting services on NAS: {self._list_of_services}")
+			ssh.connect(self._ssh_host, self._ssh_user)
+			self._restart_list_of_services_on_nas(ssh)
 
-	def _restart_services_on_nas(self):
-		with SSHInterface(self._ssh_host, self._ssh_user) as ssh:
-			ssh.run("echo raspberry | sudo -S systemctl start smbd")
-			ssh.run("echo raspberry | sudo -S systemctl start nginx")
+	def _restart_list_of_services_on_nas(self, ssh):
+		for service in self._list_of_services:
+			if self._ssh_user == "root":
+				ssh.run(f"systemctl start {service}")
+			else:
+				ssh.run(f"echo {self._ssh_user} | sudo -S systemctl start {service}")
 
 	def terminate(self):
-		# kill rsync
+		# Todo: use rsync_wrapper.py here
 		raise NotImplementedError
+
+
+class BackupLister:
+	def __init__(self, backup_config):
+		self._backup_config = backup_config
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, exc_type, exc_value, exc_traceback):
+		pass
+
+	def list_backups_by_age(self):
+		# lowest index is the oldest
+		list_of_backups = []
+		for file in os.listdir(self._backup_config["backup_location"]):
+			if file.startswith("backup"):
+				list_of_backups.append(file)
+		list_of_backups.sort()
+		return list_of_backups
+
+	def get_oldest_backup(self):
+		backups = self.list_backups_by_age()
+		if backups:
+			return backups[0]
+		else:
+			return None
 
 
 if __name__ == "__main__":

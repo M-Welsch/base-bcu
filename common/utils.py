@@ -78,22 +78,6 @@ def or_up_values(value):
 		b += bool(value)
 	return b
 
-def list_backups_by_age(bu_location):
-	# lowest index is the oldest
-	list_of_backups = []
-	for file in os.listdir(bu_location):
-		if file.startswith("backup"):
-			list_of_backups.append(file)
-	list_of_backups.sort()
-	return list_of_backups
-
-def get_oldest_backup():
-	backups = list_backups_by_age()
-	if backups:
-		return backups[0]
-	else:
-		raise RuntimeError("'get_oldest_backup': no backup done yet!")
-
 def get_ip_address():
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	try:
