@@ -1,17 +1,17 @@
-import sys
 import json
-import os, sys
+import os
+import sys
+
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
-from time import sleep, time
 from threading import Thread
 from datetime import datetime
 
 from base.common.utils import run_external_command_as_generator_2
 from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
-
+from base.backup.rsync_wrapper import RsyncWrapperThread
 
 class BackupManager:
 	def __init__(self, backup_config, logger):
@@ -106,23 +106,29 @@ class BackupThread(Thread):
 		return space_occupied
 
 	def delete_oldest_backup(self):
-		with BackupLister(self._backup_config) as bl:
+		with BackupBrowser(self._backup_config) as bl:
 			oldest_backup = bl.get_oldest_backup()
 		self._logger.info("deleting {} to free space for new backup".format(oldest_backup))
 		pass
 
 	def _create_folder_for_backup(self):
 		timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M")
-		path = os.path.join(self._backup_config["backup_location"],f"backup_{timestamp}")
+		path = os.path.join(self._backup_config["local_backup_target_location"],f"backup_{timestamp}")
 		try:
 			os.mkdir(path)
+			self._logger.info(f'Created directory for new backup: {path}')
 			self._new_backup_folder = path
 		except OSError:
-			self._logger.error(f'Could not create directory for new backup in {self._backup_config["backup_location"]}')
+			self._logger.error(f'Could not create directory for new backup in {self._backup_config["local_backup_target_location"]}')
 
 	def _execute_backup_with_rsync(self):
-		# Todo: use rsync_wrapper.py here
-		print("doing backup ... or pretending to")
+		self._sync_thread = RsyncWrapperThread(
+			host=self._ssh_host,
+			user=self._ssh_user,
+			remote_source_path=self._backup_config["remote_backup_source_location"],
+			local_target_path=self._new_backup_folder
+		)
+		self._sync_thread.start()
 
 	def _start_services_on_nas(self):
 		with SSHInterface(self._logger) as ssh:
@@ -138,11 +144,15 @@ class BackupThread(Thread):
 				ssh.run(f"echo {self._ssh_user} | sudo -S systemctl start {service}")
 
 	def terminate(self):
-		# Todo: use rsync_wrapper.py here
-		raise NotImplementedError
+		self._logger.warning("Backup Aborted")
+		self._sync_thread.terminate()
+		self._mark_current_backup_as_incomplete()
+
+	def _mark_current_backup_as_incomplete(self):
+		os.rename(self._new_backup_folder, f"{self._new_backup_folder}_incomplete")
 
 
-class BackupLister:
+class BackupBrowser:
 	def __init__(self, backup_config):
 		self._backup_config = backup_config
 
@@ -155,7 +165,7 @@ class BackupLister:
 	def list_backups_by_age(self):
 		# lowest index is the oldest
 		list_of_backups = []
-		for file in os.listdir(self._backup_config["backup_location"]):
+		for file in os.listdir(self._backup_config["local_backup_target_location"]):
 			if file.startswith("backup"):
 				list_of_backups.append(file)
 		list_of_backups.sort()

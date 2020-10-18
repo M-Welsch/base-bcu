@@ -29,7 +29,8 @@
         "backup_device_file_timeout": 20
     },
     "Backup": {
-        "backup_location": "/media/BackupHDD",
+        "remote_backup_source_location": "/mnt/HDD",
+        "local_backup_target_location": "/media/BackupHDD",
         "sample_interval": 0.2,
         "ssh_host": "192.168.0.34",
         "ssh_user": "root"

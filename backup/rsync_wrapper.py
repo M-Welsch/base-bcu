@@ -56,9 +56,7 @@ class SshRsync:
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
     def __init__(self, host, user, remote_source_path, local_target_path):
-        self._command = (
-            f"sudo rsync -avHe ssh {user}@{host}:{remote_source_path} {local_target_path} --outbuf=N --info=progress2"
-        ).split()
+        self._compose_rsync_command(host, user, remote_source_path, local_target_path)
         self._process = None
         self._status = self.Status()
 
@@ -71,6 +69,12 @@ class SshRsync:
             self.kill()
         except ProcessLookupError:
             pass
+
+    def _compose_rsync_command(self, host, user, remote_source_path, local_target_path):
+        command = f'sudo rsync -avHe'.split()
+        command.append("ssh -i /home/base/.ssh/id_rsa")
+        command.extend(f"{user}@{host}:{remote_source_path} {local_target_path} --outbuf=N --info=progress2".split())
+        self._command = command
 
     def _output_generator(self):
         while True:

@@ -7,7 +7,7 @@ sys.path.append(path_to_module)
 
 from base.common.config import Config
 from base.common.base_logging import Logger
-from base.backup.backup import BackupManager, BackupLister
+from base.backup.backup import BackupManager, BackupBrowser
 
 if __name__ == '__main__':
     config = Config("/home/base/base/config.json")
@@ -16,8 +16,8 @@ if __name__ == '__main__':
     BM.backup()
 
     print("testing backup_finder")
-    with BackupLister(config.backup_config) as bl:
+    with BackupBrowser(config.backup_config) as bl:
         oldest_backup = bl.get_oldest_backup()
         print(f"oldest_backup = {oldest_backup}")
-    sleep(0.1) # give the logger some time ...
+    sleep(10) # give the logger some time ...
     logger.terminate()
