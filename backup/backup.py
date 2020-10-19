@@ -13,6 +13,7 @@ from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
 from base.backup.rsync_wrapper import RsyncWrapperThread
 
+
 class BackupManager:
 	def __init__(self, backup_config, logger):
 		self._backup_config = backup_config
@@ -39,7 +40,9 @@ class BackupThread(Thread):
 		if self._nas_available():
 			self._stop_services_on_nas()
 			self._free_space_on_backup_hdd_if_necessary()
+			newest_backup = self._get_newest_backup_dir_path()
 			self._create_folder_for_backup()
+			self._copy_newest_backup_with_hardlinks(newest_backup) #Todo: not necessary? see https://www.admin-magazine.com/Articles/Using-rsync-for-Backups/(offset)/2
 			self._execute_backup_with_rsync()
 			self._start_services_on_nas()
 
@@ -57,9 +60,6 @@ class BackupThread(Thread):
 				self._logger.warning(f"Services on NAS to be stopped/restarted is not clearly stated. Stopping {self._list_of_services}")
 			self._stop_list_of_services_on_nas(ssh)
 
-	def _enquire_services_to_stop_on_nas(self):
-		self._list_of_services = self._nas_properties["services_to_stop"]
-
 	def _enquire_nas_properties(self, ssh):
 		stdout, stderr = ssh.run('cat nas_for_backup')
 		try:
@@ -70,12 +70,16 @@ class BackupThread(Thread):
 			self._logger.warning("NAS variant could not be identified!")
 		self._nas_properties = nas_properties
 
+	def _enquire_services_to_stop_on_nas(self):
+		self._list_of_services = self._nas_properties["services_to_stop"]
+
 	def _stop_list_of_services_on_nas(self, ssh):
 		for service in self._list_of_services:
 			if self._ssh_user == "root":
 				ssh.run(f"systemctl stop {service}")
 			else:
 				ssh.run(f"echo {self._ssh_user} | sudo -S systemctl stop {service}")
+				#Todo: test if this command stops services on a non-root login
 
 	def _free_space_on_backup_hdd_if_necessary(self):
 		while not self.enough_space_for_full_backup():
@@ -106,20 +110,29 @@ class BackupThread(Thread):
 		return space_occupied
 
 	def delete_oldest_backup(self):
-		with BackupBrowser(self._backup_config) as bl:
-			oldest_backup = bl.get_oldest_backup()
+		with BackupBrowser(self._backup_config) as bb:
+			oldest_backup = bb.get_oldest_backup()
 		self._logger.info("deleting {} to free space for new backup".format(oldest_backup))
-		pass
+
+	def _get_newest_backup_dir_path(self):
+		with BackupBrowser(self._backup_config) as bb:
+			return bb.get_newest_backup_abolute()
 
 	def _create_folder_for_backup(self):
 		timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M")
-		path = os.path.join(self._backup_config["local_backup_target_location"],f"backup_{timestamp}")
+		path = os.path.join(self._backup_config["local_backup_target_location"], f"backup_{timestamp}")
 		try:
 			os.mkdir(path)
 			self._logger.info(f'Created directory for new backup: {path}')
 			self._new_backup_folder = path
 		except OSError:
 			self._logger.error(f'Could not create directory for new backup in {self._backup_config["local_backup_target_location"]}')
+
+	def _copy_newest_backup_with_hardlinks(self, newest_backup):
+		if newest_backup:
+			copy_command = f"cp -al {newest_backup} {self._new_backup_folder}".split()
+			print(f"copy command: {copy_command}")
+			run_external_command_as_generator_2(copy_command)
 
 	def _execute_backup_with_rsync(self):
 		self._sync_thread = RsyncWrapperThread(
@@ -176,7 +189,14 @@ class BackupBrowser:
 		if backups:
 			return backups[0]
 		else:
-			return None
+			return ""
+
+	def get_newest_backup_abolute(self):
+		backups = self.list_backups_by_age()
+		if backups:
+			return os.path.join(self._backup_config["local_backup_target_location"], backups[-1])
+		else:
+			return ""
 
 
 if __name__ == "__main__":

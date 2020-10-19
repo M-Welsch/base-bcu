@@ -1,6 +1,7 @@
 import socket
 from base.common.ssh_interface import SSHInterface
 
+
 class NasFinder:
 	def __init__(self, logger):
 		self._logger = logger
@@ -15,7 +16,7 @@ class NasFinder:
 			socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		conn = s.connect_ex((t_IP, ssh_port))
-		if (conn == 0):
+		if conn == 0:
 			self._logger.info(f"NAS Finder: {target_ip}:{ssh_port} open!")
 			print(f"NAS Finder: {target_ip}:{ssh_port} open!")
 			response = True
@@ -39,7 +40,7 @@ class NasFinder:
 			self._logger.error(
 				f"NAS on {target_ip} is not the correct one? Couldn't open file 'nas_for_backup'. Error = {stderr}")
 			response = False
-		if 'DietPi' in stdout:
+		if 'DietPi' in stdout: #Fixme: cleaner! Its a json file now
 			self._logger.info(f"found correct NAS on {target_ip}")
 			response = True
 		return response

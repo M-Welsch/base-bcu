@@ -71,6 +71,7 @@ class SshRsync:
             pass
 
     def _compose_rsync_command(self, host, user, remote_source_path, local_target_path):
+        # Todo: adapt to latest script in https://www.admin-magazine.com/Articles/Using-rsync-for-Backups/(offset)/2
         command = f'sudo rsync -avHe'.split()
         command.append("ssh -i /home/base/.ssh/id_rsa")
         command.extend(f"{user}@{host}:{remote_source_path} {local_target_path} --outbuf=N --info=progress2".split())

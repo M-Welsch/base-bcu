@@ -34,8 +34,7 @@ class SSHInterface:
 		except Exception as e:
 			print('\nException in connecting to the server')
 			print('PYTHON SAYS:', e)
-			result_flag = False
-			self._client.close()
+			response = e
 		else:
 			response = 'Established'
 		return response

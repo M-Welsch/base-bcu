@@ -45,21 +45,13 @@ def run_external_command_string_input(command):
 	cp = run(command, shell=True, stdout=PIPE, stderr=STDOUT)
 	return cp
 
-
 def run_external_command_as_generator(command):
 	p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
 	return iter(p.stdout.readline, b'')
 
-
-def run_external_command_and_return_string(command):
-	iterator = run_external_command_as_generator(command)
-	return "\n".join(line.decode('utf-8') for line in iterator)
-
-
 def run_external_command_as_generator_2(command):
-	p = Popen(command, stdout=PIPE, stderr=STDOUT, bufsize=1, universal_newlines=True)
+	p = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
 	return p.stdout
-
 
 def status_quo_not_empty(status_quo):
 	b = False
