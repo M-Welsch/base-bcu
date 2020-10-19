@@ -1,6 +1,6 @@
 from os import path
 
-from base.common.utils import wait_for_device_file, run_external_command, list_backups_by_age
+from base.common.utils import wait_for_device_file, run_external_command
 
 
 class MountManager:

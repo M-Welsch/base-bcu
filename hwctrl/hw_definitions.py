@@ -10,7 +10,7 @@ except ImportError:
 class PinAssignment:
 	def __init__(self, hw_rev):
 		self.hw_rev = hw_rev
-		print("Setting up for hw {}".format(hw_rev))
+		# print("Setting up for hw {}".format(hw_rev))
 
 		# General Comments on the changes between rev2 (blue Breadboard) and rev3 (Stepper):
 		# Display was moved from BPi to external controller (attiny816 aka SBC)

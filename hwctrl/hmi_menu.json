@@ -1,0 +1,23 @@
+{
+	"main_menu": {
+		"call_function_on_entry": null,
+		"display_line1": "BaSe   show IP >",
+		"display_line2": "          Demo >",
+		"action_button1": "show_IP",
+		"action_button2": "dock_undock_demo"
+	},
+	"show_IP": {
+		"call_function_on_entry": "show_ip",
+		"display_line1": "Local IP: back >",
+		"display_line2": "{local IP}",
+		"action_button1": "main_menu",
+		"action_button2": "main_menu"
+	},
+	"dock_undock_demo": {
+		"call_function_on_entry": "dock_undock_demo",
+		"display_line1": "Performing Demo ",
+		"display_line2": "",
+		"action_button1": null,
+		"action_button2": null
+	}
+}

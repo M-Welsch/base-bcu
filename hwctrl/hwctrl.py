@@ -29,6 +29,7 @@ class HWCTRL(Thread):
 
 		self._pin_interface = PinInterface(self._config["display_default_brightness"])
 		self._hw_rev = self.get_hw_revision()
+		print(f"HWCTRL recognized HW {self._hw_rev}")
 		self.dock_undock = DockUndock(self._pin_interface, self._logger, self._config, self._hw_rev)
 		self.start_heartbeat()
 
@@ -38,7 +39,7 @@ class HWCTRL(Thread):
 
 	def get_hw_revision(self):
 		hw_rev = self._pin_interface.get_hw_revision()
-		print("HWCTRL recognized HW {}".format(hw_rev))
+
 		return hw_rev
 
 	def run(self):
