@@ -3,6 +3,7 @@ import os
 import signal
 from subprocess import Popen, PIPE, STDOUT
 from threading import Thread
+from base.common.utils import check_path_end_slash_and_asterik
 from time import sleep
 import re
 
@@ -71,10 +72,11 @@ class SshRsync:
             pass
 
     def _compose_rsync_command(self, host, user, remote_source_path, local_target_path):
-        # Todo: adapt to latest script in https://www.admin-magazine.com/Articles/Using-rsync-for-Backups/(offset)/2
-        command = f'sudo rsync -avHe'.split()
+        remote_source_path = check_path_end_slash_and_asterik(remote_source_path)
+        command = f'sudo rsync -avHe'.split() # Todo: change command like this "rsync -avh --delete -e ssh root@192.168.0.34:/mnt/HDD/*"
         command.append("ssh -i /home/base/.ssh/id_rsa")
         command.extend(f"{user}@{host}:{remote_source_path} {local_target_path} --outbuf=N --info=progress2".split())
+        print(f"rsync_command: {command}")
         self._command = command
 
     def _output_generator(self):

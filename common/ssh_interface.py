@@ -1,6 +1,7 @@
 import paramiko
 import socket
 
+
 class SSHInterface:
 	def __init__(self, logger):
 		self._client = paramiko.SSHClient()

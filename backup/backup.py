@@ -8,7 +8,7 @@ sys.path.append(path_to_module)
 from threading import Thread
 from datetime import datetime
 
-from base.common.utils import run_external_command_as_generator_2
+from base.common.utils import run_external_command_as_generator_2, run_external_command_as_generator_shell, check_path_end_slash_and_asterik, check_path_end_slash
 from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
 from base.backup.rsync_wrapper import RsyncWrapperThread
@@ -42,7 +42,7 @@ class BackupThread(Thread):
 			self._free_space_on_backup_hdd_if_necessary()
 			newest_backup = self._get_newest_backup_dir_path()
 			self._create_folder_for_backup()
-			self._copy_newest_backup_with_hardlinks(newest_backup) #Todo: not necessary? see https://www.admin-magazine.com/Articles/Using-rsync-for-Backups/(offset)/2
+			self._copy_newest_backup_with_hardlinks(newest_backup)
 			self._execute_backup_with_rsync()
 			self._start_services_on_nas()
 
@@ -116,11 +116,13 @@ class BackupThread(Thread):
 
 	def _get_newest_backup_dir_path(self):
 		with BackupBrowser(self._backup_config) as bb:
-			return bb.get_newest_backup_abolute()
+			return bb.get_newest_backup_abolutepath()
 
 	def _create_folder_for_backup(self):
-		timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M")
+		timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+
 		path = os.path.join(self._backup_config["local_backup_target_location"], f"backup_{timestamp}")
+		print(f"create new folder: {path}")
 		try:
 			os.mkdir(path)
 			self._logger.info(f'Created directory for new backup: {path}')
@@ -130,9 +132,12 @@ class BackupThread(Thread):
 
 	def _copy_newest_backup_with_hardlinks(self, newest_backup):
 		if newest_backup:
-			copy_command = f"cp -al {newest_backup} {self._new_backup_folder}".split()
+			# Fixme: somehow it doesnt find the source path ...
+			newest_backup = check_path_end_slash_and_asterik(newest_backup)
+			copy_command = f"cp -al {newest_backup} {self._new_backup_folder}"
 			print(f"copy command: {copy_command}")
-			run_external_command_as_generator_2(copy_command)
+			for line in run_external_command_as_generator_shell(copy_command):
+				print(f"copying with hl: {line}")
 
 	def _execute_backup_with_rsync(self):
 		self._sync_thread = RsyncWrapperThread(
@@ -191,7 +196,7 @@ class BackupBrowser:
 		else:
 			return ""
 
-	def get_newest_backup_abolute(self):
+	def get_newest_backup_abolutepath(self):
 		backups = self.list_backups_by_age()
 		if backups:
 			return os.path.join(self._backup_config["local_backup_target_location"], backups[-1])

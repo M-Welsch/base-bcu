@@ -37,6 +37,7 @@
     },
     "Webapp": {
         "TCP_Codebook": {
+            "Do Full Backup": "backup_full",
             "Terminate Backup Control Unit": "terminate_daemon",
             "Shutdown Server": "terminate_daemon_and_shutdown",
             "Test Mounting": "test_mounting",

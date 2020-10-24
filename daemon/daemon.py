@@ -96,6 +96,8 @@ class Daemon:
 	@staticmethod
 	def _derive_command_list(status_quo: Dict) -> List[str]:
 		command_list = []
+		if "backup_full" in status_quo["tcp_commands"]:
+			command_list.extend(["dock", "mount", "backup"]) #"unmount", "undock" have to come afterwards
 		if "test_mounting" in status_quo["tcp_commands"]:
 			return ["mount"]
 		if "test_unmounting" in status_quo["tcp_commands"]:

@@ -4,7 +4,7 @@ import glob
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
-from base.common.utils import get_sbu_fw_uploads_folder, run_external_command_as_generator_2, run_external_command_string_input
+from base.common.utils import get_sbu_fw_uploads_folder, run_external_command_as_generator_shell
 
 class SbuUpdater():
 	def __init__(self, hwctrl):
@@ -15,7 +15,7 @@ class SbuUpdater():
 		self._hwctrl.set_attiny_serial_path_to_sbc_fw_update()
 
 		sbc_fw_filename = self._get_filename_of_newest_hex_file()
-		self._flash_hex_file_to_sbc(sbc_fw_filename)
+		self._write_hex_file_to_sbu(sbc_fw_filename)
 
 		self._hwctrl.set_attiny_serial_path_to_communication()
 
@@ -24,13 +24,12 @@ class SbuUpdater():
 		latest_sbc_fw_file = max(list_of_sbc_fw_files, key=os.path.getctime)
 		return latest_sbc_fw_file
 
-	def _flash_hex_file_to_sbc(self, sbc_fw_filename):
-		print("Updating SBC with {}".format(sbc_fw_filename))
-		sbc_flash_command = 'sudo su - base -c "pyupdi -d tiny816 -c /dev/ttyS1 -f /home/base/test/sbc_fw_flashen/AtTiny816_Blink.hex"'
+	def _write_hex_file_to_sbu(self, sbu_fw_filename):
+		print("Updating SBC with {}".format(sbu_fw_filename))
 		# Fixme: use tty-port from config file
-		sbc_flash_command = 'sudo su - base -c "pyupdi -d tiny816 -c /dev/ttyS1 -f {}"'.format(sbc_fw_filename)
-		outcome = run_external_command_string_input(sbc_flash_command)
-		print(outcome)
+		sbu_program_command = 'sudo su - base -c "pyupdi -d tiny816 -c /dev/ttyS1 -f {}"'.format(sbu_fw_filename)
+		for line in run_external_command_as_generator_shell(sbu_program_command):
+			print(line)
 
 if __name__ == '__main__':
 

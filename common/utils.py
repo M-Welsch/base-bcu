@@ -40,17 +40,16 @@ def run_external_command(command, success_msg, error_msg):
 	else:
 		print(success_msg)
 
-
-def run_external_command_string_input(command):
-	cp = run(command, shell=True, stdout=PIPE, stderr=STDOUT)
-	return cp
-
 def run_external_command_as_generator(command):
 	p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
 	return iter(p.stdout.readline, b'')
 
 def run_external_command_as_generator_2(command):
 	p = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
+	return p.stdout
+
+def run_external_command_as_generator_shell(command):
+	p = Popen(command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
 	return p.stdout
 
 def status_quo_not_empty(status_quo):
@@ -69,6 +68,21 @@ def or_up_values(value):
 	else:
 		b += bool(value)
 	return b
+
+
+def check_path_end_slash_and_asterik(path_to_check):
+	if path_to_check.endswith('/*'):
+		pass
+	elif path_to_check.endswith('/'):
+		path_to_check += '*'
+	else:
+		path_to_check += '/*'
+	return path_to_check
+
+def check_path_end_slash(path_to_check):
+	if not path_to_check.endswith('/'):
+		path_to_check += '/'
+	return path_to_check
 
 def get_ip_address():
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
