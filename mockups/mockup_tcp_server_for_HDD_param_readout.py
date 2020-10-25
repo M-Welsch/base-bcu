@@ -6,7 +6,7 @@ import sys
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
-from base.common.utils import wait_for_new_device_file, run_external_command_as_generator, readout_hdd_parameters                     
+from base.common.utils import run_external_command_as_generator_shell, readout_hdd_parameters
 
 
 def start_server():
@@ -55,8 +55,7 @@ def start_server():
 def readout_hdd_parameters_standalone():
 	model_number = "No Model Number found"
 	serial_number = "No Serial Number found"
-	for line in run_external_command_as_generator("sudo hdparm -I /dev/sda"):
-		line = str(line)
+	for line in run_external_command_as_generator_shell("sudo hdparm -I /dev/sda"):
 		contains_model_number = line.find("Model Number")
 		if not contains_model_number == -1:
 			model_number = line[contains_model_number+13:].strip()

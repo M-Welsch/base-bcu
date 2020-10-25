@@ -1,6 +1,9 @@
 from os import path
+from time import sleep
 
 from base.common.utils import wait_for_device_file, run_external_command
+from base.common.exceptions import *
+
 
 
 class MountManager:
@@ -45,4 +48,23 @@ class MountManager:
 		command = ["sudo", "umount", self.b_hdd_mount]
 		success_msg = "Unmounting backup HDD probably successful."
 		error_msg = "Failed unmounting backup HDD. Traceback:"
-		run_external_command(command, success_msg, error_msg)
+		unmount_trials = 0
+		unmount_success = False
+		while unmount_trials < 5 and not unmount_success:
+			try:
+				run_external_command(command, success_msg, error_msg)
+				unmount_success = True
+			except ExternalCommandError as e:
+				if "not mounted" in str(e):
+					print("BackupHDD already unmounted")
+					self._logger.warning(f"BackupHDD already unmounted. stderr: {e}")
+					unmount_success = True
+				# Todo: find out who accesses the drive right now and write into logfile (with lsof?)
+				sleep(1)
+				unmount_trials += 1
+				if unmount_trials == 5:
+					self._logger.warning(f"Couldn't unmount BackupHDD within 5 trials. Error: {e}")
+					if "target is busy" in str(e):
+						raise UnmountError(e)
+					else:
+						raise RuntimeError

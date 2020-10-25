@@ -99,6 +99,7 @@ class Daemon:
 		if "backup_full" in status_quo["tcp_commands"]:
 			command_list.extend(["dock", "mount", "backup"]) #"unmount", "undock" have to come afterwards
 		if "test_mounting" in status_quo["tcp_commands"]:
+			print("putting mount int ocommand list")
 			return ["mount"]
 		if "test_unmounting" in status_quo["tcp_commands"]:
 			return ["unmount"]
@@ -160,7 +161,7 @@ class Daemon:
 					print("_execute_command_list: mount")
 					self._mount_manager.mount_hdd()
 				elif command == "unmount":
-					self._mount_manager.unmount_hdd()
+					self._unmount()
 				elif command == "backup":
 					self._scheduler.backup_suggested = False
 					self._backup_manager.backup()
@@ -189,6 +190,14 @@ class Daemon:
 				self._logger.error(f"Some command went somehow wrong: {e}")
 				raise e
 		return False
+
+	def _unmount(self):
+		try:
+			self._mount_manager.unmount_hdd()
+		except UnmountError:
+			self._logger.error(f"Unmounting didnt work: {UnmountError}")
+		except RuntimeError:
+			self._logger.error(f"Unmounting didnt work: {RuntimeError}")
 
 	def _wait_for_seconds(self, pause_duration):
 		sleep(pause_duration)

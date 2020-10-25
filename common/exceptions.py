@@ -2,18 +2,20 @@ class BackupserverException(Exception):
     # for future use
     pass
 
-
 class DockingError(BackupserverException):
     pass
-
 
 class UndockingError(BackupserverException):
     pass
 
-
 class MountingError(BackupserverException):
     pass
 
+class ExternalCommandError(BackupserverException):
+    pass
+
+class UnmountError(BackupserverException):
+    pass
 
 def break_it():
     raise DockingError("Timout exceeded!")

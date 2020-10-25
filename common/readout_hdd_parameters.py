@@ -3,7 +3,7 @@ path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
 
 import json
-from base.common.utils import run_external_command_as_generator, wait_for_new_device_file
+from base.common.utils import run_external_command_as_generator_shell
 
 
 def readout_parameters_of_all_hdds():
@@ -20,7 +20,7 @@ def readout_hdd_parameters(sd_device):
 	model_number = "hdparm did not respond anything that would overwrite this string for model number"
 	serial_number = "hdparm did not respond anything that would overwrite this string for serial number"
 	device_size = "hdparm did not respond anything that would overwrite this string for device size"
-	for line in run_external_command_as_generator("sudo hdparm -I /dev/{}".format(sd_device)):
+	for line in run_external_command_as_generator_shell("sudo hdparm -I /dev/{}".format(sd_device)):
 		line = str(line)
 		try:
 			model_number = extract_model_number(line)
@@ -50,8 +50,8 @@ def dictionary_from_parameters(model_number, serial_number, device_size):
 
 def find_all_sd_devices():
 	all_sd_devices = []
-	for line in run_external_command_as_generator("ls /dev | grep sd."):
-		line = line[0:3].decode("utf-8")
+	for line in run_external_command_as_generator_shell("ls /dev | grep sd."):
+		line = line[0:3]#.decode("utf-8")
 		if not line in all_sd_devices:
 			all_sd_devices.append(line)
 	return all_sd_devices

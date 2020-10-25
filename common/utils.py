@@ -2,9 +2,9 @@ import os
 from time import sleep
 from subprocess import run, Popen, PIPE, STDOUT
 import socket
+from base.common.exceptions import *
 
 
-# deprecated
 def wait_for_new_device_file(seconds):
 	device_files_before = get_device_files()
 	for i in range(seconds):
@@ -36,27 +36,27 @@ def run_external_command(command, success_msg, error_msg):
 	cp = run(command, stdout=PIPE, stderr=PIPE)
 	if cp.stderr:
 		print(error_msg, cp.stderr)
-		raise RuntimeError(error_msg, cp.stderr)
+		raise ExternalCommandError(error_msg, cp.stderr)
 	else:
 		print(success_msg)
 
-def run_external_command_as_generator(command):
-	p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
-	return iter(p.stdout.readline, b'')
 
-def run_external_command_as_generator_2(command):
+def run_external_command_as_generator(command):
 	p = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
 	return p.stdout
+
 
 def run_external_command_as_generator_shell(command):
 	p = Popen(command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
 	return p.stdout
+
 
 def status_quo_not_empty(status_quo):
 	b = False
 	for value in status_quo.values():
 		b += or_up_values(value)
 	return b
+
 
 def or_up_values(value):
 	b = False

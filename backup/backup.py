@@ -8,7 +8,7 @@ sys.path.append(path_to_module)
 from threading import Thread
 from datetime import datetime
 
-from base.common.utils import run_external_command_as_generator_2, run_external_command_as_generator_shell, check_path_end_slash_and_asterik, check_path_end_slash
+from base.common.utils import run_external_command_as_generator, run_external_command_as_generator_shell, check_path_end_slash_and_asterik, check_path_end_slash
 from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
 from base.backup.rsync_wrapper import RsyncWrapperThread
@@ -86,7 +86,7 @@ class BackupThread(Thread):
 			self.delete_oldest_backup()
 
 	def enough_space_for_full_backup(self):
-		out = run_external_command_as_generator_2(["df", "--output=avail", "/media/BackupHDD"])
+		out = run_external_command_as_generator(["df", "--output=avail", "/media/BackupHDD"])
 		free_space_on_bu_hdd = self.remove_heading_from_df_output(out)
 		space_needed_for_full_bu = self.space_occupied_on_nas_hdd()
 		print("Space free on BU HDD: {}, Space needed: {}".format(free_space_on_bu_hdd, space_needed_for_full_bu))

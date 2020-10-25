@@ -13,7 +13,7 @@ from time import sleep
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 from base.common.tcp import TCPClientInterface, TCPClientThread
-from base.common.utils import wait_for_new_device_file, run_external_command_as_generator
+from base.common.utils import wait_for_new_device_file
 from base.webapp.logfile_viewer import *
 
 application = Flask(__name__)

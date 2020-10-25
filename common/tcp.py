@@ -55,7 +55,7 @@ class TCPServerThread(threading.Thread):
 			clientsocket.close()
 
 	def _send_message(self, answer_message, clientsocket):
-		print("sending {} as answer.".format(answer_message))
+		#print("sending {} as answer.".format(answer_message))
 		clientsocket.send(answer_message.encode('utf-8'))
 
 	def terminate(self):
