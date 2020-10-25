@@ -25,11 +25,11 @@ class Daemon:
 		self._command_queue = Queue()
 		self._tcp_codebook = TCP_Codebook()
 		self._config = Config("base/config.json")
-		self._scheduler = BaseScheduler()
+		self._scheduler = BaseScheduler(self._config.config_schedule)
 		self._logger = Logger(self._config.logs_directory)
-		self._mount_manager = MountManager(self._config.mounting_config, self._logger)
-		self._backup_manager = BackupManager(self._config.backup_config, self._logger)
-		self._hardware_control = HWCTRL(self._config.hwctrl_config, self._logger)
+		self._mount_manager = MountManager(self._config.config_mounting, self._logger)
+		self._backup_manager = BackupManager(self._config.config_backup, self._logger)
+		self._hardware_control = HWCTRL(self._config.config_hwctrl, self._logger)
 		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
 		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
@@ -40,7 +40,7 @@ class Daemon:
 
 	def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
-			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._logger, self._config.sbu_communicator_config)
+			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._logger, self._config.config_sbu_communicator)
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -212,7 +212,7 @@ class Daemon:
 		# uncomment line above once SBC-Display forwarding works!
 
 		# TODO: send to Webapp if it asks for status ...
-		backups_present = list_backups_by_age(self._config.mounting_config["backup_hdd_mount_point"])
+		backups_present = list_backups_by_age(self._config.config_mounting["backup_hdd_mount_point"])
 
 	def show_ip_address_on_display(self):
 		if self._display_menu_pointer == 'IP':
@@ -224,7 +224,6 @@ class Daemon:
 			self._display_menu_pointer = 'IP'
 
 	def update_sbu(self):
-		# Fixme: that crashes the ttyS1 for some reason
 		print("updating SBU")
 		self._display.write("Updating SBU", "Firmware")
 		self._sbu_communicator.terminate()

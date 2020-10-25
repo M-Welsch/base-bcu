@@ -251,9 +251,9 @@ class SbuCommunicationLogger(Thread):
         self._terminate_flag = False
 
     def run(self):
-        filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + "sbu_communicator.log"
+        filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + "_sbu_communicator.log"
         directory = self._config_sbuc["logs_directory"]
-        path = directory + filename
+        path = os.path.join(directory,filename)
         with open(path, "w") as sbu_logfile:
             while not self._terminate_flag:
                 self._work_off_msg(sbu_logfile)
@@ -284,7 +284,7 @@ if __name__ == '__main__':
 
     config = Config("/home/maxi/base/config.json")
     logger = Logger("/home/maxi/base/log")
-    hardware_control = HWCTRL(config.hwctrl_config, logger)
+    hardware_control = HWCTRL(config.config_hwctrl, logger)
 
     SBUC = SbuCommunicator(hardware_control, logger)
     while True:

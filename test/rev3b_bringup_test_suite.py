@@ -299,7 +299,7 @@ class rev3b_bringup_test_suite:
 
     def _init_hwctrl(self):
         self._logger = Logger("/home/base/base/log")
-        return HWCTRL(self._config.hwctrl_config, self._logger)
+        return HWCTRL(self._config.config_hwctrl, self._logger)
 
     def run(self):
         Tester = None
@@ -334,26 +334,26 @@ class rev3b_bringup_test_suite:
                 Tester = rev3b_dock_tester(self._hwctrl)
 
             if user_choice in ["8", "rev3b_sbu_communication_tester"]:
-                Tester = rev3b_sbu_communication_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+                Tester = rev3b_sbu_communication_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
 
             if user_choice in ["9", "rev3b_sbu_shutdown_process_tester"]:
-                Tester = rev3b_sbu_shutdown_process_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+                Tester = rev3b_sbu_shutdown_process_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_send_hr_timestamp_tester"]:
-                Tester = rev3b_sbu_send_hr_timestamp_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+                Tester = rev3b_sbu_send_hr_timestamp_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_send_seconds_to_next_bu_tester"]:
-                Tester = rev3b_sbu_send_seconds_to_next_bu_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+                Tester = rev3b_sbu_send_seconds_to_next_bu_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_shutdown_and_wake_after_500s_tester"]:
-                Tester = rev3b_sbu_shutdown_and_wake_after_500s_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+                Tester = rev3b_sbu_shutdown_and_wake_after_500s_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_display_dimming_tester"]:
-                Tester = rev3b_sbu_display_dimming_tester(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+                Tester = rev3b_sbu_display_dimming_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_hmi_led_dimming_tester"]:
                 Tester = rev3b_sbu_hmi_led_dimming_tester(self._hwctrl, self._logger,
-                                                          self._config.sbu_communicator_config)
+                                                          self._config.config_sbu_communicator)
 
             if Tester:
                 Tester.test()

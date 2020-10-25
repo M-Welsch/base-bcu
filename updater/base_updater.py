@@ -57,8 +57,8 @@ class BaseUpdater:
 
     def _take_over_display(self):
         self._logger = Logger("/home/base/base/log", "base-updater")
-        self._hwctrl = HWCTRL(self._config.hwctrl_config, self._logger)
-        self._sbuc = SbuCommunicator(self._hwctrl, self._logger, self._config.sbu_communicator_config)
+        self._hwctrl = HWCTRL(self._config.config_hwctrl, self._logger)
+        self._sbuc = SbuCommunicator(self._hwctrl, self._logger, self._config.config_sbu_communicator)
         self._display = Display(self._hwctrl, self._sbuc, self._config)
 
     def _update_base(self):

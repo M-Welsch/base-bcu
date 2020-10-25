@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
 	_config = Config("/home/base/base/config.json")
 	_logger = Logger("/home/base/base/log")
-	_hardware_control = HWCTRL(_config.hwctrl_config, _logger)
+	_hardware_control = HWCTRL(_config.config_hwctrl, _logger)
 
 	SBUU = SbuUpdater(_hardware_control)
 	SBUU.update_sbu()

@@ -2,8 +2,9 @@ from schedule import Scheduler as Scheduler
 from datetime import datetime
 
 class BaseScheduler(Scheduler):
-	def __init__(self):
+	def __init__(self, config_schedule):
 		super(BaseScheduler, self).__init__()
+		self._config_schedule = config_schedule
 		self.backup_suggested = False
 		self.setup_schedule()
 

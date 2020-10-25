@@ -22,19 +22,23 @@ class Config:
 		return self._config["Daemon"]["dm_listens_to_port"]
 
 	@property
-	def hwctrl_config(self):
+	def config_schedule(self):
+		return self._config["Schedule"]
+
+	@property
+	def config_hwctrl(self):
 		return self._config["HWCTRL"]
 
 	@property
-	def sbu_communicator_config(self):
+	def config_sbu_communicator(self):
 		return self._config["SBU_Communicator"]
 
 	@property
-	def mounting_config(self):
+	def config_mounting(self):
 		return self._config["Mounting"]
 
 	@property
-	def backup_config(self):
+	def config_backup(self):
 		return self._config["Backup"]
 
 	def _update(self):

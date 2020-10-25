@@ -75,8 +75,9 @@ class DockUndock():
 		self._logger.error("Docking Timeout !!!" if flag_docking_timeout else "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(timeDiff, peak_current, avg_current))
 
 	def dock_rev3(self):
-		self.pin_interface.stepper_driver_on()
-		self.pin_interface.stepper_direction_docking()
+		if not self.pin_interface.docked:
+			self.pin_interface.stepper_driver_on()
+			self.pin_interface.stepper_direction_docking()
 
 		time_start = time.time()
 		while not self.pin_interface.docked:
@@ -85,8 +86,9 @@ class DockUndock():
 		self.pin_interface.stepper_driver_off()
 
 	def undock_rev3(self):
-		self.pin_interface.stepper_driver_on()
-		self.pin_interface.stepper_direction_undocking()
+		if not self.pin_interface.undocked:
+			self.pin_interface.stepper_driver_on()
+			self.pin_interface.stepper_direction_undocking()
 
 		time_start = time.time()
 		while not self.pin_interface.undocked:

@@ -23,7 +23,7 @@ if __name__ == "__main__":
 		sys.path.append(path_to_module)
 		_config = Config("/home/maxi/base/config.json")
 		_logger = Logger("/home/maxi/base/log")
-		_hwctrl = HWCTRL(_config.hwctrl_config, _logger)
+		_hwctrl = HWCTRL(_config.config_hwctrl, _logger)
 		HddPT = HDD_PWR_Tester(_hwctrl)
 		HddPT.test_pwr_on_off()
 	else:
