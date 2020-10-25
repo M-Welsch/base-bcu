@@ -9,7 +9,6 @@ from base.common.config import Config
 from base.common.base_logging import Logger
 from base.schedule.scheduler import *
 
-
 class ScheduleTester():
     def __init__(self, config, logger):
         self._config = config
@@ -18,7 +17,8 @@ class ScheduleTester():
 
     def test(self):
         print(f"Next BU scheduled at: {self._scheduler.next_backup_scheduled()}")
-
+        print(f"Is backup Scheduled NOW? {self._scheduler.is_backup_scheduled()}")
+        print(f"seconds to next Backup: {self._scheduler.seconds_to_next_bu()}")
 
 if __name__ == '__main__':
     config = Config("/home/base/base/config.json")

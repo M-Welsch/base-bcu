@@ -11,6 +11,7 @@ from queue import Queue
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 from base.sbu_interface.sbu_uart_finder import SbuUartFinder
+from base.common.exceptions import *
 
 
 class SbuCommunicator():
@@ -86,7 +87,7 @@ class SbuCommunicator():
     def _wait_for_acknowledge(self, message_code):
         time_start = time()
         timeout = 1
-        while time() - time_start < timeout:
+        while time() - time_start < self._config_sbuc["wait_for_acknowledge_timeout"]:
             tmp = self._serial_connection.read_until().decode()
             if f"ACK:{message_code}" in tmp:
                 break
@@ -95,8 +96,7 @@ class SbuCommunicator():
 
     def _wait_for_sbu_ready(self):
         time_start = time()
-        timeout = 1
-        while time() - time_start < timeout:
+        while time() - time_start < self._config_sbuc["wait_for_sbu_ready_timeout"]:
             tmp = self._serial_connection.read_until().decode()
             if f"Ready" in tmp:
                 break
@@ -105,9 +105,8 @@ class SbuCommunicator():
 
     def _wait_for_special_string(self, special_string):
         time_start = time()
-        timeout = 1
         tmp = None
-        while time() - time_start < timeout:
+        while time() - time_start < self._config_sbuc["wait_for_special_string_timeout"]:
             tmp = self._serial_connection.read_until().decode()
             if special_string in tmp:
                 break
@@ -115,10 +114,12 @@ class SbuCommunicator():
         return [tmp, time() - time_start]
 
     def _wait_for_channel_free(self):
+        time_start = time()
         while self._channel_busy or not self._sbu_ready:
             # print(f"waiting for sbu_channel: busy={self._channel_busy}, open={self.is_serial_connection_open:}")
             sleep(0.05)
-            # Fixme: we can get stuck in here ...
+            if time() - time_start > self._config_sbuc["wait_for_channel_free_timeout"]:
+                raise SbuCommunicationTimeout(f'Waiting for longer than {self._config_sbuc["wait_for_channel_free_timeout"]} for channel to be free.')
 
     def terminate(self):
         print("SBU Communicator is terminating. So long and thanks for all the bytes!")

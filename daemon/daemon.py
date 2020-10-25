@@ -58,7 +58,7 @@ class Daemon:
 		self._logger.terminate()
 
 	def mainloop(self):
-		self._sbu_communicator.set_display_brightness_percent(100)
+		self._sbu_communicator.set_display_brightness_percent(self._config.config_hmi["display_default_brightness"])
 		self._hmi_show_main_menu()
 		self._terminate_flag = False
 		while not self._terminate_flag:
@@ -249,8 +249,9 @@ class Daemon:
 
 	def _initiate_shutdown_process(self):
 		self._logger.info("Shutting down")
-		self._sbu_communicator.send_shutdown_request()
+		self._sbu_communicator.send_human_readable_timestamp_next_bu(self._scheduler.next_backup_scheduled())
 		self._seconds_to_next_bu_to_sbu()
+		self._sbu_communicator.send_shutdown_request()
 		self.stop_threads()
 		self._shutdown_base()
 

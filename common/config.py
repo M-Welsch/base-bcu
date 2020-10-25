@@ -34,6 +34,10 @@ class Config:
 		return self._config["SBU_Communicator"]
 
 	@property
+	def config_hmi(self):
+	    return self._config["HMI"]
+
+	@property
 	def config_mounting(self):
 		return self._config["Mounting"]
 

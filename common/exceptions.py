@@ -17,6 +17,12 @@ class ExternalCommandError(BackupserverException):
 class UnmountError(BackupserverException):
     pass
 
+class SbuCommunicationTimeout(BackupserverException):
+    pass
+
+class ScheduleError(BackupserverException):
+    pass
+
 def break_it():
     raise DockingError("Timout exceeded!")
 

@@ -9,10 +9,10 @@
 	},
 	"Schedule": {
 		"backup_frequency": "Weekly",
-		"day_of_month": "12",
-		"day_of_week": "7",
-		"hour": "14",
-		"minute": "0"
+		"day_of_month": 12,
+		"day_of_week": 7,
+		"hour": 14,
+		"minute": 0
 	},
 	"HWCTRL": {
 		"display_default_brightness": 100,
@@ -20,7 +20,15 @@
 		"docking_overcurrent_limit": 150
 	},
 	"SBU_Communicator": {
-		"logs_directory": "/home/base/base/log"
+		"logs_directory": "/home/base/base/log",
+		"wait_for_channel_free_timeout":2,
+		"wait_for_special_string_timeout":1,
+		"wait_for_sbu_ready_timeout":1,
+		"wait_for_acknowledge_timeout":1
+	},
+	"HMI": {
+		"display_default_brightness": 100,
+		"led_default_brightness": 100
 	},
 	"Mounting": {
 		"backup_hdd_device_file_path": "/dev/sda1",
