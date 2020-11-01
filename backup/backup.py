@@ -12,24 +12,27 @@ from base.common.utils import run_external_command_as_generator, run_external_co
 from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
 from base.backup.rsync_wrapper import RsyncWrapperThread
+from base.common.exceptions import  *
 
 
 class BackupManager:
-	def __init__(self, backup_config, logger):
+	def __init__(self, backup_config, logger, set_backup_finished_flag):
 		self._backup_config = backup_config
 		self._logger = logger
+		self._set_backup_finished_flag = set_backup_finished_flag
 		self._backup_thread = None
 
 	def backup(self):
-		self._backup_thread = BackupThread(self._backup_config, self._logger)
+		self._backup_thread = BackupThread(self._backup_config, self._logger, self._set_backup_finished_flag)
 		self._backup_thread.start()
 
 
 class BackupThread(Thread):
-	def __init__(self, backup_config, logger):
+	def __init__(self, backup_config, logger, set_backup_finished_flag):
 		super(BackupThread, self).__init__()
 		self._logger = logger
 		self._backup_config = backup_config
+		self._set_backup_finished_flag = set_backup_finished_flag
 		self._sample_interval = backup_config["sample_interval"]
 		self._ssh_host = backup_config["ssh_host"]
 		self._ssh_user = backup_config["ssh_user"]
@@ -79,7 +82,7 @@ class BackupThread(Thread):
 				ssh.run(f"systemctl stop {service}")
 			else:
 				ssh.run(f"echo {self._ssh_user} | sudo -S systemctl stop {service}")
-				#Todo: test if this command stops services on a non-root login
+		#Todo: test if this command stops services on a non-root login
 
 	def _free_space_on_backup_hdd_if_necessary(self):
 		while not self.enough_space_for_full_backup():
@@ -119,16 +122,30 @@ class BackupThread(Thread):
 			return bb.get_newest_backup_abolutepath()
 
 	def _create_folder_for_backup(self):
-		timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-
-		path = os.path.join(self._backup_config["local_backup_target_location"], f"backup_{timestamp}")
+		path = self._get_path_for_new_bu_directory()
 		print(f"create new folder: {path}")
+		self._create_that_very_directory(path)
+		self._check_whether_directory_was_created(path)
+
+	def _get_path_for_new_bu_directory(self):
+		timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+		path = os.path.join(self._backup_config["local_backup_target_location"], f"backup_{timestamp}")
+		return path
+
+	def _create_that_very_directory(self, path):
 		try:
 			os.mkdir(path)
+		except OSError:
+			self._logger.error(
+				f'Could not create directory for new backup in {self._backup_config["local_backup_target_location"]}')
+
+	def _check_whether_directory_was_created(self, path):
+		if os.path.isdir(path):
 			self._logger.info(f'Created directory for new backup: {path}')
 			self._new_backup_folder = path
-		except OSError:
-			self._logger.error(f'Could not create directory for new backup in {self._backup_config["local_backup_target_location"]}')
+		else:
+			self._logger.error(f"Directory {path} wasn't created!")
+			raise NewBuDirCreationError
 
 	def _copy_newest_backup_with_hardlinks(self, newest_backup):
 		if newest_backup:
@@ -144,7 +161,8 @@ class BackupThread(Thread):
 			host=self._ssh_host,
 			user=self._ssh_user,
 			remote_source_path=self._backup_config["remote_backup_source_location"],
-			local_target_path=self._new_backup_folder
+			local_target_path=self._new_backup_folder,
+			set_backup_finished_flag=self._set_backup_finished_flag
 		)
 		self._sync_thread.start()
 

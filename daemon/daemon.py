@@ -22,19 +22,20 @@ from base.hwctrl.display import *
 class Daemon:
 	def __init__(self, autostart_webapp: bool = True):
 		self._autostart_webapp = autostart_webapp
-		self._command_queue = Queue()
+		self._tcp_command_queue = Queue()
 		self._tcp_codebook = TCP_Codebook()
 		self._config = Config("base/config.json")
 		self._scheduler = BaseScheduler(self._config.config_schedule)
 		self._logger = Logger(self._config.logs_directory)
 		self._mount_manager = MountManager(self._config.config_mounting, self._logger)
-		self._backup_manager = BackupManager(self._config.config_backup, self._logger)
+		self._backup_manager = BackupManager(self._config.config_backup, self._logger, self.set_backup_finished_flag)
 		self._hardware_control = HWCTRL(self._config.config_hwctrl, self._logger)
-		self._tcp_server_thread = TCPServerThread(queue=self._command_queue, logger=self._logger)
+		self._tcp_server_thread = TCPServerThread(queue=self._tcp_command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
 		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
 		self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
 		self._shutdown_flag = False
+		self._backup_finished_flag = False
 		self._display_menu_pointer = 'Main'
 		self.start_threads_and_mainloop()
 
@@ -60,6 +61,7 @@ class Daemon:
 	def mainloop(self):
 		self._sbu_communicator.set_display_brightness_percent(self._config.config_hmi["display_default_brightness"])
 		self._hmi_show_main_menu()
+		self._logger.info(f"Next Backup scheduled at {self._scheduler.next_backup_scheduled()}, in {self._scheduler.seconds_to_next_bu()} seconds")
 		self._terminate_flag = False
 		while not self._terminate_flag:
 			sleep(self._config.main_loop_interval)
@@ -77,24 +79,30 @@ class Daemon:
 
 	def _seconds_to_next_bu_to_sbu(self):
 		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
+		# subtract 5 minutes so the bcu has enough time to start up
+		if seconds_to_next_bu > 300:
+			seconds_to_next_bu -= 300
 		self._sbu_communicator.send_seconds_to_next_bu_to_sbu(seconds_to_next_bu)
+
+	def set_backup_finished_flag(self):
+		self._backup_finished_flag = True
 
 	def _look_up_status_quo(self) -> Dict:
 		status_quo = {
 			"pressed_buttons": self._hardware_control.pressed_buttons(),
-			"tcp_commands": []
+			"tcp_commands": [],
+			"backup_scheduled_for_now": self._scheduler.is_backup_scheduled(),
+			"backup_finished": self._backup_finished_flag
 		}
-		while not self._command_queue.empty():
-			status_quo["tcp_commands"].append(self._command_queue.get())
-			self._command_queue.task_done()
-		status_quo["backup_scheduled_for_now"] = self._scheduler.is_backup_scheduled()
+		while not self._tcp_command_queue.empty():
+			status_quo["tcp_commands"].append(self._tcp_command_queue.get())
+			self._tcp_command_queue.task_done()
 		# TODO: consider weather
 		if status_quo_not_empty(status_quo):
 			self._logger.debug(f"Command Queue contents: {status_quo}")
 		return status_quo
 
-	@staticmethod
-	def _derive_command_list(status_quo: Dict) -> List[str]:
+	def _derive_command_list(self, status_quo: Dict) -> List[str]:
 		command_list = []
 		if "backup_full" in status_quo["tcp_commands"]:
 			command_list.extend(["dock", "mount", "backup"]) #"unmount", "undock" have to come afterwards
@@ -136,6 +144,11 @@ class Daemon:
 			self._seconds_to_next_bu_to_sbu()
 		if "shutdown_base" in status_quo["tcp_commands"]:
 			self._communicate_shutdown_intention_to_sbu()
+		if status_quo["backup_scheduled_for_now"]:
+			command_list.extend(["dock", "mount", "backup"])
+		if status_quo["backup_finished"]:
+			self._backup_finished_flag = False
+			command_list.extend(["unmount", "undock"])
 		if command_list:
 			print("command list:", command_list)
 		return command_list

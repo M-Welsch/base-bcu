@@ -10,8 +10,8 @@
 	"Schedule": {
 		"backup_frequency": "Weekly",
 		"day_of_month": 12,
-		"day_of_week": 7,
-		"hour": 14,
+		"day_of_week": 1,
+		"hour": 2,
 		"minute": 0
 	},
 	"HWCTRL": {

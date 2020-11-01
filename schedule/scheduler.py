@@ -57,7 +57,6 @@ class BaseScheduler(Scheduler):
 		# returns datetime-object
 		return self.next_run
 
-
 	def seconds_to_next_bu(self):
 		seconds_to_next_bu = self.idle_seconds
 		return seconds_to_next_bu

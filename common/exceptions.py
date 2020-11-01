@@ -23,6 +23,9 @@ class SbuCommunicationTimeout(BackupserverException):
 class ScheduleError(BackupserverException):
     pass
 
+class NewBuDirCreationError(BackupserverException):
+    pass
+
 def break_it():
     raise DockingError("Timout exceeded!")
 
