@@ -11,7 +11,7 @@ class Webapp:
 
 	def start(self):
 		if not self._manager.is_active("base-webapp.service"):
-			self.logger.info("base-webapp not running")
+			self.logger.info("base-webapp not running yet, starting now")
 			self._manager.start_unit("base-webapp.service")
 		else:
 			print("base-webapp already running")

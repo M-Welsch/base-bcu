@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from time import sleep, time
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
@@ -8,49 +9,98 @@ sys.path.append(path_to_module)
 from threading import Thread
 from datetime import datetime
 
-from base.common.utils import run_external_command_as_generator, run_external_command_as_generator_shell, check_path_end_slash_and_asterik, check_path_end_slash
+from base.common.utils import run_external_command_as_generator, run_external_command_as_generator_shell, check_path_end_slash_and_asterik, network_available
 from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
 from base.backup.rsync_wrapper import RsyncWrapperThread
-from base.common.exceptions import  *
+from base.common.exceptions import *
 
 
 class BackupManager:
-	def __init__(self, backup_config, logger, set_backup_finished_flag):
+	def __init__(self, backup_config, logger, mount_manager, hwctrl, set_backup_finished_flag):
 		self._backup_config = backup_config
 		self._logger = logger
+		self._mount_manager = mount_manager
+		self._hwctrl = hwctrl
 		self._set_backup_finished_flag = set_backup_finished_flag
 		self._backup_thread = None
 
 	def backup(self):
-		self._backup_thread = BackupThread(self._backup_config, self._logger, self._set_backup_finished_flag)
-		self._backup_thread.start()
+		# Todo: is this the proper point for error handling?
+		self._backup_thread = BackupThread(self._backup_config, self._logger, self._mount_manager, self._hwctrl, self._set_backup_finished_flag)
+		successfully_started_flag = False
+		try:
+			self._backup_thread.start()
+			successfully_started_flag = True
+		except NetworkError:
+			self._logger.error("Network not available")
+		except NasNotAvailableError:
+			self._logger.error("NAS not available. Backup NOT executed")
+		except DockingError:
+			self._logger.error("Docking Error occured. Backup NOT executed")
+		except MountingError:
+			self._logger.error(f"Mounting Error: {MountingError.logger_error_message}")
+		except NewBuDirCreationError:
+			self._logger.error("could not create directory for new backup")
+		if not successfully_started_flag:
+			self._set_backup_finished_flag()
 
 
 class BackupThread(Thread):
-	def __init__(self, backup_config, logger, set_backup_finished_flag):
+	def __init__(self, backup_config, logger, mount_manager, hwctrl, set_backup_finished_flag):
 		super(BackupThread, self).__init__()
 		self._logger = logger
 		self._backup_config = backup_config
+		self._mount_manager = mount_manager
+		self._hwctrl = hwctrl
 		self._set_backup_finished_flag = set_backup_finished_flag
 		self._sample_interval = backup_config["sample_interval"]
 		self._ssh_host = backup_config["ssh_host"]
 		self._ssh_user = backup_config["ssh_user"]
 		self._new_backup_folder = None
 		self._nas_properties = None
+		self._docking_trials = 0
 
 	def run(self):
+		self._wait_for_network_connection()
 		if self._nas_available():
 			self._stop_services_on_nas()
+		else:
+			raise NasNotAvailableError
+
+		self._hwctrl.dock_and_power()
+		self._mount_manager.mount_hdd()
+		try:
 			self._free_space_on_backup_hdd_if_necessary()
 			newest_backup = self._get_newest_backup_dir_path()
-			self._create_folder_for_backup()
-			self._copy_newest_backup_with_hardlinks(newest_backup)
-			self._execute_backup_with_rsync()
-			self._start_services_on_nas()
+		except BackupHddAccessError:
+			if self._docking_trials < 3:
+				self._logger.info("Undocking and Docking again ...")
+				self._hwctrl.unpower_and_undock()
+				self._docking_trials += 1
+				self.run() # try again
+			else:
+				self._logger.error("Tried undocking and docking for 3 times. Aborting now.")
+
+
+		self._create_folder_for_backup()
+		self._copy_newest_backup_with_hardlinks(newest_backup)
+		self._execute_backup_with_rsync()
+		#self._start_services_on_nas()
+
+	def _wait_for_network_connection(self):
+		start_time = time()
+		if not network_available():
+			self._logger.warning("Network not available! Waiting for connection for 60 seconds ...")
+			while not network_available() and not time() - start_time < 60:
+				sleep(1)
+			if not network_available():
+				raise NetworkError
+			else:
+				self._logger.info(f"Network available after {time() - start_time} seconds!")
 
 	def _nas_available(self):
-		nas_finder = NasFinder(self._logger)
+		nas_finder = NasFinder(self._logger, self._backup_config)
 		return nas_finder.nas_available(self._ssh_host, self._ssh_user)
 
 	def _stop_services_on_nas(self):
@@ -113,12 +163,12 @@ class BackupThread(Thread):
 		return space_occupied
 
 	def delete_oldest_backup(self):
-		with BackupBrowser(self._backup_config) as bb:
+		with BackupBrowser(self._backup_config, self._logger) as bb:
 			oldest_backup = bb.get_oldest_backup()
 		self._logger.info("deleting {} to free space for new backup".format(oldest_backup))
 
 	def _get_newest_backup_dir_path(self):
-		with BackupBrowser(self._backup_config) as bb:
+		with BackupBrowser(self._backup_config, self._logger) as bb:
 			return bb.get_newest_backup_abolutepath()
 
 	def _create_folder_for_backup(self):
@@ -162,7 +212,8 @@ class BackupThread(Thread):
 			user=self._ssh_user,
 			remote_source_path=self._backup_config["remote_backup_source_location"],
 			local_target_path=self._new_backup_folder,
-			set_backup_finished_flag=self._set_backup_finished_flag
+			set_backup_finished_flag=self._set_backup_finished_flag,
+			logger=self._logger
 		)
 		self._sync_thread.start()
 
@@ -189,8 +240,9 @@ class BackupThread(Thread):
 
 
 class BackupBrowser:
-	def __init__(self, backup_config):
+	def __init__(self, backup_config, logger):
 		self._backup_config = backup_config
+		self._logger = logger
 
 	def __enter__(self):
 		return self
@@ -201,9 +253,13 @@ class BackupBrowser:
 	def list_backups_by_age(self):
 		# lowest index is the oldest
 		list_of_backups = []
-		for file in os.listdir(self._backup_config["local_backup_target_location"]):
-			if file.startswith("backup"):
-				list_of_backups.append(file)
+		try:
+			for file in os.listdir(self._backup_config["local_backup_target_location"]):
+				if file.startswith("backup"):
+					list_of_backups.append(file)
+		except OSError as e:
+			self._logger.error(f"BackupHDD cannot be accessed! {e}")
+			raise BackupHddAccessError
 		list_of_backups.sort()
 		return list_of_backups
 

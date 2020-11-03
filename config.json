@@ -9,10 +9,11 @@
 	},
 	"Schedule": {
 		"backup_frequency": "Weekly",
+		"test_key": 16,
 		"day_of_month": 12,
-		"day_of_week": 1,
-		"hour": 2,
-		"minute": 0
+		"day_of_week": 2,
+		"hour": 23,
+		"minute": 46
 	},
 	"HWCTRL": {
 		"display_default_brightness": 100,
@@ -21,10 +22,10 @@
 	},
 	"SBU_Communicator": {
 		"logs_directory": "/home/base/base/log",
-		"wait_for_channel_free_timeout":2,
-		"wait_for_special_string_timeout":1,
-		"wait_for_sbu_ready_timeout":1,
-		"wait_for_acknowledge_timeout":1
+		"wait_for_channel_free_timeout": 2,
+		"wait_for_special_string_timeout": 1,
+		"wait_for_sbu_ready_timeout": 1,
+		"wait_for_acknowledge_timeout": 1
 	},
 	"HMI": {
 		"display_default_brightness": 100,
@@ -37,6 +38,8 @@
 		"backup_device_file_timeout": 20
 	},
 	"Backup": {
+		"nas_finder_maximum_connection_trials": 5,
+		"nas_finder_wait_seconds_between_connection_trials": 1,
 		"remote_backup_source_location": "/mnt/HDD",
 		"local_backup_target_location": "/media/BackupHDD",
 		"sample_interval": 0.2,

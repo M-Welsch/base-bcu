@@ -102,16 +102,18 @@ class SshRsync:
 
 
 class RsyncWrapperThread(Thread):
-    def __init__(self, host, user, remote_source_path, local_target_path, set_backup_finished_flag):
+    def __init__(self, host, user, remote_source_path, local_target_path, set_backup_finished_flag, logger):
         super().__init__()
         self._ssh_rsync = SshRsync(host, user, remote_source_path, local_target_path)
         self._set_backup_finished_flag = set_backup_finished_flag
+        self._logger = logger
 
     def run(self):
         with self._ssh_rsync as output_generator:
             for status in output_generator:
                 print(status)
             self._set_backup_finished_flag()
+            self._logger.info("Backup finished!")
 
     def terminate(self):
         self._ssh_rsync.terminate()

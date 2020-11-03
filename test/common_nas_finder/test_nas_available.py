@@ -11,9 +11,11 @@ from base.common.nas_finder import NasFinder
 if __name__ == '__main__':
     config = Config("/home/base/base/config.json")
     logger = Logger('.')
-    NF = NasFinder(logger)
-    nas_ip = '192.168.0.100'
-    print(NF.nas_avaliable(nas_ip))
+    NF = NasFinder(logger, config.config_backup)
+    nas_ip = config.config_backup["ssh_host"]
+    nas_user = config.config_backup["ssh_user"]
+    print(NF.nas_available(nas_ip, nas_user))
+    print(NF.nas_available('192.168.0.100', nas_user))
     wrong_ip = '192.168.1.1'
-    print(NF.nas_avaliable(wrong_ip))
+    print(NF.nas_available(wrong_ip, nas_user))
     logger.terminate()

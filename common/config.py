@@ -45,7 +45,7 @@ class Config:
 	def config_backup(self):
 		return self._config["Backup"]
 
-	def _update(self):
+	def update(self):
 		with open(self._path, 'w') as cf:
 			json.dump(self._config, cf)
 	
@@ -59,4 +59,4 @@ class Config:
 		hdd_parameters = json.loads(hdd_params_str)
 		self._config['Device Specific']['Backup HDD Device Signature']['Model Number'] = hdd_parameters["Model Number"]
 		self._config['Device Specific']['Backup HDD Device Signature']['Serial Number'] = hdd_parameters["Serial Number"]
-		self._update()
+		self.update()

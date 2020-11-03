@@ -10,7 +10,7 @@ class MountManager:
 	def __init__(self, config, logger):
 		self._logger = logger
 		self.b_hdd_device = config["backup_hdd_device_file_path"]
-		self.b_hdd_fsys = config["backup_hdd_file_system"]
+		self.b_hdd_fsys = config["backup_hdd_file_system"] #Fixme: this file has to be identified
 		self.b_hdd_mount = config["backup_hdd_mount_point"]
 		self.b_timeout = config["backup_device_file_timeout"]
 
@@ -41,7 +41,10 @@ class MountManager:
 				   self.b_hdd_device, self.b_hdd_mount]
 		success_msg = "Mounting backup HDD probably successful."
 		error_msg = "Failed mounting backup HDD. Traceback:"
-		run_external_command(command, success_msg, error_msg)
+		try:
+			run_external_command(command, success_msg, error_msg)
+		except ExternalCommandError:
+			raise MountingError(f"Backup HDD could not be mounted")
 
 	def _unmount_backup_hdd(self):
 		print("Trying to unmount backup HDD...")

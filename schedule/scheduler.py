@@ -4,9 +4,10 @@ from base.common.exceptions import *
 from datetime import datetime
 
 class BaseScheduler(Scheduler):
-	def __init__(self, config_schedule):
+	def __init__(self, config_schedule, logger):
 		super(BaseScheduler, self).__init__()
 		self._config_schedule = config_schedule
+		self._logger = logger
 		self.backup_suggested = False
 		self.setup_schedule()
 
@@ -14,14 +15,22 @@ class BaseScheduler(Scheduler):
 		#pudb.set_trace()
 		backup_frequency = self._config_schedule["backup_frequency"]
 		minutes_and_hours = f'{int(self._config_schedule["hour"]):02d}:{int(self._config_schedule["minute"]):02d}'
-		if backup_frequency == 'Hourly':
+		if backup_frequency == 'Minutely':
+			self.every(self._config_schedule["minute"]).minutes.do(self._suggest_backup)
+			logging_message = f'Schedule: Frequency = Minutely, every {self._config_schedule["minute"]} minutes'
+		elif backup_frequency == 'Hourly':
 			self.every(self._config_schedule["minute"]).hour.do(self._suggest_backup)
+			logging_message = f'Schedule: Frequency = Hourly at hh:{self._config_schedule["minute"]}'
 		elif backup_frequency == 'Daily':
 			self.every().day.at(minutes_and_hours).do(self._suggest_backup)
+			logging_message = f'Schedule: Frequency = Daily at {minutes_and_hours}'
 		elif backup_frequency == 'Weekly':
 			self._setup_schedule_for_weekly(minutes_and_hours)
+			logging_message = f'Schedule: Frequency = Weekly, every {self._config_schedule["day_of_week"]}th day of week at {minutes_and_hours}'
 		else:
 			raise ScheduleError("No valid backup interval specified!")
+		self._logger.info(logging_message)
+		print(logging_message)
 		# Todo: Monthly
 
 	def _setup_schedule_for_weekly(self, minutes_and_hours):

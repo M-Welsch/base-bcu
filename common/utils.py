@@ -36,7 +36,7 @@ def run_external_command(command, success_msg, error_msg):
 	cp = run(command, stdout=PIPE, stderr=PIPE)
 	if cp.stderr:
 		print(error_msg, cp.stderr)
-		raise ExternalCommandError(error_msg, cp.stderr)
+		raise ExternalCommandError(cp.stderr)
 	else:
 		print(success_msg)
 
@@ -79,10 +79,12 @@ def check_path_end_slash_and_asterik(path_to_check):
 		path_to_check += '/*'
 	return path_to_check
 
+
 def check_path_end_slash(path_to_check):
 	if not path_to_check.endswith('/'):
 		path_to_check += '/'
 	return path_to_check
+
 
 def get_ip_address():
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -96,8 +98,15 @@ def get_ip_address():
 		s.close()
 	return IP
 
+
 def get_sbu_fw_uploads_folder():
 	return "{}/sbu_interface/sbu_fw_uploads".format(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 def shutdown_bcu():
 	os.system("shutdown -h now")
+
+
+def network_available():
+	ip_address = get_ip_address()
+	return not ip_address == "127.0.0.1"

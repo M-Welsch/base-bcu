@@ -1,5 +1,4 @@
 class BackupserverException(Exception):
-    # for future use
     pass
 
 class DockingError(BackupserverException):
@@ -24,6 +23,15 @@ class ScheduleError(BackupserverException):
     pass
 
 class NewBuDirCreationError(BackupserverException):
+    pass
+
+class NasNotAvailableError(BackupserverException):
+    pass
+
+class NetworkError(BackupserverException):
+    pass
+
+class BackupHddAccessError(BackupserverException):
     pass
 
 def break_it():

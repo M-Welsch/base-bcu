@@ -2,6 +2,7 @@ from queue import Queue
 
 from time import sleep
 from typing import Dict, List
+from datetime import datetime, timedelta
 
 from base.codebooks.codebooks import *
 from base.common.config import Config
@@ -19,23 +20,30 @@ from base.sbu_interface.sbu_communicator import *
 from base.hwctrl.display import *
 
 
+class BaseStatus:
+	def __init__(self):
+		self.backup_in_progress_flag = False
+		self.backup_finished_flag = False
+		self.shutdown_flag = False
+		self.terminate_flag = False
+
+
 class Daemon:
 	def __init__(self, autostart_webapp: bool = True):
 		self._autostart_webapp = autostart_webapp
 		self._tcp_command_queue = Queue()
 		self._tcp_codebook = TCP_Codebook()
 		self._config = Config("base/config.json")
-		self._scheduler = BaseScheduler(self._config.config_schedule)
 		self._logger = Logger(self._config.logs_directory)
+		self._scheduler = BaseScheduler(self._config.config_schedule, self._logger)
 		self._mount_manager = MountManager(self._config.config_mounting, self._logger)
-		self._backup_manager = BackupManager(self._config.config_backup, self._logger, self.set_backup_finished_flag)
 		self._hardware_control = HWCTRL(self._config.config_hwctrl, self._logger)
+		self._backup_manager = BackupManager(self._config.config_backup, self._logger, self._mount_manager, self._hardware_control, self.set_backup_finished_flag)
 		self._tcp_server_thread = TCPServerThread(queue=self._tcp_command_queue, logger=self._logger)
 		self._webapp = Webapp(self._logger)
 		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
 		self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
-		self._shutdown_flag = False
-		self._backup_finished_flag = False
+		self._status = BaseStatus()
 		self._display_menu_pointer = 'Main'
 		self.start_threads_and_mainloop()
 
@@ -61,15 +69,15 @@ class Daemon:
 	def mainloop(self):
 		self._sbu_communicator.set_display_brightness_percent(self._config.config_hmi["display_default_brightness"])
 		self._hmi_show_main_menu()
-		self._logger.info(f"Next Backup scheduled at {self._scheduler.next_backup_scheduled()}, in {self._scheduler.seconds_to_next_bu()} seconds")
-		self._terminate_flag = False
-		while not self._terminate_flag:
+		self._logger.info(f"Next Backup scheduled at {self._scheduler.next_backup_scheduled()}, in {self._scheduler.seconds_to_next_bu()} seconds. Current Time: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+		self._status.terminate_flag = False
+		while not self._status.terminate_flag:
 			sleep(self._config.main_loop_interval)
 			status_quo = self._look_up_status_quo()
 			command_list = self._derive_command_list(status_quo)
 			self._execute_command_list(command_list)
 			
-		if self._shutdown_flag:
+		if self._status.shutdown_flag:
 			self._initiate_shutdown_process()
 		else:
 			self.stop_threads()
@@ -79,20 +87,21 @@ class Daemon:
 
 	def _seconds_to_next_bu_to_sbu(self):
 		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
-		# subtract 5 minutes so the bcu has enough time to start up
-		if seconds_to_next_bu > 300:
+		# subtract 5 minutes so the bcu has enough time to start up.
+		# Moreover SBU shouldn't be forced to write 0 to its CMP register (Won't do it anyway)
+		if seconds_to_next_bu > 333:
 			seconds_to_next_bu -= 300
 		self._sbu_communicator.send_seconds_to_next_bu_to_sbu(seconds_to_next_bu)
 
 	def set_backup_finished_flag(self):
-		self._backup_finished_flag = True
+		self._status.backup_finished_flag = True
 
 	def _look_up_status_quo(self) -> Dict:
 		status_quo = {
 			"pressed_buttons": self._hardware_control.pressed_buttons(),
 			"tcp_commands": [],
 			"backup_scheduled_for_now": self._scheduler.is_backup_scheduled(),
-			"backup_finished": self._backup_finished_flag
+			"backup_finished": self._status.backup_finished_flag
 		}
 		while not self._tcp_command_queue.empty():
 			status_quo["tcp_commands"].append(self._tcp_command_queue.get())
@@ -105,7 +114,7 @@ class Daemon:
 	def _derive_command_list(self, status_quo: Dict) -> List[str]:
 		command_list = []
 		if "backup_full" in status_quo["tcp_commands"]:
-			command_list.extend(["dock", "mount", "backup"]) #"unmount", "undock" have to come afterwards
+			command_list.append("backup_full")
 		if "test_mounting" in status_quo["tcp_commands"]:
 			print("putting mount int ocommand list")
 			return ["mount"]
@@ -125,13 +134,6 @@ class Daemon:
 			return ["enter_new_buhdd_in_config.json"]
 		if "show_status_info" in status_quo["tcp_commands"]:
 			command_list.append("show_status_info")
-		# if (
-		# 		status_quo["pressed_buttons"][1] or
-		# 		"backup" in status_quo["tcp_commands"] or
-		# 		status_quo["backup_scheduled_for_now"
-		# ):
-		#  command_list.extend(["dock", "mount", "backup", "unmount", "undock"])
-
 		if status_quo["pressed_buttons"][0]: # show IP Adress on Display
 			command_list.append("show_ip_on_display")
 		if status_quo["pressed_buttons"][1]: # demo
@@ -142,13 +144,12 @@ class Daemon:
 			command_list.append("terminate_daemon_and_shutdown")
 		if "seconds_to_next_bu_to_sbc" in status_quo["tcp_commands"]:
 			self._seconds_to_next_bu_to_sbu()
-		if "shutdown_base" in status_quo["tcp_commands"]:
-			self._communicate_shutdown_intention_to_sbu()
 		if status_quo["backup_scheduled_for_now"]:
-			command_list.extend(["dock", "mount", "backup"])
+			command_list.append("backup_full")
 		if status_quo["backup_finished"]:
-			self._backup_finished_flag = False
-			command_list.extend(["unmount", "undock"])
+			self._status.backup_finished_flag = False
+			self._schedule_backup_in_minutes(10)
+			command_list.extend(["unmount", "undock", "terminate_daemon_and_shutdown"])
 		if command_list:
 			print("command list:", command_list)
 		return command_list
@@ -171,11 +172,14 @@ class Daemon:
 				elif command == "undock":
 					self._hardware_control.unpower_and_undock()
 				elif command == "mount":
-					print("_execute_command_list: mount")
 					self._mount_manager.mount_hdd()
 				elif command == "unmount":
 					self._unmount()
 				elif command == "backup":
+					self._scheduler.backup_suggested = False
+					self._logger.error('"backup" is a deprecated command. Please use "backup_full"')
+					self._status.backup_finished_flag = True
+				elif command == "backup_full":
 					self._scheduler.backup_suggested = False
 					self._backup_manager.backup()
 				elif command == "reload_config":
@@ -185,11 +189,11 @@ class Daemon:
 				elif command == "show_ip_on_display":
 					self.show_ip_address_on_display()
 				elif command == "terminate_daemon":
-					self._terminate_flag = True
+					self._status.terminate_flag = True
 					return True
 				elif command == "terminate_daemon_and_shutdown":
 					self._initiate_shutdown_process()
-					self._shutdown_flag = True
+					self._status.shutdown_flag = True
 					return True
 				elif command == "update_sbu":
 					self.update_sbu()
@@ -203,6 +207,18 @@ class Daemon:
 				self._logger.error(f"Some command went somehow wrong: {e}")
 				raise e
 		return False
+
+	def _schedule_backup_in_minutes(self, minutes):
+		last_bu_interval = self._config.config_schedule["test_key"]
+		next_bu_interval = 2*last_bu_interval
+		self._config.config_schedule["test_key"] = next_bu_interval
+		then = datetime.now() + timedelta(seconds=next_bu_interval*60)
+		self._config.config_schedule["backup_frequency"] = "Weekly"
+		self._config.config_schedule["day_of_week"] = int(then.strftime("%w"))
+		self._config.config_schedule["hour"] = int(then.strftime("%H"))
+		self._config.config_schedule["minute"] = int(then.strftime("%M"))
+		self._config.update()
+		self._scheduler.setup_schedule()
 
 	def _unmount(self):
 		try:
