@@ -27,8 +27,8 @@ class BackupManager:
 
 	def backup(self):
 		# Todo: is this the proper point for error handling?
-		self._backup_thread = BackupThread(self._backup_config, self._logger, self._mount_manager, self._hwctrl, self._set_backup_finished_flag)
-		successfully_started_flag = False
+		successfully_started_flag = self._prepare_backup_thread()
+		self._logger.dump_ifconfig()
 		try:
 			self._backup_thread.start()
 			successfully_started_flag = True
@@ -42,8 +42,15 @@ class BackupManager:
 			self._logger.error(f"Mounting Error: {MountingError.logger_error_message}")
 		except NewBuDirCreationError:
 			self._logger.error("could not create directory for new backup")
+
 		if not successfully_started_flag:
 			self._set_backup_finished_flag()
+
+	def _prepare_backup_thread(self):
+		self._backup_thread = BackupThread(self._backup_config, self._logger, self._mount_manager, self._hwctrl,
+										   self._set_backup_finished_flag)
+		successfully_started_flag = False
+		return successfully_started_flag
 
 
 class BackupThread(Thread):
@@ -81,7 +88,6 @@ class BackupThread(Thread):
 				self.run() # try again
 			else:
 				self._logger.error("Tried undocking and docking for 3 times. Aborting now.")
-
 
 		self._create_folder_for_backup()
 		self._copy_newest_backup_with_hardlinks(newest_backup)

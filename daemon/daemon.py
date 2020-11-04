@@ -64,6 +64,7 @@ class Daemon:
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
+		self._logger.copy_logfiles_to_nas()
 		self._logger.terminate()
 
 	def mainloop(self):
@@ -116,7 +117,6 @@ class Daemon:
 		if "backup_full" in status_quo["tcp_commands"]:
 			command_list.append("backup_full")
 		if "test_mounting" in status_quo["tcp_commands"]:
-			print("putting mount int ocommand list")
 			return ["mount"]
 		if "test_unmounting" in status_quo["tcp_commands"]:
 			return ["unmount"]
@@ -148,7 +148,7 @@ class Daemon:
 			command_list.append("backup_full")
 		if status_quo["backup_finished"]:
 			self._status.backup_finished_flag = False
-			self._schedule_backup_in_minutes(10)
+			self._schedule_backup_for_longterm_test()
 			command_list.extend(["unmount", "undock", "terminate_daemon_and_shutdown"])
 		if command_list:
 			print("command list:", command_list)
@@ -175,10 +175,6 @@ class Daemon:
 					self._mount_manager.mount_hdd()
 				elif command == "unmount":
 					self._unmount()
-				elif command == "backup":
-					self._scheduler.backup_suggested = False
-					self._logger.error('"backup" is a deprecated command. Please use "backup_full"')
-					self._status.backup_finished_flag = True
 				elif command == "backup_full":
 					self._scheduler.backup_suggested = False
 					self._backup_manager.backup()
@@ -208,7 +204,7 @@ class Daemon:
 				raise e
 		return False
 
-	def _schedule_backup_in_minutes(self, minutes):
+	def _schedule_backup_for_longterm_test(self):
 		last_bu_interval = self._config.config_schedule["test_key"]
 		next_bu_interval = 2*last_bu_interval
 		self._config.config_schedule["test_key"] = next_bu_interval
@@ -277,6 +273,8 @@ class Daemon:
 		self._config.write_BUHDD_parameter_to_tmp_config_file()
 
 	def _initiate_shutdown_process(self):
+		self._display.write("Shutdown", "Waiting 5s")
+		sleep(5)
 		self._logger.info("Shutting down")
 		self._sbu_communicator.send_human_readable_timestamp_next_bu(self._scheduler.next_backup_scheduled())
 		self._seconds_to_next_bu_to_sbu()

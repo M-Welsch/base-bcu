@@ -46,8 +46,10 @@ def run_external_command_as_generator(command):
 	return p.stdout
 
 
-def run_external_command_as_generator_shell(command):
+def run_external_command_as_generator_shell(command, timeout=None):
 	p = Popen(command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
+	if timeout:
+		p.communicate(timeout=timeout)
 	return p.stdout
 
 
