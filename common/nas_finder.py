@@ -20,23 +20,27 @@ class NasFinder:
 			ssh_port = 22
 			s = socket. \
 				socket(socket.AF_INET, socket.SOCK_STREAM)
-
-			conn = s.connect_ex((t_IP, ssh_port))
-			if conn == 0:
-				self._logger.info(f"NAS Finder: {target_ip}:{ssh_port} open!")
+			try:
+				s.connect((t_IP, ssh_port))
 				print(f"NAS Finder: {target_ip}:{ssh_port} open!")
 				response = True
-			elif conn == 101:
-				self._logger.warning(f'Nas Finder. Network is unreachable!')
-				connection_trials += 1
-			else:
-				self._logger.warning(f'NAS Finder: {target_ip}:{ssh_port} is not open! "Conn" = {conn}')
-				connection_trials += 1
+			except OSError as e:
+				if "Errno 101" in str(e):
+					# network unreachable
+					self._logger.warning(f'Nas Finder. Network is unreachable! OSError: {e}')
+					self._logger.dump_ifconfig()
+					connection_trials += 1
+				elif "Errno 113" in str(e):
+					# No route to host
+					self._logger.warning(f'NAS Finder: {target_ip}:{ssh_port} is not open! OSError: {e}')
+					connection_trials += 1
 				sleep(self._config_backup["nas_finder_wait_seconds_between_connection_trials"])
-			s.close()
+			finally:
+				s.close()
+
 		if not response:
-			self._logger.error(f'NAS Finder: {target_ip}:{ssh_port} is not open! Tried {max_connection_trials} times with {self._config_backup["nas_finder_wait_seconds_between_connection_trials"]} pause. Conn = {conn}')
-			print(f"NAS Finder: {target_ip}:{ssh_port} is not open! Conn = {conn}")
+			self._logger.error(f'NAS Finder: {target_ip}:{ssh_port} is not open! Tried {max_connection_trials} times with {self._config_backup["nas_finder_wait_seconds_between_connection_trials"]} pause')
+			print(f"NAS Finder: {target_ip}:{ssh_port} is not open!")
 		return response
 
 	def _nas_correct(self, target_ip, target_user):

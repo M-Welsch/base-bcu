@@ -11,6 +11,7 @@ from base.common.utils import run_external_command_as_generator_shell
 
 LogMessage = namedtuple('LogMessage', 'content level')
 
+
 class Logger:
     def __init__(self, logs_directory, logfile_prefix=""):
         self._logs_directory = logs_directory

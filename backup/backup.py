@@ -6,7 +6,6 @@ from time import sleep, time
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
-from threading import Thread
 from datetime import datetime
 
 from base.common.utils import run_external_command_as_generator, run_external_command_as_generator_shell, check_path_end_slash_and_asterik, network_available
@@ -23,18 +22,23 @@ class BackupManager:
 		self._mount_manager = mount_manager
 		self._hwctrl = hwctrl
 		self._set_backup_finished_flag = set_backup_finished_flag
-		self._backup_thread = None
+		self._set_backup_finished_flag = set_backup_finished_flag
+		self._sample_interval = backup_config["sample_interval"]
+		self._ssh_host = backup_config["ssh_host"]
+		self._ssh_user = backup_config["ssh_user"]
+		self._new_backup_folder = None
+		self._nas_properties = None
+		self._docking_trials = 0
 
 	def backup(self):
-		# Todo: is this the proper point for error handling?
-		successfully_started_flag = self._prepare_backup_thread()
-		self._logger.dump_ifconfig()
+		successfully_started_flag = False
 		try:
-			self._backup_thread.start()
+			self.execute_backup()
 			successfully_started_flag = True
 		except NetworkError:
 			self._logger.error("Network not available")
 		except NasNotAvailableError:
+			print("catching")
 			self._logger.error("NAS not available. Backup NOT executed")
 		except DockingError:
 			self._logger.error("Docking Error occured. Backup NOT executed")
@@ -46,29 +50,7 @@ class BackupManager:
 		if not successfully_started_flag:
 			self._set_backup_finished_flag()
 
-	def _prepare_backup_thread(self):
-		self._backup_thread = BackupThread(self._backup_config, self._logger, self._mount_manager, self._hwctrl,
-										   self._set_backup_finished_flag)
-		successfully_started_flag = False
-		return successfully_started_flag
-
-
-class BackupThread(Thread):
-	def __init__(self, backup_config, logger, mount_manager, hwctrl, set_backup_finished_flag):
-		super(BackupThread, self).__init__()
-		self._logger = logger
-		self._backup_config = backup_config
-		self._mount_manager = mount_manager
-		self._hwctrl = hwctrl
-		self._set_backup_finished_flag = set_backup_finished_flag
-		self._sample_interval = backup_config["sample_interval"]
-		self._ssh_host = backup_config["ssh_host"]
-		self._ssh_user = backup_config["ssh_user"]
-		self._new_backup_folder = None
-		self._nas_properties = None
-		self._docking_trials = 0
-
-	def run(self):
+	def execute_backup(self):
 		self._wait_for_network_connection()
 		if self._nas_available():
 			self._stop_services_on_nas()
