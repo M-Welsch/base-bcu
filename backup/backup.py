@@ -74,7 +74,13 @@ class BackupManager:
 		self._create_folder_for_backup()
 		self._copy_newest_backup_with_hardlinks(newest_backup)
 		self._execute_backup_with_rsync()
-		#self._start_services_on_nas()
+
+	def cleanup_after_backup(self):
+		try:
+			self._start_services_on_nas()
+		except Exception as e:
+			print(f"Something went wrong during cleanup after backup. Error : {e}")
+			self._logger.warning(f"Something went wrong during cleanup after backup. Error : {e}")
 
 	def _wait_for_network_connection(self):
 		start_time = time()

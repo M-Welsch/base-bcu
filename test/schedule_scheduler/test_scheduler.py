@@ -13,7 +13,7 @@ class ScheduleTester():
     def __init__(self, config, logger):
         self._config = config
         self._logger = logger
-        self._scheduler = BaseScheduler(self._config.config_schedule)
+        self._scheduler = BaseScheduler(self._config.config_schedule, self._logger)
 
     def test(self):
         print(f"Next BU scheduled at: {self._scheduler.next_backup_scheduled()}")

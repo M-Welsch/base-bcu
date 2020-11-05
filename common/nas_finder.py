@@ -1,4 +1,5 @@
 import socket
+import re
 from time import sleep
 from base.common.ssh_interface import SSHInterface
 
@@ -50,6 +51,13 @@ class NasFinder:
 				response = self.check_connected_nas(SSHI, target_ip)
 		return response
 
+	def _nas_hdd_mounted(self, target_ip, target_user):
+		response = None
+		with SSHInterface(self._logger) as SSHI:
+			if SSHI.connect(target_ip, target_user) == 'Established':
+				response = self._check_nas_hdd_mounted(SSHI)
+		return response
+
 	def check_connected_nas(self, SSHI, target_ip):
 		stdout, stderr = SSHI.run('cat nas_for_backup')
 		if stderr:
@@ -61,5 +69,16 @@ class NasFinder:
 			response = True
 		return response
 
+	def _check_nas_hdd_mounted(self, SSHI):
+		nas_hdd_path = self._config_backup["remote_backup_source_location"]
+		stdout, stderr = SSHI.run(f'cd {nas_hdd_path}')
+		sleep(1)
+		stdout, stderr = SSHI.run(f'mount | grep HDD')
+		print(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
+		self._logger.info(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
+		if re.search("sd.. on \/mnt\/HDD type ext4", stdout):
+			return True
+		else:
+			return False
 
 

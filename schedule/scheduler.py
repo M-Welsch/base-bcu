@@ -49,6 +49,10 @@ class BaseScheduler(Scheduler):
 			self.every().saturday.at(minutes_and_hours).do(self._suggest_backup)
 		elif day_of_week == 7:
 			self.every().sunday.at(minutes_and_hours).do(self._suggest_backup)
+		else:
+			self._logger.warning(f"Day of week was entered as {day_of_week}, which is invalid (1-7 is ok). Setting to Sunday")
+			self._config_schedule["day_of_week"] = 7
+			self._setup_schedule_for_weekly(minutes_and_hours)
 
 	def _suggest_backup(self):
 		print("Suggesting backup...")

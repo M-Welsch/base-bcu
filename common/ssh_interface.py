@@ -11,7 +11,7 @@ class SSHInterface:
 		try:
 			self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 			k = paramiko.RSAKey.from_private_key_file('/home/base/.ssh/id_rsa')
-			self._client.connect(host, username=user, pkey=k)
+			self._client.connect(host, username=user, pkey=k, timeout=10)
 		except paramiko.SSHException as e:
 			if not str(e).find('not found in known_hosts') == 0:
 				msg = f"Keyfile Authentication not established! Please refer to https://staabc.spdns.de/basewiki/doku.php?id=inbetriebnahme. Error: {e}"

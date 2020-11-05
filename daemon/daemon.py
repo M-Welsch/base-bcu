@@ -149,7 +149,7 @@ class Daemon:
 		if status_quo["backup_finished"]:
 			self._status.backup_finished_flag = False
 			self._schedule_backup_for_longterm_test()
-			command_list.extend(["unmount", "undock", "terminate_daemon_and_shutdown"])
+			command_list.extend(["cleanup_after_backup","unmount", "undock", "terminate_daemon_and_shutdown"])
 		if command_list:
 			print("command list:", command_list)
 		return command_list
@@ -178,6 +178,8 @@ class Daemon:
 				elif command == "backup_full":
 					self._scheduler.backup_suggested = False
 					self._backup_manager.backup()
+				elif command == "cleanup_after_backup":
+					self._backup_manager.cleanup_after_backup()
 				elif command == "reload_config":
 					self._config.reload()
 				elif command == "show_status_info":
