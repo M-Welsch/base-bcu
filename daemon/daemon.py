@@ -1,12 +1,9 @@
-from queue import Queue
-
-from time import sleep
 from typing import Dict, List
-from datetime import datetime, timedelta
+from datetime import timedelta
+import logging
 
 from base.codebooks.codebooks import *
 from base.common.config import Config
-from base.common.base_logging import Logger
 from base.common.tcp import TCPServerThread
 from base.hwctrl.hwctrl import HWCTRL
 from base.webapp.webapp import Webapp
@@ -18,6 +15,7 @@ from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
 from base.sbu_interface.sbu_updater import *
 from base.sbu_interface.sbu_communicator import *
 from base.hwctrl.display import *
+from base.common.debug_utils import copy_logfiles_to_nas
 
 
 class BaseStatus:
@@ -34,13 +32,12 @@ class Daemon:
 		self._tcp_command_queue = Queue()
 		self._tcp_codebook = TCP_Codebook()
 		self._config = Config("base/config.json")
-		self._logger = Logger(self._config.logs_directory)
-		self._scheduler = BaseScheduler(self._config.config_schedule, self._logger)
-		self._mount_manager = MountManager(self._config.config_mounting, self._logger)
-		self._hardware_control = HWCTRL(self._config.config_hwctrl, self._logger)
-		self._backup_manager = BackupManager(self._config.config_backup, self._logger, self._mount_manager, self._hardware_control, self.set_backup_finished_flag)
-		self._tcp_server_thread = TCPServerThread(queue=self._tcp_command_queue, logger=self._logger)
-		self._webapp = Webapp(self._logger)
+		self._scheduler = BaseScheduler(self._config.config_schedule)
+		self._mount_manager = MountManager(self._config.config_mounting)
+		self._hardware_control = HWCTRL.global_instance(self._config.config_hwctrl)
+		self._backup_manager = BackupManager(self._config.config_backup, self._mount_manager, self._hardware_control, self.set_backup_finished_flag)
+		self._tcp_server_thread = TCPServerThread(queue=self._tcp_command_queue)
+		self._webapp = Webapp()
 		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
 		self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
 		self._status = BaseStatus()
@@ -49,7 +46,7 @@ class Daemon:
 
 	def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
 		if self._hardware_control.get_hw_revision() == 'rev3':
-			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._logger, self._config.config_sbu_communicator)
+			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._config.config_sbu_communicator)
 
 	def start_threads_and_mainloop(self):
 		self._hardware_control.start()
@@ -64,13 +61,12 @@ class Daemon:
 		self._hardware_control.terminate()
 		self._tcp_server_thread.terminate()
 		self._webapp.terminate()
-		self._logger.copy_logfiles_to_nas()
-		self._logger.terminate()
+		copy_logfiles_to_nas()
 
 	def mainloop(self):
 		self._sbu_communicator.set_display_brightness_percent(self._config.config_hmi["display_default_brightness"])
 		self._hmi_show_main_menu()
-		self._logger.info(f"Next Backup scheduled at {self._scheduler.next_backup_scheduled()}, in {self._scheduler.seconds_to_next_bu()} seconds. Current Time: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+		logging.info(f"Next Backup scheduled at {self._scheduler.next_backup_scheduled()}, in {self._scheduler.seconds_to_next_bu()} seconds. Current Time: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
 		self._status.terminate_flag = False
 		while not self._status.terminate_flag:
 			sleep(self._config.main_loop_interval)
@@ -109,7 +105,7 @@ class Daemon:
 			self._tcp_command_queue.task_done()
 		# TODO: consider weather
 		if status_quo_not_empty(status_quo):
-			self._logger.debug(f"Command Queue contents: {status_quo}")
+			logging.debug(f"Command Queue contents: {status_quo}")
 		return status_quo
 
 	def _derive_command_list(self, status_quo: Dict) -> List[str]:
@@ -202,7 +198,7 @@ class Daemon:
 				else:
 					raise RuntimeError(f"'{command}' is not a valid command!")
 			except Exception as e:
-				self._logger.error(f"Some command went somehow wrong: {e}")
+				logging.error(f"Some command went somehow wrong: {e}")
 				raise e
 		return False
 
@@ -222,9 +218,9 @@ class Daemon:
 		try:
 			self._mount_manager.unmount_hdd()
 		except UnmountError:
-			self._logger.error(f"Unmounting didnt work: {UnmountError}")
+			logging.error(f"Unmounting didnt work: {UnmountError}")
 		except RuntimeError:
-			self._logger.error(f"Unmounting didnt work: {RuntimeError}")
+			logging.error(f"Unmounting didnt work: {RuntimeError}")
 
 	def _wait_for_seconds(self, pause_duration):
 		sleep(pause_duration)
@@ -277,7 +273,7 @@ class Daemon:
 	def _initiate_shutdown_process(self):
 		self._display.write("Shutdown", "Waiting 5s")
 		sleep(5)
-		self._logger.info("Shutting down")
+		logging.info("Shutting down")
 		self._sbu_communicator.send_human_readable_timestamp_next_bu(self._scheduler.next_backup_scheduled())
 		self._seconds_to_next_bu_to_sbu()
 		self._sbu_communicator.send_shutdown_request()

@@ -1,11 +1,10 @@
-import sys
 import os
 import signal
 from subprocess import Popen, PIPE, STDOUT
 from threading import Thread
 from base.common.utils import check_path_end_slash_and_asterik
-from time import sleep
 import re
+import logging
 
 
 class Patterns:
@@ -73,7 +72,8 @@ class SshRsync:
 
     def _compose_rsync_command(self, host, user, remote_source_path, local_target_path):
         remote_source_path = check_path_end_slash_and_asterik(remote_source_path)
-        command = f'sudo rsync -avHe'.split() # Todo: change command like this "rsync -avh --delete -e ssh root@192.168.0.34:/mnt/HDD/*"
+        # Todo: change command like this "rsync -avh --delete -e ssh root@192.168.0.34:/mnt/HDD/*"
+        command = f'sudo rsync -avHe'.split()
         command.append("ssh -i /home/base/.ssh/id_rsa")
         command.extend(f"{user}@{host}:{remote_source_path} {local_target_path} --outbuf=N --info=progress2".split())
         print(f"rsync_command: {command}")
@@ -102,18 +102,17 @@ class SshRsync:
 
 
 class RsyncWrapperThread(Thread):
-    def __init__(self, host, user, remote_source_path, local_target_path, set_backup_finished_flag, logger):
+    def __init__(self, host, user, remote_source_path, local_target_path, set_backup_finished_flag):
         super().__init__()
         self._ssh_rsync = SshRsync(host, user, remote_source_path, local_target_path)
         self._set_backup_finished_flag = set_backup_finished_flag
-        self._logger = logger
 
     def run(self):
         with self._ssh_rsync as output_generator:
             for status in output_generator:
                 print(status)
             self._set_backup_finished_flag()
-            self._logger.info("Backup finished!")
+            logging.info("Backup finished!")
 
     def terminate(self):
         self._ssh_rsync.terminate()
@@ -141,7 +140,8 @@ if __name__ == "__main__":
         host="192.168.0.52",
         user="max",
         remote_source_path="/home/max/testfiles",
-        local_target_path="/home/maxi/target"
+        local_target_path="/home/maxi/target",
+        set_backup_finished_flag=None
     )
 
     sync_thread.start()

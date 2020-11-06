@@ -1,6 +1,5 @@
 import sys, os
 import smbus
-from time import sleep
 from threading import Thread
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

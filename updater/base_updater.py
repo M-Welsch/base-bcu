@@ -1,9 +1,9 @@
 import os, sys
+
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
 from base.common.config import Config
-from base.common.base_logging import Logger
 from base.common.tcp import TCPClientInterface
 from base.hwctrl.hwctrl import HWCTRL
 from base.hwctrl.display import *
@@ -41,8 +41,8 @@ class BaseUpdater:
 
             while tcp_port <= (tcp_port_orig + 2):
                 try:
-                    tcpClient = TCPClientInterface(port=tcp_port)
-                    answer = tcpClient.send("terminate_daemon")
+                    tcp_client = TCPClientInterface(port=tcp_port)
+                    answer = tcp_client.send("terminate_daemon")
                     print(answer)
                 except ConnectionRefusedError:
                     tcp_port += 1
@@ -56,9 +56,8 @@ class BaseUpdater:
         return self._config.tcp_port
 
     def _take_over_display(self):
-        self._logger = Logger("/home/base/base/log", "base-updater")
-        self._hwctrl = HWCTRL(self._config.config_hwctrl, self._logger)
-        self._sbuc = SbuCommunicator(self._hwctrl, self._logger, self._config.config_sbu_communicator)
+        self._hwctrl = HWCTRL.global_instance(self._config.config_hwctrl)
+        self._sbuc = SbuCommunicator(self._hwctrl, self._config.config_sbu_communicator)
         self._display = Display(self._hwctrl, self._sbuc, self._config)
 
     def _update_base(self):
@@ -76,16 +75,15 @@ class BaseUpdater:
         self._hwctrl.enable_receiving_messages_from_attiny()
         self._hwctrl.set_attiny_serial_path_to_sbc_fw_update()
 
-        SbuU = SbuUpdater()
-        SbuU.update_sbu()
+        sbu_u = SbuUpdater()
+        sbu_u.update_sbu()
 
         self._hwctrl.disable_receiving_messages_from_attiny()
         self._hwctrl.set_attiny_serial_path_to_communication()
 
     def _reboot(self):
         self._hwctrl.terminate()
-        self._logger.terminate()
-        #shutdown_bcu()
+        # shutdown_bcu()
 
 
 if __name__ == '__main__':

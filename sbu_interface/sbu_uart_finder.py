@@ -1,21 +1,22 @@
-import os, sys, glob, serial
+import os
+import sys
+import glob
+import serial
+import logging
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
 
 class SbuUartFinder:
-    def __init__(self, logger):
-        self._logger = logger
-
     def get_sbu_uart_interface(self):
         uart_interfaces = self._get_available_uart_interfaces()
-        uart_sbc = self._test_uart_interfaces_for_echo(uart_interfaces)
-        if uart_sbc:
-            self._logger.info("SBC answers on UART Interface {}".format(uart_sbc))
+        uart_sbu = self._test_uart_interfaces_for_echo(uart_interfaces)
+        if uart_sbu:
+            logging.info("SBU answers on UART Interface {}".format(uart_sbu))
         else:
-            self._logger.warning("SBC doesn't respond on any UART Interface!")
-        return uart_sbc
+            logging.warning("SBU doesn't respond on any UART Interface!")
+        return uart_sbu
 
     @staticmethod
     def _get_available_uart_interfaces():
@@ -53,19 +54,16 @@ class SbuUartFinder:
 
 if __name__ == "__main__":
     from base.common.config import Config
-    from base.common.base_logging import Logger
     from base.hwctrl.hwctrl import *
 
     _config = Config("/home/maxi/base/config.json")
-    _logger = Logger("/home/maxi/base/log")
-    _hardware_control = HWCTRL(_config.config_hwctrl, _logger)
+    _hardware_control = HWCTRL.global_instance(_config.config_hwctrl)
     _hardware_control.set_attiny_serial_path_to_communication()
     _hardware_control.enable_receiving_messages_from_attiny()
 
-    sbc_uart_finder = SbcUartFinder(_logger)
-    uart_sbc = sbc_uart_finder.get_uart_line_to_sbc()
-    print(uart_sbc)
-    #_hardware_control.disable_receiving_messages_from_attiny()
-    #_hardware_control.set_attiny_serial_path_to_sbc_fw_update()
+    sbu_uart_finder = SbuUartFinder()
+    UART_SBU = sbu_uart_finder.get_sbu_uart_interface()
+    print(UART_SBU)
+    # _hardware_control.disable_receiving_messages_from_attiny()
+    # _hardware_control.set_attiny_serial_path_to_sbc_fw_update()
     _hardware_control.terminate()
-    _logger.terminate()

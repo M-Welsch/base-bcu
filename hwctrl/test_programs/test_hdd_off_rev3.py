@@ -3,7 +3,6 @@ path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
 
 from base.hwctrl.hwctrl import HWCTRL
-from base.common.base_logging import Logger
 from base.common.config import Config
 from time import sleep
 
@@ -22,8 +21,7 @@ if __name__ == "__main__":
 		path_to_module = "/home/maxi"
 		sys.path.append(path_to_module)
 		_config = Config("/home/maxi/base/config.json")
-		_logger = Logger("/home/maxi/base/log")
-		_hwctrl = HWCTRL(_config.config_hwctrl, _logger)
+		_hwctrl = HWCTRL.global_instance(_config.config_hwctrl)
 		HddPT = HDD_PWR_Tester(_hwctrl)
 		HddPT.test_pwr_on_off()
 	else:
@@ -35,5 +33,3 @@ if __name__ == "__main__":
 		sleep(0.01)
 		GPIO.output(18, GPIO.LOW)
 		GPIO.cleanup()
-
-

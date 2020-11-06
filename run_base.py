@@ -1,4 +1,8 @@
 import sys, os
+import logging
+from datetime import datetime
+from pathlib import Path
+import json
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
@@ -7,20 +11,18 @@ from base.daemon.daemon import Daemon
 
 
 def main():
-	d = Daemon()
-	# print("starting daemon...")
-	# with daemon.DaemonContext(working_directory=os.getcwd()):
-	# 	msg_from_tcp = ["0"]
+    # TODO: Replace
+    with open("base/config.json", "r") as file:
+        logs_directory = json.load(file)["Logging"]["logs_directory"]
 
-	# 	srv = TCPServerThread(msg_from_tcp)
-	# 	srv.start()
-	# 	while not msg_from_tcp[-1] == "kill me":
-	# 		continue
-	# 	srv.terminate()
+    logging.basicConfig(
+        filename=Path(logs_directory)/datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log'),
+        level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
+        datefmt='%m.%d.%Y %H:%M:%S'
+    )
+    Daemon()
 
 
 if __name__ == '__main__':
-	main()
-
-# stderr, stdout auf irgendwas lesbares umbiegen
-# logger implementieren
+    main()

@@ -1,5 +1,5 @@
 import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 path_to_module = "/home/base"
 sys.path.append(path_to_module)
@@ -7,7 +7,6 @@ sys.path.append(path_to_module)
 from base.hwctrl.hwctrl import *
 from base.sbu_interface.sbu_communicator import *
 from base.common.config import Config
-from base.common.base_logging import Logger
 from base.common.utils import shutdown_bcu
 
 
@@ -20,11 +19,11 @@ def warn_user_and_ask_whether_to_continue(warning):
 
 
 def create_human_readable_timestamp(seconds):
-    f = datetime.now() + timedelta(seconds = seconds)
+    f = datetime.now() + timedelta(seconds=seconds)
     return f.strftime('%d.%m.%Y %H:%M')
 
 
-class rev3bEndswitchTester:
+class Rev3bEndswitchTester:
     def __init__(self, pin_interface):
         self._pin_interface = pin_interface
 
@@ -47,7 +46,7 @@ class rev3bEndswitchTester:
         )
 
 
-class rev3b_pushbutton_tester:
+class Rev3bPushbuttonTester:
     def __init__(self, pin_interface):
         self._pin_interface = pin_interface
 
@@ -71,13 +70,14 @@ class rev3b_pushbutton_tester:
         )
 
 
-class rev3b_stepper_tester:
+class Rev3bStepperTester:
     def __init__(self, pin_interface):
         self._pin_interface = pin_interface
 
     def test(self):
         if warn_user_and_ask_whether_to_continue(
-            "Stepper Tester: Warning. This test moves the stepper. First in docking, then in undocking direction. However it doesn't care about the endswitches!"
+            "Stepper Tester: Warning. This test moves the stepper. First in docking, then in undocking direction. "
+            "However it doesn't care about the endswitches!"
         ):
             self.active_stepper_driver()
             self.move_towards_docking()
@@ -105,9 +105,9 @@ class rev3b_stepper_tester:
         self._pin_interface.stepper_driver_off()
 
 
-class rev3b_serial_receive_tester:
+class Rev3bSerialReceiveTester:
     def __init__(self, hwctrl):
-        self._sbuC = self._init_sbu_Communicator(hwctrl)
+        self._sbuC = self._init_sbu_communicator(hwctrl)
 
     def test(self):
         print("This test only print outs the Heartbeat Count sent by the sbu")
@@ -117,12 +117,12 @@ class rev3b_serial_receive_tester:
             self._sbuC.terminate()
             print("End.")
 
-    def _init_sbu_Communicator(self, hwctrl):
+    def _init_sbu_communicator(self, hwctrl):
         self._from_sbu_queue = []
         self._to_sbu_queue = []
-        sbuC = SbuCommunicator(hwctrl, self._to_sbu_queue, self._from_sbu_queue)
-        sbuC.start()
-        return sbuC
+        sbu_c = SbuCommunicator(hwctrl, self._to_sbu_queue, self._from_sbu_queue)
+        sbu_c.start()
+        return sbu_c
 
     def _writeout_from_sbu_queue_periodically(self, period):
         while True:
@@ -131,19 +131,20 @@ class rev3b_serial_receive_tester:
             sleep(period)
 
 
-class rev3b_docking_undocking_tester:
+class Rev3bDockingUndockingTester:
     def __init__(self, hwctrl):
         self._hwctrl = hwctrl
 
     def test(self):
         if warn_user_and_ask_whether_to_continue(
-            "Docks and undocks the SATA-Connection. It senses the endswitches and otherwise waits for timeout. If the endswitches don't work, it may damage your BaSe mechanically!"
+            "Docks and undocks the SATA-Connection. It senses the endswitches and otherwise waits for timeout. "
+            "If the endswitches don't work, it may damage your BaSe mechanically!"
         ):
             self._hwctrl.dock()
             self._hwctrl.undock()
 
 
-class rev3b_power_hdd_tester:
+class Rev3bPowerHddTester:
     def __init__(self, hwctrl):
         self._hwctrl = hwctrl
 
@@ -158,151 +159,156 @@ class rev3b_power_hdd_tester:
             self._hwctrl.hdd_power_off()
 
 
-class rev3b_serial_send_tester_wo_hwctrl:
+class Rev3bSerialSendTesterWoHwctrl:
     def __init__(self):
         import RPi.GPIO as GPIO
 
 
-class rev3b_dock_tester:
+class Rev3bDockTester:
     def __init__(self, hwctrl):
         self._hwctrl = hwctrl
 
     def test(self):
         if warn_user_and_ask_whether_to_continue(
-            "Docks and undocks the SATA-Connection. It senses the endswitches and otherwise waits for timeout. If the endswitches don't work, it may damage your BaSe mechanically!"
+            "Docks and undocks the SATA-Connection. It senses the endswitches and otherwise waits for timeout. "
+            "If the endswitches don't work, it may damage your BaSe mechanically!"
         ):
             self._hwctrl.dock()
-            
-class rev3b_sbu_tester:
-    def __init__(self, hwctrl, logger, config_sbuc):
-        self._sbuC = self._init_sbu_Communicator(hwctrl, logger, config_sbuc)
 
-    def _init_sbu_Communicator(self, hwctrl, logger, config_sbuc):
-        sbuC = SbuCommunicator(hwctrl, logger, config_sbuc)
-        while not sbuC.sbu_ready:
+
+class Rev3bSbuTester:
+    def __init__(self, hwctrl, config_sbuc):
+        self._sbu_c = self._init_sbu_communicator(hwctrl, config_sbuc)
+
+    @staticmethod
+    def _init_sbu_communicator(hwctrl, config_sbuc):
+        sbu_c = SbuCommunicator(hwctrl, config_sbuc)
+        while not sbu_c.sbu_ready:
             sleep(0.1)
-        return sbuC
+        return sbu_c
 
-class rev3b_sbu_communication_tester(rev3b_sbu_tester):
-    def __init__(self, hwctrl, logger, config_sbuc):
-        super(rev3b_sbu_communication_tester, self).__init__(hwctrl, logger, config_sbuc)
+
+class Rev3bSbuCommunicationTester(Rev3bSbuTester):
+    def __init__(self, hwctrl, config_sbuc):
+        super(Rev3bSbuCommunicationTester, self).__init__(hwctrl, config_sbuc)
 
     def test(self):
         current = self._measure_current()
         vcc3v = self._measure_vcc3v()
         self._test_write_display(current, vcc3v)
-        self._sbuC.terminate()
+        self._sbu_c.terminate()
 
     def _measure_current(self):
         print("SBU Communicator Testcase: Current Measurement")
-        current = self._sbuC.current_measurement()
+        current = self._sbu_c.current_measurement()
         print(f"Current Measurement Result: {current}A")
         return current
 
     def _measure_vcc3v(self):
         print("SBU Communicator Testcase: VCC3V3_SBY Measurement")
-        vcc3v = self._sbuC.vcc3v_measurement()
+        vcc3v = self._sbu_c.vcc3v_measurement()
         print(f"VCC3V3_SBY Measurement Result: {vcc3v}V")
         return vcc3v
 
     def _test_write_display(self, current, vcc3v):
         print("SBU Communicator Testcase: Write to Display")
-        self._sbuC.write_to_display(f"Iin = {current:.2f}A", f"VCC3V = {vcc3v:.2f}V")
+        self._sbu_c.write_to_display(f"Iin = {current:.2f}A", f"VCC3V = {vcc3v:.2f}V")
 
-class rev3b_sbu_shutdown_process_tester(rev3b_sbu_tester):
-    def __init__(self, hwctrl, logger, config_sbuc):
-        super(rev3b_sbu_shutdown_process_tester, self).__init__(hwctrl, logger, config_sbuc)
+
+class Rev3bSbuShutdownProcessTester(Rev3bSbuTester):
+    def __init__(self, hwctrl, config_sbuc):
+        super(Rev3bSbuShutdownProcessTester, self).__init__(hwctrl, config_sbuc)
 
     def test(self):
         if warn_user_and_ask_whether_to_continue("This will shutdown the BCU! Is everything saved?"):
-            self._sbuC.send_shutdown_request()
-            self._sbuC.terminate()
-            self._shutdown_bcu()
+            self._sbu_c.send_shutdown_request()
+            self._sbu_c.terminate()
+            shutdown_bcu()
 
-    def _shutdown_bcu(self):
+
+class Rev3bSbuSendHrTimestampTester(Rev3bSbuTester):
+    def __init__(self, hwctrl, config_sbuc):
+        super(Rev3bSbuSendHrTimestampTester, self).__init__(hwctrl, config_sbuc)
+
+    def test(self):
+        wake_after = 300  # seconds
+        timestamp_hr = create_human_readable_timestamp(wake_after)
+        self._sbu_c.send_human_readable_timestamp_next_bu(timestamp_hr)
+
+
+class Rev3bSbuSendSecondsToNextBuTester(Rev3bSbuTester):
+    def __init__(self, hwctrl, config_sbuc):
+        super(Rev3bSbuSendSecondsToNextBuTester, self).__init__(hwctrl, config_sbuc)
+
+    def test(self):
+        self._sbu_c.send_seconds_to_next_bu_to_sbu(2097152)
+
+
+class Rev3bSbuShutdownAndWakeAfter500sTester(Rev3bSbuTester):
+    def __init__(self, hwctrl, config_sbuc):
+        super(Rev3bSbuShutdownAndWakeAfter500sTester, self).__init__(hwctrl, config_sbuc)
+
+    def test(self):
+        wake_after = 120*32  # seconds * 32. Factor 32 because for debugging purposes the rtc counts 32 times as fast
+        timestamp_hr = create_human_readable_timestamp(wake_after)
+        self._sbu_c.send_human_readable_timestamp_next_bu(timestamp_hr)
+        self._sbu_c.send_seconds_to_next_bu_to_sbu(wake_after)
+        self._sbu_c.send_shutdown_request()
         shutdown_bcu()
 
 
-class rev3b_sbu_send_hr_timestamp_tester(rev3b_sbu_tester):
-    def __init__(self, hwctrl, logger, config_sbuc):
-        super(rev3b_sbu_send_hr_timestamp_tester, self).__init__(hwctrl, logger, config_sbuc)
+class Rev3bSbuDisplayDimmingTester(Rev3bSbuTester):
+    def __init__(self, hwctrl, config_sbuc):
+        super().__init__(hwctrl, config_sbuc)
 
     def test(self):
-        wake_after = 300 #seconds
-        timestamp_hr = create_human_readable_timestamp(wake_after)
-        self._sbuC.send_human_readable_timestamp_next_bu(timestamp_hr)
+        for i in range(100, 0, -10):
+            self._sbu_c.set_display_brightness_percent(i)
+        for i in range(0, 100, 10):
+            self._sbu_c.set_display_brightness_percent(i)
 
-class rev3b_sbu_send_seconds_to_next_bu_tester(rev3b_sbu_tester):
-    def __init__(self, hwctrl, logger, config_sbuc):
-        super(rev3b_sbu_send_seconds_to_next_bu_tester, self).__init__(hwctrl, logger, config_sbuc)
 
-    def test(self):
-        self._sbuC.send_seconds_to_next_bu_to_sbu(2097152)
-            
-class rev3b_sbu_shutdown_and_wake_after_500s_tester(rev3b_sbu_tester):
-    def __init__(self, hwctrl, logger, config_sbuc):
-        super(rev3b_sbu_shutdown_and_wake_after_500s_tester, self).__init__(hwctrl, logger, config_sbuc)
+class Rev3bSbuHmiLedDimmingTester(Rev3bSbuTester):
+    def __init__(self, hwctrl, config_sbuc):
+        super().__init__(hwctrl, config_sbuc)
 
     def test(self):
-        wake_after = 120*32 #seconds * 32. Factor 32 because for debugging purposes the rtc counts 32 times as fast
-        timestamp_hr = create_human_readable_timestamp(wake_after)
-        self._sbuC.send_human_readable_timestamp_next_bu(timestamp_hr)
-        self._sbuC.send_seconds_to_next_bu_to_sbu(wake_after)
-        self._sbuC.send_shutdown_request()
-        shutdown_bcu()
+        for i in range(100, 0, -10):
+            self._sbu_c.set_led_brightness_percent(i)
+        for i in range(0, 100, 10):
+            self._sbu_c.set_led_brightness_percent(i)
 
 
-class rev3b_sbu_display_dimming_tester(rev3b_sbu_tester):
-    def __init__(self, hwctrl, logger, config_sbuc):
-        super(rev3b_sbu_display_dimming_tester, self).__init__(hwctrl, logger, config_sbuc)
-
-    def test(self):
-        for i in range(100,0,-10):
-            self._sbuC.set_display_brightness_percent(i)
-        for i in range(0,100,10):
-            self._sbuC.set_display_brightness_percent(i)
-
-class rev3b_sbu_hmi_led_dimming_tester(rev3b_sbu_tester):
-    def __init__(self, hwctrl, logger, config_sbuc):
-        super(rev3b_sbu_hmi_led_dimming_tester, self).__init__(hwctrl, logger, config_sbuc)
-
-    def test(self):
-        for i in range(100,0,-10):
-            self._sbuC.set_led_brightness_percent(i)
-        for i in range(0,100,10):
-            self._sbuC.set_led_brightness_percent(i)
-
-class rev3b_bringup_test_suite:
+class Rev3bBringupTestSuite:
     def __init__(self):
         self.display_brightness = 1
         self._pin_interface = PinInterface(self.display_brightness)
         self.testcases = {
-            "test_endswitches":["0","test_endswitches"],
-            "test_pushbuttons":["1","test_pushbuttons"],
-            "test_stepper":["2","test_stepper"],
-            "test_sbu_heartbear_receive":["3","test_sbu_heartbear_receive"],
-            "rev3b_docking_undocking_test":["4","rev3b_docking_undocking_test"],
-            "rev3b_power_hdd_test":["5","rev3b_power_hdd_test"],
-            "rev3b_serial_send_tester_wo_hwctrl":["6","rev3b_serial_send_tester_wo_hwctrl"],
-            "rev3b_dock_test":["7","rev3b_dock_test"],
-            "rev3b_sbu_communication_tester":["8","rev3b_sbu_communication_tester"],
-            "rev3b_sbu_shutdown_process_tester":["9","rev3b_sbu_shutdown_process_tester"],
-            "rev3b_sbu_send_hr_timestamp_tester":["a","rev3b_sbu_send_hr_timestamp_tester"],
-            "rev3b_sbu_send_seconds_to_next_bu_tester":["b","rev3b_sbu_send_seconds_to_next_bu_tester"],
-            "rev3b_sbu_shutdown_and_wake_after_500s_tester":["c","rev3b_sbu_shutdown_and_wake_after_500s_tester"],
-            "rev3b_sbu_display_dimming_tester":["d","rev3b_sbu_display_dimming_tester"],
-            "rev3b_sbu_hmi_led_dimming_tester":["e","rev3b_sbu_hmi_led_dimming_tester"]
+            "test_endswitches": ["0", "test_endswitches"],
+            "test_pushbuttons": ["1", "test_pushbuttons"],
+            "test_stepper": ["2", "test_stepper"],
+            "test_sbu_heartbear_receive": ["3", "test_sbu_heartbear_receive"],
+            "rev3b_docking_undocking_test": ["4", "rev3b_docking_undocking_test"],
+            "rev3b_power_hdd_test": ["5", "rev3b_power_hdd_test"],
+            "rev3b_serial_send_tester_wo_hwctrl": ["6", "rev3b_serial_send_tester_wo_hwctrl"],
+            "rev3b_dock_test": ["7", "rev3b_dock_test"],
+            "rev3b_sbu_communication_tester": ["8", "rev3b_sbu_communication_tester"],
+            "rev3b_sbu_shutdown_process_tester": ["9", "rev3b_sbu_shutdown_process_tester"],
+            "rev3b_sbu_send_hr_timestamp_tester": ["a", "rev3b_sbu_send_hr_timestamp_tester"],
+            "rev3b_sbu_send_seconds_to_next_bu_tester": ["b", "rev3b_sbu_send_seconds_to_next_bu_tester"],
+            "rev3b_sbu_shutdown_and_wake_after_500s_tester": ["c", "rev3b_sbu_shutdown_and_wake_after_500s_tester"],
+            "rev3b_sbu_display_dimming_tester": ["d", "rev3b_sbu_display_dimming_tester"],
+            "rev3b_sbu_hmi_led_dimming_tester": ["e", "rev3b_sbu_hmi_led_dimming_tester"]
         }
 
         self._config = Config("/home/base/base/config.json")
         self._hwctrl = self._init_hwctrl()
 
     def _init_hwctrl(self):
-        self._logger = Logger("/home/base/base/log")
-        return HWCTRL(self._config.config_hwctrl, self._logger)
+        return HWCTRL.global_instance(self._config.config_hwctrl)
 
     def run(self):
-        Tester = None
+        tester = None
         exitflag = False
         while not exitflag:
             user_choice = self.ask_user_for_testcase()
@@ -310,58 +316,56 @@ class rev3b_bringup_test_suite:
                 exitflag = True
 
             if user_choice in self.testcases["test_endswitches"]:
-                Tester = rev3bEndswitchTester(self._pin_interface)
+                tester = Rev3bEndswitchTester(self._pin_interface)
 
             if user_choice in ["1", "test_pushbuttons"]:
-                Tester = rev3b_pushbutton_tester(self._pin_interface)
+                tester = Rev3bPushbuttonTester(self._pin_interface)
 
             if user_choice in ["2", "test_stepper"]:
-                Tester = rev3b_stepper_tester(self._pin_interface)
+                tester = Rev3bStepperTester(self._pin_interface)
 
             if user_choice in ["3", "test_sbu_heartbear_receive"]:
-                Tester = rev3b_serial_receive_tester(self._hwctrl)
+                tester = Rev3bSerialReceiveTester(self._hwctrl)
 
             if user_choice in ["4", "rev3b_docking_undocking_test"]:
-                Tester = rev3b_docking_undocking_tester(self._hwctrl)
+                tester = Rev3bDockingUndockingTester(self._hwctrl)
 
             if user_choice in ["5", "rev3b_power_hdd_test"]:
-                Tester = rev3b_power_hdd_tester(self._hwctrl)
+                tester = Rev3bPowerHddTester(self._hwctrl)
 
             if user_choice in ["6", "rev3b_serial_send_tester_wo_hwctrl"]:
-                Tester = rev3b_serial_send_tester_wo_hwctrl()
+                tester = Rev3bSerialSendTesterWoHwctrl()
 
             if user_choice in ["7", "rev3b_dock_test"]:
-                Tester = rev3b_dock_tester(self._hwctrl)
+                tester = Rev3bDockTester(self._hwctrl)
 
             if user_choice in ["8", "rev3b_sbu_communication_tester"]:
-                Tester = rev3b_sbu_communication_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
+                tester = Rev3bSbuCommunicationTester(self._hwctrl, self._config.config_sbu_communicator)
 
             if user_choice in ["9", "rev3b_sbu_shutdown_process_tester"]:
-                Tester = rev3b_sbu_shutdown_process_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
+                tester = Rev3bSbuShutdownProcessTester(self._hwctrl, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_send_hr_timestamp_tester"]:
-                Tester = rev3b_sbu_send_hr_timestamp_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
+                tester = Rev3bSbuSendHrTimestampTester(self._hwctrl, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_send_seconds_to_next_bu_tester"]:
-                Tester = rev3b_sbu_send_seconds_to_next_bu_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
+                tester = Rev3bSbuSendSecondsToNextBuTester(self._hwctrl, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_shutdown_and_wake_after_500s_tester"]:
-                Tester = rev3b_sbu_shutdown_and_wake_after_500s_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
+                tester = Rev3bSbuShutdownAndWakeAfter500sTester(self._hwctrl, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_display_dimming_tester"]:
-                Tester = rev3b_sbu_display_dimming_tester(self._hwctrl, self._logger, self._config.config_sbu_communicator)
+                tester = Rev3bSbuDisplayDimmingTester(self._hwctrl, self._config.config_sbu_communicator)
 
             if user_choice in self.testcases["rev3b_sbu_hmi_led_dimming_tester"]:
-                Tester = rev3b_sbu_hmi_led_dimming_tester(self._hwctrl, self._logger,
-                                                          self._config.config_sbu_communicator)
+                tester = Rev3bSbuHmiLedDimmingTester(self._hwctrl, self._config.config_sbu_communicator)
 
-            if Tester:
-                Tester.test()
-                Tester = None
+            if tester:
+                tester.test()
+                tester = None
 
-        self._pin_interface.cleanup
+        self._pin_interface.cleanup()
         self._hwctrl.terminate()
-        self._logger.terminate()
 
     def ask_user_for_testcase(self):
         print("Choose a testcase by number:\n{}".format(self.list_of_testcases()))
@@ -393,5 +397,5 @@ if __name__ == "__main__":
         """Welcome to the BaSe rev3b Hardware Bringup Test Suite.
 This program enables you to test all BaSe specific hardware components."""
     )
-    Suite = rev3b_bringup_test_suite()
+    Suite = Rev3bBringupTestSuite()
     Suite.run()

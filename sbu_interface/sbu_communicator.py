@@ -6,6 +6,7 @@ import re
 import sys
 from threading import Thread
 from queue import Queue
+import logging
 
 # path_to_module = "/home/maxi"
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,11 +15,10 @@ from base.sbu_interface.sbu_uart_finder import SbuUartFinder
 from base.common.exceptions import *
 
 
-class SbuCommunicator():
-    def __init__(self, hwctrl, logger, config_sbuc):
+class SbuCommunicator:
+    def __init__(self, hwctrl, config_sbuc):
         self._serial_connection = None
         self._hwctrl = hwctrl
-        self._logger = logger
         self._config_sbuc = config_sbuc
         self._channel_busy = True
         self._sbu_ready = False
@@ -42,7 +42,8 @@ class SbuCommunicator():
             self._channel_busy = False
             self._sbu_ready = True
 
-    def _prepare_serial_connection(self):
+    @staticmethod
+    def _prepare_serial_connection():
         serial_connection = serial.Serial()
         serial_connection.baudrate = 9600
         serial_connection.timeout = 1
@@ -50,7 +51,7 @@ class SbuCommunicator():
 
     def _get_sbu_uart_interface(self):
         self._prepare_hardware_for_sbu_communication()
-        sbu_uart_interface = SbuUartFinder(self._logger).get_sbu_uart_interface()
+        sbu_uart_interface = SbuUartFinder().get_sbu_uart_interface()
         return sbu_uart_interface
 
     def _prepare_hardware_for_sbu_communication(self):
@@ -86,7 +87,6 @@ class SbuCommunicator():
 
     def _wait_for_acknowledge(self, message_code):
         time_start = time()
-        timeout = 1
         while time() - time_start < self._config_sbuc["wait_for_acknowledge_timeout"]:
             tmp = self._serial_connection.read_until().decode()
             if f"ACK:{message_code}" in tmp:
@@ -119,7 +119,10 @@ class SbuCommunicator():
             # print(f"waiting for sbu_channel: busy={self._channel_busy}, open={self.is_serial_connection_open:}")
             sleep(0.05)
             if time() - time_start > self._config_sbuc["wait_for_channel_free_timeout"]:
-                raise SbuCommunicationTimeout(f'Waiting for longer than {self._config_sbuc["wait_for_channel_free_timeout"]} for channel to be free.')
+                raise SbuCommunicationTimeout(
+                    f'Waiting for longer than {self._config_sbuc["wait_for_channel_free_timeout"]} '
+                    f'for channel to be free.'
+                )
 
     def terminate(self):
         print("SBU Communicator is terminating. So long and thanks for all the bytes!")
@@ -138,9 +141,13 @@ class SbuCommunicator():
         [callback, callback_delay] = self._wait_for_special_string("CMP")
         ready_delay = self._wait_for_sbu_ready()
         self._sbu_logger.log(
-            f"{message_code} acknowledged after {acknowledge_delay}s, ready after {ready_delay}. Callback: {callback} after {callback_delay}s")
+            f"{message_code} acknowledged after {acknowledge_delay}s, ready after {ready_delay}. "
+            f"Callback: {callback} after {callback_delay}s"
+        )
         print(
-            f"{message_code} acknowledged after {acknowledge_delay}s, ready after {ready_delay}. Callback: {callback} after {callback_delay}s")
+            f"{message_code} acknowledged after {acknowledge_delay}s, ready after {ready_delay}. "
+            f"Callback: {callback} after {callback_delay}s"
+        )
 
     def send_human_readable_timestamp_next_bu(self, timestamp_hr):
         self._transfer_command_acknowledged_and_sbu_ready("BR", timestamp_hr)
@@ -171,22 +178,25 @@ class SbuCommunicator():
         led_brightness_16bit = int(led_brightness_precent / 100 * 65535)
         self.set_led_brightness_16bit(led_brightness_16bit)
 
-    def _condition_brightness_value(self, brightness_16bit, brightness_type):
+    @staticmethod
+    def _condition_brightness_value(brightness_16bit, brightness_type):
         maximum_brightness = 65535  # 16bit
         if not type(brightness_16bit) == int:
-            warning_msg = f"wrong datatype for {brightness_type}_brighness_16bit. It has to be integer, however it is {type(brightness_16bit)}"
+            warning_msg = f"wrong datatype for {brightness_type}_brighness_16bit. " \
+                          f"It has to be integer, however it is {type(brightness_16bit)}"
             print(warning_msg)
-            self._logger.warning(warning_msg)
+            logging.warning(warning_msg)
             brightness_16bit = int(brightness_16bit)
         if brightness_16bit > maximum_brightness:
-            warning_msg = f"{brightness_type} brightness value too high. Maximum is {maximum_brightness}, however {brightness_16bit} was given. Clipping to maximum."
+            warning_msg = f"{brightness_type} brightness value too high. Maximum is {maximum_brightness}, " \
+                          f"however {brightness_16bit} was given. Clipping to maximum."
             print(warning_msg)
-            self._logger.warning(warning_msg)
+            logging.warning(warning_msg)
             brightness_16bit = maximum_brightness
         elif brightness_16bit < 0:
             warning_msg = f"{brightness_type} Brightness shall not be negative. Clipping to zero."
             print(warning_msg)
-            self._logger.warning(warning_msg)
+            logging.warning(warning_msg)
             brightness_16bit = 0
         return brightness_16bit
 
@@ -216,12 +226,12 @@ class SbuCommunicator():
             vcc3v = self._convert_16bit_3v_result_to_volts(vcc3v_16bit)
         return vcc3v
 
-    def _wait_for_meas_result(self, measType):
+    def _wait_for_meas_result(self, meas_type):
         time_start = time()
         timeout = 2
         while time() - time_start < timeout:
             tmp = self._serial_connection.read_until('\n').decode()
-            if measType in tmp:
+            if meas_type in tmp:
                 try:
                     meas_result_payload = tmp.split(":")[1]
                     meas_result_pattern = '[0-9]+'
@@ -244,6 +254,7 @@ class SbuCommunicator():
         return vcc3v_meas_result_16bit * 3.234 / 1008
 
 
+# TODO: Delete and merge with main logger
 class SbuCommunicationLogger(Thread):
     def __init__(self, config_sbu):
         super(SbuCommunicationLogger, self).__init__()
@@ -254,7 +265,7 @@ class SbuCommunicationLogger(Thread):
     def run(self):
         filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + "_sbu_communicator.log"
         directory = self._config_sbuc["logs_directory"]
-        path = os.path.join(directory,filename)
+        path = os.path.join(directory, filename)
         with open(path, "w") as sbu_logfile:
             while not self._terminate_flag:
                 self._work_off_msg(sbu_logfile)
@@ -281,16 +292,14 @@ if __name__ == '__main__':
     sys.path.append(path_to_module)
     from base.hwctrl.hwctrl import HWCTRL
     from base.common.config import Config
-    from base.common.base_logging import Logger
 
     config = Config("/home/maxi/base/config.json")
-    logger = Logger("/home/maxi/base/log")
-    hardware_control = HWCTRL(config.config_hwctrl, logger)
+    hardware_control = HWCTRL.global_instance(config.config_hwctrl)
 
-    SBUC = SbuCommunicator(hardware_control, logger)
+    SBUC = SbuCommunicator(hardware_control)
     while True:
         cc = SBUC.current_measurement()
-        vcc3v = SBUC.vcc3v_measurement()
-        content = [f"Iin = {cc}A", f"VCC3V = {vcc3v}V"]
+        VCC3V = SBUC.vcc3v_measurement()
+        content = [f"Iin = {cc}A", f"VCC3V = {VCC3V}V"]
         SBUC.write_to_display(content[0], content[1])
         print(content)
