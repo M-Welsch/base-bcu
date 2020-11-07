@@ -19,266 +19,263 @@ from base.common.debug_utils import copy_logfiles_to_nas
 
 
 class BaseStatus:
-	def __init__(self):
-		self.backup_in_progress_flag = False
-		self.backup_finished_flag = False
-		self.shutdown_flag = False
-		self.terminate_flag = False
+    def __init__(self):
+        self.backup_in_progress_flag = False
+        self.backup_finished_flag = False
+        self.shutdown_flag = False
+        self.terminate_flag = False
 
 
 class Daemon:
-	def __init__(self, autostart_webapp: bool = True):
-		self._autostart_webapp = autostart_webapp
-		self._tcp_command_queue = Queue()
-		self._tcp_codebook = TCP_Codebook()
-		self._config = Config("base/config.json")
-		self._scheduler = BaseScheduler(self._config.config_schedule)
-		self._mount_manager = MountManager(self._config.config_mounting)
-		self._hardware_control = HWCTRL.global_instance(self._config.config_hwctrl)
-		self._backup_manager = BackupManager(self._config.config_backup, self._mount_manager, self._hardware_control, self.set_backup_finished_flag)
-		self._tcp_server_thread = TCPServerThread(queue=self._tcp_command_queue)
-		self._webapp = Webapp()
-		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
-		self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
-		self._status = BaseStatus()
-		self._display_menu_pointer = 'Main'
-		self.start_threads_and_mainloop()
+    def __init__(self, autostart_webapp: bool = True):
+        self._autostart_webapp = autostart_webapp
+        self._tcp_command_queue = Queue()
+        self._tcp_codebook = TCP_Codebook()
+        self._config = Config("base/config.json")
+        self._scheduler = BaseScheduler(self._config.config_schedule)
+        self._mount_manager = MountManager(self._config.config_mounting)
+        self._hardware_control = HWCTRL.global_instance(self._config.config_hwctrl)
+        self._backup_manager = BackupManager(
+            self._config.config_backup, self._mount_manager, self._hardware_control, self.set_backup_finished_flag
+        )
+        self._tcp_server_thread = TCPServerThread(queue=self._tcp_command_queue)
+        self._webapp = Webapp()
+        self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
+        self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
+        self._sbu_updater = SbuUpdater(self._hardware_control)
+        self._status = BaseStatus()
+        self._display_menu_pointer = 'Main'
+        self.start_threads_and_mainloop()
 
-	def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
-		if self._hardware_control.get_hw_revision() == 'rev3':
-			self._sbu_communicator = SbuCommunicator(self._hardware_control, self._config.config_sbu_communicator)
+    def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
+        if self._hardware_control.get_hw_revision() == 'rev3':
+            self._sbu_communicator = SbuCommunicator(self._hardware_control, self._config.config_sbu_communicator)
 
-	def start_threads_and_mainloop(self):
-		self._hardware_control.start()
-		self._tcp_server_thread.start()
-		if self._autostart_webapp:
-			self._webapp.start()
-		self.mainloop()
+    def start_threads_and_mainloop(self):
+        self._hardware_control.start()
+        self._tcp_server_thread.start()
+        if self._autostart_webapp:
+            self._webapp.start()
+        self.mainloop()
 
-	def stop_threads(self):
-		self._display.write("Goodbye", "BCU stopping")
-		self._sbu_communicator.terminate() # needs active hwctrl to shutdown cleanly!
-		self._hardware_control.terminate()
-		self._tcp_server_thread.terminate()
-		self._webapp.terminate()
-		copy_logfiles_to_nas()
+    def stop_threads(self):
+        self._display.write("Goodbye", "BCU stopping")
+        self._sbu_communicator.terminate()  # needs active hwctrl to shutdown cleanly!
+        self._hardware_control.terminate()
+        self._tcp_server_thread.terminate()
+        self._webapp.terminate()
+        copy_logfiles_to_nas()
 
-	def mainloop(self):
-		self._sbu_communicator.set_display_brightness_percent(self._config.config_hmi["display_default_brightness"])
-		self._hmi_show_main_menu()
-		logging.info(f"Next Backup scheduled at {self._scheduler.next_backup_scheduled()}, in {self._scheduler.seconds_to_next_bu()} seconds. Current Time: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
-		self._status.terminate_flag = False
-		while not self._status.terminate_flag:
-			sleep(self._config.main_loop_interval)
-			status_quo = self._look_up_status_quo()
-			command_list = self._derive_command_list(status_quo)
-			self._execute_command_list(command_list)
-			
-		if self._status.shutdown_flag:
-			self._initiate_shutdown_process()
-		else:
-			self.stop_threads()
+    def mainloop(self):
+        self._sbu_communicator.set_display_brightness_percent(self._config.config_hmi["display_default_brightness"])
+        self._hmi_show_main_menu()
+        logging.info(
+            f"Next Backup scheduled at {self._scheduler.next_backup_scheduled()}, "
+            f"in {self._scheduler.seconds_to_next_bu()} seconds. "
+            f"Current Time: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+        )
+        self._status.terminate_flag = False
+        while not self._status.terminate_flag:
+            sleep(self._config.main_loop_interval)
+            status_quo = self._look_up_status_quo()
+            command_list = self._derive_command_list(status_quo)
+            self._execute_command_list(command_list)
 
-	def _hmi_show_main_menu(self):
-		self._display.write("BaSe   show IP > ", "          Demo >")
+        if self._status.shutdown_flag:
+            self._initiate_shutdown_process()
+        else:
+            self.stop_threads()
 
-	def _seconds_to_next_bu_to_sbu(self):
-		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
-		# subtract 5 minutes so the bcu has enough time to start up.
-		# Moreover SBU shouldn't be forced to write 0 to its CMP register (Won't do it anyway)
-		if seconds_to_next_bu > 333:
-			seconds_to_next_bu -= 300
-		self._sbu_communicator.send_seconds_to_next_bu_to_sbu(seconds_to_next_bu)
+    def _hmi_show_main_menu(self):
+        self._display.write("BaSe   show IP > ", "          Demo >")
 
-	def set_backup_finished_flag(self):
-		self._status.backup_finished_flag = True
+    def _seconds_to_next_bu_to_sbu(self):
+        seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
+        # subtract 5 minutes so the bcu has enough time to start up.
+        # Moreover SBU shouldn't be forced to write 0 to its CMP register (Won't do it anyway)
+        if seconds_to_next_bu > 333:
+            seconds_to_next_bu -= 300
+        self._sbu_communicator.send_seconds_to_next_bu_to_sbu(seconds_to_next_bu)
 
-	def _look_up_status_quo(self) -> Dict:
-		status_quo = {
-			"pressed_buttons": self._hardware_control.pressed_buttons(),
-			"tcp_commands": [],
-			"backup_scheduled_for_now": self._scheduler.is_backup_scheduled(),
-			"backup_finished": self._status.backup_finished_flag
-		}
-		while not self._tcp_command_queue.empty():
-			status_quo["tcp_commands"].append(self._tcp_command_queue.get())
-			self._tcp_command_queue.task_done()
-		# TODO: consider weather
-		if status_quo_not_empty(status_quo):
-			logging.debug(f"Command Queue contents: {status_quo}")
-		return status_quo
+    def set_backup_finished_flag(self):
+        self._status.backup_finished_flag = True
 
-	def _derive_command_list(self, status_quo: Dict) -> List[str]:
-		command_list = []
-		if "backup_full" in status_quo["tcp_commands"]:
-			command_list.append("backup_full")
-		if "test_mounting" in status_quo["tcp_commands"]:
-			return ["mount"]
-		if "test_unmounting" in status_quo["tcp_commands"]:
-			return ["unmount"]
-		if "test_docking" in status_quo["tcp_commands"]:
-			return ["dock"]
-		if "test_undocking" in status_quo["tcp_commands"]:
-			return ["undock"]
-		if "reload_config" in status_quo["tcp_commands"]:
-			command_list.append("reload_config")
-		if "update_sbu" in status_quo["tcp_commands"]:
-			return ["update_sbu"]
-		if "readout_hdd_parameters" in status_quo["tcp_commands"]:
-			return ["readout_hdd_parameters"]
-		if "new_buhdd" in status_quo["tcp_commands"]:
-			return ["enter_new_buhdd_in_config.json"]
-		if "show_status_info" in status_quo["tcp_commands"]:
-			command_list.append("show_status_info")
-		if status_quo["pressed_buttons"][0]: # show IP Adress on Display
-			command_list.append("show_ip_on_display")
-		if status_quo["pressed_buttons"][1]: # demo
-			command_list.extend(["dock", "wait", "undock"])
-		if "terminate_daemon" in status_quo["tcp_commands"]:
-			command_list.append("terminate_daemon")
-		if "terminate_daemon_and_shutdown" in status_quo["tcp_commands"]:
-			command_list.append("terminate_daemon_and_shutdown")
-		if "seconds_to_next_bu_to_sbc" in status_quo["tcp_commands"]:
-			self._seconds_to_next_bu_to_sbu()
-		if status_quo["backup_scheduled_for_now"]:
-			command_list.append("backup_full")
-		if status_quo["backup_finished"]:
-			self._status.backup_finished_flag = False
-			self._schedule_backup_for_longterm_test()
-			command_list.extend(["cleanup_after_backup","unmount", "undock", "terminate_daemon_and_shutdown"])
-		if command_list:
-			print("command list:", command_list)
-		return command_list
+    def _look_up_status_quo(self) -> Dict:
+        status_quo = {
+            "pressed_buttons": self._hardware_control.pressed_buttons(),
+            "tcp_commands": [],
+            "backup_scheduled_for_now": self._scheduler.is_backup_scheduled(),
+            "backup_finished": self._status.backup_finished_flag
+        }
+        while not self._tcp_command_queue.empty():
+            status_quo["tcp_commands"].append(self._tcp_command_queue.get())
+            self._tcp_command_queue.task_done()
+        # TODO: consider weather
+        if status_quo_not_empty(status_quo):
+            logging.debug(f"Command Queue contents: {status_quo}")  # TODO: Let mainloop really spam the log?
+        return status_quo
 
-	@staticmethod
-	def _extract_sbc_filename_from_commmand(status_quo_tcp_commands: List) -> str:
-		sbc_filename = None
-		for entry in status_quo_tcp_commands:
-			if entry[:10] == "update_sbc":
-				sbc_filename = entry[:14]
-		return sbc_filename
+    def _derive_command_list(self, status_quo: Dict) -> List[str]:
+        command_list = []
+        if "backup_full" in status_quo["tcp_commands"]:
+            command_list.append("backup_full")
+        if "test_mounting" in status_quo["tcp_commands"]:
+            return ["mount"]
+        if "test_unmounting" in status_quo["tcp_commands"]:
+            return ["unmount"]
+        if "test_docking" in status_quo["tcp_commands"]:
+            return ["dock"]
+        if "test_undocking" in status_quo["tcp_commands"]:
+            return ["undock"]
+        if "reload_config" in status_quo["tcp_commands"]:
+            command_list.append("reload_config")
+        if "update_sbu" in status_quo["tcp_commands"]:
+            return ["update_sbu"]
+        if "readout_hdd_parameters" in status_quo["tcp_commands"]:
+            return ["readout_hdd_parameters"]
+        if "new_buhdd" in status_quo["tcp_commands"]:
+            return ["enter_new_buhdd_in_config.json"]
+        if "show_status_info" in status_quo["tcp_commands"]:
+            command_list.append("show_status_info")
+        if status_quo["pressed_buttons"][0]:  # show IP Adress on Display
+            command_list.append("show_ip_on_display")
+        if status_quo["pressed_buttons"][1]:  # demo
+            command_list.extend(["dock", "wait", "undock"])
+        if "terminate_daemon" in status_quo["tcp_commands"]:
+            command_list.append("terminate_daemon")
+        if "terminate_daemon_and_shutdown" in status_quo["tcp_commands"]:
+            command_list.append("terminate_daemon_and_shutdown")
+        if "seconds_to_next_bu_to_sbc" in status_quo["tcp_commands"]:
+            self._seconds_to_next_bu_to_sbu()
+        if status_quo["backup_scheduled_for_now"]:
+            command_list.append("backup_full")
+        if status_quo["backup_finished"]:
+            self._status.backup_finished_flag = False
+            self._schedule_backup_for_longterm_test()
+            command_list.extend(["cleanup_after_backup", "unmount", "undock", "terminate_daemon_and_shutdown"])
+        if command_list:
+            print("command list:", command_list)
+        return command_list
 
-	def _execute_command_list(self, command_list: List[str]):
-		for command in command_list:
-			try:
-				if command == "dock":
-					self._hardware_control.dock_and_power()
-				elif command == "wait":
-					self._wait_for_seconds(10)
-				elif command == "undock":
-					self._hardware_control.unpower_and_undock()
-				elif command == "mount":
-					self._mount_manager.mount_hdd()
-				elif command == "unmount":
-					self._unmount()
-				elif command == "backup_full":
-					self._scheduler.backup_suggested = False
-					self._backup_manager.backup()
-				elif command == "cleanup_after_backup":
-					self._backup_manager.cleanup_after_backup()
-				elif command == "reload_config":
-					self._config.reload()
-				elif command == "show_status_info":
-					self.get_status()
-				elif command == "show_ip_on_display":
-					self.show_ip_address_on_display()
-				elif command == "terminate_daemon":
-					self._status.terminate_flag = True
-					return True
-				elif command == "terminate_daemon_and_shutdown":
-					self._initiate_shutdown_process()
-					self._status.shutdown_flag = True
-					return True
-				elif command == "update_sbu":
-					self.update_sbu()
-				elif command == "readout_hdd_parameters":
-					self.read_and_send_hdd_parameters()
-				elif command == "enter_new_buhdd_in_config.json":
-					self.update_bu_hdd_in_config_file()
-				else:
-					raise RuntimeError(f"'{command}' is not a valid command!")
-			except Exception as e:
-				logging.error(f"Some command went somehow wrong: {e}")
-				raise e
-		return False
+    @staticmethod
+    def _extract_sbc_filename_from_commmand(status_quo_tcp_commands: List) -> str:
+        sbc_filename = None
+        for entry in status_quo_tcp_commands:
+            if entry[:10] == "update_sbc":
+                sbc_filename = entry[:14]
+        return sbc_filename
 
-	def _schedule_backup_for_longterm_test(self):
-		last_bu_interval = self._config.config_schedule["test_key"]
-		next_bu_interval = 2*last_bu_interval
-		self._config.config_schedule["test_key"] = next_bu_interval
-		then = datetime.now() + timedelta(seconds=next_bu_interval*60)
-		self._config.config_schedule["backup_frequency"] = "Weekly"
-		self._config.config_schedule["day_of_week"] = int(then.strftime("%w"))
-		self._config.config_schedule["hour"] = int(then.strftime("%H"))
-		self._config.config_schedule["minute"] = int(then.strftime("%M"))
-		self._config.update()
-		self._scheduler.setup_schedule()
+    def _execute_command_list(self, command_list: List[str]):
+        for command in command_list:
+            try:
+                if command == "dock":
+                    self._hardware_control.dock_and_power()
+                elif command == "wait":
+                    sleep(10)
+                elif command == "undock":
+                    self._hardware_control.unpower_and_undock()
+                elif command == "mount":
+                    self._mount_manager.mount_hdd()
+                elif command == "unmount":
+                    self._mount_manager.unmount_hdd()
+                elif command == "backup_full":
+                    self._scheduler.backup_suggested = False
+                    self._backup_manager.backup()
+                elif command == "cleanup_after_backup":
+                    self._backup_manager.cleanup_after_backup()
+                elif command == "reload_config":
+                    self._config.reload()
+                elif command == "show_status_info":
+                    self.get_status()
+                elif command == "show_ip_on_display":
+                    self.show_ip_address_on_display()
+                elif command == "terminate_daemon":
+                    self._status.terminate_flag = True
+                    return True
+                elif command == "terminate_daemon_and_shutdown":
+                    self._initiate_shutdown_process()
+                    self._status.shutdown_flag = True
+                    return True
+                elif command == "update_sbu":
+                    self.update_sbu()
+                elif command == "readout_hdd_parameters":
+                    self.read_and_send_hdd_parameters()
+                elif command == "enter_new_buhdd_in_config.json":
+                    self.update_bu_hdd_in_config_file()
+                else:
+                    raise RuntimeError(f"'{command}' is not a valid command!")
+            except Exception as e:
+                logging.error(f"Some command went somehow wrong: {e}")
+                raise e
+        return False
 
-	def _unmount(self):
-		try:
-			self._mount_manager.unmount_hdd()
-		except UnmountError:
-			logging.error(f"Unmounting didnt work: {UnmountError}")
-		except RuntimeError:
-			logging.error(f"Unmounting didnt work: {RuntimeError}")
+    def _schedule_backup_for_longterm_test(self):
+        last_bu_interval = self._config.config_schedule["test_key"]
+        next_bu_interval = 2*last_bu_interval
+        self._config.config_schedule["test_key"] = next_bu_interval
+        then = datetime.now() + timedelta(seconds=next_bu_interval*60)
+        self._config.config_schedule["backup_frequency"] = "Weekly"
+        self._config.config_schedule["day_of_week"] = int(then.strftime("%w"))
+        self._config.config_schedule["hour"] = int(then.strftime("%H"))
+        self._config.config_schedule["minute"] = int(then.strftime("%M"))
+        self._config.update()
+        self._scheduler.setup_schedule()
 
-	def _wait_for_seconds(self, pause_duration):
-		sleep(pause_duration)
+    def get_status(self):
+        pass  # TODO: Avoid non-functional code on master branch!
+        # # TODO: implement hardware status retrieval
+        # # next_bu_time = read_next_scheduled_backup_time()
+        # seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
+        # next_backup_scheduled = self._scheduler.next_backup_scheduled()
+        # next_backup_scheduled_string = next_backup_scheduled.strftime("%d.%m.%Y %H:%M")
+        # # self._hardware_control.display("{}\nETA {}s".format(next_backup_scheduled_string, seconds_to_next_bu), 2)
+        # # uncomment line above once SBC-Display forwarding works!
+        #
+        # # TODO: send to Webapp if it asks for status ...
+        # backups_present = list_backups_by_age(self._config.config_mounting["backup_hdd_mount_point"])
 
-	def get_status(self):
-		# TODO: implement hardware status retrieval
-		# next_bu_time = read_next_scheduled_backup_time()
-		seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
-		next_backup_scheduled = self._scheduler.next_backup_scheduled()
-		next_backup_scheduled_string = next_backup_scheduled.strftime("%d.%m.%Y %H:%M")
-		# self._hardware_control.display("{}\nETA {}s".format(next_backup_scheduled_string, seconds_to_next_bu), 2)
-		# uncomment line above once SBC-Display forwarding works!
+    def show_ip_address_on_display(self):
+        if self._display_menu_pointer == 'IP':
+            self._hmi_show_main_menu()
+            self._display_menu_pointer = 'Main'
+        else:
+            ip = get_ip_address()
+            self._display.write('Local IP: back >', ip)
+            self._display_menu_pointer = 'IP'
 
-		# TODO: send to Webapp if it asks for status ...
-		backups_present = list_backups_by_age(self._config.config_mounting["backup_hdd_mount_point"])
+    def update_sbu(self):
+        print("updating SBU")
+        self._display.write("Updating SBU", "Firmware")
+        self._sbu_communicator.terminate()
+        self._sbu_updater.update_sbu()
+        self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
+        self._hmi_show_main_menu()
+        # SBC_U = SBC_Updater()
+        # SBC_U.update_sbc()
 
-	def show_ip_address_on_display(self):
-		if self._display_menu_pointer == 'IP':
-			self._hmi_show_main_menu()
-			self._display_menu_pointer = 'Main'
-		else:
-			IP = get_ip_address()
-			self._display.write('Local IP: back >', IP)
-			self._display_menu_pointer = 'IP'
+    def read_and_send_hdd_parameters(self):
+        try:
+            # request the result one second before TCP Server's timeout elapses
+            timeout = self._tcp_codebook.commands["readout_hdd_parameters"].Timeout - 1
+            wait_for_new_device_file(timeout)
+        except RuntimeError as e:
+            print(e)
+        answer = readout_parameters_of_all_hdds()
+        self._tcp_server_thread.write_answer(answer)
 
-	def update_sbu(self):
-		print("updating SBU")
-		self._display.write("Updating SBU", "Firmware")
-		self._sbu_communicator.terminate()
-		self._sbu_updater = SbuUpdater(self._hardware_control)
-		self._sbu_updater.update_sbu()
-		self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
-		self._hmi_show_main_menu()
-		# SBC_U = SBC_Updater()
-		# SBC_U.update_sbc()
+    def update_bu_hdd_in_config_file(self):
+        self._config.write_BUHDD_parameter_to_tmp_config_file()
 
-	def read_and_send_hdd_parameters(self):
-		try:
-			# request the result one second before TCP Server's timeout elapses
-			timeout = self._tcp_codebook.commands["readout_hdd_parameters"].Timeout - 1
-			wait_for_new_device_file(timeout)
-		except RuntimeError as e:
-			print(e)
-		answer = readout_parameters_of_all_hdds()
-		self._tcp_server_thread.write_answer(answer)
+    def _initiate_shutdown_process(self):
+        self._display.write("Shutdown", "Waiting 5s")
+        sleep(5)
+        logging.info("Shutting down")
+        self._sbu_communicator.send_human_readable_timestamp_next_bu(self._scheduler.next_backup_scheduled())
+        self._seconds_to_next_bu_to_sbu()
+        self._sbu_communicator.send_shutdown_request()
+        self.stop_threads()
+        self._shutdown_base()
 
-	def update_bu_hdd_in_config_file(self):
-		self._config.write_BUHDD_parameter_to_tmp_config_file()
-
-	def _initiate_shutdown_process(self):
-		self._display.write("Shutdown", "Waiting 5s")
-		sleep(5)
-		logging.info("Shutting down")
-		self._sbu_communicator.send_human_readable_timestamp_next_bu(self._scheduler.next_backup_scheduled())
-		self._seconds_to_next_bu_to_sbu()
-		self._sbu_communicator.send_shutdown_request()
-		self.stop_threads()
-		self._shutdown_base()
-
-	def _shutdown_base(self):
-		os.system("shutdown -h now")
+    @staticmethod
+    def _shutdown_base():
+        os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().

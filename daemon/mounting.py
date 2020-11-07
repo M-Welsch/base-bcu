@@ -19,8 +19,13 @@ class MountManager:
             self._mount_backup_hdd()
 
     def unmount_hdd(self):
-        if self._backup_hdd_mounted():
-            self._unmount_backup_hdd()
+        if self._backup_hdd_mounted():  # TODO: Don't ask for permission!
+            try:
+                self._unmount_backup_hdd()
+            except UnmountError:
+                logging.error(f"Unmounting didnt work: {UnmountError}")
+            except RuntimeError:
+                logging.error(f"Unmounting didnt work: {RuntimeError}")
 
     def _backup_hdd_mounted(self):
         return path.ismount(self.b_hdd_mount)
