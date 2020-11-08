@@ -14,14 +14,14 @@ sys.path.append(path_to_module)
 from base.sbu_interface.sbu_uart_finder import SbuUartFinder
 from base.common.exceptions import *
 from base.common.config import Config
+from base.hwctrl.hwctrl import HWCTRL
 
 
 class SbuCommunicator:
-    def __init__(self, hwctrl):
+    def __init__(self):
         self._serial_connection = None
-        self._hwctrl = hwctrl
-        config = Config.global_instance()
-        self._config_sbuc = config.config_sbu_communicator
+        self._hwctrl = HWCTRL.global_instance()
+        self._config_sbuc = Config.global_instance().config_sbu_communicator
         self._channel_busy = True
         self._sbu_ready = False
         self._sbu_logger = SbuCommunicationLogger()

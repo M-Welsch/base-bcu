@@ -15,14 +15,15 @@ from base.common.nas_finder import NasFinder
 from base.backup.rsync_wrapper import RsyncWrapperThread
 from base.common.exceptions import *
 from base.common.config import Config
+from base.hwctrl.hwctrl import HWCTRL
 
 
 class BackupManager:
-	def __init__(self, mount_manager, hwctrl, set_backup_finished_flag):
+	def __init__(self, mount_manager, set_backup_finished_flag):
 		config = Config.global_instance()
 		self._config_backup = config.config_backup
 		self._mount_manager = mount_manager
-		self._hwctrl = hwctrl
+		self._hwctrl = HWCTRL.global_instance()
 		self._set_backup_finished_flag = set_backup_finished_flag
 		self._set_backup_finished_flag = set_backup_finished_flag
 		self._sample_interval = self._config_backup["sample_interval"]

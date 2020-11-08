@@ -6,11 +6,12 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 sys.path.append(path_to_module)
 
 from base.common.utils import get_sbu_fw_uploads_folder, run_external_command_as_generator_shell
-
+from base.hwctrl.hwctrl import HWCTRL
 
 class SbuUpdater:
-	def __init__(self, hwctrl):
-		self._hwctrl = hwctrl
+	def __init__(self):
+		self._hwctrl = HWCTRL.global_instance()
+
 
 	def update_sbu(self):
 		self._hwctrl.enable_receiving_messages_from_attiny()

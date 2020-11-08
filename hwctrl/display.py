@@ -1,10 +1,11 @@
 from base.hwctrl.lcd import *
 from base.common.config import Config
+from base.hwctrl.hwctrl import HWCTRL
 
 
 class Display:
-    def __init__(self, hwctrl, sbu_communicator):
-        self._hwctrl = hwctrl
+    def __init__(self, sbu_communicator):
+        self._hwctrl = HWCTRL.global_instance()
         self._pin_interface = self._hwctrl._pin_interface
         self._hw_rev = self._hwctrl.get_hw_revision()
         self._sbu_communicator = sbu_communicator
