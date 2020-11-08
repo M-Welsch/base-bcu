@@ -14,18 +14,20 @@ from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
 from base.backup.rsync_wrapper import RsyncWrapperThread
 from base.common.exceptions import *
+from base.common.config import Config
 
 
 class BackupManager:
-	def __init__(self, backup_config, mount_manager, hwctrl, set_backup_finished_flag):
-		self._backup_config = backup_config
+	def __init__(self, mount_manager, hwctrl, set_backup_finished_flag):
+		config = Config.global_instance()
+		self._config_backup = config.config_backup
 		self._mount_manager = mount_manager
 		self._hwctrl = hwctrl
 		self._set_backup_finished_flag = set_backup_finished_flag
 		self._set_backup_finished_flag = set_backup_finished_flag
-		self._sample_interval = backup_config["sample_interval"]
-		self._ssh_host = backup_config["ssh_host"]
-		self._ssh_user = backup_config["ssh_user"]
+		self._sample_interval = self._config_backup["sample_interval"]
+		self._ssh_host = self._config_backup["ssh_host"]
+		self._ssh_user = self._config_backup["ssh_user"]
 		self._new_backup_folder = None
 		self._nas_properties = None
 		self._docking_trials = 0
@@ -69,7 +71,7 @@ class BackupManager:
 			else:
 				logging.error("Tried undocking and docking for 3 times. Aborting now.")
 
-		if self._backup_config["incremental"]:
+		if self._config_backup["incremental"]:
 			self._create_folder_for_backup()
 			self._copy_newest_backup_with_hardlinks(newest_backup)
 		else:
@@ -95,7 +97,7 @@ class BackupManager:
 				logging.info(f"Network available after {time() - start_time} seconds!")
 
 	def _nas_available(self):
-		nas_finder = NasFinder(self._backup_config)
+		nas_finder = NasFinder(self._config_backup)
 		nas_available = nas_finder.nas_available(self._ssh_host, self._ssh_user)
 		if not nas_available:
 			raise NasNotAvailableError
@@ -133,7 +135,7 @@ class BackupManager:
 		#Todo: test if this command stops services on a non-root login
 
 	def _free_space_on_backup_hdd_if_necessary(self):
-		while not self.enough_space_for_full_backup() and self._backup_config["incremental"]:
+		while not self.enough_space_for_full_backup() and self._config_backup["incremental"]:
 			self.delete_oldest_backup()
 
 	def enough_space_for_full_backup(self):
@@ -161,12 +163,12 @@ class BackupManager:
 		return space_occupied
 
 	def delete_oldest_backup(self):
-		with BackupBrowser(self._backup_config) as bb:
+		with BackupBrowser() as bb:
 			oldest_backup = bb.get_oldest_backup()
 		logging.info("deleting {} to free space for new backup".format(oldest_backup))
 
 	def _get_newest_backup_dir_path(self):
-		with BackupBrowser(self._backup_config) as bb:
+		with BackupBrowser() as bb:
 			return bb.get_newest_backup_abolutepath()
 
 	def _create_folder_for_backup(self):
@@ -177,7 +179,7 @@ class BackupManager:
 
 	def _get_path_for_new_bu_directory(self):
 		timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-		path = os.path.join(self._backup_config["local_backup_target_location"], f"backup_{timestamp}")
+		path = os.path.join(self._config_backup["local_backup_target_location"], f"backup_{timestamp}")
 		return path
 
 	def _create_that_very_directory(self, path):
@@ -185,7 +187,7 @@ class BackupManager:
 			os.mkdir(path)
 		except OSError:
 			logging.error(
-				f'Could not create directory for new backup in {self._backup_config["local_backup_target_location"]}')
+				f'Could not create directory for new backup in {self._config_backup["local_backup_target_location"]}')
 
 	def _check_whether_directory_was_created(self, path):
 		if os.path.isdir(path):
@@ -214,7 +216,7 @@ class BackupManager:
 		self._sync_thread = RsyncWrapperThread(
 			host=self._ssh_host,
 			user=self._ssh_user,
-			remote_source_path=self._backup_config["remote_backup_source_location"],
+			remote_source_path=self._config_backup["remote_backup_source_location"],
 			local_target_path=self._new_backup_folder,
 			set_backup_finished_flag=self._set_backup_finished_flag
 		)
@@ -243,8 +245,9 @@ class BackupManager:
 
 
 class BackupBrowser:
-	def __init__(self, backup_config):
-		self._backup_config = backup_config
+	def __init__(self):
+		config = Config.global_instance()
+		self._backup_config = config.config_backup
 
 	def __enter__(self):
 		return self

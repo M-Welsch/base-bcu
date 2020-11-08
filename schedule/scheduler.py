@@ -1,13 +1,15 @@
 from schedule import Scheduler as Scheduler
 import pudb
 from base.common.exceptions import *
+from base.common.config import Config
 import logging
 
 
 class BaseScheduler(Scheduler):
-    def __init__(self, config_schedule):
+    def __init__(self):
         super(BaseScheduler, self).__init__()
-        self._config_schedule = config_schedule
+        config = Config.global_instance()
+        self._config_schedule = config.config_schedule
         self.backup_suggested = False
         self.setup_schedule()
 

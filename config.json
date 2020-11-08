@@ -13,11 +13,11 @@
   },
   "Schedule": {
     "backup_frequency": "Weekly",
-    "test_key": 8,
+    "test_key": 16,
     "day_of_month": 12,
     "day_of_week": 0,
-    "hour": 20,
-    "minute": 59
+    "hour": 22,
+    "minute": 13
   },
   "HWCTRL": {
     "display_default_brightness": 100,
@@ -48,7 +48,8 @@
     "local_backup_target_location": "/media/BackupHDD",
     "sample_interval": 0.2,
     "ssh_host": "192.168.0.100",
-    "ssh_user": "root"
+    "ssh_user": "root",
+    "incremental": true
   },
   "Webapp": {
     "TCP_Codebook": {

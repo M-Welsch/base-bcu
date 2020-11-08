@@ -32,19 +32,17 @@ class Daemon:
         self._autostart_webapp = autostart_webapp
         self._tcp_command_queue = Queue()
         self._tcp_codebook = TCP_Codebook()
-        self._config = Config("base/config.json")
-        self._scheduler = BaseScheduler(self._config.config_schedule)
-        self._mount_manager = MountManager(self._config.config_mounting)
-        self._hardware_control = HWCTRL.global_instance(self._config.config_hwctrl)
-        self._backup_manager = BackupManager(
-            self._config.config_backup, self._mount_manager, self._hardware_control, self.set_backup_finished_flag
-        )
+        self._config = Config.global_instance()
+        self._scheduler = BaseScheduler()
+        self._mount_manager = MountManager()
+        self._hardware_control = HWCTRL.global_instance()
+        self._backup_manager = BackupManager(self._mount_manager, self._hardware_control, self.set_backup_finished_flag)
         self._tcp_server_thread = TCPServerThread(queue=self._tcp_command_queue)
         self._webapp = Webapp()
         self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
-        self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
+        self._display = Display(self._hardware_control, self._sbu_communicator)
         self._shutdown_controller = ShutdownController(
-            self._sbu_communicator, self._scheduler, self._display, self._config.config_shutdown, self.stop_threads)
+            self._sbu_communicator, self._scheduler, self._display, self.stop_threads)
         self._sbu_updater = SbuUpdater(self._hardware_control)
         self._status = BaseStatus()
         self._display_menu_pointer = 'Main'
@@ -52,7 +50,7 @@ class Daemon:
 
     def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
         if self._hardware_control.get_hw_revision() == 'rev3':
-            self._sbu_communicator = SbuCommunicator(self._hardware_control, self._config.config_sbu_communicator)
+            self._sbu_communicator = SbuCommunicator(self._hardware_control)
 
     def start_threads_and_mainloop(self):
         self._hardware_control.start()

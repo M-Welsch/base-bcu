@@ -1,8 +1,21 @@
 import json
 
+
 class Config:
-	def __init__(self, path):
-		self._path = path
+	__instance = None
+
+	@staticmethod
+	def global_instance():
+		""" static access method. """
+		if Config.__instance is None:
+			Config()
+		return Config.__instance
+
+	def __init__(self):
+		if Config.__instance is not None:
+			raise Exception("This class is a singleton!")
+		Config.__instance = self
+		self._path = "base/config.json"
 		self._load()
 
 	def _load(self):

@@ -2,14 +2,15 @@ import logging
 import os
 from threading import Timer
 from time import sleep
-
+from base.common.config import Config
 
 class ShutdownController:
-    def __init__(self, sbu_communicator, scheduler, display, config_shutdown, stop_threads):
+    def __init__(self, sbu_communicator, scheduler, display, stop_threads):
         self._sbu_communicator = sbu_communicator
         self._scheduler = scheduler
         self._display = display
-        self._config_shutdown = config_shutdown
+        config = Config.global_instance()
+        self._config_shutdown = config.config_shutdown
         self.stop_threads = stop_threads
         self._shutdown_timer = Timer(15 * 60, self.suggest_shutdown)
         self._shutdown_flag = False

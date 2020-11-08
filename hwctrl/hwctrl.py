@@ -8,18 +8,19 @@ import logging
 
 from base.hwctrl.hw_definitions import *
 from base.hwctrl.dock_undock import *
+from base.common.config import Config
 
 
 class HWCTRL(Thread):
     __instance = None
 
     @staticmethod
-    def global_instance(config):
+    def global_instance():
         if HWCTRL.__instance is None:
-            HWCTRL(config)
+            HWCTRL()
         return HWCTRL.__instance
 
-    def __init__(self, config):
+    def __init__(self):
         super(HWCTRL, self).__init__()
 
         if HWCTRL.__instance is not None:
@@ -27,7 +28,8 @@ class HWCTRL(Thread):
 
         HWCTRL.__instance = self
 
-        self._config = config
+        config = Config.global_instance()
+        self._config = config.config_hwctrl
         self._status = {}
 
         self.cur_meas = Current_Measurement(1)

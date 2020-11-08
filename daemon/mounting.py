@@ -2,12 +2,15 @@ from os import path
 from time import sleep
 import logging
 
+from base.common.config import Config
 from base.common.utils import wait_for_device_file, run_external_command
 from base.common.exceptions import *
 
 
 class MountManager:
-    def __init__(self, config):
+    def __init__(self):
+        config_global = Config.global_instance()
+        config = config_global.config_mounting
         self.b_hdd_device = config["backup_hdd_device_file_path"]
         self.b_hdd_fsys = config["backup_hdd_file_system"]  # Fixme: this file has to be identified
         self.b_hdd_mount = config["backup_hdd_mount_point"]

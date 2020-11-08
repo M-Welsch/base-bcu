@@ -13,16 +13,18 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 sys.path.append(path_to_module)
 from base.sbu_interface.sbu_uart_finder import SbuUartFinder
 from base.common.exceptions import *
+from base.common.config import Config
 
 
 class SbuCommunicator:
-    def __init__(self, hwctrl, config_sbuc):
+    def __init__(self, hwctrl):
         self._serial_connection = None
         self._hwctrl = hwctrl
-        self._config_sbuc = config_sbuc
+        config = Config.global_instance()
+        self._config_sbuc = config.config_sbu_communicator
         self._channel_busy = True
         self._sbu_ready = False
-        self._sbu_logger = SbuCommunicationLogger(config_sbuc)
+        self._sbu_logger = SbuCommunicationLogger()
         self._sbu_logger.start()
         self._prepare_serial_connection()
         self._open_serial_connection()
@@ -256,9 +258,10 @@ class SbuCommunicator:
 
 # TODO: Delete and merge with main logger
 class SbuCommunicationLogger(Thread):
-    def __init__(self, config_sbu):
+    def __init__(self):
         super(SbuCommunicationLogger, self).__init__()
-        self._config_sbuc = config_sbu
+        config = Config.global_instance()
+        self._config_sbuc = config.config_sbu_communicator
         self._logging_queue = Queue()
         self._terminate_flag = False
 
