@@ -13,6 +13,7 @@ from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
 from base.sbu_interface.sbu_updater import *
 from base.sbu_interface.sbu_communicator import *
 from base.hmi.display import *
+from base.hmi.hmi import HumanMachineInterface
 from base.common.debug_utils import copy_logfiles_to_nas
 
 
@@ -41,6 +42,7 @@ class Daemon:
         self._shutdown_controller = ShutdownController(
             self._sbu_communicator, self._scheduler, self._display, self.stop_threads)
         self._sbu_updater = SbuUpdater()
+        self._hmi = HumanMachineInterface()
         self._status = BaseStatus()
         self._display_menu_pointer = 'Main'
         self.start_threads_and_mainloop()
@@ -57,7 +59,7 @@ class Daemon:
         self.mainloop()
 
     def stop_threads(self):
-        self._display.write("Goodbye", "BCU stopping")
+        self._hmi.write_priority_message_to_display("Goodbye", "BCU stopping")
         self._sbu_communicator.terminate()  # needs active hwctrl to shutdown cleanly!
         self._hardware_control.terminate()
         self._tcp_server_thread.terminate()
@@ -86,7 +88,7 @@ class Daemon:
             self.stop_threads()
 
     def _hmi_show_main_menu(self):
-        self._display.write("BaSe   show IP > ", "          Demo >")
+        self._hmi.write_priority_message_to_display("BaSe   show IP > ", "          Demo >")
 
     def set_backup_finished_flag(self):
         self._status.backup_finished_flag = True
@@ -148,7 +150,7 @@ class Daemon:
             self._schedule_backup_for_longterm_test()
             command_list.extend(["cleanup_after_backup", "unmount", "undock", "setup_shutdown_timer"])
         if status_quo["shutdown_scheduled"]:
-            self._shutdown_controller.reset_shutdown_flag
+            self._shutdown_controller.reset_shutdown_flag()
             command_list.append("terminate_daemon_and_shutdown")
         if command_list:
             print("command list:", command_list)
@@ -239,12 +241,12 @@ class Daemon:
             self._display_menu_pointer = 'Main'
         else:
             ip = get_ip_address()
-            self._display.write('Local IP: back >', ip)
+            self._hmi.write_priority_message_to_display('Local IP: back >', ip)
             self._display_menu_pointer = 'IP'
 
     def update_sbu(self):
         print("updating SBU")
-        self._display.write("Updating SBU", "Firmware")
+        self._hmi.write_priority_message_to_display("Updating SBU", "Firmware")
         self._sbu_communicator.terminate()
         self._sbu_updater.update_sbu()
         self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()

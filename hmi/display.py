@@ -2,7 +2,6 @@ from base.hwctrl.lcd import *
 from base.common.config import Config
 from base.hwctrl.hwctrl import HWCTRL
 
-
 class Display:
     def __init__(self, sbu_communicator):
         self._hwctrl = HWCTRL.global_instance()
