@@ -120,7 +120,7 @@ class Rev3bSerialReceiveTester:
     def _init_sbu_communicator(self, hwctrl):
         self._from_sbu_queue = []
         self._to_sbu_queue = []
-        sbu_c = SbuCommunicator(hwctrl, self._to_sbu_queue, self._from_sbu_queue)
+        sbu_c = SbuCommunicator.global_instance()
         sbu_c.start()
         return sbu_c
 
@@ -181,8 +181,8 @@ class Rev3bSbuTester:
         self._sbu_c = self._init_sbu_communicator(hwctrl, config_sbuc)
 
     @staticmethod
-    def _init_sbu_communicator(hwctrl, config_sbuc):
-        sbu_c = SbuCommunicator(hwctrl, config_sbuc)
+    def _init_sbu_communicator():
+        sbu_c = SbuCommunicator.global_instance()
         while not sbu_c.sbu_ready:
             sleep(0.1)
         return sbu_c

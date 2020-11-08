@@ -18,7 +18,18 @@ from base.hwctrl.hwctrl import HWCTRL
 
 
 class SbuCommunicator:
+    __instance = None
+
+    @staticmethod
+    def global_instance():
+        if SbuCommunicator.__instance is None:
+            SbuCommunicator()
+        return SbuCommunicator.__instance
+
     def __init__(self):
+        if SbuCommunicator.__instance is not None:
+            raise Exception("SbuCommunicator is a Singleton!")
+        SbuCommunicator.__instance = self
         self._serial_connection = None
         self._hwctrl = HWCTRL.global_instance()
         self._config_sbuc = Config.global_instance().config_sbu_communicator
@@ -299,7 +310,7 @@ if __name__ == '__main__':
     config = Config("/home/maxi/base/config.json")
     hardware_control = HWCTRL.global_instance(config.config_hwctrl)
 
-    SBUC = SbuCommunicator(hardware_control)
+    SBUC = SbuCommunicator.global_instance()
     while True:
         cc = SBUC.current_measurement()
         VCC3V = SBUC.vcc3v_measurement()

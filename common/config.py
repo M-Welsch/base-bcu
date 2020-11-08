@@ -5,17 +5,17 @@ class Config:
 	__instance = None
 
 	@staticmethod
-	def global_instance():
+	def global_instance(path="base/config.json"):
 		""" static access method. """
 		if Config.__instance is None:
-			Config()
+			Config(path)
 		return Config.__instance
 
-	def __init__(self):
+	def __init__(self, path="base/config.json"):
 		if Config.__instance is not None:
 			raise Exception("This class is a singleton!")
 		Config.__instance = self
-		self._path = "base/config.json"
+		self._path = path
 		self._load()
 
 	def _load(self):

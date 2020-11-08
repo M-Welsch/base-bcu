@@ -3,11 +3,8 @@ import os, sys
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
-from base.common.config import Config
 from base.common.tcp import TCPClientInterface
-from base.hwctrl.hwctrl import HWCTRL
-from base.hwctrl.display import *
-from base.common.utils import *
+from base.hmi.display import *
 from base.sbu_interface.sbu_communicator import *
 from base.sbu_interface.sbu_updater import *
 from sysdmanager import SystemdManager
@@ -57,7 +54,7 @@ class BaseUpdater:
 
     def _take_over_display(self):
         self._hwctrl = HWCTRL.global_instance(self._config.config_hwctrl)
-        self._sbuc = SbuCommunicator(self._hwctrl, self._config.config_sbu_communicator)
+        self._sbuc = SbuCommunicator.global_instance()
         self._display = Display(self._hwctrl, self._sbuc, self._config)
 
     def _update_base(self):

@@ -1,11 +1,8 @@
 from typing import Dict, List
 from datetime import timedelta
-import logging
 
 from base.codebooks.codebooks import *
-from base.common.config import Config
 from base.common.tcp import TCPServerThread
-from base.hwctrl.hwctrl import HWCTRL
 from base.webapp.webapp import Webapp
 from base.schedule.scheduler import BaseScheduler
 from base.backup.backup import BackupManager
@@ -15,7 +12,7 @@ from base.common.utils import *
 from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
 from base.sbu_interface.sbu_updater import *
 from base.sbu_interface.sbu_communicator import *
-from base.hwctrl.display import *
+from base.hmi.display import *
 from base.common.debug_utils import copy_logfiles_to_nas
 
 
@@ -50,7 +47,7 @@ class Daemon:
 
     def _start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc(self):
         if self._hardware_control.get_hw_revision() == 'rev3':
-            self._sbu_communicator = SbuCommunicator()
+            self._sbu_communicator = SbuCommunicator.global_instance()
 
     def start_threads_and_mainloop(self):
         self._hardware_control.start()
