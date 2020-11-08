@@ -35,7 +35,7 @@ class Config:
 
 	@property
 	def config_hmi(self):
-	    return self._config["HMI"]
+		return self._config["HMI"]
 
 	@property
 	def config_mounting(self):
@@ -44,6 +44,14 @@ class Config:
 	@property
 	def config_backup(self):
 		return self._config["Backup"]
+
+	@property
+	def config_daemon(self):
+		return self._config["Daemon"]
+
+	@property
+	def config_shutdown(self):
+		return self._config["Shutdown"]
 
 	def update(self):
 		with open(self._path, 'w') as cf:

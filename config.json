@@ -7,13 +7,17 @@
     "logfile": "base_daemon_log.txt",
     "main_loop_interval": 0.1
   },
+  "Shutdown": {
+    "shutdown_between_backups": true,
+    "idle_time_before_shutdown_in_minutes": 1
+  },
   "Schedule": {
     "backup_frequency": "Weekly",
-    "test_key": 4,
+    "test_key": 8,
     "day_of_month": 12,
-    "day_of_week": 5,
-    "hour": 1,
-    "minute": 0
+    "day_of_week": 0,
+    "hour": 20,
+    "minute": 59
   },
   "HWCTRL": {
     "display_default_brightness": 100,
@@ -56,6 +60,7 @@
       "Dock": "test_docking",
       "Unock": "test_undocking",
       "Reload config-File": "reload_config",
+      "setup_shutdown_timer": "setup_shutdown_timer",
       "update_sbc": "update_sbu"
     }
   },

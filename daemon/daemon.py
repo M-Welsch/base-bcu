@@ -10,6 +10,7 @@ from base.webapp.webapp import Webapp
 from base.schedule.scheduler import BaseScheduler
 from base.backup.backup import BackupManager
 from base.daemon.mounting import MountManager
+from base.daemon.shutdown import ShutdownController
 from base.common.utils import *
 from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
 from base.sbu_interface.sbu_updater import *
@@ -42,6 +43,8 @@ class Daemon:
         self._webapp = Webapp()
         self._start_sbu_communicator_on_hw_rev3_and_set_sbu_rtc()
         self._display = Display(self._hardware_control, self._sbu_communicator, self._config)
+        self._shutdown_controller = ShutdownController(
+            self._sbu_communicator, self._scheduler, self._display, self._config.config_shutdown, self.stop_threads)
         self._sbu_updater = SbuUpdater(self._hardware_control)
         self._status = BaseStatus()
         self._display_menu_pointer = 'Main'
@@ -64,6 +67,7 @@ class Daemon:
         self._hardware_control.terminate()
         self._tcp_server_thread.terminate()
         self._webapp.terminate()
+        self._shutdown_controller.terminate()
         copy_logfiles_to_nas()
 
     def mainloop(self):
@@ -82,20 +86,12 @@ class Daemon:
             self._execute_command_list(command_list)
 
         if self._status.shutdown_flag:
-            self._initiate_shutdown_process()
+            self._shutdown_controller.initiate_shutdown_process()
         else:
             self.stop_threads()
 
     def _hmi_show_main_menu(self):
         self._display.write("BaSe   show IP > ", "          Demo >")
-
-    def _seconds_to_next_bu_to_sbu(self):
-        seconds_to_next_bu = self._scheduler.seconds_to_next_bu()
-        # subtract 5 minutes so the bcu has enough time to start up.
-        # Moreover SBU shouldn't be forced to write 0 to its CMP register (Won't do it anyway)
-        if seconds_to_next_bu > 333:
-            seconds_to_next_bu -= 300
-        self._sbu_communicator.send_seconds_to_next_bu_to_sbu(seconds_to_next_bu)
 
     def set_backup_finished_flag(self):
         self._status.backup_finished_flag = True
@@ -105,7 +101,8 @@ class Daemon:
             "pressed_buttons": self._hardware_control.pressed_buttons(),
             "tcp_commands": [],
             "backup_scheduled_for_now": self._scheduler.is_backup_scheduled(),
-            "backup_finished": self._status.backup_finished_flag
+            "backup_finished": self._status.backup_finished_flag,
+            "shutdown_scheduled": self._shutdown_controller.shutdown_flag
         }
         while not self._tcp_command_queue.empty():
             status_quo["tcp_commands"].append(self._tcp_command_queue.get())
@@ -137,6 +134,8 @@ class Daemon:
             return ["enter_new_buhdd_in_config.json"]
         if "show_status_info" in status_quo["tcp_commands"]:
             command_list.append("show_status_info")
+        if "setup_shutdown_timer" in status_quo["tcp_commands"]:
+            command_list.append("setup_shutdown_timer")
         if status_quo["pressed_buttons"][0]:  # show IP Adress on Display
             command_list.append("show_ip_on_display")
         if status_quo["pressed_buttons"][1]:  # demo
@@ -146,13 +145,16 @@ class Daemon:
         if "terminate_daemon_and_shutdown" in status_quo["tcp_commands"]:
             command_list.append("terminate_daemon_and_shutdown")
         if "seconds_to_next_bu_to_sbc" in status_quo["tcp_commands"]:
-            self._seconds_to_next_bu_to_sbu()
+            self._shutdown_controller.seconds_to_next_bu_to_sbu()
         if status_quo["backup_scheduled_for_now"]:
             command_list.append("backup_full")
         if status_quo["backup_finished"]:
             self._status.backup_finished_flag = False
             self._schedule_backup_for_longterm_test()
-            command_list.extend(["cleanup_after_backup", "unmount", "undock", "terminate_daemon_and_shutdown"])
+            command_list.extend(["cleanup_after_backup", "unmount", "undock", "setup_shutdown_timer"])
+        if status_quo["shutdown_scheduled"]:
+            self._shutdown_controller.reset_shutdown_flag
+            command_list.append("terminate_daemon_and_shutdown")
         if command_list:
             print("command list:", command_list)
         return command_list
@@ -193,7 +195,7 @@ class Daemon:
                     self._status.terminate_flag = True
                     return True
                 elif command == "terminate_daemon_and_shutdown":
-                    self._initiate_shutdown_process()
+                    self._shutdown_controller.initiate_shutdown_process()
                     self._status.shutdown_flag = True
                     return True
                 elif command == "update_sbu":
@@ -202,6 +204,8 @@ class Daemon:
                     self.read_and_send_hdd_parameters()
                 elif command == "enter_new_buhdd_in_config.json":
                     self.update_bu_hdd_in_config_file()
+                elif command == "setup_shutdown_timer":
+                    self._shutdown_controller.reset_shutdown_timer()
                 else:
                     raise RuntimeError(f"'{command}' is not a valid command!")
             except Exception as e:
@@ -265,17 +269,3 @@ class Daemon:
 
     def update_bu_hdd_in_config_file(self):
         self._config.write_BUHDD_parameter_to_tmp_config_file()
-
-    def _initiate_shutdown_process(self):
-        self._display.write("Shutdown", "Waiting 5s")
-        sleep(5)
-        logging.info("Shutting down")
-        self._sbu_communicator.send_human_readable_timestamp_next_bu(self._scheduler.next_backup_scheduled())
-        self._seconds_to_next_bu_to_sbu()
-        self._sbu_communicator.send_shutdown_request()
-        self.stop_threads()
-        self._shutdown_base()
-
-    @staticmethod
-    def _shutdown_base():
-        os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().

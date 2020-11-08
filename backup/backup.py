@@ -54,8 +54,6 @@ class BackupManager:
 		self._wait_for_network_connection()
 		if self._nas_available():
 			self._stop_services_on_nas()
-		else:
-			raise NasNotAvailableError
 
 		self._hwctrl.dock_and_power()
 		self._mount_manager.mount_hdd()
@@ -71,8 +69,11 @@ class BackupManager:
 			else:
 				logging.error("Tried undocking and docking for 3 times. Aborting now.")
 
-		self._create_folder_for_backup()
-		self._copy_newest_backup_with_hardlinks(newest_backup)
+		if self._backup_config["incremental"]:
+			self._create_folder_for_backup()
+			self._copy_newest_backup_with_hardlinks(newest_backup)
+		else:
+			self._rename_bu_directory_to_new_timestamp()
 		self._execute_backup_with_rsync()
 
 	def cleanup_after_backup(self):
@@ -95,7 +96,10 @@ class BackupManager:
 
 	def _nas_available(self):
 		nas_finder = NasFinder(self._backup_config)
-		return nas_finder.nas_available(self._ssh_host, self._ssh_user)
+		nas_available = nas_finder.nas_available(self._ssh_host, self._ssh_user)
+		if not nas_available:
+			raise NasNotAvailableError
+		return nas_available
 
 	def _stop_services_on_nas(self):
 		with SSHInterface() as ssh:
@@ -129,7 +133,7 @@ class BackupManager:
 		#Todo: test if this command stops services on a non-root login
 
 	def _free_space_on_backup_hdd_if_necessary(self):
-		while not self.enough_space_for_full_backup():
+		while not self.enough_space_for_full_backup() and self._backup_config["incremental"]:
 			self.delete_oldest_backup()
 
 	def enough_space_for_full_backup(self):
@@ -200,13 +204,19 @@ class BackupManager:
 			for line in run_external_command_as_generator_shell(copy_command):
 				print(f"copying with hl: {line}")
 
+	def _rename_bu_directory_to_new_timestamp(self):
+		newest_existing_bu_dir = self._get_newest_backup_dir_path()
+		new_backup_folder = self._get_path_for_new_bu_directory()
+		os.rename(newest_existing_bu_dir, new_backup_folder)
+		self._new_backup_folder = new_backup_folder
+
 	def _execute_backup_with_rsync(self):
 		self._sync_thread = RsyncWrapperThread(
 			host=self._ssh_host,
 			user=self._ssh_user,
 			remote_source_path=self._backup_config["remote_backup_source_location"],
 			local_target_path=self._new_backup_folder,
-			set_backup_finished_flag=self._set_backup_finished_flag,
+			set_backup_finished_flag=self._set_backup_finished_flag
 		)
 		self._sync_thread.start()
 
@@ -268,6 +278,7 @@ class BackupBrowser:
 			return os.path.join(self._backup_config["local_backup_target_location"], backups[-1])
 		else:
 			return ""
+
 
 
 if __name__ == "__main__":
