@@ -1,6 +1,10 @@
 import paramiko
 import socket
 import logging
+from pathlib import Path
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class SSHInterface:
@@ -15,23 +19,23 @@ class SSHInterface:
         except paramiko.AuthenticationException as e:
             msg = f"Authentication failed, please verify your credentials. Error = {e}"
             print(msg)
-            logging.error(msg)
+            log.error(msg)
             response = e
         except paramiko.SSHException as e:
             if not str(e).find('not found in known_hosts') == 0:
                 msg = f"Keyfile Authentication not established! " \
                       f"Please refer to https://staabc.spdns.de/basewiki/doku.php?id=inbetriebnahme. Error: {e}"
-                logging.error(msg)
+                log.error(msg)
                 print(msg)
             else:
                 msg = f"SSH exception occured. Error = {e}"
                 print(msg)
-                logging.error(msg)
+                log.error(msg)
             response = e
         except socket.timeout as e:
             msg = f"connection timed out. Error = {e}"
             print(msg)
-            logging.error(e)
+            log.error(e)
             response = e
         except Exception as e:
             print('\nException in connecting to the server')
@@ -57,11 +61,11 @@ class SSHInterface:
         except socket.timeout as e:
             msg = f"connection timed out. Error = {e}"
             print(msg)
-            logging.error(e)
+            log.error(e)
             response = e
         except paramiko.SSHException as e:
             msg = f"Failed to execute the command {command}. Error = {e}"
-            logging.error(msg)
+            log.error(msg)
             print(msg)
         return response
 

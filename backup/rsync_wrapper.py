@@ -1,10 +1,15 @@
+import logging
 import os
+from pathlib import Path
+import re
 import signal
 from subprocess import Popen, PIPE, STDOUT
 from threading import Thread
+
 from base.common.utils import check_path_end_slash_and_asterik
-import re
-import logging
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class Patterns:
@@ -112,7 +117,7 @@ class RsyncWrapperThread(Thread):
             for status in output_generator:
                 print(status)
             self._set_backup_finished_flag()
-            logging.info("Backup finished!")
+            log.info("Backup finished!")
 
     def terminate(self):
         self._ssh_rsync.terminate()

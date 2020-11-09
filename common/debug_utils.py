@@ -7,6 +7,9 @@ import json
 from base.common.utils import run_external_command_as_generator_shell
 
 
+log = logging.getLogger(Path(__file__).name)
+
+
 def dump_ifconfig():
     # TODO: Replace
     with open("base/config.json", "r") as file:
@@ -16,7 +19,7 @@ def dump_ifconfig():
     command = f"ifconfig > {filename}"
     for line in run_external_command_as_generator_shell(command):
         print(line)
-    logging.debug(f'Dumped ifconfig into {filename}')
+    log.debug(f'Dumped ifconfig into {filename}')
 
 
 def copy_logfiles_to_nas():
@@ -28,11 +31,12 @@ def copy_logfiles_to_nas():
         remote_user = "root"
         remote_host = "192.168.0.100"
         remote_directory = "/mnt/HDD/share/Max/BaSe_Logs/"
-        command = f"scp -i /home/base/.ssh/id_rsa -o LogLevel=DEBUG3 {logs_directory}* {remote_user}@{remote_host}:{remote_directory}"
+        command = f"scp -i /home/base/.ssh/id_rsa -o LogLevel=DEBUG3 {logs_directory}* " \
+                  f"{remote_user}@{remote_host}:{remote_directory}"
         print(command)
         run_external_command_as_generator_shell(command, timeout=10)
-        logging.info(f"Copied Logfiles to NAS into: {remote_directory}")
+        log.info(f"Copied Logfiles to NAS into: {remote_directory}")
     except TimeoutExpired:
-        logging.warning(f"Copying logfiles timed out! {TimeoutExpired}")
+        log.warning(f"Copying logfiles timed out! {TimeoutExpired}")
     except SubprocessError as e:
-        logging.warning(f"Copying Logfile wasn't sucessful (not due to timeout): {e}")
+        log.warning(f"Copying Logfile wasn't sucessful (not due to timeout): {e}")

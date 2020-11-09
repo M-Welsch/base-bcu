@@ -1,5 +1,9 @@
-from platform import system
 import logging
+from pathlib import Path
+from platform import system
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 if system() == "Linux":
@@ -14,14 +18,14 @@ class Webapp:
 
 	def start(self):
 		if not self._manager.is_active("base-webapp.service"):
-			logging.info("base-webapp not running yet, starting now")
+			log.info("base-webapp not running yet, starting now")
 			self._manager.start_unit("base-webapp.service")
 		else:
 			print("base-webapp already running")
 
 	def terminate(self):
 		if self._manager.is_active("base-webapp.service"):
-			logging.info("base-webapp running. Stopping ..")
+			log.info("base-webapp running. Stopping ..")
 			self._manager.stop_unit("base-webapp.service")
 		else:
 			print("base-webapp not running")

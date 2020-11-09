@@ -1,8 +1,13 @@
-from schedule import Scheduler as Scheduler
+import logging
+from pathlib import Path
 import pudb
+from schedule import Scheduler as Scheduler
+
 from base.common.exceptions import *
 from base.common.config import Config
-import logging
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class BaseScheduler(Scheduler):
@@ -32,7 +37,7 @@ class BaseScheduler(Scheduler):
                               f'{self._config_schedule["day_of_week"]}th day of week at {minutes_and_hours}'
         else:
             raise ScheduleError("No valid backup interval specified!")
-        logging.info(logging_message)
+        log.info(logging_message)
         print(logging_message)
     # Todo: Monthly
 
@@ -53,7 +58,7 @@ class BaseScheduler(Scheduler):
         elif day_of_week == 7:
             self.every().sunday.at(minutes_and_hours).do(self._suggest_backup)
         else:
-            logging.warning(
+            log.warning(
                 f"Day of week was entered as {day_of_week}, which is invalid (1-7 is ok). Setting to Sunday"
             )
             self._config_schedule["day_of_week"] = 7

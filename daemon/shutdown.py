@@ -1,8 +1,14 @@
 import logging
 import os
+from pathlib import Path
 from threading import Timer
 from time import sleep
+
 from base.common.config import Config
+
+
+log = logging.getLogger(Path(__file__).name)
+
 
 class ShutdownController:
     def __init__(self, sbu_communicator, scheduler, display, stop_threads):
@@ -57,7 +63,7 @@ class ShutdownController:
             self._shutdown_timer.cancel()
 
     def terminate(self):
-        logging.info("Shutdown Controller: Terminating ...") # Fixme: take class name out of logging msg once logger is properly implemented
+        logging.info("Terminating ...")
         self.cancel_shutdown_timer()
 
     @staticmethod

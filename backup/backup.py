@@ -3,6 +3,7 @@ import os
 import sys
 from time import sleep, time
 import logging
+from pathlib import Path
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
@@ -16,6 +17,9 @@ from base.backup.rsync_wrapper import RsyncWrapperThread
 from base.common.exceptions import *
 from base.common.config import Config
 from base.hwctrl.hwctrl import HWCTRL
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class BackupManager:
@@ -39,16 +43,16 @@ class BackupManager:
 			self.execute_backup()
 			successfully_started_flag = True
 		except NetworkError:
-			logging.error("Network not available")
+			log.error("Network not available")
 		except NasNotAvailableError:
 			print("catching")
-			logging.error("NAS not available. Backup NOT executed")
+			log.error("NAS not available. Backup NOT executed")
 		except DockingError:
-			logging.error("Docking Error occured. Backup NOT executed")
+			log.error("Docking Error occured. Backup NOT executed")
 		except MountingError:
-			logging.error(f"Mounting Error: {MountingError.logger_error_message}")
+			log.error(f"Mounting Error: {MountingError.logger_error_message}")
 		except NewBuDirCreationError:
-			logging.error("could not create directory for new backup")
+			log.error("could not create directory for new backup")
 
 		if not successfully_started_flag:
 			self._set_backup_finished_flag()
@@ -65,12 +69,12 @@ class BackupManager:
 			newest_backup = self._get_newest_backup_dir_path()
 		except BackupHddAccessError:
 			if self._docking_trials < 3:
-				logging.info("Undocking and Docking again ...")
+				log.info("Undocking and Docking again ...")
 				self._hwctrl.unpower_and_undock()
 				self._docking_trials += 1
 				self.run() # try again
 			else:
-				logging.error("Tried undocking and docking for 3 times. Aborting now.")
+				log.error("Tried undocking and docking for 3 times. Aborting now.")
 
 		if self._config_backup["incremental"]:
 			self._create_folder_for_backup()
@@ -84,18 +88,18 @@ class BackupManager:
 			self._start_services_on_nas()
 		except Exception as e:
 			print(f"Something went wrong during cleanup after backup. Error : {e}")
-			logging.warning(f"Something went wrong during cleanup after backup. Error : {e}")
+			log.warning(f"Something went wrong during cleanup after backup. Error : {e}")
 
 	def _wait_for_network_connection(self):
 		start_time = time()
 		if not network_available():
-			logging.warning("Network not available! Waiting for connection for 60 seconds ...")
+			log.warning("Network not available! Waiting for connection for 60 seconds ...")
 			while not network_available() and not time() - start_time < 60:
 				sleep(1)
 			if not network_available():
 				raise NetworkError
 			else:
-				logging.info(f"Network available after {time() - start_time} seconds!")
+				log.info(f"Network available after {time() - start_time} seconds!")
 
 	def _nas_available(self):
 		nas_finder = NasFinder(self._config_backup)
@@ -111,17 +115,17 @@ class BackupManager:
 			self._enquire_services_to_stop_on_nas()
 			if not self._list_of_services:
 				self._list_of_services = ["smbd", "nginx"]
-				logging.warning(f"Services on NAS to be stopped/restarted is not clearly stated. Stopping {self._list_of_services}")
+				log.warning(f"Services on NAS to be stopped/restarted is not clearly stated. Stopping {self._list_of_services}")
 			self._stop_list_of_services_on_nas(ssh)
 
 	def _enquire_nas_properties(self, ssh):
 		stdout, stderr = ssh.run('cat nas_for_backup')
 		try:
 			nas_properties = json.loads(stdout)
-			logging.info(f"NAS variant is identified as {nas_properties['name']}")
+			log.info(f"NAS variant is identified as {nas_properties['name']}")
 		except json.JSONDecodeError:
 			nas_properties = None
-			logging.warning("NAS variant could not be identified!")
+			log.warning("NAS variant could not be identified!")
 		self._nas_properties = nas_properties
 
 	def _enquire_services_to_stop_on_nas(self):
@@ -144,7 +148,7 @@ class BackupManager:
 		free_space_on_bu_hdd = self.remove_heading_from_df_output(out)
 		space_needed_for_full_bu = self.space_occupied_on_nas_hdd()
 		print("Space free on BU HDD: {}, Space needed: {}".format(free_space_on_bu_hdd, space_needed_for_full_bu))
-		logging.info("Space free on BU HDD: {}, Space needed: {}".format(free_space_on_bu_hdd, space_needed_for_full_bu))
+		log.info("Space free on BU HDD: {}, Space needed: {}".format(free_space_on_bu_hdd, space_needed_for_full_bu))
 		if free_space_on_bu_hdd > space_needed_for_full_bu:
 			return True
 		else:
@@ -166,7 +170,7 @@ class BackupManager:
 	def delete_oldest_backup(self):
 		with BackupBrowser() as bb:
 			oldest_backup = bb.get_oldest_backup()
-		logging.info("deleting {} to free space for new backup".format(oldest_backup))
+		log.info("deleting {} to free space for new backup".format(oldest_backup))
 
 	def _get_newest_backup_dir_path(self):
 		with BackupBrowser() as bb:
@@ -187,15 +191,15 @@ class BackupManager:
 		try:
 			os.mkdir(path)
 		except OSError:
-			logging.error(
+			log.error(
 				f'Could not create directory for new backup in {self._config_backup["local_backup_target_location"]}')
 
 	def _check_whether_directory_was_created(self, path):
 		if os.path.isdir(path):
-			logging.info(f'Created directory for new backup: {path}')
+			log.info(f'Created directory for new backup: {path}')
 			self._new_backup_folder = path
 		else:
-			logging.error(f"Directory {path} wasn't created!")
+			log.error(f"Directory {path} wasn't created!")
 			raise NewBuDirCreationError
 
 	def _copy_newest_backup_with_hardlinks(self, newest_backup):
@@ -225,7 +229,7 @@ class BackupManager:
 
 	def _start_services_on_nas(self):
 		with SSHInterface() as ssh:
-			logging.info(f"Starting services on NAS: {self._list_of_services}")
+			log.info(f"Starting services on NAS: {self._list_of_services}")
 			ssh.connect(self._ssh_host, self._ssh_user)
 			self._restart_list_of_services_on_nas(ssh)
 
@@ -237,7 +241,7 @@ class BackupManager:
 				ssh.run(f"echo {self._ssh_user} | sudo -S systemctl start {service}")
 
 	def terminate(self):
-		logging.warning("Backup Aborted")
+		log.warning("Backup Aborted")
 		self._sync_thread.terminate()
 		self._mark_current_backup_as_incomplete()
 
@@ -264,7 +268,7 @@ class BackupBrowser:
 				if file.startswith("backup"):
 					list_of_backups.append(file)
 		except OSError as e:
-			logging.error(f"BackupHDD cannot be accessed! {e}")
+			log.error(f"BackupHDD cannot be accessed! {e}")
 			raise BackupHddAccessError
 		list_of_backups.sort()
 		return list_of_backups

@@ -1,12 +1,13 @@
-import serial
-import os
-from time import sleep, time
 from datetime import datetime
+import logging
+import os
+from pathlib import Path
+from queue import Queue
 import re
+import serial
 import sys
 from threading import Thread
-from queue import Queue
-import logging
+from time import sleep, time
 
 # path_to_module = "/home/maxi"
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,6 +16,9 @@ from base.sbu_interface.sbu_uart_finder import SbuUartFinder
 from base.common.exceptions import *
 from base.common.config import Config
 from base.hwctrl.hwctrl import HWCTRL
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class SbuCommunicator:
@@ -198,18 +202,18 @@ class SbuCommunicator:
             warning_msg = f"wrong datatype for {brightness_type}_brighness_16bit. " \
                           f"It has to be integer, however it is {type(brightness_16bit)}"
             print(warning_msg)
-            logging.warning(warning_msg)
+            log.warning(warning_msg)
             brightness_16bit = int(brightness_16bit)
         if brightness_16bit > maximum_brightness:
             warning_msg = f"{brightness_type} brightness value too high. Maximum is {maximum_brightness}, " \
                           f"however {brightness_16bit} was given. Clipping to maximum."
             print(warning_msg)
-            logging.warning(warning_msg)
+            log.warning(warning_msg)
             brightness_16bit = maximum_brightness
         elif brightness_16bit < 0:
             warning_msg = f"{brightness_type} Brightness shall not be negative. Clipping to zero."
             print(warning_msg)
-            logging.warning(warning_msg)
+            log.warning(warning_msg)
             brightness_16bit = 0
         return brightness_16bit
 
@@ -307,8 +311,8 @@ if __name__ == '__main__':
     from base.hwctrl.hwctrl import HWCTRL
     from base.common.config import Config
 
-    config = Config("/home/maxi/base/config.json")
-    hardware_control = HWCTRL.global_instance(config.config_hwctrl)
+    CONFIG = Config("/home/maxi/base/config.json")
+    hardware_control = HWCTRL.global_instance(CONFIG.config_hwctrl)
 
     SBUC = SbuCommunicator.global_instance()
     while True:

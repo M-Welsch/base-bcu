@@ -2,9 +2,13 @@ import socket
 import re
 from time import sleep
 import logging
+from pathlib import Path
 
 from base.common.ssh_interface import SSHInterface
 from base.common.debug_utils import dump_ifconfig
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class NasFinder:
@@ -18,9 +22,9 @@ class NasFinder:
 		connection_trials = 0
 		max_connection_trials = self._config_backup["nas_finder_maximum_connection_trials"]
 		response = False
+		ssh_port = 22
 		while connection_trials < max_connection_trials and not response:
 			t_ip = socket.gethostbyname(target_ip)
-			ssh_port = 22
 			s = socket. \
 				socket(socket.AF_INET, socket.SOCK_STREAM)
 			try:
@@ -30,19 +34,19 @@ class NasFinder:
 			except OSError as e:
 				if "Errno 101" in str(e):
 					# network unreachable
-					logging.warning(f'Nas Finder. Network is unreachable! OSError: {e}')
+					log.warning(f'Nas Finder. Network is unreachable! OSError: {e}')
 					dump_ifconfig()
 					connection_trials += 1
 				elif "Errno 113" in str(e):
 					# No route to host
-					logging.warning(f'NAS Finder: {target_ip}:{ssh_port} is not open! OSError: {e}')
+					log.warning(f'NAS Finder: {target_ip}:{ssh_port} is not open! OSError: {e}')
 					connection_trials += 1
 				sleep(self._config_backup["nas_finder_wait_seconds_between_connection_trials"])
 			finally:
 				s.close()
 
 		if not response:
-			logging.error(
+			log.error(
 				f'NAS Finder: {target_ip}:{ssh_port} is not open! Tried {max_connection_trials} times with '
 				f'{self._config_backup["nas_finder_wait_seconds_between_connection_trials"]} pause'
 			)
@@ -65,13 +69,14 @@ class NasFinder:
 
 	@staticmethod
 	def check_connected_nas(sshi, target_ip):
+		response = False
 		stdout, stderr = sshi.run('cat nas_for_backup')
 		if stderr:
-			logging.error(
-				f"NAS on {target_ip} is not the correct one? Couldn't open file 'nas_for_backup'. Error = {stderr}")
-			response = False
+			log.error(
+				f"NAS on {target_ip} is not the correct one? Couldn't open file 'nas_for_backup'. Error = {stderr}"
+			)
 		if 'DietPi' in stdout:  # Fixme: cleaner! Its a json file now
-			logging.info(f"found correct NAS on {target_ip}")
+			log.info(f"found correct NAS on {target_ip}")
 			response = True
 		return response
 
@@ -81,7 +86,7 @@ class NasFinder:
 		sleep(1)
 		stdout, stderr = sshi.run(f'mount | grep HDD')
 		print(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
-		logging.info(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
+		log.info(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
 		if re.search("sd.. on /mnt/HDD type ext4", stdout):
 			return True
 		else:

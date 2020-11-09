@@ -3,12 +3,16 @@
 # XcreenShots
 # ScreenShots
 
-from threading import Thread
 import logging
+from pathlib import Path
+from threading import Thread
 
 from base.hwctrl.hw_definitions import *
 from base.hwctrl.dock_undock import *
 from base.common.config import Config
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class HWCTRL(Thread):
@@ -62,7 +66,7 @@ class HWCTRL(Thread):
 
     def terminate(self):
         print("HWCTRL shutting down")
-        logging.info("HWCTRL is shutting down. Current status: {}".format(self._status))
+        log.info("HWCTRL is shutting down. Current status: {}".format(self._status))
         self.exitflag = True
         self.disable_receiving_messages_from_attiny()
         self.HB.terminate()
@@ -80,7 +84,7 @@ class HWCTRL(Thread):
             button_0_pressed = self._pin_interface.button_0_pin_high
 
         if button_0_pressed:
-            logging.info("Button 0 pressed")
+            log.info("Button 0 pressed")
         return button_0_pressed
 
     def _button_1_pressed(self):
@@ -93,7 +97,7 @@ class HWCTRL(Thread):
             button_1_pressed = self._pin_interface.button_1_pin_high
 
         if button_1_pressed:
-            logging.info("Button 1 pressed")
+            log.info("Button 1 pressed")
         return button_1_pressed
 
     def pressed_buttons(self):
@@ -112,14 +116,14 @@ class HWCTRL(Thread):
         self.dock_undock.undock()
 
     def hdd_power_on(self):
-        logging.info("Powering HDD")
+        log.info("Powering HDD")
         if self._hw_rev == 'rev2':
             self.cur_meas = Current_Measurement(1)
             self.cur_meas.start()
         self._pin_interface.activate_hdd_pin()
 
     def hdd_power_off(self):
-        logging.info("Unpowering HDD")
+        log.info("Unpowering HDD")
         self._pin_interface.deactivate_hdd_pin()
         if self._hw_rev == 'rev2':
             self.cur_meas.terminate()
@@ -141,7 +145,7 @@ class HWCTRL(Thread):
         self._pin_interface.set_attiny_serial_path_to_communication()
 
     def enable_receiving_messages_from_attiny(self):
-        logging.info(
+        log.info(
             "Enabling receiving Messages from SBC by setting signal EN_attiny_link = HIGH. WARNING! "
             "This signal has to be set LOW before BPi goes to sleep! "
             "Hazard of Current flowing in the Rx-Pin of the BPi and destroying it!"
@@ -149,7 +153,7 @@ class HWCTRL(Thread):
         self._pin_interface.enable_receiving_messages_from_attiny()
 
     def disable_receiving_messages_from_attiny(self):
-        logging.info("Disabling receiving Messages from SBC by setting signal EN_attiny_link = LOW")
+        log.info("Disabling receiving Messages from SBC by setting signal EN_attiny_link = LOW")
         self._pin_interface.disable_receiving_messages_from_attiny()
 
     @pin_interface.setter

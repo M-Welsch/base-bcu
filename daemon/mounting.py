@@ -1,10 +1,14 @@
 from os import path
 from time import sleep
 import logging
+from pathlib import Path
 
 from base.common.config import Config
 from base.common.utils import wait_for_device_file, run_external_command
 from base.common.exceptions import *
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class MountManager:
@@ -26,9 +30,9 @@ class MountManager:
             try:
                 self._unmount_backup_hdd()
             except UnmountError:
-                logging.error(f"Unmounting didnt work: {UnmountError}")
+                log.error(f"Unmounting didnt work: {UnmountError}")
             except RuntimeError:
-                logging.error(f"Unmounting didnt work: {RuntimeError}")
+                log.error(f"Unmounting didnt work: {RuntimeError}")
 
     def _backup_hdd_mounted(self):
         return path.ismount(self.b_hdd_mount)
@@ -39,7 +43,7 @@ class MountManager:
             # TODO: Ensure that the right HDD is found. (identifier-file?)
             return True
         except RuntimeError as e:
-            logging.error(e)
+            log.error(e)
             return False
 
     def _mount_backup_hdd(self):
@@ -67,13 +71,13 @@ class MountManager:
             except ExternalCommandError as e:
                 if "not mounted" in str(e):
                     print("BackupHDD already unmounted")
-                    logging.warning(f"BackupHDD already unmounted. stderr: {e}")
+                    log.warning(f"BackupHDD already unmounted. stderr: {e}")
                     unmount_success = True
                 # Todo: find out who accesses the drive right now and write into logfile (with lsof?)
                 sleep(1)
                 unmount_trials += 1
                 if unmount_trials == 5:
-                    logging.warning(f"Couldn't unmount BackupHDD within 5 trials. Error: {e}")
+                    log.warning(f"Couldn't unmount BackupHDD within 5 trials. Error: {e}")
                     if "target is busy" in str(e):
                         raise UnmountError(e)
                     else:

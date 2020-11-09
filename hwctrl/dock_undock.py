@@ -1,7 +1,11 @@
-import time
 import logging
+from pathlib import Path
+import time
 
 from base.hwctrl.current_measurement import Current_Measurement
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class DockingError(Exception):
@@ -30,7 +34,7 @@ class DockUndock:
             if self.hw_rev == 'rev3':
                 self.dock_rev3()
         except DockingError as e:
-            logging.error(e)
+            log.error(e)
             print(e)
 
     def undock(self):
@@ -40,12 +44,12 @@ class DockUndock:
             if self.hw_rev == 'rev3':
                 self.undock_rev3()
         except DockingError as e:
-            logging.error(e)
+            log.error(e)
             print(e)
 
     def dock_rev2(self):
         if self.docked():
-            logging.warning("Tried to dock, but end-switch was already pressed. Skipping dock process.")
+            log.warning("Tried to dock, but end-switch was already pressed. Skipping dock process.")
             return
         start_time = time.time()
         self.cur_meas.start()
@@ -76,7 +80,7 @@ class DockUndock:
         self.cur_meas.terminate()
 
         print("Docking Timeout !!!" if flag_docking_timeout else "Docked in %i seconds" % time_diff)
-        logging.error(
+        log.error(
             "Docking Timeout !!!" if flag_docking_timeout else
             "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(
                 time_diff, peak_current, avg_current
@@ -113,7 +117,7 @@ class DockUndock:
 
     def undock_rev2(self):
         if self.undocked():
-            logging.warning("Tried to undock, but end-switch was already pressed. Skipping undock process.")
+            log.warning("Tried to undock, but end-switch was already pressed. Skipping undock process.")
             return
         start_time = time.time()
         self.cur_meas = Current_Measurement(0.1)
@@ -142,7 +146,7 @@ class DockUndock:
 
         print("maximum current: {:.2f}, avg_current_10sec: {:.2f}".format(peak_current, avg_current))
 
-        logging.error(
+        log.error(
             "Docking Timeout !!!" if flag_docking_timeout else
             "Docked in {:.2f} seconds, peak current: {:.2f}, average_current (over max 10s): {:.2f}".format(
                 time_diff, peak_current, avg_current

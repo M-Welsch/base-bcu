@@ -1,11 +1,15 @@
-import os
-import sys
 import glob
-import serial
 import logging
+import os
+from pathlib import Path
+import serial
+import sys
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
+
+
+log = logging.getLogger(Path(__file__).name)
 
 
 class SbuUartFinder:
@@ -13,9 +17,9 @@ class SbuUartFinder:
         uart_interfaces = self._get_available_uart_interfaces()
         uart_sbu = self._test_uart_interfaces_for_echo(uart_interfaces)
         if uart_sbu:
-            logging.info("SBU answers on UART Interface {}".format(uart_sbu))
+            log.info("SBU answers on UART Interface {}".format(uart_sbu))
         else:
-            logging.warning("SBU doesn't respond on any UART Interface!")
+            log.warning("SBU doesn't respond on any UART Interface!")
         return uart_sbu
 
     @staticmethod
