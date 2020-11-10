@@ -72,7 +72,7 @@ def or_up_values(value):
 	return b
 
 
-def check_path_end_slash_and_asterik(path_to_check):
+def check_path_end_slash_and_asterisk(path_to_check):
 	if path_to_check.endswith('/*'):
 		pass
 	elif path_to_check.endswith('/'):

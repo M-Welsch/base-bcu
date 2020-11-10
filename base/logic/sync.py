@@ -7,6 +7,7 @@ from subprocess import Popen, PIPE, STDOUT
 from threading import Thread
 
 from base.common.utils import check_path_end_slash_and_asterisk
+from base.common.config import Config
 
 
 log = logging.getLogger(Path(__file__).name)
@@ -107,9 +108,15 @@ class SshRsync:
 
 
 class RsyncWrapperThread(Thread):
-    def __init__(self, host, user, remote_source_path, local_target_path, set_backup_finished_flag):
+    def __init__(self, set_backup_finished_flag):
         super().__init__()
-        self._ssh_rsync = SshRsync(host, user, remote_source_path, local_target_path)
+        config = Config.global_instance().config_backup
+        self._ssh_rsync = SshRsync(
+            config["ssh_host"],
+            config["ssh_user"],
+            config["remote_backup_source_location"],
+            config["local_backup_target_location"]
+        )
         self._set_backup_finished_flag = set_backup_finished_flag
 
     def run(self):
@@ -124,32 +131,3 @@ class RsyncWrapperThread(Thread):
 
     def kill(self):
         self._ssh_rsync.kill()
-
-
-if __name__ == "__main__":
-    # ssh_rsync = SshRsync(
-    #     host="staabc.spdns.de",
-    #     user="root",
-    #     remote_source_path="/home/maximilian/testfiles",
-    #     local_target_path="/home/maxi/target/"
-    # )
-    #
-    # with ssh_rsync as output_generator:
-    #     for i, status in enumerate(output_generator):
-    #         print(status)
-    #         # if i == 6:
-    #         #     print("######################################## NOW KILLING...")
-    #         #     ssh_rsync.terminate()
-
-    sync_thread = RsyncWrapperThread(
-        host="192.168.0.52",
-        user="max",
-        remote_source_path="/home/max/testfiles",
-        local_target_path="/home/maxi/target",
-        set_backup_finished_flag=None
-    )
-
-    sync_thread.start()
-
-    # sleep(10)
-    # sync_thread.terminate()

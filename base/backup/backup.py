@@ -10,7 +10,7 @@ sys.path.append(path_to_module)
 
 from datetime import datetime
 
-from base.common.utils import run_external_command_as_generator, run_external_command_as_generator_shell, check_path_end_slash_and_asterik, network_available
+from base.common.utils import run_external_command_as_generator, run_external_command_as_generator_shell, check_path_end_slash_and_asterisk, network_available
 from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
 from base.backup.rsync_wrapper import RsyncWrapperThread
@@ -205,7 +205,7 @@ class BackupManager:
 	def _copy_newest_backup_with_hardlinks(self, newest_backup):
 		if newest_backup:
 			# Fixme: somehow it doesnt find the source path ...
-			newest_backup = check_path_end_slash_and_asterik(newest_backup)
+			newest_backup = check_path_end_slash_and_asterisk(newest_backup)
 			copy_command = f"cp -al {newest_backup} {self._new_backup_folder}"
 			print(f"copy command: {copy_command}")
 			for line in run_external_command_as_generator_shell(copy_command):
