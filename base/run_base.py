@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ def main():
     with open("base/config.json", "r") as file:
         logs_directory = json.load(file)["Logging"]["logs_directory"]
 
+    Path(logs_directory).mkdir(exist_ok=True)
     logging.basicConfig(
         filename=Path(logs_directory)/datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log'),
         level=logging.DEBUG,

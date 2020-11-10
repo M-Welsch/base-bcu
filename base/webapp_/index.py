@@ -8,13 +8,11 @@ import json
 from threading import Thread
 from time import sleep
 
-# import pudb
-
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 from base.common.tcp import TCPClientInterface, TCPClientThread
 from base.common.utils import wait_for_new_device_file
-from base.webapp.logfile_viewer import *
+from base.webapp_.logfile_viewer import *
 
 application = Flask(__name__)
 application.config['SBC_FW_FOLDER'] = "{}/sbu_interface/sbu_fw_uploads".format(
