@@ -10,34 +10,34 @@ except ImportError:
 class PinInterface:
     __instance = None
 
-    @staticmethod
-    def global_instance():
-        if PinInterface.__instance is None:
-            PinInterface.__instance = PinInterface()
+    @classmethod
+    def global_instance(cls):
+        if cls.__instance is None:
+            cls.__instance = cls.__new__(cls)
             GPIO.setmode(GPIO.BOARD)
         # this kind of disables the ramp. It sounds best ...
-        PinInterface.__instance.step_interval_initial = PinInterface.__instance.step_interval = 0.001
-        PinInterface.__instance._initialize_pins()
-        return PinInterface.__instance
+        cls.__instance.step_interval_initial = cls.__instance.step_interval = 0.001
+        cls.__instance._initialize_pins()
+        return cls.__instance
 
     def __init__(self):
         raise Exception("This class is a singleton. Use global_instance() instead!")
 
     def _initialize_pins(self):
-        GPIO.setup(Pins.SW_HDD_ON, GPIO.OUT)
-        GPIO.setup(Pins.nSensor_Docked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(Pins.nSensor_Undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(Pins.sw_hdd_on, GPIO.OUT)
+        GPIO.setup(Pins.nsensor_docked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(Pins.nsensor_undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(Pins.button_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(Pins.button_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(Pins.SW_HDD_OFF, GPIO.OUT)
-        GPIO.setup(Pins.Stepper_Step, GPIO.OUT)
-        GPIO.setup(Pins.Stepper_Dir, GPIO.OUT)
-        GPIO.setup(Pins.Stepper_nReset, GPIO.OUT)
-        GPIO.output(Pins.Stepper_Step, GPIO.LOW)
-        GPIO.output(Pins.Stepper_Dir, GPIO.LOW)
-        GPIO.output(Pins.Stepper_nReset, GPIO.LOW)
-        GPIO.setup(Pins.attiny_program_ncommunicate, GPIO.OUT)
-        GPIO.setup(Pins.En_attiny_link, GPIO.OUT)
+        GPIO.setup(Pins.sw_hdd_off, GPIO.OUT)
+        GPIO.setup(Pins.stepper_step, GPIO.OUT)
+        GPIO.setup(Pins.stepper_dir, GPIO.OUT)
+        GPIO.setup(Pins.stepper_nreset, GPIO.OUT)
+        GPIO.output(Pins.stepper_step, GPIO.LOW)
+        GPIO.output(Pins.stepper_dir, GPIO.LOW)
+        GPIO.output(Pins.stepper_nreset, GPIO.LOW)
+        GPIO.setup(Pins.sbu_program_ncommunicate, GPIO.OUT)
+        GPIO.setup(Pins.en_sbu_link, GPIO.OUT)
         GPIO.setup(Pins.heartbeat, GPIO.OUT)
         self.set_attiny_serial_path_to_communication()
         self.enable_receiving_messages_from_attiny()
@@ -48,19 +48,19 @@ class PinInterface:
 
     @property
     def docked_sensor_pin_high(self):
-        return GPIO.input(Pins.nSensor_Docked)
+        return GPIO.input(Pins.nsensor_docked)
 
     @property
     def docked(self):
-        return not GPIO.input(Pins.nSensor_Docked)
+        return not GPIO.input(Pins.nsensor_docked)
 
     @property
     def undocked(self):
-        return not GPIO.input(Pins.nSensor_Undocked)
+        return not GPIO.input(Pins.nsensor_undocked)
 
     @property
     def undocked_sensor_pin_high(self):
-        return GPIO.input(Pins.nSensor_Undocked)
+        return GPIO.input(Pins.nsensor_undocked)
 
     @property
     def button_0_pin_high(self):
@@ -74,17 +74,17 @@ class PinInterface:
     def activate_hdd_pin():
         # rev3 uses a bistable relay with two coils.
         # These have to be powered for at least 4ms. We use 100ms to be safe.
-        GPIO.output(Pins.SW_HDD_ON, GPIO.HIGH)
+        GPIO.output(Pins.sw_hdd_on, GPIO.HIGH)
         sleep(0.1)
-        GPIO.output(Pins.SW_HDD_ON, GPIO.LOW)
+        GPIO.output(Pins.sw_hdd_on, GPIO.LOW)
 
     @staticmethod
     def deactivate_hdd_pin():
         # rev3 uses a bistable relay with two coils.
         # These have to be powered for at least 4ms. We use 100ms to be safe.
-        GPIO.output(Pins.SW_HDD_OFF, GPIO.HIGH)
+        GPIO.output(Pins.sw_hdd_off, GPIO.HIGH)
         sleep(0.1)
-        GPIO.output(Pins.SW_HDD_OFF, GPIO.LOW)
+        GPIO.output(Pins.sw_hdd_off, GPIO.LOW)
 
     @staticmethod
     def set_motor_pins_for_braking():
@@ -111,11 +111,11 @@ class PinInterface:
 
     @staticmethod
     def set_nreset_pin_high():
-        GPIO.output(Pins.Stepper_nReset, GPIO.HIGH)
+        GPIO.output(Pins.stepper_nreset, GPIO.HIGH)
 
     @staticmethod
     def set_nreset_pin_low():
-        GPIO.output(Pins.Stepper_nReset, GPIO.LOW)
+        GPIO.output(Pins.stepper_nreset, GPIO.LOW)
 
     def stepper_step(self):
         self.set_step_pin_high()
@@ -128,11 +128,11 @@ class PinInterface:
 
     @staticmethod
     def set_step_pin_high():
-        GPIO.output(Pins.Stepper_Step, GPIO.HIGH)
+        GPIO.output(Pins.stepper_step, GPIO.HIGH)
 
     @staticmethod
     def set_step_pin_low():
-        GPIO.output(Pins.Stepper_Step, GPIO.LOW)
+        GPIO.output(Pins.stepper_step, GPIO.LOW)
 
     def stepper_direction_docking(self):
         self.set_direction_pin_high()
@@ -142,27 +142,27 @@ class PinInterface:
 
     @staticmethod
     def set_direction_pin_high():
-        GPIO.output(Pins.Stepper_Dir, GPIO.HIGH)
+        GPIO.output(Pins.stepper_dir, GPIO.HIGH)
 
     @staticmethod
     def set_direction_pin_low():
-        GPIO.output(Pins.Stepper_Dir, GPIO.LOW)
+        GPIO.output(Pins.stepper_dir, GPIO.LOW)
 
     @staticmethod
     def set_attiny_serial_path_to_sbc_fw_update():
-        GPIO.output(Pins.attiny_program_ncommunicate, GPIO.HIGH)
+        GPIO.output(Pins.sbu_program_ncommunicate, GPIO.HIGH)
 
     @staticmethod
     def set_attiny_serial_path_to_communication():
-        GPIO.output(Pins.attiny_program_ncommunicate, GPIO.LOW)
+        GPIO.output(Pins.sbu_program_ncommunicate, GPIO.LOW)
 
     @staticmethod
     def enable_receiving_messages_from_attiny():
-        GPIO.output(Pins.En_attiny_link, GPIO.HIGH)
+        GPIO.output(Pins.en_sbu_link, GPIO.HIGH)
 
     @staticmethod
     def disable_receiving_messages_from_attiny():
-        GPIO.output(Pins.En_attiny_link, GPIO.LOW)
+        GPIO.output(Pins.en_sbu_link, GPIO.LOW)
 
     @staticmethod
     def set_heartbeat_high():
@@ -174,16 +174,16 @@ class PinInterface:
 
 
 class Pins:
-    SW_HDD_ON = 7
-    SW_HDD_OFF = 18
-    nSensor_Docked = 13
-    nSensor_Undocked = 11
-    Stepper_Step = 15
-    Stepper_Dir = 19
-    Stepper_nReset = 12
+    sw_hdd_on = 7
+    sw_hdd_off = 18
+    nsensor_docked = 13
+    nsensor_undocked = 11
+    stepper_step = 15
+    stepper_dir = 19
+    stepper_nreset = 12
     button_0 = 21
     button_1 = 23
-    hw_Rev2_nRev3 = 26
+    hw_rev2_nrev3 = 26
     sbu_program_ncommunicate = 16
-    En_attiny_link = 22
-    Heartbeat = 24
+    en_sbu_link = 22
+    heartbeat = 24
