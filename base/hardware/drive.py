@@ -20,13 +20,13 @@ class Drive:
         self.b_hdd_mount = config["backup_hdd_mount_point"]
         self.b_timeout = config["backup_device_file_timeout"]
 
-    def mount_hdd(self):
-        print("mount_hdd:", self._backup_hdd_mounted(), self._backup_hdd_available())
-        if not self._backup_hdd_mounted() and self._backup_hdd_available():
+    def mount(self):
+        print("mount_hdd:", self._is_mounted, self._is_available)
+        if not self._is_mounted and self._is_available:
             self._mount_backup_hdd()
 
-    def unmount_hdd(self):
-        if self._backup_hdd_mounted():  # TODO: Don't ask for permission!
+    def unmount(self):
+        if self._is_mounted:  # TODO: Don't ask for permission!
             try:
                 self._unmount_backup_hdd()
             except UnmountError:
@@ -34,10 +34,12 @@ class Drive:
             except RuntimeError:
                 log.error(f"Unmounting didnt work: {RuntimeError}")
 
-    def _backup_hdd_mounted(self):
+    @property
+    def _is_mounted(self):
         return path.ismount(self.b_hdd_mount)
 
-    def _backup_hdd_available(self):
+    @property
+    def _is_available(self):
         try:
             wait_for_device_file(self.b_hdd_device, self.b_timeout)
             # TODO: Ensure that the right HDD is found. (identifier-file?)

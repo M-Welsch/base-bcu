@@ -63,7 +63,7 @@ class BackupManager:
 			self._stop_services_on_nas()
 
 		self._hwctrl.dock_and_power()
-		self._mount_manager.mount_hdd()
+		self._mount_manager.mount()
 		try:
 			self._free_space_on_backup_hdd_if_necessary()
 			newest_backup = self._get_newest_backup_dir_path()

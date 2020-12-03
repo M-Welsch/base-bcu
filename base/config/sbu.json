@@ -1,0 +1,7 @@
+{
+    "logs_directory": "base/log",
+    "wait_for_channel_free_timeout": 2,
+    "wait_for_special_string_timeout": 1,
+    "wait_for_sbu_ready_timeout": 1,
+    "wait_for_acknowledge_timeout": 1
+}

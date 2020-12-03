@@ -1,5 +1,9 @@
 import json
-from typing import Any
+from typing import Any, Set
+
+
+class ConfigValidationError(Exception):
+	pass
 
 
 class Config(dict):
@@ -17,6 +21,11 @@ class Config(dict):
 	def save(self) -> None:
 		with open(self._config_path, "w") as jf:
 			json.dump(self, jf)
+
+	def assert_keys(self, keys: Set[str]):
+		missing_keys = keys - set(self.keys())
+		if missing_keys:
+			raise ConfigValidationError(f"Keys {missing_keys} are missing in {self._config_path}.")
 
 	@property
 	def is_read_only(self) -> bool:

@@ -1,0 +1,8 @@
+{
+    "backup_frequency": "Weekly",
+    "test_key": 16,
+    "day_of_month": 12,
+    "day_of_week": 0,
+    "hour": 22,
+    "minute": 13
+}
