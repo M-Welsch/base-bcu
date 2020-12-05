@@ -6,7 +6,8 @@ from base.common.config import Config
 
 
 class Schedule(Scheduler):
-    valid_backup_frequencies = {"minutes", "hours", "days", "weeks", "months"}
+    valid_backup_frequencies = {"hours", "days", "weeks"}
+    valid_days_of_week = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
     shutdown_request = Signal()
 
     def __init__(self):
@@ -27,15 +28,25 @@ class Schedule(Scheduler):
         self._reconfig_slot = Job(1, scheduler=self)
         self._reconfig_slot.unit = "seconds"
 
+
     def load(self):
         backup_frequency = self._schedule.backup_frequency
+        day_of_week = self._schedule.day_of_week
         if backup_frequency not in Schedule.valid_backup_frequencies:
             raise ValueError(
                 f"Invalid backup frequency '{backup_frequency}'. "
                 f"Use one of {Schedule.valid_backup_frequencies}"
             )
-        self._backup_slot = Job(1, scheduler=self)  # TODO: Finish backup schedule loading.
+        if day_of_week not in Schedule.valid_days_of_week:
+            raise ValueError(
+                f"{day_of_week} is no valid day!"
+                f"Use one of {Schedule.valid_days_of_week}"
+            )
+        self._backup_slot = Job(1, scheduler=self)
         self._backup_slot.unit = backup_frequency
+        self._backup_slot.start_day = day_of_week
+        self._backup_slot.hour = self._schedule.hour
+        self._backup_slot.minute = self._schedule.minute
 
     "@Slot()"
     def on_reconfig(self, new_config, **kwargs):
