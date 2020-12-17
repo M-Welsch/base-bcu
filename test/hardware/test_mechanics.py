@@ -1,19 +1,28 @@
+import pytest
 from time import sleep
 
 from base.hardware.mechanics import Mechanics
 from base.hardware.pin_interface import PinInterface
+from base.common.config import Config
 
 
-mechanics = Mechanics()
+@pytest.fixture()
+def mechanics():
+    Config.set_config_base_dir("/home/base/python.base/base/config/")
+    yield Mechanics()
 
 
-def test_dock():
+@pytest.mark.skip(reason="Mechanics need some grease!")
+@pytest.mark.slow
+def test_dock(mechanics):
     mechanics.dock()
     sleep(1)
     assert not PinInterface.global_instance().docked_sensor_pin_high
 
 
-def test_undock():
+@pytest.mark.skip(reason="Mechanics need some grease!")
+@pytest.mark.slow
+def test_undock(mechanics):
     mechanics.undock()
     sleep(1)
     assert not PinInterface.global_instance().undocked_sensor_pin_high
