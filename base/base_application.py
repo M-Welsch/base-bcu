@@ -7,6 +7,7 @@ from base.common.config import Config
 class BaSeApplication:
     def __init__(self):
         super().__init__()
+        Config.set_config_base_dir("python.base/base/config/")
         self._schedule = Schedule()
         self._shutting_down = False
         self._connect_signals()

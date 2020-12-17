@@ -4,7 +4,7 @@ from base.common.config import Config
 
 class SBU:
     def __init__(self):
-        self._config = Config("/home/base/python.base/base/config/sbu.json")
+        self._config = Config("sbu.json")
         self._pin_interface = PinInterface.global_instance()
 
 

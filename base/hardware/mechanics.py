@@ -10,7 +10,7 @@ class DockingError(Exception):
 
 class Mechanics:
     def __init__(self):
-        self._config = Config("/home/base/python.base/base/config/mechanics.json")
+        self._config = Config("mechanics.json")
         self._pin_interface = PinInterface.global_instance()
 
     def dock(self):
