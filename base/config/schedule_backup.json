@@ -1,7 +1,7 @@
 {
-    "backup_frequency": "weeks",
+    "backup_frequency": "months",
     "day_of_month": 12,
-    "day_of_week": "sunday",
+    "day_of_week": 6,
     "hour": 22,
     "minute": 13
 }
