@@ -1,81 +1,49 @@
-import sys
-import os
 from datetime import datetime, timedelta
-path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(path_to_module)
+from dateutil.relativedelta import relativedelta
+
 from base.common.config import Config
 
 
 class TimeCalculator:
-    def __init__(self):
-        self._bu_config = Config(path_to_module+"/base/config/schedule_backup.json")
+    increments = {
+        "days": timedelta(days=1),
+        "weeks": timedelta(weeks=1),
+        "months": relativedelta(months=1)
+    }
 
-    def next_bu(self):
-        if self._bu_config.backup_frequency == "days":
-            next = self._next_daily_bu()
-
-        elif self._bu_config.backup_frequency == "weeks":
-            next = self._next_weekly_bu()
-
-        elif self._bu_config.backup_frequency == "months":
-            next = self._next_monthly_bu()
-
-        else:
-            print("invalid backup frequency!")
-
-        return next
-
-    def _next_daily_bu(self):
+    def next_backup(self, plan: Config) -> datetime:
+        self._validate_plan(plan)
         now = datetime.now()
-        next_bu = datetime(
+        next_backup = datetime(
             year=now.year,
             month=now.month,
-            day=now.day,
-            hour=self._bu_config.hour,
-            minute=self._bu_config.minute
+            day=plan.day_of_month if plan.backup_frequency == "months" else now.day,
+            hour=plan.hour,
+            minute=plan.minute
         )
-        while next_bu < now:
-            next_bu = next_bu + timedelta(days=1)
-        return next_bu
 
-    def _next_weekly_bu(self):
-        now = datetime.now()
-        next_bu = datetime(
-            year=now.year,
-            month=now.month,
-            day=now.day,
-            hour=self._bu_config.hour,
-            minute=self._bu_config.minute
-        )
-        target_day_of_week = self._bu_config.day_of_week
-        while next_bu.weekday() < target_day_of_week:
-            next_bu = next_bu + timedelta(days=1)
-        while next_bu < now:
-            next_bu = next_bu + timedelta(days=7)
-        return next_bu
+        if plan.backup_frequency == "weekly":
+            while next_backup.weekday() < plan.day_of_week:
+                next_backup = next_backup + timedelta(days=1)
 
-    def _next_monthly_bu(self):
-        now = datetime.now()
-        next_bu = datetime(
-            year=now.year,
-            month=now.month,
-            day=self._bu_config.day_of_month,
-            hour=self._bu_config.hour,
-            minute=self._bu_config.minute
-        )
-        while next_bu < now:
-            next_bu = self._increment_one_month(next_bu)
-        return next_bu
+        if next_backup < now:
+            next_backup += TimeCalculator.increments[plan.backup_frequency]
+
+        return next_backup
 
     @staticmethod
-    def _increment_one_month(orig_date):
-        target_day_of_month = orig_date.day
-        incremented = orig_date + timedelta(days=1)
-        while not incremented.day == target_day_of_month:
-            incremented = incremented + timedelta(days=1)
-        return incremented
+    def _validate_plan(plan):  # TODO: Test this function
+        assert plan.backup_frequency in TimeCalculator.increments.keys()
+        assert 0 <= plan.day_of_month <= 31
+        assert 0 <= plan.day_of_week <= 6
+        assert 0 <= plan.hour <= 23
+        assert 0 <= plan.minute <= 59
 
 
 if __name__ == '__main__':
-    TC = TimeCalculator()
-    print(TC.next_bu())
+    from pathlib import Path
+
+    Config.set_config_base_dir(Path(__file__).parent.parent/"config")
+    config = Config("schedule_backup.json")
+
+    print(TimeCalculator().next_backup(config))
