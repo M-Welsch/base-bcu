@@ -1,6 +1,7 @@
-import pytest
-
+from pathlib import Path
 import sched
+
+import pytest
 
 from base.logic.schedule import Schedule
 from base.common.config import Config
@@ -8,7 +9,7 @@ from base.common.config import Config
 
 @pytest.fixture()
 def schedule():
-    Config.set_config_base_dir("/home/base/python.base/base/config/")
+    Config.set_config_base_dir(Path("/home/base/python.base/base/config/"))
     yield Schedule()
 
 

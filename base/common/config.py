@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 from typing import Any, Set
 
 
@@ -8,18 +8,18 @@ class ConfigValidationError(Exception):
 
 
 class Config(dict):
-	_base_dir = "python.base/base/config/"
+	_base_path = Path("python.base/base/config/")
 
 	def __init__(self, config_file_name: str, read_only: bool = True, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._read_only: bool = read_only
-		self._config_path: str = os.path.join(self._base_dir, config_file_name)
+		self._config_path: Path = self._base_path / config_file_name
 		self._initialized: bool = True
 		self.reload()
 
 	@classmethod
-	def set_config_base_dir(cls, base_dir):
-		cls._base_dir = base_dir
+	def set_config_base_dir(cls, base_dir: Path) -> None:
+		cls._base_path = base_dir
 
 	def reload(self) -> None:
 		with open(self._config_path, "r") as jf:
