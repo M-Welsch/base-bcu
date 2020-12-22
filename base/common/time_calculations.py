@@ -25,7 +25,7 @@ class TimeCalculator:
             byhour=plan.hour,
             byminute=plan.minute,
             bysecond=0
-        )))
+        ))).timestamp()
 
     def _plan_from_config(self, config: Config) -> _Plan:
         self._validate_config(config)
