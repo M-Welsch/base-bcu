@@ -8,7 +8,7 @@ class ConfigValidationError(Exception):
 
 
 class Config(dict):
-	_base_path = Path("python.base/base/config/")
+	_base_path = Path("base/config/")
 
 	def __init__(self, config_file_name: str, read_only: bool = True, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -18,7 +18,7 @@ class Config(dict):
 		self.reload()
 
 	@classmethod
-	def set_config_base_dir(cls, base_dir: Path) -> None:
+	def set_config_base_path(cls, base_dir: Path) -> None:
 		cls._base_path = base_dir
 
 	def reload(self) -> None:

@@ -1,7 +1,12 @@
+import logging
+from pathlib import Path
 from time import time
 
 from base.hardware.pin_interface import PinInterface
 from base.common.config import Config
+
+
+LOG = logging.getLogger(Path(__file__).name)
 
 
 class DockingError(Exception):

@@ -9,7 +9,7 @@ from base.common.config import Config
 
 @pytest.fixture()
 def schedule():
-    Config.set_config_base_dir(Path("/home/base/python.base/base/config/"))
+    Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
     yield Schedule()
 
 

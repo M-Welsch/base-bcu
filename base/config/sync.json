@@ -1,0 +1,10 @@
+{
+    "nas_finder_maximum_connection_trials": 5,
+    "nas_finder_wait_seconds_between_connection_trials": 1,
+    "remote_backup_source_location": "/mnt/HDD",
+    "local_backup_target_location": "/media/BackupHDD",
+    "sample_interval": 0.2,
+    "ssh_host": "192.168.0.100",
+    "ssh_user": "root",
+    "incremental": true
+}

@@ -50,7 +50,7 @@ class TimeCalculator:
 if __name__ == '__main__':
     from pathlib import Path
 
-    Config.set_config_base_dir(Path(__file__).parent.parent/"config")
+    Config.set_config_base_path(Path(__file__).parent.parent / "config")
     conf = Config("schedule_backup.json")
 
     print(TimeCalculator().next_backup(conf))

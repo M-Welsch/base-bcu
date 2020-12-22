@@ -1,3 +1,5 @@
+import logging
+from pathlib import Path
 import sched
 from time import time, sleep
 from typing import Optional
@@ -6,6 +8,9 @@ from signalslot import Signal
 
 from base.common.config import Config
 from base.common.time_calculations import TimeCalculator
+
+
+LOG = logging.getLogger(Path(__file__).name)
 
 
 class Schedule:
