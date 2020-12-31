@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 from time import sleep
 
+from base.hardware.hardware import Hardware
 from base.logic.backup import Backup
 from base.logic.schedule import Schedule
 from base.common.config import Config
@@ -15,6 +16,7 @@ class BaSeApplication:
         Config.set_config_base_path(Path("base/config/"))
         self._config: Config = Config("base.json")
         self._setup_logger()
+        self._hardware = Hardware()
         self._backup = Backup()
         self._schedule = Schedule()
         self._shutting_down = False
@@ -28,6 +30,9 @@ class BaSeApplication:
     def _connect_signals(self):
         self._schedule.shutdown_request.connect(self._shutdown)
         self._schedule.backup_request.connect(self._backup.on_backup_request)
+        self._backup.postpone_request.connect(self._schedule.on_postpone_backup)
+        self._backup.hardware_engage_request.connect(self._hardware.engage)
+        self._backup.hardware_disengage_request.connect(self._hardware.disengage)
 
     def _shutdown(self, **kwargs):
         self._stop_threads()

@@ -119,6 +119,10 @@ class RsyncWrapperThread(Thread):
         )
         self._set_backup_finished_flag = set_backup_finished_flag
 
+    @property
+    def running(self):
+        return self.is_alive()
+
     def run(self):
         with self._ssh_rsync as output_generator:
             for status in output_generator:

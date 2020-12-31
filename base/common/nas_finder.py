@@ -6,65 +6,59 @@ from pathlib import Path
 
 from base.common.ssh_interface import SSHInterface
 from base.common.debug_utils import dump_ifconfig
+from base.common.config import Config
 
 
-log = logging.getLogger(Path(__file__).name)
+LOG = logging.getLogger(Path(__file__).name)
+
+
+# TODO: Please refactor NasFinder!
 
 
 class NasFinder:
-	def __init__(self, config_backup):
-		self._config_backup = config_backup
+	def __init__(self):
+		self._config: Config = Config("sync.json")
 
-	def nas_available(self, target_ip, target_user):
+	def nas_available(self):
+		target_ip = self._config.ssh_host
+		target_user = self._config.ssh_user
 		return self._nas_ip_available(target_ip) and self._nas_correct(target_ip, target_user)
 
-	def _nas_ip_available(self, target_ip):
-		connection_trials = 0
-		max_connection_trials = self._config_backup["nas_finder_maximum_connection_trials"]
+	@staticmethod
+	def _nas_ip_available(target):
 		response = False
 		ssh_port = 22
-		while connection_trials < max_connection_trials and not response:
-			t_ip = socket.gethostbyname(target_ip)
-			s = socket. \
-				socket(socket.AF_INET, socket.SOCK_STREAM)
-			try:
-				s.connect((t_ip, ssh_port))
-				print(f"NAS Finder: {target_ip}:{ssh_port} open!")
-				response = True
-			except OSError as e:
-				if "Errno 101" in str(e):
-					# network unreachable
-					log.warning(f'Nas Finder. Network is unreachable! OSError: {e}')
-					dump_ifconfig()
-					connection_trials += 1
-				elif "Errno 113" in str(e):
-					# No route to host
-					log.warning(f'NAS Finder: {target_ip}:{ssh_port} is not open! OSError: {e}')
-					connection_trials += 1
-				sleep(self._config_backup["nas_finder_wait_seconds_between_connection_trials"])
-			finally:
-				s.close()
+		target_ip = socket.gethostbyname(target)
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		try:
+			sock.connect((target_ip, ssh_port))
+			LOG.info(f"NAS Finder: {target}:{ssh_port} open!")
+			response = True
+		except OSError as e:
+			if "Errno 101" in str(e):  # network unreachable
+				LOG.warning(f'Nas Finder. Network is unreachable! OSError: {e}')
+				dump_ifconfig()
+			elif "Errno 113" in str(e):  # No route to host
+				LOG.warning(f'NAS Finder: {target}:{ssh_port} is not open! OSError: {e}')
+		finally:
+			sock.close()
 
-		if not response:
-			log.error(
-				f'NAS Finder: {target_ip}:{ssh_port} is not open! Tried {max_connection_trials} times with '
-				f'{self._config_backup["nas_finder_wait_seconds_between_connection_trials"]} pause'
-			)
-			print(f"NAS Finder: {target_ip}:{ssh_port} is not open!")
 		return response
 
 	def _nas_correct(self, target_ip, target_user):
 		response = None
-		with SSHInterface() as SSHI:
-			if SSHI.connect(target_ip, target_user) == 'Established':
-				response = self.check_connected_nas(SSHI, target_ip)
+		with SSHInterface() as sshi:
+			if sshi.connect(target_ip, target_user) == 'Established':
+				response = self.check_connected_nas(sshi, target_ip)
 		return response
 
-	def _nas_hdd_mounted(self, target_ip, target_user):
+	def nas_hdd_mounted(self):
 		response = None
-		with SSHInterface() as SSHI:
-			if SSHI.connect(target_ip, target_user) == 'Established':
-				response = self._check_nas_hdd_mounted(SSHI)
+		target_ip = self._config.ssh_host
+		target_user = self._config.ssh_user
+		with SSHInterface() as sshi:
+			if sshi.connect(target_ip, target_user) == 'Established':
+				response = self._check_nas_hdd_mounted(sshi)
 		return response
 
 	@staticmethod
@@ -72,22 +66,17 @@ class NasFinder:
 		response = False
 		stdout, stderr = sshi.run('cat nas_for_backup')
 		if stderr:
-			log.error(
+			LOG.error(
 				f"NAS on {target_ip} is not the correct one? Couldn't open file 'nas_for_backup'. Error = {stderr}"
 			)
 		if 'DietPi' in stdout:  # Fixme: cleaner! Its a json file now
-			log.info(f"found correct NAS on {target_ip}")
+			LOG.info(f"found correct NAS on {target_ip}")
 			response = True
 		return response
 
 	def _check_nas_hdd_mounted(self, sshi):
-		nas_hdd_path = self._config_backup["remote_backup_source_location"]
-		sshi.run(f'cd {nas_hdd_path}')
+		sshi.run(f'cd {self._config.remote_backup_source_location}')
 		sleep(1)
 		stdout, stderr = sshi.run(f'mount | grep HDD')
-		print(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
-		log.info(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
-		if re.search("sd.. on /mnt/HDD type ext4", stdout):
-			return True
-		else:
-			return False
+		LOG.info(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
+		return bool(re.search("sd.. on /mnt/HDD type ext4", stdout))

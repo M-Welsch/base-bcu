@@ -27,6 +27,7 @@ class Schedule:
         self._schedule: Config = Config("schedule_backup.json")
         self._schedule.assert_keys({"backup_frequency", "day_of_week"})
         self._backup_job: Optional[sched.Event] = None
+        self._postponed_backup_job: Optional[sched.Event] = None
 
     def run_pending(self) -> None:
         self._scheduler.run(blocking=False)
@@ -56,6 +57,10 @@ class Schedule:
     def _reschedule_backup(self) -> None:
         due = TimeCalculator().next_backup(self._schedule)
         self._backup_job = self._scheduler.enterabs(due, 2, self._invoke_backup)
+
+    def on_postpone_backup(self, seconds, **kwargs):
+        if self._postponed_backup_job is None or self._postponed_backup_job not in self._scheduler.queue:
+            self._postponed_backup_job = self._scheduler.enter(seconds, 2, self._invoke_backup)
 
     def on_reconfig(self, new_config, **kwargs) -> None:
         self._scheduler.enter(1, 1, lambda: self._reconfig(new_config))
