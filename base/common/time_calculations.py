@@ -6,7 +6,7 @@ from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY
 from base.common.config import Config
 
 
-_Plan = namedtuple("Plan", "frequency monthday weekday hour minute")
+_Plan = namedtuple("Plan", "frequency monthday weekday hour minute second")
 
 
 class TimeCalculator:
@@ -24,7 +24,7 @@ class TimeCalculator:
             byweekday=plan.weekday,
             byhour=plan.hour,
             byminute=plan.minute,
-            bysecond=0
+            bysecond=plan.second
         ))).timestamp()
 
     def _plan_from_config(self, config: Config) -> _Plan:
@@ -35,7 +35,8 @@ class TimeCalculator:
             monthday=config.day_of_month if frequency == MONTHLY else None,
             weekday=config.day_of_week if frequency == WEEKLY else None,
             hour=config.hour,
-            minute=config.minute
+            minute=config.minute,
+            second=config.second
         )
 
     @staticmethod
@@ -45,6 +46,7 @@ class TimeCalculator:
         assert 0 <= config.day_of_week <= 6
         assert 0 <= config.hour <= 23
         assert 0 <= config.minute <= 59
+        assert 0 <= config.second <= 59
 
 
 if __name__ == '__main__':

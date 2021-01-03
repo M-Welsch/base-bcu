@@ -10,7 +10,7 @@ from base.common.utils import check_path_end_slash_and_asterisk
 from base.common.config import Config
 
 
-log = logging.getLogger(Path(__file__).name)
+LOG = logging.getLogger(Path(__file__).name)
 
 
 class Patterns:
@@ -21,8 +21,9 @@ class Patterns:
     _speed = r"\d{1,3}\.\d{2}(k|M|G|T)?B/s"
     _time = r"\d+:\d{2}:\d{2}"
     _rest = r"(\s+\(xfr#\d+,\sto-chk=\d+/\d+\))?"
+    _path = r"[^\0]+"
 
-    path = re.compile(r"[^\0]+")
+    path = re.compile(_path)
     file_stats = re.compile(
             _spaces + _number + _spaces + _percentage + _spaces + _speed + _spaces + _time + _rest
         )
@@ -31,6 +32,7 @@ class Patterns:
         r"sent " + _number + r" bytes {2}received " + _number + r" bytes {2}" + _decimal + r" bytes/sec"
     )
     end_stats_b = re.compile(r"total size is " + _number + r" {2}speedup is " + _decimal)
+    dir_not_found = re.compile(r'rsync: link_stat "' + _path + r'" failed: No such file or directory (2)')
 
 
 def parse_line_to_status(line, status):
@@ -46,6 +48,9 @@ def parse_line_to_status(line, status):
         status.finished = True
     elif re.fullmatch(Patterns.path, line):
         status.path = line
+    elif re.fullmatch(Patterns.dir_not_found, line):
+        status.finished = True
+        status.error = True
     else:
         pass
     return status
@@ -57,12 +62,13 @@ class SshRsync:
             self.path = path
             self.progress = progress
             self.finished = False
+            self.error = False
 
         def __str__(self):
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
     def __init__(self, host, user, remote_source_path, local_target_path):
-        self._compose_rsync_command(host, user, remote_source_path, local_target_path)
+        self._command = self._compose_rsync_command(host, user, remote_source_path, local_target_path)
         self._process = None
         self._status = self.Status()
 
@@ -76,14 +82,15 @@ class SshRsync:
         except ProcessLookupError:
             pass
 
-    def _compose_rsync_command(self, host, user, remote_source_path, local_target_path):
+    @staticmethod
+    def _compose_rsync_command(host, user, remote_source_path, local_target_path):
         remote_source_path = check_path_end_slash_and_asterisk(remote_source_path)
         # Todo: change command like this "rsync -avh --delete -e ssh root@192.168.0.34:/mnt/HDD/*"
         command = f'sudo rsync -avHe'.split()
         command.append("ssh -i /home/base/.ssh/id_rsa")
         command.extend(f"{user}@{host}:{remote_source_path} {local_target_path} --outbuf=N --info=progress2".split())
-        print(f"rsync_command: {command}")
-        self._command = command
+        LOG.debug(f"rsync_command: {command}")
+        return command
 
     def _output_generator(self):
         while True:
@@ -100,7 +107,10 @@ class SshRsync:
             yield self._status
 
     def terminate(self):
-        os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
+        try:
+            os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
+        except AttributeError as e:
+            LOG.warning(f"No process to terminate: {e}")
 
     def kill(self):
         # self._process.kill()  # Not working!
@@ -128,7 +138,7 @@ class RsyncWrapperThread(Thread):
             for status in output_generator:
                 print(status)
             self._set_backup_finished_flag()
-            log.info("Backup finished!")
+            LOG.info("Backup finished!")
 
     def terminate(self):
         self._ssh_rsync.terminate()
