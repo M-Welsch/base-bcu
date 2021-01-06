@@ -29,6 +29,7 @@ class NasFinder:
 		response = False
 		ssh_port = 22
 		target_ip = socket.gethostbyname(target)
+		socket.setdefaulttimeout(1)  # TODO: Make argument to socket.setdefaulttimeout() configurable
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		try:
 			sock.connect((target_ip, ssh_port))
@@ -75,8 +76,9 @@ class NasFinder:
 		return response
 
 	def _check_nas_hdd_mounted(self, sshi):
-		sshi.run(f'cd {self._config.remote_backup_source_location}')
+		source = self._config.remote_backup_source_location
+		sshi.run(f'cd {source}')
 		sleep(1)
-		stdout, stderr = sshi.run(f'mount | grep HDD')
-		LOG.info(f"command = 'mount | grep HDD' on nas, stdout = {stdout}, stderr = {stderr}")
-		return bool(re.search("sd.. on /mnt/HDD type ext4", stdout))
+		stdout, stderr = sshi.run(f'mount | grep {source}')
+		LOG.info(f"command = 'mount | grep {source}' on nas, stdout = {stdout}, stderr = {stderr}")
+		return bool(re.search(f"sd.. on {source} type ext4", stdout))

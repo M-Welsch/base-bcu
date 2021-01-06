@@ -13,6 +13,14 @@ from base.common.config import Config
 LOG = logging.getLogger(Path(__file__).name)
 
 
+class RemoteDirectoryException(Exception):
+    pass
+
+
+class LocalDirectoryException(Exception):
+    pass
+
+
 class Patterns:
     _spaces = r"\s+"
     _number = r"\d{1,3}(,\d{3})*"
@@ -68,6 +76,7 @@ class SshRsync:
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
     def __init__(self, host, user, remote_source_path, local_target_path):
+        self._validate_directories(remote_source_path, local_target_path)
         self._command = self._compose_rsync_command(host, user, remote_source_path, local_target_path)
         self._process = None
         self._status = self.Status()
@@ -83,6 +92,17 @@ class SshRsync:
             pass
 
     @staticmethod
+    def _validate_directories(remote_source_path, local_target_path):
+        try:
+            assert os.path.isdir(local_target_path)
+        except AssertionError:
+            raise LocalDirectoryException("Local directory invalid")
+        try:
+            assert os.path.isdir(remote_source_path)
+        except AssertionError:
+            raise RemoteDirectoryException("Remote directory invalid")
+
+    @staticmethod
     def _compose_rsync_command(host, user, remote_source_path, local_target_path):
         remote_source_path = check_path_end_slash_and_asterisk(remote_source_path)
         # Todo: change command like this "rsync -avh --delete -e ssh root@192.168.0.34:/mnt/HDD/*"
@@ -95,6 +115,7 @@ class SshRsync:
     def _output_generator(self):
         while True:
             line = self._process.stdout.readline()
+            print("line:", line)
             code = self._process.poll()
 
             if not line:

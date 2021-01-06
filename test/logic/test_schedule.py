@@ -21,7 +21,7 @@ def schedule(tmpdir):
         schedule_data["backup_frequency"] = "days"
         schedule_data["hour"] = now.hour
         schedule_data["minute"] = now.minute
-        schedule_data["second"] = now.second + 1
+        schedule_data["second"] = (now.second + 1) % 60
         json.dump(schedule_data, dst)
     Config.set_config_base_path(config_test_path)
     yield Schedule()
