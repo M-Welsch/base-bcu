@@ -1,5 +1,6 @@
 {
     "nas_finder_maximum_connection_trials": 5,
+    "nas_finder_timeout": 1,
     "nas_finder_wait_seconds_between_connection_trials": 1,
     "remote_backup_source_location": "/mnt/HDD",
     "local_backup_target_location": "/media/BackupHDD",

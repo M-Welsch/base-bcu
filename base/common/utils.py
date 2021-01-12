@@ -1,9 +1,12 @@
 import os
+import logging
+from pathlib import Path
 from time import sleep
 from subprocess import run, Popen, PIPE, STDOUT
 import socket
 from base.common.exceptions import *
 
+LOG = logging.getLogger(Path(__file__).name)
 
 def wait_for_new_device_file(seconds):
 	device_files_before = get_device_files()
@@ -99,6 +102,14 @@ def get_ip_address():
 	finally:
 		s.close()
 	return IP
+
+
+def get_eth0_mac_address() -> str:
+	try:
+		mac = open('/sys/class/net/eth0/address').readline()
+	except NameError:
+		LOG.error("Cannot determine my MAC address!")
+	return mac[0:17]
 
 
 def get_sbu_fw_uploads_folder():
