@@ -17,6 +17,7 @@ class BackupRequestError(Exception):
 
 # TODO: Add postpone delays and postpone count maxima to config
 # TODO: Refactor check functions to eliminate code duplication
+# TODO: IMPORTANT!!! Fix all NasFinder related checks!!!
 
 
 class Backup:
@@ -66,7 +67,7 @@ class Backup:
                 raise BackupRequestError("Aborted: Network not reachable")
 
     def check_for_source_device_reachability(self):
-        if not NasFinder().nas_available():
+        if not NasFinder().assert_nas_available():
             if self._postpone_count < 3:
                 self._postpone_count += 1
                 self.postpone_request.emit(seconds=2)
@@ -76,7 +77,7 @@ class Backup:
                 raise BackupRequestError("Aborted: Data source device not reachable")
 
     def check_for_source_hdd_readiness(self):
-        if not NasFinder().nas_hdd_mounted():
+        if not NasFinder().assert_nas_hdd_mounted():
             if self._postpone_count < 3:
                 self._postpone_count += 1
                 self.postpone_request.emit(seconds=2)

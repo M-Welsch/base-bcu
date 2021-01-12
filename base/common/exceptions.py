@@ -50,6 +50,10 @@ class NasNotCorrectError(Exception):
     pass
 
 
+class NasNotMountedError(Exception):
+    pass
+
+
 def break_it():
     raise DockingError("Timout exceeded!")
 

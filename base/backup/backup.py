@@ -103,7 +103,7 @@ class BackupManager:
 
 	def _nas_available(self):
 		nas_finder = NasFinder(self._config_backup)
-		nas_available = nas_finder.nas_available(self._ssh_host, self._ssh_user)
+		nas_available = nas_finder.assert_nas_available(self._ssh_host, self._ssh_user)
 		if not nas_available:
 			raise NasNotAvailableError
 		return nas_available

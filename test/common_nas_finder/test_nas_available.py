@@ -12,7 +12,7 @@ if __name__ == '__main__':
     NF = NasFinder(config.config_backup)
     nas_ip = config.config_backup["ssh_host"]
     nas_user = config.config_backup["ssh_user"]
-    print(NF.nas_available(nas_ip, nas_user))
-    print(NF.nas_available('192.168.0.100', nas_user))
+    print(NF.assert_nas_available(nas_ip, nas_user))
+    print(NF.assert_nas_available('192.168.0.100', nas_user))
     wrong_ip = '192.168.1.1'
-    print(NF.nas_available(wrong_ip, nas_user))
+    print(NF.assert_nas_available(wrong_ip, nas_user))

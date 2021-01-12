@@ -9,7 +9,7 @@ from base.common.ssh_interface import SSHInterface
 from base.common.debug_utils import dump_ifconfig
 from base.common.config import Config
 from base.common.utils import get_eth0_mac_address
-from base.common.exceptions import NetworkError, NasNotCorrectError
+from base.common.exceptions import NetworkError, NasNotCorrectError, NasNotMountedError
 
 
 LOG = logging.getLogger(Path(__file__).name)
@@ -19,13 +19,13 @@ class NasFinder:
     def __init__(self):
         self._config: Config = Config("sync.json")
 
-    def nas_available(self):
+    def assert_nas_available(self):
         target_ip = self._config.ssh_host
         target_user = self._config.ssh_user
-        return self._nas_ip_available(target_ip) and self._nas_correct(target_ip, target_user)
+        self._assert_nas_ip_available(target_ip)
+        self._assert_nas_correct(target_ip, target_user)
 
-    def _nas_ip_available(self, target):
-        response = False
+    def _assert_nas_ip_available(self, target):
         ssh_port = 22
         target_ip = socket.gethostbyname(target)
         socket.setdefaulttimeout(
@@ -34,7 +34,6 @@ class NasFinder:
         try:
             sock.connect((target_ip, ssh_port))
             LOG.info(f"NAS Finder: {target}:{ssh_port} open!")
-            response = True
         except OSError as e:
             if "Errno 101" in str(e):  # network unreachable
                 dump_ifconfig()
@@ -44,26 +43,20 @@ class NasFinder:
         finally:
             sock.close()
 
-        return response
-
-    def _nas_correct(self, target_ip, target_user):
-        response = None
+    def _assert_nas_correct(self, target_ip, target_user):
         with SSHInterface() as sshi:
             if sshi.connect(target_ip, target_user) == 'Established':
-                response = self.check_connected_nas(sshi, target_ip)
-        return response
+                self._assert_nas_connection(sshi, target_ip)
 
-    def nas_hdd_mounted(self):
-        response = None
+    def assert_nas_hdd_mounted(self):
         target_ip = self._config.ssh_host
         target_user = self._config.ssh_user
         with SSHInterface() as sshi:
             if sshi.connect(target_ip, target_user) == 'Established':
-                response = self._check_nas_hdd_mounted(sshi)
-        return response
+                self._assert_check_nas_hdd_mounted(sshi)
 
     @staticmethod
-    def check_connected_nas(sshi, target_ip):
+    def _assert_nas_connection(sshi, target_ip):
         stdout, stderr = sshi.run('cat nas_for_backup')
         if stderr:
             raise NasNotCorrectError(
@@ -76,12 +69,12 @@ class NasFinder:
             raise NasNotCorrectError(f"MAC authentication with NAS on {target_ip} failed. "
                                      f"My MAC is {my_mac_address}, "
                                      f"NAS only accepts {valid_backup_servers}")
-        return True
 
-    def _check_nas_hdd_mounted(self, sshi):
+    def _assert_check_nas_hdd_mounted(self, sshi):
         source = self._config.remote_backup_source_location
         sshi.run(f'cd {source}')
         sleep(1)
         stdout, stderr = sshi.run(f'mount | grep {source}')
         LOG.info(f"command = 'mount | grep {source}' on nas, stdout = {stdout}, stderr = {stderr}")
-        return bool(re.search(f"sd.. on {source} type ext4", stdout))
+        if not re.search(f"sd.. on {source} type ext4", stdout):
+            raise NasNotMountedError(f"NAS not mounted: mount | grep {source} returned {stdout}")
