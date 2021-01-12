@@ -1,7 +1,8 @@
-from subprocess import run, PIPE
+from __future__ import annotations
 from dataclasses import dataclass
 import json
-from typing import List
+from subprocess import run, PIPE
+from typing import Any, Dict, List
 
 from base.common.exceptions import ExternalCommandError
 
@@ -9,12 +10,14 @@ from base.common.exceptions import ExternalCommandError
 @dataclass
 class PartitionInfo:
     path: str
+    mount_point: str
     bytes_size: int
 
     @classmethod
-    def from_json(cls, json_info):
+    def from_json(cls, json_info: Dict[str, Any]) -> PartitionInfo:
         return cls(
             path=json_info["path"],
+            mount_point=json_info["mountpoint"],
             bytes_size=int(json_info["size"])
         )
 
@@ -30,10 +33,10 @@ class DriveInfo:
     rotational: bool
     drive_type: str
     state: str
-    partitions: list
+    partitions: List[PartitionInfo]
 
     @classmethod
-    def from_json(cls, json_info):
+    def from_json(cls, json_info: Dict[str, Any]) -> DriveInfo:
         return cls(
             name=json_info["name"],
             path=json_info["path"],
@@ -49,15 +52,16 @@ class DriveInfo:
 
 
 class DriveInspector:
-    def __init__(self):
+    def __init__(self) -> None:
         command = ["lsblk", "-o", "NAME,PATH,MODEL,SERIAL,SIZE,MOUNTPOINT,ROTA,TYPE,STATE", "-b", "-J"]
-        self._json_info = self._query(command)
+        json_info = self._query(command)
+        self._devices = [DriveInfo.from_json(drive_json_info) for drive_json_info in json_info]
 
     @property
     def devices(self) -> List[DriveInfo]:
-        return [DriveInfo.from_json(drive_json_info) for drive_json_info in self._json_info]
+        return self._devices
 
-    def device_file(self, model_name, serial_number, bytes_size, partition_index):
+    def device_info(self, model_name: str, serial_number: str, bytes_size: int, partition_index: int) -> PartitionInfo:
         candidates = [
             device for device in self.devices if device.model_name == model_name and
                                                  device.serial_number == serial_number and
@@ -66,10 +70,10 @@ class DriveInspector:
         assert len(candidates) == 1
         partitions = [p for p in candidates[0].partitions if p.path.endswith(str(partition_index))]
         assert len(partitions) == 1
-        return partitions[0].path
+        return partitions[0]
 
     @staticmethod
-    def _query(command):
+    def _query(command: List[str]) -> List[Dict[str, Any]]:
         cp = run(command, stdout=PIPE, stderr=PIPE)
         if cp.stderr:
             raise ExternalCommandError(cp.stderr)

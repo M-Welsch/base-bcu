@@ -3,9 +3,9 @@
     "backup_hdd_mount_point": "/media/BackupHDD",
     "backup_device_file_timeout": 20,
     "backup_hdd_device_signature": {
-        "model_number": "ST3500418AS",
-        "serial_number": "alt",
-        "device_size_bytes": "",
-        "partition": 1
+        "model_name": "SAMSUNG_HD501LJ",
+        "serial_number": "S0MUJ1FPC26555",
+        "bytes_size": 500107862016,
+        "partition_index": 1
     }
 }
