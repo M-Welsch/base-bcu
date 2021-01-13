@@ -34,6 +34,7 @@ class Drive:
                 LOG.info(f"Mounted HDD {self._device_info.path} at {self._device_info.mount_point}")
             except ExternalCommandError:
                 raise MountingError(f"Backup HDD could not be mounted")
+        assert DriveInspector().device_info(**self._config.backup_hdd_device_signature).mount_point
 
     def unmount(self):
         if self._is_mounted:  # TODO: Don't ask for permission!

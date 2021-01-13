@@ -5,16 +5,12 @@ from signalslot import Signal
 
 from base.logic.sync import RsyncWrapperThread
 from base.common.config import Config
-from base.common.exceptions import NetworkError, NasNotMountedError, NasNotCorrectError
+from base.common.exceptions import NetworkError, NasNotMountedError, NasNotCorrectError, BackupRequestError
 from base.common.network_utils import network_available
 from base.common.nas_finder import NasFinder
 
 
 LOG = logging.getLogger(Path(__file__).name)
-
-
-class BackupRequestError(Exception):
-    pass
 
 
 # TODO: Refactor check functions to eliminate code duplication

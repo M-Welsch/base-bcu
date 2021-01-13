@@ -27,7 +27,6 @@ def drive(tmpdir):
 
 def test_mount(drive):
     drive.mount()
-    assert Path(drive.backup_hdd_device_info.path).is_mount()
 
 
 def test_unmount(drive):

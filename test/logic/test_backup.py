@@ -4,8 +4,9 @@ import os
 
 import pytest
 
-from base.logic.backup import Backup, BackupRequestError
+from base.logic.backup import Backup
 from base.common.config import Config
+from base.common.exceptions import NasNotMountedError, BackupRequestError
 
 
 @pytest.fixture()
@@ -52,7 +53,12 @@ def test_check_for_source_device_reachability(backup):
 
 
 def test_check_for_source_hdd_readiness(backup):
-    backup.check_for_source_hdd_readiness()
+    # check_for_source_hdd_readiness() check whether the NAS-HDD
+    # is mounted on a path specified in the config file
+    # however for these tests, this key in the config file is overwritten
+    # by a temporary location. This is why this test will fail
+    with pytest.raises((NasNotMountedError, BackupRequestError)):
+        backup.check_for_source_hdd_readiness()
 
 
 def test_ask_weather_frog_for_permission(backup):
