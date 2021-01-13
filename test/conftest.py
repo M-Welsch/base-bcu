@@ -4,7 +4,7 @@ import sys
 import pytest
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def configure_logger():
     # Path(self._config.logs_directory).mkdir(exist_ok=True)
     logging.basicConfig(

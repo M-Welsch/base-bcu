@@ -8,7 +8,7 @@ from base.common.config import Config
 from base.common.drive_inspector import DriveInspector
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def drive(tmpdir):
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))
@@ -25,11 +25,13 @@ def drive(tmpdir):
     yield Drive()
 
 
-def test_mount(drive):
-    drive.mount()
+class TestDrive:
+    @staticmethod
+    def test_mount(drive):
+        drive.mount()
 
-
-def test_unmount(drive):
-    if drive._device_info is not None:
-        drive.unmount()
-        assert not Path(drive._device_info.path).is_mount()
+    @staticmethod
+    def test_unmount(drive):
+        if drive._device_info is not None:
+            drive.unmount()
+            assert not Path(drive._device_info.path).is_mount()

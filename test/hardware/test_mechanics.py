@@ -8,23 +8,25 @@ from base.hardware.pin_interface import PinInterface
 from base.common.config import Config
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def mechanics():
     Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
     yield Mechanics()
 
 
-@pytest.mark.skip(reason="Mechanics need some grease!")
-@pytest.mark.slow
-def test_dock(mechanics):
-    mechanics.dock()
-    sleep(1)
-    assert not PinInterface.global_instance().docked_sensor_pin_high
+class TestMechanics:
+    @staticmethod
+    @pytest.mark.skip(reason="Mechanics need some grease!")
+    @pytest.mark.slow
+    def test_dock(mechanics):
+        mechanics.dock()
+        sleep(1)
+        assert not PinInterface.global_instance().docked_sensor_pin_high
 
-
-@pytest.mark.skip(reason="Mechanics need some grease!")
-@pytest.mark.slow
-def test_undock(mechanics):
-    mechanics.undock()
-    sleep(1)
-    assert not PinInterface.global_instance().undocked_sensor_pin_high
+    @staticmethod
+    @pytest.mark.skip(reason="Mechanics need some grease!")
+    @pytest.mark.slow
+    def test_undock(mechanics):
+        mechanics.undock()
+        sleep(1)
+        assert not PinInterface.global_instance().undocked_sensor_pin_high
