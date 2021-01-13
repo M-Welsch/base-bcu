@@ -9,7 +9,8 @@ from base.common.drive_inspector import DriveInspector
 
 
 @pytest.fixture(scope="class")
-def drive(tmpdir):
+def drive(tmpdir_factory):
+    tmpdir = tmpdir_factory.mktemp("drive_test_config_dir")
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))
     with open(config_path/"drive.json", "r") as src, open(config_test_path/"drive.json", "w") as dst:

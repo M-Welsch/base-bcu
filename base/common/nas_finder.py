@@ -76,5 +76,5 @@ class NasFinder:
         sleep(1)
         stdout, stderr = sshi.run(f'mount | grep {source}')
         LOG.info(f"command = 'mount | grep {source}' on nas, stdout = {stdout}, stderr = {stderr}")
-        if not re.search(f"sd.. on {source} type ext4", stdout):
+        if not re.search(f"sd.. on {source}", stdout):
             raise NasNotMountedError(f"NAS not mounted: mount | grep {source} returned {stdout}")
