@@ -4,6 +4,8 @@ from pathlib import Path
 from signalslot import Signal
 
 from base.logic.sync import RsyncWrapperThread
+from base.common.config import Config
+from base.common.exceptions import NetworkError, NasNotMountedError, NasNotCorrectError
 from base.common.network_utils import network_available
 from base.common.nas_finder import NasFinder
 
@@ -15,9 +17,7 @@ class BackupRequestError(Exception):
     pass
 
 
-# TODO: Add postpone delays and postpone count maxima to config
 # TODO: Refactor check functions to eliminate code duplication
-# TODO: IMPORTANT!!! Fix all NasFinder related checks!!!
 
 
 class Backup:
@@ -27,6 +27,7 @@ class Backup:
 
     def __init__(self):
         self._sync = RsyncWrapperThread(set_backup_finished_flag=None)
+        self._config = Config("backup.json")
         self._postpone_count = 0
         LOG.info("Backup initialized")
 
@@ -58,29 +59,37 @@ class Backup:
 
     def check_for_network_reachability(self):
         if not network_available():
-            if self._postpone_count < 3:
+            if self._postpone_count < self._config.retrials_after_network_unreachable:
                 self._postpone_count += 1
-                self.postpone_request.emit(seconds=2)
+                self.postpone_request.emit(seconds=self._config.seconds_between_network_reachout_retrials)
                 raise BackupRequestError("Postponed: Network not reachable")
             else:
                 self._postpone_count = 0
                 raise BackupRequestError("Aborted: Network not reachable")
 
     def check_for_source_device_reachability(self):
-        if not NasFinder().assert_nas_available():
-            if self._postpone_count < 3:
+        try:
+            NasFinder().assert_nas_available()
+        except NetworkError as e:
+            LOG.warning(f"Network Error has occured: {e}")
+            if self._postpone_count < self._config.retrials_after_nas_unreachable:
                 self._postpone_count += 1
-                self.postpone_request.emit(seconds=2)
+                self.postpone_request.emit(seconds=self._config.seconds_between_nas_reachout_retrials)
                 raise BackupRequestError("Postponed: Data source device not reachable")
             else:
                 self._postpone_count = 0
                 raise BackupRequestError("Aborted: Data source device not reachable")
+        except NasNotCorrectError as e:
+            LOG.error(e)
+            # Todo: how to treat the case that base found an incorrect nas?
 
     def check_for_source_hdd_readiness(self):
-        if not NasFinder().assert_nas_hdd_mounted():
-            if self._postpone_count < 3:
+        try:
+            NasFinder().assert_nas_hdd_mounted()
+        except NasNotMountedError as e:
+            if self._postpone_count < self._config.retrials_after_nas_hdd_unavailable:
                 self._postpone_count += 1
-                self.postpone_request.emit(seconds=2)
+                self.postpone_request.emit(seconds=self._config.seconds_between_nas_hdd_mount_retrials)
                 raise BackupRequestError("Postponed: Data source hdd not ready")
             else:
                 self._postpone_count = 0
@@ -93,9 +102,9 @@ class Backup:
 
     def check_for_hardware_readiness(self):
         if True:
-            if self._postpone_count < 3:
+            if self._postpone_count < self._config.retrials_after_hardware_not_ready:
                 self._postpone_count += 1
-                self.postpone_request.emit(seconds=2)
+                self.postpone_request.emit(seconds=self._config.seconds_between_hardware_ready_checks)
                 raise BackupRequestError("Postponed: Hardware not ready")
             else:
                 self._postpone_count = 0
@@ -103,9 +112,9 @@ class Backup:
 
     def check_for_drive_readiness(self):
         if True:
-            if self._postpone_count < 3:
+            if self._postpone_count < self._config.retrials_after_hdd_not_ready:
                 self._postpone_count += 1
-                self.postpone_request.emit(seconds=2)
+                self.postpone_request.emit(seconds=self._config.seconds_between_hdd_ready_checks)
                 raise BackupRequestError("Postponed: Drive not spun up")
             else:
                 self._postpone_count = 0

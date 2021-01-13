@@ -35,6 +35,9 @@ def backup(tmpdir):
         sync_config_data["remote_backup_source_location"] = str(source)
         sync_config_data["local_backup_target_location"] = str(target)
         json.dump(sync_config_data, dst)
+    with open(config_path/"backup.json", "r") as src, open(config_test_path/"backup.json","w") as dst:
+        backup_config_data = json.load(src)
+        json.dump(backup_config_data, dst)
     Config.set_config_base_path(config_test_path)
     yield Backup()
     print("source contents:", os.listdir(str(source)))

@@ -18,6 +18,10 @@ class Drive:
         self._config = Config("drive.json")
         self._device_info = None
 
+    @property
+    def backup_hdd_device_info(self):
+        return self._device_info
+
     def mount(self):
         self._device_info = DriveInspector().device_info(**self._config.backup_hdd_device_signature)
         assert self._device_info.path
@@ -25,6 +29,7 @@ class Drive:
             command = ["mount", "-t", self._config.backup_hdd_file_system,
                        self._device_info.path, self._config.backup_hdd_mount_point]
             try:
+                print(command)
                 run_external_command(command)
                 LOG.info(f"Mounted HDD {self._device_info.path} at {self._device_info.mount_point}")
             except ExternalCommandError:
