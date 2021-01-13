@@ -4,9 +4,6 @@ from dataclasses import dataclass
 from base.common.time_calculations import TimeCalculator
 
 
-
-
-
 def test_validate_config():
     @dataclass
     class Config:
