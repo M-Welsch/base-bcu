@@ -40,9 +40,9 @@ class TimeCalculator:
         )
 
     @staticmethod
-    def _validate_config(config: Config) -> None:  # TODO: Test this function
+    def _validate_config(config: Config) -> None:
         assert config.backup_frequency in TimeCalculator._frequencies.keys()
-        assert 0 <= config.day_of_month <= 31
+        assert 1 <= config.day_of_month <= 31
         assert 0 <= config.day_of_week <= 6
         assert 0 <= config.hour <= 23
         assert 0 <= config.minute <= 59
