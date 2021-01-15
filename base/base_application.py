@@ -3,14 +3,19 @@ import logging
 from pathlib import Path
 import sys
 from time import sleep
+from signalslot import Signal
 
 from base.hardware.hardware import Hardware
 from base.logic.backup import Backup
 from base.logic.schedule import Schedule
 from base.common.config import Config
+from base.common.interrupts import ShutdownInterrupt, Button0Interrupt, Button1Interrupt
 
 
 class BaSeApplication:
+    button_0_pressed = Signal()
+    button_1_pressed = Signal()
+
     def __init__(self):
         super().__init__()
         Config.set_config_base_path(Path("base/config/"))
@@ -24,8 +29,15 @@ class BaSeApplication:
 
     def start(self):
         while not self._shutting_down:
-            self._schedule.run_pending()
-            sleep(1)
+            try:
+                self._schedule.run_pending()
+                sleep(1)
+            except ShutdownInterrupt:
+                self._shutting_down = True
+            except Button0Interrupt:
+                self.button_0_pressed.emit()
+            except Button1Interrupt:
+                self.button_1_pressed.emit()
 
     def _connect_signals(self):
         self._schedule.shutdown_request.connect(self._shutdown)
