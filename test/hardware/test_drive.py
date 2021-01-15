@@ -27,12 +27,19 @@ def drive(tmpdir_factory):
 
 
 class TestDrive:
+
+    @staticmethod
+    def test_is_mounted(drive):
+        print(f"drive._is_mounted: {drive._is_mounted}")
+
     @staticmethod
     def test_mount(drive):
         drive.mount()
+        assert drive._is_mounted
 
     @staticmethod
     def test_unmount(drive):
         if drive._device_info is not None:
             drive.unmount()
             assert not Path(drive._device_info.path).is_mount()
+            assert not drive._is_mounted

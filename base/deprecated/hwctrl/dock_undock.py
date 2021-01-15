@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 import time
 
-from base.hwctrl.current_measurement import Current_Measurement
+from base.deprecated.hwctrl import Current_Measurement
 
 
 log = logging.getLogger(Path(__file__).name)

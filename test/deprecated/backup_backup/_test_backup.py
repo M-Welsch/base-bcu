@@ -6,7 +6,7 @@ print(path_to_module)
 sys.path.append(path_to_module)
 
 from base.common.config import Config
-from base.backup.backup import BackupManager, BackupBrowser
+from base.deprecated.backup import BackupManager, BackupBrowser
 
 
 if __name__ == '__main__':

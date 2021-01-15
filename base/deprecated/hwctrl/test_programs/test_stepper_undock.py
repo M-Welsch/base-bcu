@@ -2,8 +2,6 @@ import sys
 path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
 
-from base.hwctrl.hwctrl import HWCTRL
-from base.common.config import Config
 from time import sleep
 
 class Stepper_Tester():
@@ -28,10 +26,10 @@ def Stepper_Tester_wo_hwctrl():
 
 	GPIO.output(stepper_step, GPIO.LOW)
 	GPIO.output(stepper_reset, GPIO.HIGH)
-	GPIO.output(stepper_dir, GPIO.HIGH)
+	GPIO.output(stepper_dir, GPIO.LOW)
 
 	# dock
-	while GPIO.input(endswitch_docked):
+	while GPIO.input(endswitch_undocked):
 		GPIO.output(stepper_step, GPIO.HIGH)
 		sleep(0.0005)
 		GPIO.output(stepper_step, GPIO.LOW)

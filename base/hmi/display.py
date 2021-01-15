@@ -1,6 +1,5 @@
-from base.hwctrl.lcd import *
 from base.common.config import Config
-from base.hwctrl.hwctrl import HWCTRL
+from base.deprecated.hwctrl import HWCTRL
 
 class Display:
     def __init__(self, sbu_communicator):

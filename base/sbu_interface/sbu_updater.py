@@ -6,7 +6,7 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 sys.path.append(path_to_module)
 
 from base.common.utils import get_sbu_fw_uploads_folder, run_external_command_as_generator_shell
-from base.hwctrl.hwctrl import HWCTRL
+from base.deprecated.hwctrl import HWCTRL
 
 class SbuUpdater:
 	def __init__(self):
@@ -40,9 +40,8 @@ class SbuUpdater:
 if __name__ == '__main__':
 
 	from base.common.config import Config
-	from base.hwctrl.hwctrl import *
 
-	_config = Config("/home/base/base/config.json")
+    _config = Config("/home/base/base/config.json")
 	_hardware_control = HWCTRL.global_instance(_config.config_hwctrl)
 
 	SBUU = SbuUpdater(_hardware_control)

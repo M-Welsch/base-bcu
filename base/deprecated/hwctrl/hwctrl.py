@@ -7,8 +7,7 @@ import logging
 from pathlib import Path
 from threading import Thread
 
-from base.hwctrl.hw_definitions import *
-from base.hwctrl.dock_undock import *
+from base.deprecated.hwctrl.hw_definitions import *
 from base.common.config import Config
 
 

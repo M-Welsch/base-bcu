@@ -5,7 +5,7 @@ import socket
 from collections import namedtuple
 from time import sleep, time
 
-from base.codebooks.codebooks import TCP_Codebook
+from base.deprecated.codebooks import TCP_Codebook
 
 
 class TCPServerThread(threading.Thread):

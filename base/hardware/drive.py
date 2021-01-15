@@ -37,13 +37,12 @@ class Drive:
         assert DriveInspector().device_info(**self._config.backup_hdd_device_signature).mount_point
 
     def unmount(self):
-        if self._is_mounted:  # TODO: Don't ask for permission!
-            try:
-                self._unmount_backup_hdd()
-            except UnmountError:
-                LOG.error(f"Unmounting didnt work: {UnmountError}")
-            except RuntimeError:
-                LOG.error(f"Unmounting didnt work: {RuntimeError}")
+        try:
+            self._unmount_backup_hdd()
+        except UnmountError:
+            LOG.error(f"Unmounting didnt work: {UnmountError}")
+        except RuntimeError:
+            LOG.error(f"Unmounting didnt work: {RuntimeError}")
 
     @property
     def _is_mounted(self):

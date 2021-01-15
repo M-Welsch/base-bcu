@@ -1,5 +1,3 @@
-from base.hwctrl.hw_definitions import *
-
 class GPIO():
 	def setmode(mode):
 		print("GPIO Mockup: Pretending to setup according to {}".format(mode))

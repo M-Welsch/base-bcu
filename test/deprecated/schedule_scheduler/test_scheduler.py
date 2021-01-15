@@ -4,8 +4,7 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname
 print(path_to_module)
 sys.path.append(path_to_module)
 
-from base.common.config import Config
-from base.schedule.scheduler import *
+from base.deprecated.schedule.scheduler import *
 
 
 class ScheduleTester:

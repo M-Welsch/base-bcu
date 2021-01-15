@@ -1,13 +1,12 @@
 from typing import Dict, List
 from datetime import timedelta
 
-from base.codebooks.codebooks import *
 from base.common.tcp import TCPServerThread
 from base.webapp_.webapp import Webapp
-from base.schedule.scheduler import BaseScheduler
-from base.backup.backup import BackupManager
-from base.daemon.mounting import MountManager
-from base.daemon.shutdown import ShutdownController
+from base.deprecated.schedule.scheduler import BaseScheduler
+from base.deprecated.backup import BackupManager
+from base.deprecated.daemon.mounting import MountManager
+from base.deprecated.daemon.shutdown import ShutdownController
 from base.common.utils import *
 from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
 from base.sbu_interface.sbu_updater import *

@@ -13,10 +13,10 @@ from datetime import datetime
 from base.common.utils import run_external_command_as_generator, run_external_command_as_generator_shell, check_path_end_slash_and_asterisk, network_available
 from base.common.ssh_interface import SSHInterface
 from base.common.nas_finder import NasFinder
-from base.backup.rsync_wrapper import RsyncWrapperThread
+from base.deprecated.backup.rsync_wrapper import RsyncWrapperThread
 from base.common.exceptions import *
 from base.common.config import Config
-from base.hwctrl.hwctrl import HWCTRL
+from base.deprecated.hwctrl import HWCTRL
 
 
 log = logging.getLogger(Path(__file__).name)

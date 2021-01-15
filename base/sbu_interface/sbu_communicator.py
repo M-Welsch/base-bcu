@@ -14,9 +14,6 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 sys.path.append(path_to_module)
 from base.sbu_interface.sbu_uart_finder import SbuUartFinder
 from base.common.exceptions import *
-from base.common.config import Config
-from base.hwctrl.hwctrl import HWCTRL
-
 
 log = logging.getLogger(Path(__file__).name)
 
@@ -308,7 +305,7 @@ if __name__ == '__main__':
 
     path_to_module = "/home/maxi"
     sys.path.append(path_to_module)
-    from base.hwctrl.hwctrl import HWCTRL
+    from base.deprecated.hwctrl import HWCTRL
     from base.common.config import Config
 
     CONFIG = Config("/home/maxi/base/config.json")

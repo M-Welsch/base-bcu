@@ -58,7 +58,6 @@ class SbuUartFinder:
 
 if __name__ == "__main__":
     from base.common.config import Config
-    from base.hwctrl.hwctrl import *
 
     _config = Config("/home/maxi/base/config.json")
     _hardware_control = HWCTRL.global_instance(_config.config_hwctrl)

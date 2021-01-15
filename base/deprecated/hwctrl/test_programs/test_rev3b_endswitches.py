@@ -1,9 +1,9 @@
 import sys
-from time import sleep
+
 path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
 
-from base.hwctrl.hw_definitions import *
+from base.deprecated.hwctrl.hw_definitions import *
 
 def poll_endsw_status_periodically(pin_interface, period):
 	while True:

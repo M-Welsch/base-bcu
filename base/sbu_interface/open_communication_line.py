@@ -1,11 +1,10 @@
-import os, sys, glob, serial
+import os, sys
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
 if __name__ == "__main__":
     from base.common.config import Config
-    from base.hwctrl.hwctrl import *
 
     _config = Config("/home/maxi/base/config.json")
     _hardware_control = HWCTRL.global_instance(_config.config_hwctrl)

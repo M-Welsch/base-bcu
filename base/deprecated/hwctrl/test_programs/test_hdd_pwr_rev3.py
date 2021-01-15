@@ -2,7 +2,7 @@ import sys
 path_to_module = "/home/maxi"
 sys.path.append(path_to_module)
 
-from base.hwctrl.hwctrl import HWCTRL
+from base.deprecated.hwctrl import HWCTRL
 from base.common.config import Config
 from time import sleep
 

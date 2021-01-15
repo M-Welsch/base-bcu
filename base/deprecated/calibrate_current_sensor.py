@@ -5,9 +5,9 @@ from collections import OrderedDict
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
-from base.hwctrl.hw_definitions import *
-from base.hwctrl.current_measurement import Current_Measurement
-from base.hwctrl.lcd import *
+from base.deprecated.hwctrl.hw_definitions import *
+from base.deprecated.hwctrl import Current_Measurement
+
 
 class Current_Sensor_Calibrator():
 	def __init__(self):
