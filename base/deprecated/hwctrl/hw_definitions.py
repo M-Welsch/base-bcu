@@ -168,8 +168,8 @@ class PinInterface:
 		GPIO.setup(self.pin.attiny_program_ncommunicate, GPIO.OUT)
 		GPIO.setup(self.pin.En_attiny_link, GPIO.OUT)
 		GPIO.setup(self.pin.heartbeat, GPIO.OUT)
-		self.set_attiny_serial_path_to_communication()
-		self.enable_receiving_messages_from_attiny()
+        self.set_sbu_serial_path_to_communication()
+		self.enable_receiving_messages_from_sbu()
 
 	def get_hw_revision(self):
 		GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -298,7 +298,7 @@ class PinInterface:
 	def set_attiny_serial_path_to_sbc_fw_update(self):
 		GPIO.output(self.pin.attiny_program_ncommunicate, GPIO.HIGH)
 
-	def set_attiny_serial_path_to_communication(self):
+	def set_sbu_serial_path_to_communication(self):
 		GPIO.output(self.pin.attiny_program_ncommunicate, GPIO.LOW)
 
 	def enable_receiving_messages_from_attiny(self):

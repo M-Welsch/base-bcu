@@ -6,7 +6,7 @@ sys.path.append(path_to_module)
 if __name__ == "__main__":
     from base.deprecated.hwctrl.hw_definitions import *
     pin = PinInterface(1)
-    pin.set_attiny_serial_path_to_communication()
+    pin.set_sbu_serial_path_to_communication()
     pin.enable_receiving_messages_from_attiny()
     while True:
         sleep(1)

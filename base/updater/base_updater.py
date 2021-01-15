@@ -69,14 +69,14 @@ class BaseUpdater:
         self._sbuc.terminate()
 
     def _update_sbu(self):
-        self._hwctrl.enable_receiving_messages_from_attiny()
+        self._hwctrl.enable_receiving_messages_from_sbu()
         self._hwctrl.set_attiny_serial_path_to_sbc_fw_update()
 
         sbu_u = SbuUpdater()
         sbu_u.update_sbu()
 
         self._hwctrl.disable_receiving_messages_from_attiny()
-        self._hwctrl.set_attiny_serial_path_to_communication()
+        self._hwctrl.set_sbu_serial_path_to_communication()
 
     def _reboot(self):
         self._hwctrl.terminate()

@@ -39,8 +39,8 @@ class PinInterface:
         GPIO.setup(Pins.sbu_program_ncommunicate, GPIO.OUT)
         GPIO.setup(Pins.en_sbu_link, GPIO.OUT)
         GPIO.setup(Pins.heartbeat, GPIO.OUT)
-        self.set_attiny_serial_path_to_communication()
-        self.enable_receiving_messages_from_attiny()
+        self.set_sbu_serial_path_to_communication()
+        self.enable_receiving_messages_from_sbu()
 
     @staticmethod
     def cleanup():
@@ -149,19 +149,19 @@ class PinInterface:
         GPIO.output(Pins.stepper_dir, GPIO.LOW)
 
     @staticmethod
-    def set_attiny_serial_path_to_sbc_fw_update():
+    def set_sbu_serial_path_to_sbu_fw_update():
         GPIO.output(Pins.sbu_program_ncommunicate, GPIO.HIGH)
 
     @staticmethod
-    def set_attiny_serial_path_to_communication():
+    def set_sbu_serial_path_to_communication():
         GPIO.output(Pins.sbu_program_ncommunicate, GPIO.LOW)
 
     @staticmethod
-    def enable_receiving_messages_from_attiny():
+    def enable_receiving_messages_from_sbu():
         GPIO.output(Pins.en_sbu_link, GPIO.HIGH)
 
     @staticmethod
-    def disable_receiving_messages_from_attiny():
+    def disable_receiving_messages_from_sbu():
         GPIO.output(Pins.en_sbu_link, GPIO.LOW)
 
     @staticmethod

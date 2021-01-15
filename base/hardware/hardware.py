@@ -5,10 +5,12 @@ from base.hardware.power import Power
 from base.hardware.hmi import HMI
 from base.hardware.sbu import SBU
 from base.hardware.drive import Drive
+from base.common.config import Config
 
 
 class Hardware:
     def __init__(self):
+        self._config = Config("hardware.json")
         self._mechanics = Mechanics()
         self._power = Power()
         self._hmi = HMI()
@@ -23,5 +25,5 @@ class Hardware:
     def disengage(self, **kwargs):
         self._drive.unmount()
         self._power.hdd_power_off()
-        sleep(5)  # TODO: Make delay between power off and undock configurable
+        sleep(self._config.hdd_spindown_time)
         self._mechanics.undock()

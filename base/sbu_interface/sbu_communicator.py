@@ -69,8 +69,8 @@ class SbuCommunicator:
         return sbu_uart_interface
 
     def _prepare_hardware_for_sbu_communication(self):
-        self._hwctrl.set_attiny_serial_path_to_communication()
-        self._hwctrl.enable_receiving_messages_from_attiny()  # necessary
+        self._hwctrl.set_sbu_serial_path_to_communication()
+        self._hwctrl.enable_receiving_messages_from_sbu()  # necessary
 
     @property
     def is_serial_connection_open(self):

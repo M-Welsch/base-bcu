@@ -141,9 +141,9 @@ class HWCTRL(Thread):
         self._pin_interface.set_attiny_serial_path_to_sbc_fw_update()
 
     def set_attiny_serial_path_to_communication(self):
-        self._pin_interface.set_attiny_serial_path_to_communication()
+        self._pin_interface.set_sbu_serial_path_to_communication()
 
-    def enable_receiving_messages_from_attiny(self):
+    def enable_receiving_messages_from_sbu(self):
         log.info(
             "Enabling receiving Messages from SBC by setting signal EN_attiny_link = HIGH. WARNING! "
             "This signal has to be set LOW before BPi goes to sleep! "

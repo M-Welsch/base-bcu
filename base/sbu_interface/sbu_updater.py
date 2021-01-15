@@ -14,13 +14,13 @@ class SbuUpdater:
 
 
 	def update_sbu(self):
-		self._hwctrl.enable_receiving_messages_from_attiny()
+		self._hwctrl.enable_receiving_messages_from_sbu()
 		self._hwctrl.set_attiny_serial_path_to_sbc_fw_update()
 
 		sbc_fw_filename = self._get_filename_of_newest_hex_file()
 		self._write_hex_file_to_sbu(sbc_fw_filename)
 
-		self._hwctrl.set_attiny_serial_path_to_communication()
+        self._hwctrl.set_sbu_serial_path_to_communication()
 
 	@staticmethod
 	def _get_filename_of_newest_hex_file():

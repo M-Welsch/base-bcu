@@ -61,8 +61,8 @@ if __name__ == "__main__":
 
     _config = Config("/home/maxi/base/config.json")
     _hardware_control = HWCTRL.global_instance(_config.config_hwctrl)
-    _hardware_control.set_attiny_serial_path_to_communication()
-    _hardware_control.enable_receiving_messages_from_attiny()
+    _hardware_control.set_sbu_serial_path_to_communication()
+    _hardware_control.enable_receiving_messages_from_sbu()
 
     sbu_uart_finder = SbuUartFinder()
     UART_SBU = sbu_uart_finder.get_sbu_uart_interface()

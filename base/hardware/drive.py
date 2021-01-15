@@ -48,16 +48,6 @@ class Drive:
     def _is_mounted(self):
         return path.ismount(self._config.backup_hdd_mount_point)
 
-    @property
-    def _is_available(self):
-        try:
-            wait_for_device_file(self._config.backup_hdd_device_file_path, self._config.backup_device_file_timeout)
-            # TODO: Ensure that the right HDD is found. (identifier-file?)
-            return True
-        except RuntimeError as e:
-            LOG.error(e)
-            return False
-
     def _unmount_backup_hdd(self):
         print("Trying to unmount backup HDD...")
         command = ["sudo", "umount", self._config.backup_hdd_mount_point]

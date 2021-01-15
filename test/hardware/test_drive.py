@@ -41,5 +41,5 @@ class TestDrive:
     def test_unmount(drive):
         if drive._device_info is not None:
             drive.unmount()
-            assert not Path(drive._device_info.path).is_mount()
             assert not drive._is_mounted
+            assert not Path(drive._device_info.path).is_mount()
