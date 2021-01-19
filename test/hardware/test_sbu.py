@@ -1,5 +1,7 @@
 from pathlib import Path
 import json
+from random import random
+from datetime import datetime
 
 import pytest
 
@@ -24,9 +26,26 @@ def test_sbu_uart_finder():
     assert SbuUartFinder().get_sbu_uart_interface().startswith('/dev/ttyS')
 
 
-def test_init_serial_interface(sbu):
-    sbu._init_serial_interface()
-
-
 def test_write_to_display(sbu):
-    sbu.write_to_display("Write to Bisplay", "!! Test passed !!")
+    sbu.write_to_display("Write to Display", f"Random: {random():07f}")
+
+
+@pytest.mark.slow
+def test_set_display_brightness(sbu):
+    for brightness in range(0, 101, 10):
+        sbu.set_display_brightness_percent(brightness)
+
+
+@pytest.mark.slow
+def test_set_led_brightness(sbu):
+    for brightness in range(0, 101, 10):
+        sbu.set_led_brightness_percent(brightness)
+
+
+def test_send_seconds_to_next_bu(sbu):
+    seconds = 128
+    sbu.send_seconds_to_next_bu(seconds)
+
+def test_send_readable_timestamp(sbu):
+    timestamp = datetime.now().strftime('%d.%m.%Y %H:%M')
+    sbu.send_readable_timestamp(timestamp)

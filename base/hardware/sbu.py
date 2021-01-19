@@ -4,14 +4,13 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 from time import time, sleep
-
+from re import findall
 
 import pytest
 
 from base.hardware.pin_interface import PinInterface
 from base.common.config import Config
 from base.common.exceptions import SbuCommunicationTimeout
-
 
 LOG = logging.getLogger(Path(__file__).name)
 
@@ -27,6 +26,8 @@ class SbuCommand:
     message_code: str
     wait_for_acknowledge: bool
     wait_for_ready: bool
+    wait_for_special_string: bool=False
+    special_string: str=""
 
 
 class SbuCommands:
@@ -34,12 +35,49 @@ class SbuCommands:
         self.write_to_display_line1 = SbuCommand(
             message_code="D1",
             wait_for_acknowledge=True,
-            wait_for_ready=True
+            wait_for_ready=False # yes, that's how it is!
         )
         self.write_to_display_line2 = SbuCommand(
             message_code="D2",
             wait_for_acknowledge=True,
             wait_for_ready=True
+        )
+        self.set_display_brightness = SbuCommand(
+            message_code="DB",
+            wait_for_acknowledge=True,
+            wait_for_ready=True
+        )
+        self.set_led_brightness = SbuCommand(
+            message_code="DL",
+            wait_for_acknowledge=True,
+            wait_for_ready=True
+        )
+        self.set_seconds_to_next_bu = SbuCommand(
+            message_code="BU",
+            wait_for_acknowledge=True,
+            wait_for_ready=True,
+            wait_for_special_string=True,
+            special_string="CMP"
+        )
+        self.send_readable_timestamp_of_next_bu = SbuCommand(
+            message_code="BR",
+            wait_for_acknowledge=False, # Fixme: SBU Bug!
+            wait_for_ready=True,
+        )
+        self.measure_current = SbuCommand(
+            message_code="CC",
+            wait_for_acknowledge=True,
+            wait_for_ready=True,
+        )
+        self.measure_vcc3v = SbuCommand(
+            message_code="3V",
+            wait_for_acknowledge=True,
+            wait_for_ready=True,
+        )
+        self.measure_temperature = SbuCommand(
+            message_code="TP",
+            wait_for_acknowledge=True,
+            wait_for_ready=True,
         )
 
 
@@ -82,14 +120,19 @@ class SBU:
 
     def _process_command(self, command: SbuCommand, payload):
         log_message = ""
+        confirmation_message = None
         self._send_message_to_sbu(f"{command.message_code}:{payload}")
         if command.wait_for_acknowledge:
-            acknowledge_delay = self._wait_for_acknowledge(command.message_code)
+            [acknowledge_delay, _] = self._wait_for_acknowledge(command.message_code)
             log_message = f"{command.message_code} with payload {payload} acknowledged after {acknowledge_delay}s"
+        if command.wait_for_special_string:
+            [special_string_delay, confirmation_message] = self._wait_for_response(command.special_string)
+            log_message += f", special string received after {special_string_delay}"
         if command.wait_for_ready:
-            ready_delay = self._wait_for_sbu_ready()
+            [ready_delay, _] = self._wait_for_sbu_ready()
             log_message += f", ready after {ready_delay}"
         LOG.info(log_message)
+        return confirmation_message
 
     def _send_message_to_sbu(self, message):
         message = message + '\0'
@@ -98,9 +141,11 @@ class SBU:
     def _wait_for_acknowledge(self, message_code) -> int:
         return self._wait_for_response(f"ACK:{message_code}")
 
+    def _wait_for_sbu_ready(self):
+        return self._wait_for_response(f"Ready")
+
     def _wait_for_response(self, response) -> int:
         time_start = time()
-        time_diff = 0
         while True:
             time_diff = time() - time_start
             tmp = self._serial_connection.read_until().decode()
@@ -108,18 +153,7 @@ class SBU:
                 break
             if time_diff > self._config.wait_for_acknowledge_timeout:
                 raise SbuCommunicationTimeout(f"waiting for {response} took {time_diff}")
-            sleep(0.05)
-        return time_diff
-
-    # Fixme: for some reason the wait for ready loop doesnt work when included in wait_for_response
-    def _wait_for_sbu_ready(self):
-        time_start = time()
-        while time() - time_start < self._config.wait_for_sbu_ready_timeout:
-            tmp = self._serial_connection.read_until().decode()
-            if f"Ready" in tmp:
-                break
-            sleep(0.05)
-        return time() - time_start
+        return [time_diff, tmp]
 
     def write_to_display(self, line1, line2):
         self.check_display_line_for_length(line1)
@@ -127,9 +161,49 @@ class SBU:
         self._process_command(self._sbu_commands.write_to_display_line1, line1)
         self._process_command(self._sbu_commands.write_to_display_line2, line2)
 
-    def check_display_line_for_length(self, line):
+    @staticmethod
+    def check_display_line_for_length(line):
         if len(line) > 16:
             LOG.warning(f"Display string {line} is too long!")
+
+    def set_display_brightness_percent(self, display_brightness_in_percent):
+        self._process_command(self._sbu_commands.set_display_brightness,
+                              self._condition_brightness_value(display_brightness_in_percent))
+
+    def set_led_brightness_percent(self, led_brightness_in_percent):
+        self._process_command(self._sbu_commands.set_led_brightness,
+                              self._condition_brightness_value(led_brightness_in_percent))
+
+    @staticmethod
+    def _condition_brightness_value(brightness_in_percent):
+        brightness_16bit = int(brightness_in_percent / 100 * 65535)
+        maximum_brightness = 65535  # 16bit
+        if brightness_16bit > maximum_brightness:
+            LOG.warning(f"brightness value too high. Maximum is {maximum_brightness}, " \
+                        f"however {brightness_16bit} was given. Clipping to maximum.")
+            brightness_16bit = maximum_brightness
+        elif brightness_16bit < 0:
+            LOG.warning(f"Brightness shall not be negative. Clipping to zero.")
+            brightness_16bit = 0
+        return brightness_16bit
+
+    def send_seconds_to_next_bu(self, seconds):
+        command = self._sbu_commands.set_seconds_to_next_bu
+        payload = int(seconds)
+        LOG.info(f"Command: message_code = {command.message_code}, payload = {payload}")
+        assertion_message = self._process_command(command, payload)
+        value_in_cmp_register = int(findall(r'\d+', assertion_message)[0])
+        assert value_in_cmp_register == int(seconds/32)
+
+    def send_readable_timestamp(self, timestamp):
+        self._process_command(self._sbu_commands.send_readable_timestamp_of_next_bu, timestamp)
+
+    def measure_base_input_current(self):
+        self._measure(self._sbu_commands.measure_current)
+
+    def _measure(self, command):
+        pass
+
 
 
 class SbuUartFinder:
@@ -151,6 +225,7 @@ class SbuUartFinder:
         for uart_interface in uart_interfaces:
             if self._test_uart_interface_for_echo(uart_interface):
                 sbu_uart_interface = uart_interface
+                break
         return sbu_uart_interface
 
     @staticmethod
