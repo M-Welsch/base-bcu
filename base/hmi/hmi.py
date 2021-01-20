@@ -1,6 +1,5 @@
-from base.common.config import Config
 from base.hmi.display import Display
-from base.sbu_interface.sbu_communicator import SbuCommunicator
+from base.deprecated.sbu_interface.sbu_communicator import SbuCommunicator
 
 
 class HumanMachineInterface:

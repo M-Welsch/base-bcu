@@ -9,8 +9,8 @@ from base.deprecated.daemon.mounting import MountManager
 from base.deprecated.daemon.shutdown import ShutdownController
 from base.common.utils import *
 from base.common.readout_hdd_parameters import readout_parameters_of_all_hdds
-from base.sbu_interface.sbu_updater import *
-from base.sbu_interface.sbu_communicator import *
+from base.deprecated.sbu_interface.sbu_updater import *
+from base.deprecated.sbu_interface.sbu_communicator import *
 from base.hmi.display import *
 from base.hmi.hmi import HumanMachineInterface
 from base.common.debug_utils import copy_logfiles_to_nas

@@ -12,7 +12,7 @@ from time import sleep, time
 # path_to_module = "/home/maxi"
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
-from base.sbu_interface.sbu_uart_finder import SbuUartFinder
+from base.deprecated.sbu_interface.sbu_uart_finder import SbuUartFinder
 from base.common.exceptions import *
 
 log = logging.getLogger(Path(__file__).name)

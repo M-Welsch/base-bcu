@@ -5,8 +5,8 @@ sys.path.append(path_to_module)
 
 from base.common.tcp import TCPClientInterface
 from base.hmi.display import *
-from base.sbu_interface.sbu_communicator import *
-from base.sbu_interface.sbu_updater import *
+from base.deprecated.sbu_interface.sbu_communicator import *
+from base.deprecated.sbu_interface.sbu_updater import *
 from sysdmanager import SystemdManager
 import git
 
