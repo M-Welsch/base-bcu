@@ -46,6 +46,20 @@ def test_send_seconds_to_next_bu(sbu):
     seconds = 128
     sbu.send_seconds_to_next_bu(seconds)
 
+
 def test_send_readable_timestamp(sbu):
     timestamp = datetime.now().strftime('%d.%m.%Y %H:%M')
     sbu.send_readable_timestamp(timestamp)
+
+
+def test_current_measurement(sbu):
+    print(sbu.measure_base_input_current())
+
+
+def test_vcc3v_voltage_measurement(sbu):
+    print(sbu.measure_vcc3v_voltage())
+
+
+def test_sbu_temperature_measurement(sbu):
+    with pytest.raises(NotImplementedError):
+        print(sbu.measure_sbu_temperature())

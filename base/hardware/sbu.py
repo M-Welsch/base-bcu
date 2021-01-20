@@ -1,12 +1,12 @@
 import serial
 import glob
+import os
 import logging
 from dataclasses import dataclass
 from pathlib import Path
 from time import time, sleep
 from re import findall
-
-import pytest
+from subprocess import run, Popen, PIPE, STDOUT
 
 from base.hardware.pin_interface import PinInterface
 from base.common.config import Config
@@ -24,60 +24,77 @@ class CommFlags:
 @dataclass
 class SbuCommand:
     message_code: str
-    wait_for_acknowledge: bool
-    wait_for_ready: bool
-    wait_for_special_string: bool=False
-    special_string: str=""
+    await_acknowledge: bool
+    await_ready_signal: bool
+    await_response: bool = False
+    response_keyword: str = ""
+    automatically_free_channel: bool = True
 
 
 class SbuCommands:
     def __init__(self):
         self.write_to_display_line1 = SbuCommand(
             message_code="D1",
-            wait_for_acknowledge=True,
-            wait_for_ready=False # yes, that's how it is!
+            await_acknowledge=True,
+            await_ready_signal=False # yes, that's how it is!
         )
         self.write_to_display_line2 = SbuCommand(
             message_code="D2",
-            wait_for_acknowledge=True,
-            wait_for_ready=True
+            await_acknowledge=True,
+            await_ready_signal=True
         )
         self.set_display_brightness = SbuCommand(
             message_code="DB",
-            wait_for_acknowledge=True,
-            wait_for_ready=True
+            await_acknowledge=True,
+            await_ready_signal=True
         )
         self.set_led_brightness = SbuCommand(
             message_code="DL",
-            wait_for_acknowledge=True,
-            wait_for_ready=True
+            await_acknowledge=True,
+            await_ready_signal=True
         )
         self.set_seconds_to_next_bu = SbuCommand(
             message_code="BU",
-            wait_for_acknowledge=True,
-            wait_for_ready=True,
-            wait_for_special_string=True,
-            special_string="CMP"
+            await_acknowledge=True,
+            await_ready_signal=True,
+            await_response=True,
+            response_keyword="CMP"
         )
         self.send_readable_timestamp_of_next_bu = SbuCommand(
             message_code="BR",
-            wait_for_acknowledge=False, # Fixme: SBU Bug!
-            wait_for_ready=True,
+            await_acknowledge=False, # Fixme: SBU Bug!
+            await_ready_signal=True
         )
         self.measure_current = SbuCommand(
             message_code="CC",
-            wait_for_acknowledge=True,
-            wait_for_ready=True,
+            await_acknowledge=True,
+            await_ready_signal=True,
+            await_response=True,
+            response_keyword="CC"
         )
         self.measure_vcc3v = SbuCommand(
             message_code="3V",
-            wait_for_acknowledge=True,
-            wait_for_ready=True,
+            await_acknowledge=True,
+            await_ready_signal=True,
+            await_response=True,
+            response_keyword="3V"
         )
         self.measure_temperature = SbuCommand(
             message_code="TP",
-            wait_for_acknowledge=True,
-            wait_for_ready=True,
+            await_acknowledge=True,
+            await_ready_signal=True,
+            await_response=True,
+            response_keyword="TP"
+        )
+        self.request_shutdown = SbuCommand(
+            message_code="SR",
+            await_acknowledge=True,
+            await_ready_signal=False
+        )
+        self.abort_shutdown = SbuCommand(
+            message_code="SA",
+            await_acknowledge=True,
+            await_ready_signal=False
         )
 
 
@@ -115,30 +132,54 @@ class SBU:
             self._channel_busy = False
             self._sbu_ready = True
 
+    def close_serial_connection(self):
+        LOG.info("SBU Communicator is terminating. So long and thanks for all the bytes!")
+        self._serial_connection.close()
+        self._pin_interface.disable_receiving_messages_from_sbu()
+
     def _flush_sbu_channel(self):
         self._send_message_to_sbu('\0')
 
-    def _process_command(self, command: SbuCommand, payload):
+    def _process_command(self, command: SbuCommand, payload=""):
         log_message = ""
-        confirmation_message = None
-        self._send_message_to_sbu(f"{command.message_code}:{payload}")
-        if command.wait_for_acknowledge:
-            [acknowledge_delay, _] = self._wait_for_acknowledge(command.message_code)
-            log_message = f"{command.message_code} with payload {payload} acknowledged after {acknowledge_delay}s"
-        if command.wait_for_special_string:
-            [special_string_delay, confirmation_message] = self._wait_for_response(command.special_string)
-            log_message += f", special string received after {special_string_delay}"
-        if command.wait_for_ready:
-            [ready_delay, _] = self._wait_for_sbu_ready()
-            log_message += f", ready after {ready_delay}"
-        LOG.info(log_message)
-        return confirmation_message
+        sbu_response = None
+        self._wait_for_channel_free()
+        self._channel_busy = True
+        try:
+            self._send_message_to_sbu(f"{command.message_code}:{payload}")
+            if command.await_acknowledge:
+                [acknowledge_delay, _] = self._await_acknowledge(command.message_code)
+                log_message = f"{command.message_code} with payload {payload} acknowledged after {acknowledge_delay}s"
+            if command.await_response:
+                [response_delay, sbu_response] = self._wait_for_response(command.response_keyword)
+                log_message += f", special string received after {response_delay}"
+            if command.await_ready_signal:
+                [ready_delay, _] = self._wait_for_sbu_ready()
+                log_message += f", ready after {ready_delay}"
+            LOG.info(log_message)
+        except SbuCommunicationTimeout as e:
+            LOG.error(e)
+            self._flush_sbu_channel()
+        finally:
+            if command.automatically_free_channel:
+                self._channel_busy = False
+        return sbu_response
+
+    def _wait_for_channel_free(self):
+        time_start = time()
+        while self._channel_busy or not self._sbu_ready:
+            sleep(0.05)
+            if time() - time_start > self._config_sbuc["wait_for_channel_free_timeout"]:
+                raise SbuCommunicationTimeout(
+                    f'Waiting for longer than {self._config_sbuc["wait_for_channel_free_timeout"]} '
+                    f'for channel to be free.'
+                )
 
     def _send_message_to_sbu(self, message):
         message = message + '\0'
         self._serial_connection.write(message.encode())
 
-    def _wait_for_acknowledge(self, message_code) -> int:
+    def _await_acknowledge(self, message_code) -> int:
         return self._wait_for_response(f"ACK:{message_code}")
 
     def _wait_for_sbu_ready(self):
@@ -151,7 +192,7 @@ class SBU:
             tmp = self._serial_connection.read_until().decode()
             if response in tmp:
                 break
-            if time_diff > self._config.wait_for_acknowledge_timeout:
+            if time_diff > self._config.sbu_response_timeout:
                 raise SbuCommunicationTimeout(f"waiting for {response} took {time_diff}")
         return [time_diff, tmp]
 
@@ -198,12 +239,38 @@ class SBU:
     def send_readable_timestamp(self, timestamp):
         self._process_command(self._sbu_commands.send_readable_timestamp_of_next_bu, timestamp)
 
-    def measure_base_input_current(self):
-        self._measure(self._sbu_commands.measure_current)
+    def measure_base_input_current(self) -> float:
+        return self._measure(self._sbu_commands.measure_current)
 
-    def _measure(self, command):
-        pass
+    def measure_vcc3v_voltage(self) -> float:
+        return self._measure(self._sbu_commands.measure_vcc3v)
 
+    def measure_sbu_temperature(self) -> float:
+        return self._measure(self._sbu_commands.measure_temperature)
+
+    def _measure(self, command: SbuCommand) -> float:
+        response = self._process_command(command)
+        response_16bit_value = int(findall(r'[0-9]+', response)[0])
+        return self._convert_measurement_result(command, response_16bit_value)
+
+    @staticmethod
+    def _convert_measurement_result(command: SbuCommand, raw_value: int) -> float:
+        if command.message_code == "CC":
+            converted_value = raw_value * 0.00234
+        elif command.message_code == "3V":
+            converted_value = raw_value * 3.234 / 1008
+        elif command.message_code == "TP":
+            raise NotImplementedError("Temperature Measurement lacks implementation on SBU side!")
+        else:
+            LOG.warning(f"cannot convert anything from {command.message_code} (raw value given is {raw_value})")
+            converted_value = None
+        return converted_value
+
+    def request_shutdown(self):
+        self._process_command(self._sbu_commands.request_shutdown)
+
+    def abort_shutdown(self):
+        self._process_command(self._sbu_commands.abort_shutdown)
 
 
 class SbuUartFinder:
@@ -249,6 +316,39 @@ class SbuUartFinder:
             ser.reset_input_buffer()
             ser.reset_output_buffer()
         return response
+
+
+class SbuUpdater:
+    def __init__(self):
+        self._pin_interface = PinInterface.global_instance()
+
+    def update(self, sbu_fw_filename=""):
+        self._pin_interface.set_sbu_serial_path_to_communication()
+        self._pin_interface.enable_receiving_messages_from_sbu()
+        sbu_uart_channel = SbuUartFinder().get_sbu_uart_interface()
+        self._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
+        if not sbu_fw_filename:
+            sbu_fw_filename = self._get_filename_of_newest_hex_file()
+        sbu_update_command = f'sudo su - base -c "pyupdi -d tiny816 -c {sbu_uart_channel} -f {sbu_fw_filename}"'
+        try:
+            process = Popen(sbu_update_command,
+                            bufsize=0,
+                            shell=True,
+                            universal_newlines=True,
+                            stdout=PIPE,
+                            stderr=PIPE)
+            for line in process.stdout:
+                LOG.info(line)
+            if process.stderr:
+                LOG.error(process.stderr)
+        finally:
+            self._pin_interface.set_sbu_serial_path_to_communication()
+
+    @staticmethod
+    def _get_filename_of_newest_hex_file():
+        list_of_sbc_fw_files = glob.glob("/home/base/python.base/sbu_fw_files/*")
+        latest_sbc_fw_file = max(list_of_sbc_fw_files, key=os.path.getctime)
+        return latest_sbc_fw_file
 
 
 """
