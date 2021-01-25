@@ -5,7 +5,6 @@ from pathlib import Path
 from subprocess import run, PIPE
 
 from base.common.config import Config
-from base.common.utils import wait_for_device_file
 from base.common.exceptions import MountingError, UnmountError, ExternalCommandError
 from base.common.drive_inspector import DriveInspector
 
@@ -29,7 +28,7 @@ class Drive:
             command = ["mount", "-t", self._config.backup_hdd_file_system,
                        self._device_info.path, self._config.backup_hdd_mount_point]
             try:
-                print(command)
+                LOG.debug(command)
                 run_external_command(command)
                 LOG.info(f"Mounted HDD {self._device_info.path} at {self._device_info.mount_point}")
             except ExternalCommandError:
@@ -49,7 +48,7 @@ class Drive:
         return path.ismount(self._config.backup_hdd_mount_point)
 
     def _unmount_backup_hdd(self):
-        print("Trying to unmount backup HDD...")
+        LOG.debug("Trying to unmount backup HDD...")
         command = ["sudo", "umount", self._config.backup_hdd_mount_point]
         unmount_trials = 0
         unmount_success = False
@@ -59,7 +58,6 @@ class Drive:
                 unmount_success = True
             except ExternalCommandError as e:
                 if "not mounted" in str(e):
-                    print("BackupHDD already unmounted")
                     LOG.warning(f"BackupHDD already unmounted. stderr: {e}")
                     unmount_success = True
                 # Todo: find out who accesses the drive right now and write into logfile (with lsof?)

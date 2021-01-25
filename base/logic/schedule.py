@@ -67,7 +67,7 @@ class Schedule:
 
     @staticmethod
     def _reconfig(new_config) -> None:
-        print(f"Reconfiguring according to {new_config}...")  # TODO: actually do something with new_config
+        LOG.info(f"Reconfiguring according to {new_config}...")  # TODO: actually do something with new_config
 
     def on_shutdown_requested(self, **kwargs) -> None:
         delay = self._config.shutdown_delay_minutes

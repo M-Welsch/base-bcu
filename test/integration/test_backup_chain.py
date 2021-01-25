@@ -51,7 +51,11 @@ def app(tmpdir_factory):
     )
     update_conf(
         config_dir/"sync.json",
-        {"ssh_host": "192.168.178.64", "remote_backup_source_location": "/home/maximilian/testfiles"}
+        {
+            "ssh_host": "192.168.178.64",
+            "remote_backup_source_location": "/mnt/hdd",  # TODO: It is only possible to backup a whole mount point
+            "???": "/home/maximilian/testfiles"           # TODO: We need another key to enable backing up a certain dir
+        }
     )
     Config.set_config_base_path(config_dir)
     yield make_base_application()

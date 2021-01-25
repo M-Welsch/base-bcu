@@ -248,7 +248,7 @@ class SBU:
 
     def _measure(self, command: SbuCommand) -> float:
         response = self._process_command(command)
-        print(f"response is {response}")
+        LOG.info(f"response is {response}")
         response_16bit_value = int(findall(r'[0-9]+', response[2:])[0])
         return self._convert_measurement_result(command, response_16bit_value)
 

@@ -58,12 +58,8 @@ class BackupRequestError(Exception):
     pass
 
 
-def break_it():
-    raise DockingError("Timout exceeded!")
-
-
 if __name__ == "__main__":
     try:
-        break_it()
+        raise DockingError("Timout exceeded!")
     except DockingError:
         print(f"Cannot Do Backup due to DockingError: {DockingError}")

@@ -103,7 +103,7 @@ class SshRsync:
     def _output_generator(self):
         while True:
             line = self._process.stdout.readline()
-            print("line:", line)
+            LOG.debug("line:", line)
             code = self._process.poll()
 
             if not line:
@@ -145,7 +145,7 @@ class RsyncWrapperThread(Thread):
     def run(self):
         with self._ssh_rsync as output_generator:
             for status in output_generator:
-                print(status)
+                LOG.debug(status)
             self._set_backup_finished_flag()
             LOG.info("Backup finished!")
 
