@@ -76,7 +76,6 @@ class SshRsync:
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
     def __init__(self, host, user, remote_source_path, local_target_path):
-        self._validate_directories(remote_source_path, local_target_path)
         self._command = self._compose_rsync_command(host, user, remote_source_path, local_target_path)
         self._process = None
         self._status = self.Status()
@@ -90,17 +89,6 @@ class SshRsync:
             self.kill()
         except ProcessLookupError:
             pass
-
-    @staticmethod
-    def _validate_directories(remote_source_path, local_target_path):
-        try:
-            assert os.path.isdir(local_target_path)
-        except AssertionError:
-            raise LocalDirectoryException("Local directory invalid")
-        try:
-            assert os.path.isdir(remote_source_path)
-        except AssertionError:
-            raise RemoteDirectoryException("Remote directory invalid")
 
     @staticmethod
     def _compose_rsync_command(host, user, remote_source_path, local_target_path):

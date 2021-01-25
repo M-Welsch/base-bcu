@@ -17,7 +17,6 @@ class BaSeApplication:
     button_1_pressed = Signal()
 
     def __init__(self):
-        super().__init__()
         Config.set_config_base_path(Path("base/config/"))
         self._config: Config = Config("base.json")
         self._setup_logger()
