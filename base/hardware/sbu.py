@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import time, sleep
 from re import findall
-from subprocess import run, Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
 
 from base.hardware.pin_interface import PinInterface
 from base.common.config import Config

@@ -4,6 +4,7 @@
     "nas_finder_wait_seconds_between_connection_trials": 1,
     "remote_backup_source_location": "/mnt/HDD",
     "local_backup_target_location": "/media/BackupHDD",
+    "local_nas_hdd_mount_point": "/media/NASHDD",
     "sample_interval": 0.2,
     "ssh_host": "192.168.0.100",
     "ssh_user": "root",
