@@ -18,3 +18,5 @@ def configure_logger(tmpdir_factory):
     logger = logging.getLogger()
     logger.addHandler(logging.StreamHandler(sys.stdout))
     logger.setLevel(logging.DEBUG)
+    logger.info(f"I'm here! tmpdir = {tmpdir}")
+    yield {"tmpdir": str(tmpdir)}

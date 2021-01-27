@@ -29,25 +29,25 @@ def update_conf(file_path, updates):
 
 
 def make_base_application():
-    app = BaSeApplication.__new__(BaSeApplication)
-    app._config: Config = Config("base.json")
-    app._setup_logger()
-    app._hardware = Hardware()
-    app._backup = Backup()
-    app._schedule = Schedule()
-    app._shutting_down = False
-    app._connect_signals()
-    return app
+    base_app = BaSeApplication.__new__(BaSeApplication)
+    base_app._config: Config = Config("base.json")
+    # base_app._setup_logger() # don't use it here! Otherwise everything will be logged twice.
+    base_app._hardware = Hardware()
+    base_app._backup = Backup()
+    base_app._schedule = Schedule()
+    base_app._shutting_down = False
+    base_app._connect_signals()
+    return base_app
 
 
 @pytest.fixture()
-def app(tmpdir_factory):
+def app(tmpdir_factory, configure_logger):
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir)/"config").resolve()
     shutil.copytree('/home/base/python.base/base/config', config_dir)
     update_conf(
         config_dir/"base.json",
-        {"logs_directory": str(Path(tmpdir)/"logs")}
+        {"logs_directory": configure_logger["tmpdir"]}
     )
     update_conf(
         config_dir/"sync.json",
