@@ -8,5 +8,6 @@
     "sample_interval": 0.2,
     "ssh_host": "192.168.0.100",
     "ssh_user": "root",
-    "incremental": true
+    "incremental": true,
+    "protocol": "smb"
 }

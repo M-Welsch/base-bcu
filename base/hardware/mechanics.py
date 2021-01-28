@@ -4,13 +4,10 @@ from time import time
 
 from base.hardware.pin_interface import PinInterface
 from base.common.config import Config
+from base.common.exceptions import DockingError
 
 
 LOG = logging.getLogger(Path(__file__).name)
-
-
-class DockingError(Exception):
-    pass
 
 
 class Mechanics:

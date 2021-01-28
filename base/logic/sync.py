@@ -127,11 +127,10 @@ class SshRsync:
 
 
 class RsyncWrapperThread(Thread):
-    def __init__(self, set_backup_finished_flag):
+    def __init__(self):
         super().__init__()
         self._config = Config("sync.json")
         self._ssh_rsync = None
-        self._set_backup_finished_flag = set_backup_finished_flag
 
     @property
     def running(self):
@@ -147,7 +146,6 @@ class RsyncWrapperThread(Thread):
         with self._ssh_rsync as output_generator:
             for status in output_generator:
                 LOG.debug(status)
-            self._set_backup_finished_flag()
             LOG.info("Backup finished!")
 
     def terminate(self):
