@@ -75,8 +75,15 @@ class SshRsync:
         def __str__(self):
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
-    def __init__(self, host, user, remote_source_path, local_target_path):
-        self._command = self._compose_rsync_command(host, user, remote_source_path, local_target_path)
+    def __init__(self):
+        nas_config = Config("sync.json")
+        nas_config = Config("nas.json")
+        self._command = self._compose_rsync_command(
+            nas_config.ssh_host,
+            nas_config.ssh_user,
+            nas_config.remote_source_path,
+            nas_config.local_target_path
+        )
         self._process = None
         self._status = self.Status()
 
@@ -129,7 +136,6 @@ class SshRsync:
 class RsyncWrapperThread(Thread):
     def __init__(self):
         super().__init__()
-        self._config = Config("sync.json")
         self._ssh_rsync = None
 
     @property
@@ -137,12 +143,7 @@ class RsyncWrapperThread(Thread):
         return self.is_alive()
 
     def run(self):
-        self._ssh_rsync = SshRsync(
-            self._config.ssh_host,
-            self._config.ssh_user,
-            self._config.remote_backup_source_location,
-            self._config.local_backup_target_location
-        )
+        self._ssh_rsync = SshRsync()
         with self._ssh_rsync as output_generator:
             for status in output_generator:
                 LOG.debug(status)

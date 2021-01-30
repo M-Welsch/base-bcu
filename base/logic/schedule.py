@@ -32,7 +32,7 @@ class Schedule:
     def run_pending(self) -> None:
         self._scheduler.run(blocking=False)
 
-    def on_schedule_changed(self, **kwargs) -> None:
+    def on_schedule_changed(self, **kwargs):
         self._schedule.reload()
         backup_frequency = self._schedule.backup_frequency
         day_of_week = self._schedule.day_of_week
@@ -53,10 +53,10 @@ class Schedule:
     def _invoke_backup(self) -> None:
         self.backup_request.emit()
 
-    def on_reschedule_requested(self, **kwargs) -> None:
+    def on_reschedule_requested(self, **kwargs):
         self._reschedule_backup()
 
-    def _reschedule_backup(self) -> None:
+    def _reschedule_backup(self):
         due = TimeCalculator().next_backup(self._schedule)
         self._backup_job = self._scheduler.enterabs(due, 2, self._invoke_backup)
 
@@ -64,13 +64,13 @@ class Schedule:
         if self._postponed_backup_job is None or self._postponed_backup_job not in self._scheduler.queue:
             self._postponed_backup_job = self._scheduler.enter(seconds, 2, self._invoke_backup)
 
-    def on_reconfig(self, new_config, **kwargs) -> None:
+    def on_reconfig(self, new_config, **kwargs):
         self._scheduler.enter(1, 1, lambda: self._reconfig(new_config))
 
     @staticmethod
     def _reconfig(new_config) -> None:
         LOG.info(f"Reconfiguring according to {new_config}...")  # TODO: actually do something with new_config
 
-    def on_shutdown_requested(self, **kwargs) -> None:
+    def on_shutdown_requested(self, **kwargs):
         delay = self._config.shutdown_delay_minutes
         self._scheduler.enter(delay, 1, self.shutdown_request.emit)
