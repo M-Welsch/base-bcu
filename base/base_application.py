@@ -12,6 +12,43 @@ from base.common.config import Config
 from base.common.interrupts import ShutdownInterrupt, Button0Interrupt, Button1Interrupt
 
 
+LOG = logging.getLogger(Path(__file__).name)
+
+
+class MaintenanceMode:
+    def __init__(self):
+        self._connections = []
+        self._is_on = False
+
+    def is_on(self):
+        return self._is_on
+
+    def set_connections(self, connections):
+        self._connections = connections
+
+    def on(self):
+        if not self._is_on:
+            for signal, slot in self._connections:
+                signal.disconnect(slot)
+                signal.connect(self._log_warning)
+            self._is_on = True
+        else:
+            LOG.warning("Maintenance mode already is on!")
+
+    def off(self):
+        if self._is_on:
+            for signal, slot in self._connections:
+                signal.disconnect(self._log_warning)
+                signal.connect(slot)
+            self._is_on = False
+        else:
+            LOG.warning("Maintenance mode already is off!")
+
+    @staticmethod
+    def _log_warning():
+        LOG.warning("Backup request received during maintenance mode!")
+
+
 class BaSeApplication:
     button_0_pressed = Signal()
     button_1_pressed = Signal()
@@ -20,9 +57,13 @@ class BaSeApplication:
         Config.set_config_base_path(Path("base/config/"))
         self._config: Config = Config("base.json")
         self._setup_logger()
+        self._maintenance_mode = MaintenanceMode()
         self._hardware = Hardware()
-        self._backup = Backup()
+        self._backup = Backup(self._maintenance_mode.is_on)
         self._schedule = Schedule()
+        self._maintenance_mode.set_connections(
+            [(self._schedule.backup_request, self._backup.on_backup_request)]
+        )
         self._shutting_down = False
         self._connect_signals()
 
@@ -42,6 +83,8 @@ class BaSeApplication:
         self._schedule.shutdown_request.connect(self._shutdown)
         self._schedule.backup_request.connect(self._backup.on_backup_request)
         self._backup.postpone_request.connect(self._schedule.on_postpone_backup)
+        self._backup.reschedule_request.connect(self._schedule.on_reschedule_requested)
+        self._backup.shutdown_request.connect(self._schedule.on_shutdown_requested)
         self._backup.hardware_engage_request.connect(self._hardware.engage)
         self._backup.hardware_disengage_request.connect(self._hardware.disengage)
 
