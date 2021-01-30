@@ -53,7 +53,7 @@ class Schedule:
     def _invoke_backup(self) -> None:
         self.backup_request.emit()
 
-    def on_reschedule_requested(self) -> None:
+    def on_reschedule_requested(self, **kwargs) -> None:
         self._reschedule_backup()
 
     def _reschedule_backup(self) -> None:

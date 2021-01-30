@@ -38,7 +38,7 @@ class Backup:
     @property
     def backup_conditions_met(self):
         return (
-                not self._is_maintenance_mode_on and
+                not self._is_maintenance_mode_on() and
                 (self._sync is None or not self._sync.running) and
                 WeatherFrog().allright()
         )

@@ -20,6 +20,10 @@ from base.logic.backup import Backup
 from base.logic.schedule import Schedule
 
 
+def false():
+    return false
+
+
 def update_conf(file_path, updates):
     with open(file_path, "r") as src:
         obj = json.load(src)
@@ -33,7 +37,7 @@ def make_base_application():
     base_app._config: Config = Config("base.json")
     # base_app._setup_logger() # don't use it here! Otherwise everything will be logged twice.
     base_app._hardware = Hardware()
-    base_app._backup = Backup()
+    base_app._backup = Backup(false)
     base_app._schedule = Schedule()
     base_app._shutting_down = False
     base_app._connect_signals()
