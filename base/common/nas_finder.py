@@ -20,8 +20,8 @@ class NasFinder:
         self._config: Config = Config("sync.json")
 
     def assert_nas_available(self):
-        target_ip = self._config.ssh_host
-        target_user = self._config.ssh_user
+        target_ip = Config("nas.json").ssh_host
+        target_user = Config("nas.json").ssh_user
         self._assert_nas_ip_available(target_ip)
         self._assert_nas_correct(target_ip, target_user)
 
@@ -49,8 +49,8 @@ class NasFinder:
                 self._assert_nas_connection(sshi, target_ip)
 
     def assert_nas_hdd_mounted(self):
-        target_ip = self._config.ssh_host
-        target_user = self._config.ssh_user
+        target_ip = Config("nas.json").ssh_host
+        target_user = Config("nas.json").ssh_user
         with SSHInterface() as sshi:
             if sshi.connect(target_ip, target_user) == 'Established':
                 self._assert_check_nas_hdd_mounted(sshi)

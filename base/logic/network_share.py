@@ -16,8 +16,13 @@ class NetworkShare:
         Path(self._config.local_nas_hdd_mount_point).mkdir(exist_ok=True)
         command = f"mount -t cifs " \
                   f"-o credentials=/etc/win-credentials " \
-                  f"//{self._config.ssh_host}/hdd " \
+                  f"//{Config('nas.json').ssh_host}/hdd " \
                   f"{self._config.local_nas_hdd_mount_point}".split()
+        process = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
+        self._parse_process_output(process)
+
+    def unmount_datasource_via_smb(self):
+        command = f"umount {self._config.local_nas_hdd_mount_point}".split()
         process = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         self._parse_process_output(process)
 

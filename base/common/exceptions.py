@@ -58,6 +58,10 @@ class BackupRequestError(Exception):
     pass
 
 
+class RemoteCommandError(BackupserverException):
+    pass
+
+
 if __name__ == "__main__":
     try:
         raise DockingError("Timout exceeded!")
