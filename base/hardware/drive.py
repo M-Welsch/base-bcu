@@ -22,6 +22,7 @@ class Drive:
         return self._device_info
 
     def mount(self):
+        LOG.debug("Mounting drive")
         self._device_info = DriveInspector().device_info(**self._config.backup_hdd_device_signature)
         assert self._device_info.path
         if self._device_info.mount_point is None:
@@ -37,6 +38,7 @@ class Drive:
 
     def unmount(self):
         try:
+            LOG.debug("Unmounting drive")
             self._unmount_backup_hdd()
         except UnmountError:
             LOG.error(f"Unmounting didnt work: {UnmountError}")

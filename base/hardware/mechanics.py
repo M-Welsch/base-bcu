@@ -17,25 +17,31 @@ class Mechanics:
 
     def dock(self):
         if not self._pin_interface.docked:
+            LOG.debug("Docking...")
             self._pin_interface.stepper_driver_on()
             self._pin_interface.stepper_direction_docking()
 
-        time_start = time()
-        while not self._pin_interface.docked:
-            self._check_for_timeout(time_start)
-            self._pin_interface.stepper_step()
-        self._pin_interface.stepper_driver_off()
+            time_start = time()
+            while not self._pin_interface.docked:
+                self._check_for_timeout(time_start)
+                self._pin_interface.stepper_step()
+            self._pin_interface.stepper_driver_off()
+        else:
+            LOG.debug("Already docked")
 
     def undock(self):
         if not self._pin_interface.undocked:
+            LOG.debug("Undocking...")
             self._pin_interface.stepper_driver_on()
             self._pin_interface.stepper_direction_undocking()
 
-        time_start = time()
-        while not self._pin_interface.undocked:
-            self._check_for_timeout(time_start)
-            self._pin_interface.stepper_step()
-        self._pin_interface.stepper_driver_off()
+            time_start = time()
+            while not self._pin_interface.undocked:
+                self._check_for_timeout(time_start)
+                self._pin_interface.stepper_step()
+            self._pin_interface.stepper_driver_off()
+        else:
+            LOG.debug("Already undocked")
 
     def _check_for_timeout(self, time_start):
         diff_time = time() - time_start

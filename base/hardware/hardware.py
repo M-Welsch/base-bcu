@@ -1,3 +1,5 @@
+import logging
+from pathlib import Path
 from time import sleep
 
 from base.hardware.mechanics import Mechanics
@@ -6,6 +8,9 @@ from base.hardware.hmi import HMI
 from base.hardware.sbu import SBU
 from base.hardware.drive import Drive
 from base.common.config import Config
+
+
+LOG = logging.getLogger(Path(__file__).name)
 
 
 class Hardware:
@@ -18,11 +23,13 @@ class Hardware:
         self._drive = Drive()
 
     def engage(self, **kwargs):
+        LOG.debug("engaging hardware")
         self._mechanics.dock()
         self._power.hdd_power_on()
         self._drive.mount()
 
     def disengage(self, **kwargs):
+        LOG.debug("disengaging hardware")
         self._drive.unmount()
         self._power.hdd_power_off()
         sleep(self._config.hdd_spindown_time)

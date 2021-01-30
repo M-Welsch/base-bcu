@@ -19,6 +19,7 @@ LOG = logging.getLogger(Path(__file__).name)
 
 class WeatherFrog:
     def allright(self):
+        LOG.debug("WeatherFrog agrees")
         return True
 
 
@@ -39,9 +40,9 @@ class Backup:
     @property
     def backup_conditions_met(self):
         return (
-                not self._is_maintenance_mode_on() and
-                (self._sync is None or not self._sync.running) and
-                WeatherFrog().allright()
+            not self._is_maintenance_mode_on() and
+            (self._sync is None or not self._sync.running) and
+            WeatherFrog().allright()
         )
 
     def on_backup_request(self, **kwargs):
@@ -73,7 +74,10 @@ class Backup:
     def _run_backup_sequence(self):
         LOG.debug("Running backup sequence")
         if Config("sync.json").protocol == "smb":
+            LOG.debug("Mounting data source via smb")
             NetworkShare().mount_datasource_via_smb()
+        else:
+            LOG.debug("Don't do backup via smb")
         # stop_services()
         self.hardware_engage_request.emit()
         # self._free_space_on_backup_hdd_if_necessary() # Todo: implement!

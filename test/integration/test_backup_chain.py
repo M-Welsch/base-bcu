@@ -13,15 +13,11 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # print('\n'.join(sys.path))
 sys.path.append(path_to_module)
 
-from base.base_application import BaSeApplication
+from base.base_application import BaSeApplication, MaintenanceMode
 from base.common.config import Config
 from base.hardware.hardware import Hardware
 from base.logic.backup import Backup
 from base.logic.schedule import Schedule
-
-
-def false():
-    return false
 
 
 def update_conf(file_path, updates):
@@ -36,9 +32,13 @@ def make_base_application():
     base_app = BaSeApplication.__new__(BaSeApplication)
     base_app._config: Config = Config("base.json")
     # base_app._setup_logger() # don't use it here! Otherwise everything will be logged twice.
+    base_app._maintenance_mode = MaintenanceMode()
     base_app._hardware = Hardware()
-    base_app._backup = Backup(false)
+    base_app._backup = Backup(base_app._maintenance_mode.is_on)
     base_app._schedule = Schedule()
+    base_app._maintenance_mode.set_connections(
+        [(base_app._schedule.backup_request, base_app._backup.on_backup_request)]
+    )
     base_app._shutting_down = False
     base_app._connect_signals()
     return base_app

@@ -21,6 +21,7 @@ class MaintenanceMode:
         self._is_on = False
 
     def is_on(self):
+        LOG.debug(f"Maintenance mode is {'on' if self._is_on else 'off'}")
         return self._is_on
 
     def set_connections(self, connections):
