@@ -34,6 +34,7 @@ class Backup:
         self._sync = None
         self._config = Config("backup.json")
         self._postpone_count = 0
+        self._new_backup_folder = None
 
     @property
     def backup_conditions_met(self):
@@ -75,7 +76,8 @@ class Backup:
             NetworkShare().mount_datasource_via_smb()
         # stop_services()
         self.hardware_engage_request.emit()
-        self._sync = RsyncWrapperThread()
+        # self._free_space_on_backup_hdd_if_necessary() # Todo: implement!
+        self._sync = RsyncWrapperThread(self._new_backup_folder) # Todo: _new_backup_folder to be implemented
         self._sync.start()
 
     def _return_to_default_state(self):

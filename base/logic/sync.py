@@ -75,15 +75,9 @@ class SshRsync:
         def __str__(self):
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
-    def __init__(self):
-        nas_config = Config("sync.json")
-        nas_config = Config("nas.json")
-        self._command = self._compose_rsync_command(
-            nas_config.ssh_host,
-            nas_config.ssh_user,
-            nas_config.remote_source_path,
-            nas_config.local_target_path
-        )
+    def __init__(self, local_target_location):
+        self._local_target_location = local_target_location
+        self._command = self._compose_rsync_command(local_target_location)
         self._process = None
         self._status = self.Status()
 
@@ -98,12 +92,22 @@ class SshRsync:
             pass
 
     @staticmethod
-    def _compose_rsync_command(host, user, remote_source_path, local_target_path):
+    def _compose_rsync_command(local_target_location):
+        sync_config = Config("sync.json")
+        nas_config = Config("nas.json")
+        host = nas_config.ssh_host
+        user = nas_config.ssh_user
+        remote_source_path = sync_config.remote_backup_source_location
         remote_source_path = check_path_end_slash_and_asterisk(remote_source_path)
-        # Todo: change command like this "rsync -avh --delete -e ssh root@192.168.0.34:/mnt/HDD/*"
-        command = f'sudo rsync -avHe'.split()
-        command.append("ssh -i /home/base/.ssh/id_rsa")
-        command.extend(f"{user}@{host}:{remote_source_path} {local_target_path} --outbuf=N --info=progress2".split())
+        protocol = sync_config.protocol
+        command = "sudo rsync -avH".split()
+        if protocol == "smb":
+            command.extend(f'{sync_config.local_nas_hdd_mount_point} {local_target_location}'.split())
+        else:
+            command.append('-e')
+            command.append("ssh -i /home/base/.ssh/id_rsa")
+            command.extend(f"{user}@{host}:{remote_source_path} {local_target_location}".split())
+        command.extend('--outbuf=N --info=progress2'.split())
         LOG.debug(f"rsync_command: {command}")
         return command
 
@@ -134,16 +138,17 @@ class SshRsync:
 
 
 class RsyncWrapperThread(Thread):
-    def __init__(self):
+    def __init__(self, local_target_location):
         super().__init__()
         self._ssh_rsync = None
+        self._local_target_location = local_target_location
 
     @property
     def running(self):
         return self.is_alive()
 
     def run(self):
-        self._ssh_rsync = SshRsync()
+        self._ssh_rsync = SshRsync(self._local_target_location)
         with self._ssh_rsync as output_generator:
             for status in output_generator:
                 LOG.debug(status)
