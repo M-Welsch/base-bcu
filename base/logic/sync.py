@@ -114,7 +114,7 @@ class SshRsync:
     def _output_generator(self):
         while True:
             line = self._process.stdout.readline()
-            LOG.debug("line:", line)
+            LOG.debug("line: " + str(line))
             code = self._process.poll()
 
             if not line:

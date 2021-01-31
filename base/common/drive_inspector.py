@@ -3,8 +3,13 @@ from dataclasses import dataclass
 import json
 from subprocess import run, PIPE
 from typing import Any, Dict, List
+import logging
+from pathlib import Path
 
 from base.common.exceptions import ExternalCommandError
+
+
+LOG = logging.getLogger(Path(__file__).name)
 
 
 @dataclass
@@ -67,9 +72,17 @@ class DriveInspector:
                                                  device.serial_number == serial_number and
                                                  device.bytes_size == bytes_size
         ]
-        assert len(candidates) == 1
+        try:
+            assert len(candidates) == 1
+        except AssertionError as e:
+            LOG.error("Backup HDD not found! Python says " + e)
+            return None
         partitions = [p for p in candidates[0].partitions if p.path.endswith(str(partition_index))]
-        assert len(partitions) == 1
+        try:
+            assert len(partitions) == 1
+        except AssertionError as e:
+            LOG.error("Correct Partition in Backup HDD not found! Python says " + e)
+            return None
         return partitions[0]
 
     @staticmethod

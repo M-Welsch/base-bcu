@@ -12,6 +12,7 @@ class NetworkShare:
     def __init__(self):
         self._config = Config("sync.json")
 
+    # Todo: create new user on NAS that has the permission to READ the hdd but not to write to it
     def mount_datasource_via_smb(self):
         Path(self._config.local_nas_hdd_mount_point).mkdir(exist_ok=True)
         command = f"mount -t cifs " \
