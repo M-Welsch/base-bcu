@@ -27,6 +27,14 @@ class TimeCalculator:
             bysecond=plan.second
         ))).timestamp()
 
+    def next_backup_timestring(self, config: Config) -> str:
+        dt = self.next_backup(config)
+        return dt.strftime('%d.%m.%Y %H:%M')
+
+    def next_backup_seconds(self, config: Config) -> int:
+        dt = self.next_backup(config)
+        return int((datetime.now() - dt).total_seconds())
+
     def _plan_from_config(self, config: Config) -> _Plan:
         self._validate_config(config)
         frequency = TimeCalculator._frequencies[config.backup_frequency]

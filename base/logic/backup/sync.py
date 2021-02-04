@@ -6,6 +6,8 @@ import signal
 from subprocess import Popen, PIPE, STDOUT
 from threading import Thread
 
+from signalslot import Signal
+
 from base.common.utils import check_path_end_slash_and_asterisk
 from base.common.config import Config
 
@@ -102,11 +104,13 @@ class SshRsync:
         protocol = sync_config.protocol
         command = "sudo rsync -avH".split()
         if protocol == "smb":
-            command.extend(f'{sync_config.local_nas_hdd_mount_point} {local_target_location}'.split())
+            source_path = Path(sync_config.local_nas_hdd_mount_point)/sync_config.remote_backup_source_path
+            command.extend(f'{source_path} {local_target_location}'.split())
         else:
             command.append('-e')
             command.append("ssh -i /home/base/.ssh/id_rsa")
-            command.extend(f"{user}@{host}:{remote_source_path} {local_target_location}".split())
+            source_path = Path(remote_source_path) / sync_config.remote_backup_source_path
+            command.extend(f"{user}@{host}:{source_path} {local_target_location}".split())
         command.extend('--outbuf=N --info=progress2'.split())
         LOG.debug(f"rsync_command: {command}")
         return command
@@ -114,7 +118,7 @@ class SshRsync:
     def _output_generator(self):
         while True:
             line = self._process.stdout.readline()
-            LOG.debug("line: " + str(line))
+            LOG.debug(f"line: {line}")
             code = self._process.poll()
 
             if not line:
@@ -138,6 +142,8 @@ class SshRsync:
 
 
 class RsyncWrapperThread(Thread):
+    terminated = Signal()
+
     def __init__(self, local_target_location):
         super().__init__()
         self._ssh_rsync = None
@@ -154,6 +160,7 @@ class RsyncWrapperThread(Thread):
             for status in output_generator:
                 LOG.debug(status)
             LOG.info("Backup finished!")
+            self.terminated.emit()
 
     def terminate(self):
         self._ssh_rsync.terminate()

@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from base.logic.backup import Backup
+from base.logic.backup.backup import Backup
 from base.common.config import Config
 from base.common.exceptions import NasNotMountedError, BackupRequestError
 

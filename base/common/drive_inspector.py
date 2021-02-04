@@ -72,16 +72,12 @@ class DriveInspector:
                                                  device.serial_number == serial_number and
                                                  device.bytes_size == bytes_size
         ]
-        try:
-            assert len(candidates) == 1
-        except AssertionError as e:
-            LOG.error("Backup HDD not found! Python says " + e)
+        if not len(candidates) == 1:
+            LOG.error("Backup HDD not found!")
             return None
         partitions = [p for p in candidates[0].partitions if p.path.endswith(str(partition_index))]
-        try:
-            assert len(partitions) == 1
-        except AssertionError as e:
-            LOG.error("Correct Partition in Backup HDD not found! Python says " + e)
+        if not len(partitions) == 1:
+            LOG.error("Correct Partition in Backup HDD not found!")
             return None
         return partitions[0]
 

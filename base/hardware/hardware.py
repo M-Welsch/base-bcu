@@ -34,3 +34,8 @@ class Hardware:
         self._power.hdd_power_off()
         sleep(self._config.hdd_spindown_time)
         self._mechanics.undock()
+
+    def prepare_sbu_for_shutdown(self, timestamp, seconds):
+        self._sbu.send_readable_timestamp(timestamp)
+        self._sbu.send_seconds_to_next_bu(seconds)
+        self._sbu.request_shutdown()

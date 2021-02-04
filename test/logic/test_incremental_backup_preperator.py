@@ -16,7 +16,8 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 from base.common.config import Config
-from base.logic.backup import IncrementalBackupPreparator, BackupBrowser
+from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
+from base.logic.backup.backup_browser import BackupBrowser
 
 
 def update_conf(file_path, updates):

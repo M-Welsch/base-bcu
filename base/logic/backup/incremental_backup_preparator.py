@@ -1,97 +1,16 @@
+from datetime import datetime
 import logging
+import os
 from pathlib import Path
 from subprocess import Popen, PIPE
-from datetime import datetime
-import os
 
-from signalslot import Signal
-from typing import List
-
-from base.logic.sync import RsyncWrapperThread
-from base.logic.network_share import NetworkShare
-from base.logic.nas import Nas
 from base.common.config import Config
-from base.common.exceptions import NetworkError, DockingError, NewBuDirCreationError, BackupHddAccessError
+from base.common.exceptions import NewBuDirCreationError
+from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.ssh_interface import SSHInterface
 
 
 LOG = logging.getLogger(Path(__file__).name)
-
-class WeatherFrog:
-    def allright(self):
-        LOG.debug("WeatherFrog agrees")
-        return True
-
-
-class Backup:
-    postpone_request = Signal(args=['seconds'])
-    hardware_engage_request = Signal()
-    hardware_disengage_request = Signal()
-    reschedule_request = Signal()
-    shutdown_request = Signal()
-
-    def __init__(self, is_maintenance_mode_on):
-        self._is_maintenance_mode_on = is_maintenance_mode_on
-        self._sync = None
-        self._config = Config("backup.json")
-        self._postpone_count = 0
-        self._nas = Nas()
-
-    @property
-    def backup_conditions_met(self):
-        return (
-                not self._is_maintenance_mode_on() and
-                (self._sync is None or not self._sync.running) and
-                WeatherFrog().allright()
-        )
-
-    def on_backup_request(self, **kwargs):
-        LOG.debug("Received backup request...")
-        try:
-            if self.backup_conditions_met:
-                LOG.debug("...and backup conditions are met!")
-                self._run_backup_sequence()
-            else:
-                LOG.debug("...but backup conditions are not met.")
-        except NetworkError as e:
-            LOG.error(e)
-        except DockingError as e:
-            LOG.error(e)
-
-    def on_backup_finished(self, **kwargs):
-        LOG.info("Backup terminated")
-        try:
-            self._return_to_default_state()
-        except DockingError as e:
-            LOG.error(e)
-        except NetworkError as e:
-            LOG.error(e)
-        finally:
-            self.reschedule_request.emit()
-            if self._config.shutdown_between_backups:
-                self.shutdown_request.emit()
-
-    def _run_backup_sequence(self):
-        LOG.debug("Running backup sequence")
-        if Config("sync.json").protocol == "smb":
-            LOG.debug("Mounting data source via smb")
-            self._nas.smb_backup_mode()
-            NetworkShare().mount_datasource_via_smb()
-        else:
-            LOG.debug("Don't do backup via smb")
-        self._nas.stop_services()
-        self.hardware_engage_request.emit()
-        new_backup_directory = IncrementalBackupPreparator().prepare()
-        LOG.info(f"Backing up into: {new_backup_directory}")
-        self._sync = RsyncWrapperThread(new_backup_directory)
-        self._sync.start()
-
-    def _return_to_default_state(self):
-        self.hardware_disengage_request.emit()
-        self._nas.resume_services()
-        if Config("sync.json").protocol == "smb":
-            NetworkShare().unmount_datasource_via_smb()
-            self._nas.smb_normal_mode()
 
 
 class IncrementalBackupPreparator:
@@ -197,50 +116,3 @@ class IncrementalBackupPreparator:
         else:
             path_to_check += '/*'
         return path_to_check
-
-
-class BackupBrowser:
-    def __init__(self):
-        self._config_sync = Config("sync.json")
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        pass
-
-    def list_backups_by_age(self) -> List[Path]:
-        # lowest index is the oldest
-        list_of_backups = []
-        try:
-            for file in os.listdir(self._config_sync.local_backup_target_location):
-                if file.startswith("backup"):
-                    list_of_backups.append(file)
-        except OSError as e:
-            LOG.error(f"BackupHDD cannot be accessed! {e}")
-            raise BackupHddAccessError
-        list_of_backups.sort()
-        backup_paths = []
-        for bu in list_of_backups:
-            backup_paths.append(Path(bu))
-        return backup_paths
-
-    def get_oldest_backup(self) -> Path:
-        backups = self.list_backups_by_age()
-        if backups:
-            return backups[0]
-
-    def get_newest_backup_abolutepath(self) -> Path:
-        backups = self.list_backups_by_age()
-        if backups:
-            return Path(Path(self._config_sync.local_backup_target_location)/backups[-1])
-
-    @staticmethod
-    def get_backup_size(path) -> int:
-        p = Popen(f"du -s {path}".split(), stdout=PIPE, stderr=PIPE)
-        try:
-            size = p.stdout.readlines()[0].decode().split()[0]
-        except ValueError as e:
-            LOG.error(f"cannot check size of directory: {path}. Python says: {e}")
-            size = 0
-        return int(size)

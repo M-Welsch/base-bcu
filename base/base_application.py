@@ -1,12 +1,14 @@
 from datetime import datetime
 import logging
+import os
 from pathlib import Path
 import sys
 from time import sleep
+
 from signalslot import Signal
 
 from base.hardware.hardware import Hardware
-from base.logic.backup import Backup
+from base.logic.backup.backup import Backup
 from base.logic.schedule import Schedule
 from base.common.config import Config
 from base.common.interrupts import ShutdownInterrupt, Button0Interrupt, Button1Interrupt
@@ -79,19 +81,30 @@ class BaSeApplication:
                 self.button_0_pressed.emit()
             except Button1Interrupt:
                 self.button_1_pressed.emit()
+        LOG.info("Exiting Mainloop, initiating Shutdown")
+        self._hardware.prepare_sbu_for_shutdown(
+            self._schedule.next_backup_timestamp,
+            self._schedule.next_backup_seconds
+        )
+        self._execute_shutdown()
 
     def _connect_signals(self):
-        self._schedule.shutdown_request.connect(self._shutdown)
+        self._schedule.shutdown_request.connect(self._initiate_shutdown)
         self._schedule.backup_request.connect(self._backup.on_backup_request)
         self._backup.postpone_request.connect(self._schedule.on_postpone_backup)
         self._backup.reschedule_request.connect(self._schedule.on_reschedule_requested)
-        self._backup.shutdown_request.connect(self._schedule.on_shutdown_requested)
+        self._backup.delayed_shutdown_request.connect(self._schedule.on_shutdown_requested)
         self._backup.hardware_engage_request.connect(self._hardware.engage)
         self._backup.hardware_disengage_request.connect(self._hardware.disengage)
 
-    def _shutdown(self, **kwargs):
+    def _initiate_shutdown(self, **kwargs):
         self._stop_threads()
         self._shutting_down = True
+
+    @staticmethod
+    def _execute_shutdown():
+        LOG.info("executing shutdown command NOW")
+        os.system("shutdown -h now")
 
     def _stop_threads(self):
         pass

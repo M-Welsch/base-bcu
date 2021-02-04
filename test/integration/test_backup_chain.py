@@ -16,7 +16,7 @@ sys.path.append(path_to_module)
 from base.base_application import BaSeApplication, MaintenanceMode
 from base.common.config import Config
 from base.hardware.hardware import Hardware
-from base.logic.backup import Backup
+from base.logic.backup.backup import Backup
 from base.logic.schedule import Schedule
 
 
@@ -57,8 +57,14 @@ def app(tmpdir_factory, configure_logger):
         config_dir/"sync.json",
         {
             "ssh_host": "192.168.178.64",
-            "remote_backup_source_location": "/mnt/hdd",  # TODO: It is only possible to backup a whole mount point
-            "???": "/home/maximilian/testfiles"           # TODO: We need another key to enable backing up a certain dir
+            "remote_backup_source_location": "/mnt/hdd",
+            "remote_backup_source_path": "testfiles"
+        }
+    )
+    update_conf(
+        config_dir/"backup.json",
+        {
+            "shutdown_between_backups": False
         }
     )
     Config.set_config_base_path(config_dir)

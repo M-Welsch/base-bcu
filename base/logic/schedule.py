@@ -74,3 +74,11 @@ class Schedule:
     def on_shutdown_requested(self, **kwargs):
         delay = self._config.shutdown_delay_minutes
         self._scheduler.enter(delay, 1, self.shutdown_request.emit)
+
+    @property
+    def next_backup_timestamp(self):
+        return TimeCalculator().next_backup_timestring(self._schedule)
+
+    @property
+    def next_backup_seconds(self):
+        return TimeCalculator().next_backup_seconds(self._schedule)
