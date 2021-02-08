@@ -45,7 +45,7 @@ class BackupBrowser:
     def get_newest_backup_abolutepath(self) -> Path:
         backups = self.list_backups_by_age()
         if backups:
-            return Path(Path(self._config_sync.local_backup_target_location)/backups[-1])
+            return Path(self._config_sync.local_backup_target_location)/backups[-1]
 
     @staticmethod
     def get_backup_size(path) -> int:

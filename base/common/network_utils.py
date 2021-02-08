@@ -21,8 +21,3 @@ def get_ip_address() -> str:
 	finally:
 		sock.close()
 	return ip_address
-
-
-def network_available() -> bool:
-	ip_address = get_ip_address()
-	return ip_address != "127.0.0.1"

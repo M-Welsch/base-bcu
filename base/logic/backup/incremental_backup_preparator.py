@@ -89,8 +89,7 @@ class IncrementalBackupPreparator:
             raise NewBuDirCreationError
 
     def _copy_newest_backup_with_hardlinks(self, recent_backup, new_backup):
-        recent_backup = self.check_path_end_slash_and_asterisk(recent_backup)
-        copy_command = f"cp -al {recent_backup} {new_backup}"
+        copy_command = f"cp -al {recent_backup}/* {new_backup}"
         print(f"copy command: {copy_command}")
         p = Popen(copy_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         # p.communicate(timeout=10)
@@ -104,15 +103,3 @@ class IncrementalBackupPreparator:
         new_backup_folder = self._get_path_for_new_bu_directory()
         os.rename(newest_existing_bu_dir, new_backup_folder)
         self._new_backup_folder = new_backup_folder
-
-    @staticmethod
-    def check_path_end_slash_and_asterisk(path_to_check):
-        # Todo: check if this function is still necessary
-        path_to_check = str(path_to_check)
-        if path_to_check.endswith('/*'):
-            pass
-        elif path_to_check.endswith('/'):
-            path_to_check += '*'
-        else:
-            path_to_check += '/*'
-        return path_to_check
