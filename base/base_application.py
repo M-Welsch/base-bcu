@@ -104,7 +104,7 @@ class BaSeApplication:
     @staticmethod
     def _execute_shutdown():
         LOG.info("executing shutdown command NOW")
-        os.system("shutdown -h now")
+        os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().
 
     def _stop_threads(self):
         pass
