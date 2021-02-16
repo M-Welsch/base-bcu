@@ -15,26 +15,26 @@ LOG = logging.getLogger(Path(__file__).name)
 class Drive:
     def __init__(self):
         self._config = Config("drive.json")
-        self._device_info = None
+        self._partition_info = None
 
     @property
     def backup_hdd_device_info(self):
-        return self._device_info
+        return self._partition_info
 
     def mount(self):
         LOG.debug("Mounting drive")
-        self._device_info = DriveInspector().device_info(**self._config.backup_hdd_device_signature)
-        assert self._device_info.path
-        if self._device_info.mount_point is None:
+        self._partition_info = DriveInspector().backup_partition_info
+        assert self._partition_info.path
+        if self._partition_info.mount_point is None:
             command = ["mount", "-t", self._config.backup_hdd_file_system,
-                       self._device_info.path, self._config.backup_hdd_mount_point]
+                       self._partition_info.path, self._config.backup_hdd_mount_point]
             try:
                 LOG.debug(command)
                 run_external_command(command)
-                LOG.info(f"Mounted HDD {self._device_info.path} at {self._device_info.mount_point}")
+                LOG.info(f"Mounted HDD {self._partition_info.path} at {self._partition_info.mount_point}")
             except ExternalCommandError:
                 raise MountingError(f"Backup HDD could not be mounted")
-        assert DriveInspector().device_info(**self._config.backup_hdd_device_signature).mount_point
+        assert DriveInspector().backup_partition_info.mount_point
 
     def unmount(self):
         try:

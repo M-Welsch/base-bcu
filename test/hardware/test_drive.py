@@ -39,7 +39,7 @@ class TestDrive:
 
     @staticmethod
     def test_unmount(drive):
-        if drive._device_info is not None:
+        if drive._partition_info is not None:
             drive.unmount()
             assert not drive._is_mounted
-            assert not Path(drive._device_info.path).is_mount()
+            assert not Path(drive._partition_info.path).is_mount()

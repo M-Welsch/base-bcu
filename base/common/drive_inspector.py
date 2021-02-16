@@ -2,10 +2,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from subprocess import run, PIPE
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import logging
 from pathlib import Path
 
+from base.common.config import Config
 from base.common.exceptions import ExternalCommandError
 
 
@@ -56,28 +57,49 @@ class DriveInfo:
         )
 
 
+@dataclass
+class PartitionSignature:
+    model_name: str
+    serial_number: str
+    bytes_size: int
+    partition_index: int
+
+
 class DriveInspector:
+    command = ["lsblk", "-o", "NAME,PATH,MODEL,SERIAL,SIZE,MOUNTPOINT,ROTA,TYPE,STATE", "-b", "-J"]
+
     def __init__(self) -> None:
-        command = ["lsblk", "-o", "NAME,PATH,MODEL,SERIAL,SIZE,MOUNTPOINT,ROTA,TYPE,STATE", "-b", "-J"]
-        json_info = self._query(command)
-        self._devices = [DriveInfo.from_json(drive_json_info) for drive_json_info in json_info]
+        self._partition_signature = PartitionSignature(Config("drive.json").backup_hdd_device_signature)
+        self._devices: List[DriveInfo] = []
 
     @property
     def devices(self) -> List[DriveInfo]:
         return self._devices
 
-    def device_info(self, model_name: str, serial_number: str, bytes_size: int, partition_index: int) -> PartitionInfo:
+    def refresh(self) -> None:
+        json_info = self._query(DriveInspector.command)
+        self._devices = [DriveInfo.from_json(drive_json_info) for drive_json_info in json_info]
+
+    @property
+    def fresh_backup_partition_info(self) -> PartitionInfo:
+        self.refresh()
+        return self.backup_partition_info
+
+    @property
+    def backup_partition_info(self) -> Optional[PartitionInfo]:
         candidates = [
-            device for device in self.devices if device.model_name == model_name and
-                                                 device.serial_number == serial_number and
-                                                 device.bytes_size == bytes_size
+            device for device in self.devices if device.model_name == self._partition_signature.model_name and
+                                                 device.serial_number == self._partition_signature.serial_number and
+                                                 device.bytes_size == self._partition_signature.bytes_size
         ]
         if not len(candidates) == 1:
             LOG.error("Backup HDD not found!")
             return None
-        partitions = [p for p in candidates[0].partitions if p.path.endswith(str(partition_index))]
+        partitions = [
+            p for p in candidates[0].partitions if p.path.endswith(str(self._partition_signature.partition_index))
+        ]
         if not len(partitions) == 1:
-            LOG.error("Correct Partition in Backup HDD not found!")
+            LOG.error("Correct partition in Backup HDD not found!")
             return None
         return partitions[0]
 

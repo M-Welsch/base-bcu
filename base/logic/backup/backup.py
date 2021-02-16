@@ -12,6 +12,7 @@ from base.common.exceptions import NetworkError, DockingError
 
 LOG = logging.getLogger(Path(__file__).name)
 
+
 class WeatherFrog:
     def allright(self):
         LOG.debug("WeatherFrog agrees")

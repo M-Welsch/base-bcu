@@ -23,8 +23,6 @@ class TestDriveInspector:
         assert valid_devices
         print(f"valid_devices: {valid_devices}")
         device = valid_devices[0]
-        device_file = drive_inspector.device_info(
-            device.model_name, device.serial_number, device.bytes_size, 1
-        )
+        device_file = drive_inspector.backup_partition_info
         assert isinstance(device_file, PartitionInfo)
         print(device_file)
