@@ -81,12 +81,8 @@ class DriveInspector:
         self._devices = [DriveInfo.from_json(drive_json_info) for drive_json_info in json_info]
 
     @property
-    def fresh_backup_partition_info(self) -> PartitionInfo:
-        self.refresh()
-        return self.backup_partition_info
-
-    @property
     def backup_partition_info(self) -> Optional[PartitionInfo]:
+        self.refresh()
         candidates = [
             device for device in self.devices if device.model_name == self._partition_signature.model_name and
                                                  device.serial_number == self._partition_signature.serial_number and
