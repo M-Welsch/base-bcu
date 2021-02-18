@@ -8,7 +8,6 @@ import json
 from base.common.ssh_interface import SSHInterface
 from base.common.debug_utils import dump_ifconfig
 from base.common.config import Config
-from base.common.utils import get_eth0_mac_address
 from base.common.exceptions import NetworkError, NasNotCorrectError, NasNotMountedError
 
 
@@ -55,15 +54,14 @@ class NasFinder:
             if sshi.connect(target_ip, target_user) == 'Established':
                 self._assert_check_nas_hdd_mounted(sshi)
 
-    @staticmethod
-    def _assert_nas_connection(sshi, target_ip):
+    def _assert_nas_connection(self, sshi, target_ip):
         stdout, stderr = sshi.run('cat nas_for_backup')
         if stderr:
             raise NasNotCorrectError(
                 f"NAS on {target_ip} is not the correct one? Couldn't open file 'nas_for_backup'. "
                 f"Error = {stderr}"
             )
-        my_mac_address = get_eth0_mac_address()
+        my_mac_address = self.get_eth0_mac_address()
         valid_backup_servers = json.loads(stdout)["valid_backup_servers"]
         if my_mac_address not in valid_backup_servers:
             raise NasNotCorrectError(f"MAC authentication with NAS on {target_ip} failed. "
@@ -78,3 +76,11 @@ class NasFinder:
         LOG.info(f"command = 'mount | grep {source}' on nas, stdout = {stdout}, stderr = {stderr}")
         if not re.search(f"sd.. on {source}", stdout):
             raise NasNotMountedError(f"NAS not mounted: mount | grep {source} returned {stdout}")
+
+    @staticmethod
+    def get_eth0_mac_address() -> str:
+        try:
+            mac = open('/sys/class/net/eth0/address').readline()
+        except NameError:
+            LOG.error("Cannot determine my MAC address!")
+        return mac[0:17]

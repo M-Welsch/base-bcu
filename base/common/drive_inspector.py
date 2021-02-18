@@ -64,12 +64,21 @@ class PartitionSignature:
     bytes_size: int
     partition_index: int
 
+    @classmethod
+    def from_json(cls, json_info: Dict[str, Any]) -> PartitionSignature:
+        return cls(
+            model_name=json_info["model_name"],
+            serial_number=json_info["serial_number"],
+            bytes_size=json_info["bytes_size"],
+            partition_index=json_info["partition_index"]
+        )
+
 
 class DriveInspector:
     command = ["lsblk", "-o", "NAME,PATH,MODEL,SERIAL,SIZE,MOUNTPOINT,ROTA,TYPE,STATE", "-b", "-J"]
 
     def __init__(self) -> None:
-        self._partition_signature = PartitionSignature(Config("drive.json").backup_hdd_device_signature)
+        self._partition_signature = PartitionSignature.from_json(Config("drive.json").backup_hdd_device_signature)
         self._devices: List[DriveInfo] = []
 
     @property

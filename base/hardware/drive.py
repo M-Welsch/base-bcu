@@ -7,6 +7,7 @@ from subprocess import run, PIPE
 from base.common.config import Config
 from base.common.exceptions import MountingError, UnmountError, ExternalCommandError
 from base.common.drive_inspector import DriveInspector
+from base.common.file_system import FileSystemWatcher
 
 
 LOG = logging.getLogger(Path(__file__).name)
@@ -23,7 +24,9 @@ class Drive:
 
     def mount(self):
         LOG.debug("Mounting drive")
-        self._partition_info = DriveInspector().backup_partition_info
+        file_system_watcher = FileSystemWatcher(self._config.backup_hdd_spinup_timeout)
+        file_system_watcher.add_watches(["/dev"])
+        self._partition_info = file_system_watcher.backup_partition_info()
         assert self._partition_info.path
         if self._partition_info.mount_point is None:
             command = ["mount", "-t", self._config.backup_hdd_file_system,

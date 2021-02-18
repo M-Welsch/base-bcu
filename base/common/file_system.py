@@ -31,12 +31,13 @@ class EventHandler(pyinotify.ProcessEvent):
 class FileSystemWatcher:
     dir_events = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
-    def __init__(self, timeout: int = 10000) -> None:
+    def __init__(self, timeout_in_secs: int = 10) -> None:
         self._drive_inspector: DriveInspector = DriveInspector()
         self._watch_manager: pyinotify.WatchManager = pyinotify.WatchManager()
         self._event_handler: EventHandler = EventHandler(self._drive_inspector)
+        timeout_in_millisecs = timeout_in_secs * 1000
         self._notifier: pyinotify.Notifier = pyinotify.Notifier(
-            self._watch_manager, self._event_handler, timeout=timeout
+            self._watch_manager, self._event_handler, timeout=timeout_in_millisecs
         )
         self._event_handler.set_notifier(self._notifier)
         self.partition_info: Optional[PartitionInfo] = None
@@ -45,23 +46,26 @@ class FileSystemWatcher:
         for directory in dirs_to_watch:
             self._watch_manager.add_watch(directory, FileSystemWatcher.dir_events)
 
-    def watch_until_timeout(self) -> PartitionInfo:
+    def backup_partition_info(self) -> PartitionInfo:
         LOG.info("Try to find partition for the first time...")
         partition_info = self._drive_inspector.backup_partition_info
         if partition_info is not None:
             return partition_info
-        assert self._notifier._timeout is not None, 'Notifier must be constructed with a short timeout'
-        self._notifier.process_events()
-        while self._notifier.check_events():
-            self._notifier.read_events()
-            self._notifier.process_events()
+        self._watch_until_timeout()
         if self.partition_info is None:
             LOG.info("Try to find partition for the last time...")
             self.partition_info = self._drive_inspector.backup_partition_info
         return self.partition_info
 
+    def _watch_until_timeout(self):
+        assert self._notifier._timeout is not None, 'Notifier must be constructed with a short timeout'
+        self._notifier.process_events()
+        while self._notifier.check_events():
+            self._notifier.read_events()
+            self._notifier.process_events()
+
 
 if __name__ == "__main__":
     watcher = FileSystemWatcher(timeout=10000)
     watcher.add_watches(dirs_to_watch=["/dev", "/home/base"])
-    watcher.watch_until_timeout()
+    watcher.backup_partition_info()
