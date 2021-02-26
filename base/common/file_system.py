@@ -38,7 +38,7 @@ class EventHandler(pyinotify.ProcessEvent):
 class FileSystemWatcher:
     dir_events = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
-    def __init__(self, timeout_seconds: int = 10) -> None:
+    def __init__(self, timeout_seconds: float = 10.0) -> None:
         self._drive_inspector: DriveInspector = DriveInspector()
         self._watch_manager: pyinotify.WatchManager = pyinotify.WatchManager()
         self._event_handler: EventHandler = EventHandler(self._set_partition_info, self._drive_inspector)
