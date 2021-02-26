@@ -15,11 +15,9 @@ def file_system_watcher():
 
 
 def test_file_system_watcher(file_system_watcher, tmpdir):
-    device_file_path = Path(tmpdir)/"sda1"
-    file_system_watcher.add_watches([tmpdir])
-    print("<><><>", tmpdir, "<><><>")
-    print("><><><><", os.listdir(tmpdir), "><><><><")
+    watcher = FileSystemWatcher(timeout_seconds=5)
+    watcher.add_watches(dirs_to_watch=["/dev"])
+    device_file_path = Path("/dev/sdx1")
     Timer(interval=2.5, function=device_file_path.touch).start()
-    file_system_watcher._watch_until_timeout()
-    print("><><><><", os.listdir(tmpdir), "><><><><")
-    assert isinstance(file_system_watcher._partition_info, PartitionInfo)
+    watcher.backup_partition_info()
+    device_file_path.unlink(missing_ok=True)

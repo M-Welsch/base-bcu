@@ -59,9 +59,9 @@ class FileSystemWatcher:
 
     def backup_partition_info(self) -> PartitionInfo:
         LOG.info("Try to find partition for the first time...")
-        partition_info = self._drive_inspector.backup_partition_info
-        if partition_info is not None:
-            return partition_info
+        # partition_info = self._drive_inspector.backup_partition_info
+        # if partition_info is not None:
+        #     return partition_info
         self._watch_until_timeout()
         if self._partition_info is None:
             LOG.info("Try to find partition for the last time...")
