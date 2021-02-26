@@ -29,7 +29,6 @@ class EventHandler(pyinotify.ProcessEvent):
         assert isinstance(self._stop_notifier, Callable), "Call set_notifier() first."
         LOG.debug(f"File {event.pathname} was created")
         LOG.info("Try to find partition...")
-        print("HERERERERE!")
         partition_info = self._drive_inspector.backup_partition_info
         if partition_info is not None:
             self._set_partition_info(partition_info)
@@ -54,14 +53,15 @@ class FileSystemWatcher:
         self._partition_info = info
 
     def add_watches(self, dirs_to_watch: List[str]) -> None:
+        assert all([isinstance(d, str) for d in dirs_to_watch]), "List of strings expected!"
         for directory in dirs_to_watch:
             self._watch_manager.add_watch(directory, FileSystemWatcher.dir_events)
 
     def backup_partition_info(self) -> PartitionInfo:
         LOG.info("Try to find partition for the first time...")
-        # partition_info = self._drive_inspector.backup_partition_info
-        # if partition_info is not None:
-        #     return partition_info
+        partition_info = self._drive_inspector.backup_partition_info
+        if partition_info is not None:
+            return partition_info
         self._watch_until_timeout()
         if self._partition_info is None:
             LOG.info("Try to find partition for the last time...")
