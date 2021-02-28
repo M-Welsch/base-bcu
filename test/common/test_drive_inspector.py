@@ -1,10 +1,13 @@
 import pytest
+from pathlib import Path
 
+from base.common.config import Config
 from base.common.drive_inspector import DriveInspector, DriveInfo, PartitionInfo
 
 
 @pytest.fixture(scope="class")
 def drive_inspector():
+    Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
     yield DriveInspector()
 
 
@@ -17,12 +20,13 @@ class TestDriveInspector:
         print(drive_inspector.devices)
 
     @staticmethod
-    def test_drive_inspector_device_file(drive_inspector):
+    def test_drive_inspector_valid_devices(drive_inspector):
         devices = drive_inspector.devices
-        valid_devices = [d for d in devices if d.model_name and d.serial_number]
+        valid_devices = [d for d in devices if d.serial_number]
         assert valid_devices
-        print(f"valid_devices: {valid_devices}")
-        device = valid_devices[0]
-        device_file = drive_inspector.backup_partition_info
-        assert isinstance(device_file, PartitionInfo)
-        print(device_file)
+
+    @staticmethod
+    def test_drive_inspector_backup_partition_info(drive_inspector):
+        partition_info = drive_inspector.backup_partition_info
+        assert isinstance(partition_info, PartitionInfo)
+        print(partition_info)

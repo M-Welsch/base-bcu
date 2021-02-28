@@ -83,6 +83,7 @@ class DriveInspector:
 
     @property
     def devices(self) -> List[DriveInfo]:
+        self.refresh()
         return self._devices
 
     def refresh(self) -> None:
@@ -91,7 +92,6 @@ class DriveInspector:
 
     @property
     def backup_partition_info(self) -> Optional[PartitionInfo]:
-        self.refresh()
         candidates = [
             device for device in self.devices if device.model_name == self._partition_signature.model_name and
                                                  device.serial_number == self._partition_signature.serial_number and
