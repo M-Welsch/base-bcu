@@ -14,12 +14,12 @@ def test_validate_config():
         minute = 13
         second = 12
 
-    config = Config
+    config = Config()
     time_calculator = TimeCalculator()
 
     for frequency in time_calculator._frequencies:
         config.backup_frequency = frequency
-        time_calculator._validate_config
+        time_calculator._validate_config(config)
 
     with pytest.raises(AssertionError):
         config.day_of_month = 32

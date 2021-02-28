@@ -6,26 +6,31 @@ from base.common.exceptions import NetworkError
 from base.common.nas_finder import NasFinder
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def nas_finder():
     Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
     yield NasFinder()
 
 
-@pytest.fixture
-def nas_finder_config():
-    yield Config("sync.json")
+@pytest.fixture(scope="class")
+def nas_config():
+    yield Config("nas.json")
 
 
-def test_nas_ip_available(nas_finder, nas_finder_config):
-    nas_finder._assert_nas_ip_available(Config("nas.json").ssh_host)
-    with pytest.raises(NetworkError):
-        assert nas_finder._assert_nas_ip_available('255.255.255.255')
+class TestNasFinder:
+    @staticmethod
+    def test_nas_ip_available(nas_finder, nas_config):
+        nas_finder._assert_nas_ip_available(nas_config.ssh_host)
 
+    @staticmethod
+    def test_wrong_nas_ip_not_available(nas_finder):
+        with pytest.raises(NetworkError):
+            assert nas_finder._assert_nas_ip_available('255.255.255.255')
 
-def test_nas_correct(nas_finder, nas_finder_config):
-    nas_finder._assert_nas_correct(Config("nas.json").ssh_host, Config("nas.json").ssh_user)
+    @staticmethod
+    def test_nas_correct(nas_finder, nas_config):
+        nas_finder._assert_nas_correct(nas_config.ssh_host, nas_config.ssh_user)
 
-
-def test_nas_hdd_mounted(nas_finder, nas_finder_config):
-    nas_finder.assert_nas_hdd_mounted()
+    @staticmethod
+    def test_nas_hdd_mounted(nas_finder):
+        nas_finder.assert_nas_hdd_mounted()
