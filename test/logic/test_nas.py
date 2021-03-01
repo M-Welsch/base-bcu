@@ -6,7 +6,7 @@ from base.common.config import Config
 from base.logic.nas import Nas
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="class")
 def nas(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp("nas_test_config_dir")
     config_path = Path("/home/base/python.base/base/config/")
@@ -23,16 +23,23 @@ def nas(tmpdir_factory):
     yield Nas()
 
 
-def test_smb_backup_mode(nas):
-    nas.smb_backup_mode()
+class TestNas:
+    @staticmethod
+    def test_smb_backup_mode(nas):
+        nas.smb_backup_mode()
 
+    @staticmethod
+    def test_smb_normal_mode(nas):
+        nas.smb_normal_mode()
 
-def test_smb_normal_mode(nas):
-    nas.smb_normal_mode()
+    @staticmethod
+    def test_stopping_services(nas):
+        nas.stop_services()
 
+    @staticmethod
+    def test_resume_services(nas):
+        nas.resume_services()
 
-def test_stopping_serices(nas):
-    nas.stop_services()
-
-def test_resume_sercices(nas):
-    nas.resume_services()
+    @staticmethod
+    def test_correct_smb_conf(nas):
+        assert(nas.correct_smb_conf())

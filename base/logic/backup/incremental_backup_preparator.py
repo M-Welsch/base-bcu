@@ -30,8 +30,8 @@ class IncrementalBackupPreparator:
     def enough_space_for_full_backup(self) -> bool:
         free_space_on_bu_hdd = self._obtain_free_space_on_backup_hdd()
         space_needed_for_full_bu = self.space_occupied_on_nas_hdd()
-        LOG.info("Space free on BU HDD: {}, Space needed: {}".format(free_space_on_bu_hdd, space_needed_for_full_bu))
-        return free_space_on_bu_hdd < space_needed_for_full_bu
+        LOG.info(f"Space free on BU HDD: {free_space_on_bu_hdd}, Space needed: {space_needed_for_full_bu}")
+        return free_space_on_bu_hdd > space_needed_for_full_bu
 
     def _obtain_free_space_on_backup_hdd(self) -> int:
         command = (["df", "--output=avail", self._config_sync.local_backup_target_location])

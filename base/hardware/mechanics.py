@@ -48,3 +48,7 @@ class Mechanics:
         if diff_time > self._config.maximum_docking_time:
             self._pin_interface.stepper_driver_off()
             raise DockingError("Maximum Docking Time exceeded: {}".format(diff_time))
+
+    @property
+    def docked(self):
+        return self._pin_interface.docked

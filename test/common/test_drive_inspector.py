@@ -3,6 +3,7 @@ from pathlib import Path
 
 from base.common.config import Config
 from base.common.drive_inspector import DriveInspector, DriveInfo, PartitionInfo
+from base.hardware.hardware import Hardware
 
 
 @pytest.fixture(scope="class")
@@ -26,6 +27,7 @@ class TestDriveInspector:
         assert valid_devices
 
     @staticmethod
+    @pytest.mark.skip("only makes sense if backup hdd is docked.")
     def test_drive_inspector_backup_partition_info(drive_inspector):
         partition_info = drive_inspector.backup_partition_info
         assert isinstance(partition_info, PartitionInfo)

@@ -39,3 +39,7 @@ class Hardware:
         self._sbu.send_readable_timestamp(timestamp)
         self._sbu.send_seconds_to_next_bu(seconds)
         self._sbu.request_shutdown()
+
+    @property
+    def docked(self):
+        return self._mechanics.docked

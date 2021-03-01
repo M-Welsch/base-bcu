@@ -52,6 +52,7 @@ class Drive:
     def _is_mounted(self):
         return path.ismount(self._config.backup_hdd_mount_point)
 
+    # Todo: cleanup this mess
     def _unmount_backup_hdd(self):
         LOG.debug("Trying to unmount backup HDD...")
         command = ["sudo", "umount", self._config.backup_hdd_mount_point]

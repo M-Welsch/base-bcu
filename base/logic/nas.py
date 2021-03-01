@@ -1,8 +1,8 @@
-from base.common.config import Config
-from base.logic.ssh_interface import SSHInterface
-
 import logging
 from pathlib import Path
+
+from base.common.config import Config
+from base.logic.ssh_interface import SSHInterface
 
 LOG = logging.getLogger(Path(__file__).name)
 
@@ -48,7 +48,6 @@ class Nas:
         with SSHInterface() as sshi:
             sshi.connect(self._config.ssh_host, self._config.ssh_user)
             sshi.run_and_raise("systemctl stop smbd")
-            sshi.run_and_raise("cp /etc/samba/smb.conf /etc/samba/smb.conf_normalmode")
             sshi.run_and_raise("cp /etc/samba/smb.conf_backupmode /etc/samba/smb.conf")
             sshi.run_and_raise("systemctl start smbd")
             smb_confs = sshi.run("ls /etc/samba")
@@ -58,10 +57,13 @@ class Nas:
         with SSHInterface() as sshi:
             sshi.connect(self._config.ssh_host, self._config.ssh_user)
             sshi.run_and_raise("systemctl stop smbd")
-            sshi.run_and_raise("cp /etc/samba/smb.conf /etc/samba/smb.conf_backupmode")
             sshi.run_and_raise("cp /etc/samba/smb.conf_normalmode /etc/samba/smb.conf")
             sshi.run_and_raise("systemctl start smbd")
             smb_confs = sshi.run("ls /etc/samba")
             assert "smb.conf_backupmode" in str(smb_confs)
 
-
+    def correct_smb_conf(self):
+        with SSHInterface() as sshi:
+            sshi.connect(self._config.ssh_host, self._config.ssh_user)
+            cmp = sshi.run_and_raise("cmp /etc/samba/smb.conf /etc/samba/smb.conf_normalmode")
+        return not cmp

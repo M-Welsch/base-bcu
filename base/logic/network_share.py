@@ -14,7 +14,10 @@ class NetworkShare:
 
     # Todo: create new user on NAS that has the permission to READ the hdd but not to write to it
     def mount_datasource_via_smb(self):
-        Path(self._config.local_nas_hdd_mount_point).mkdir(exist_ok=True)
+        try:
+            Path(self._config.local_nas_hdd_mount_point).mkdir(exist_ok=True)
+        except FileExistsError:
+            pass  # exist_ok=True was intended to supress this error, howe it works in a different way
         command = f"mount -t cifs " \
                   f"-o credentials=/etc/win-credentials " \
                   f"//{Config('nas.json').ssh_host}/hdd " \
