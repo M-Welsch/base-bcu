@@ -34,7 +34,7 @@ class Drive:
             try:
                 LOG.debug(command)
                 run_external_command(command)
-                LOG.info(f"Mounted HDD {self._partition_info.path} at {self._partition_info.mount_point}")
+                LOG.info(f"Mounted HDD {self._partition_info.path} at {self._config.backup_hdd_mount_point}")
             except ExternalCommandError:
                 raise MountingError(f"Backup HDD could not be mounted")
         assert DriveInspector().backup_partition_info.mount_point

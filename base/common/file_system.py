@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from time import sleep
 from typing import List, Optional, Callable
 
 import pyinotify
@@ -28,6 +29,8 @@ class EventHandler(pyinotify.ProcessEvent):
     def process_IN_CREATE(self, event: pyinotify.Event) -> None:
         assert isinstance(self._stop_notifier, Callable), "Call set_notifier() first."
         LOG.debug(f"File {event.pathname} was created")
+        sleep(0.5)  # Todo: wait for model_number and serial_number to be written completely in a more elegant way
+                    # (lsof). See notes at bottom of file
         LOG.info("Try to find partition...")
         partition_info = self._drive_inspector.backup_partition_info
         if partition_info is not None:
@@ -80,3 +83,36 @@ if __name__ == "__main__":
     watcher = FileSystemWatcher(timeout_seconds=10)
     watcher.add_watches(dirs_to_watch=["/dev", "/home/base"])
     watcher.backup_partition_info()
+
+
+
+# # bug 1
+# Try to find partition for the first time...
+# Backup HDD not found!
+# File /dev/sg0 was created
+# Try to find partition...
+# Backup HDD not found!
+# File /dev/bsg was created
+# Try to find partition...
+# Backup HDD not found!
+# File /dev/sda was created
+# Try to find partition...
+# Backup HDD not found!
+# File /dev/sda1 was created
+# Try to find partition...
+# Backup HDD not found!
+# Try to find partition for the last time...
+# ['mount', '-t', 'ext4', '/dev/sda1', '/media/BackupHDD']
+# Mounted HDD /dev/sda1 at None
+#
+# ## Analyse:
+# * selbes Phänomen bei test_engage
+#
+# File /dev/sda1 was created
+# Try to find partition...
+# [DriveInfo(name='sda', path='/dev/sda', model_name='WDC WD3000JD-00K', serial_number=None, bytes_size=300069052416, mount_point=None, rotational=True, drive_type='disk', state='running', partitions=[PartitionInfo(path='/dev/sda1', mount_point=None, bytes_size=300067848192)]), DriveInfo(name='mmcblk0', path='/dev/mmcblk0', model_name=None, serial_number='0x22902883', bytes_size=4012900352, mount_point=None, rotational=False, drive_type='disk', state=None, partitions=[PartitionInfo(path='/dev/mmcblk0p1', mount_point='/', bytes_size=3808051200)]), DriveInfo(name='zram0', path='/dev/zram0', model_name=None, serial_number=None, bytes_size=52428800, mount_point='/var/log', rotational=False, drive_type='disk', state=None, partitions=[]), DriveInfo(name='zram1', path='/dev/zram1', model_name=None, serial_number=None, bytes_size=522620928, mount_point='[SWAP]', rotational=False, drive_type='disk', state=None, partitions=[])]
+# Backup HDD not found!
+# Try to find partition for the last time...
+# [DriveInfo(name='sda', path='/dev/sda', model_name='WDC_WD3000JD-00KLB0', serial_number='WD-WMAMR1169221', bytes_size=300069052416, mount_point=None, rotational=True, drive_type='disk', state='running', partitions=[PartitionInfo(path='/dev/sda1', mount_point=None, bytes_size=300067848192)]), DriveInfo(name='mmcblk0', path='/dev/mmcblk0', model_name=None, serial_number='0x22902883', bytes_size=4012900352, mount_point=None, rotational=False, drive_type='disk', state=None, partitions=[PartitionInfo(path='/dev/mmcblk0p1', mount_point='/', bytes_size=3808051200)]), DriveInfo(name='zram0', path='/dev/zram0', model_name=None, serial_number=None, bytes_size=52428800, mount_point='/var/log', rotational=False, drive_type='disk', state=None, partitions=[]), DriveInfo(name='zram1', path='/dev/zram1', model_name=None, serial_number=None, bytes_size=522620928, mount_point='[SWAP]', rotational=False, drive_type='disk', state=None, partitions=[])]
+#
+# => warum ist der model_name bei "last time" vollständig und vorher nicht. Vermutlich ist irgendein File nicht zuende geschrieben
