@@ -62,14 +62,15 @@ def test_space_occupied_on_nas_hdd(incremental_backup_preparator):
     assert used_space_on_nas > 0
 
 
-def test_obtain_free_space_on_hdd(incremental_backup_preparator):
+def test_space_available_on_bu_hdd(incremental_backup_preparator):
     free_space_on_bu_hdd = incremental_backup_preparator._obtain_free_space_on_backup_hdd()
+    print(f"free_space_on_bu_hdd: {free_space_on_bu_hdd}")
     assert type(free_space_on_bu_hdd) == int
     assert free_space_on_bu_hdd > 0
 
 
 def test_copy_newest_backup_with_hardlinks(incremental_backup_preparator):
-    sleep(1) # important!
+    sleep(1)  # important!
     recent_bu_path = incremental_backup_preparator._newest_backup_dir_path()
     new_bu_path = incremental_backup_preparator._create_folder_for_backup()
     incremental_backup_preparator._copy_newest_backup_with_hardlinks(recent_bu_path, new_bu_path)

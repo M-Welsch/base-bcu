@@ -61,7 +61,7 @@ class SbuCommands:
     )
     send_readable_timestamp_of_next_bu = SbuCommand(
         message_code="BR",
-        await_acknowledge=False, # Fixme: SBU Bug!
+        await_acknowledge=False,  # Fixme: SBU Bug!
         await_ready_signal=True
     )
     measure_current = SbuCommand(
@@ -94,6 +94,13 @@ class SbuCommands:
         message_code="SA",
         await_acknowledge=True,
         await_ready_signal=False
+    )
+    request_wakeup_reason = SbuCommand(
+        message_code="WU",
+        await_acknowledge=True,
+        await_ready_signal=True,
+        await_response=True,
+        response_keyword="WU"
     )
 
 

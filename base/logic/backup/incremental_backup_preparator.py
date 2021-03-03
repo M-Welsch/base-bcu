@@ -35,6 +35,7 @@ class IncrementalBackupPreparator:
 
     def _obtain_free_space_on_backup_hdd(self) -> int:
         command = (["df", "--output=avail", self._config_sync.local_backup_target_location])
+        LOG.info(f"obtaining free space on bu hdd with command: {command}")
         out = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         free_space_on_bu_hdd = self._remove_heading_from_df_output(out.stdout)
         return free_space_on_bu_hdd
@@ -49,8 +50,13 @@ class IncrementalBackupPreparator:
     def space_occupied_on_nas_hdd(self) -> int:
         with SSHInterface() as ssh:
             ssh.connect(self._config_nas.ssh_host, self._config_nas.ssh_user)
-            space_occupied = int(ssh.run_and_raise('df --output="used" /mnt/HDD | tail -n 1'))
+            command = 'df --output="used" /mnt/HDD | tail -n 1'
+            LOG.info(f"obtaining space occupied nas hdd with command: {command}")
+            space_occupied = int(ssh.run_and_raise(command))
         return space_occupied
+
+    def space_occupied_by_backup_source_data(self) -> int:
+        path_on_nas = Path(self._config_sync.remote_backup_source_location)/self._config_sync.remote_backup_source_path
 
     def delete_oldest_backup(self):
         with BackupBrowser() as bb:

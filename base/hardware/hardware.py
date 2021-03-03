@@ -43,3 +43,5 @@ class Hardware:
     @property
     def docked(self):
         return self._mechanics.docked
+
+    # Todo: Heartbeat. Implement as Daemon Thread (because it dies with baseApplication) or toggle pin in mainloop
