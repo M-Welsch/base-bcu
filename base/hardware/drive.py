@@ -27,7 +27,8 @@ class Drive:
         file_system_watcher = FileSystemWatcher(self._config.backup_hdd_spinup_timeout)
         file_system_watcher.add_watches(["/dev"])
         self._partition_info = file_system_watcher.backup_partition_info()
-        assert self._partition_info.path
+        if self._partition_info is None:
+            raise MountingError(f"Backup HDD not available!")
         if self._partition_info.mount_point is None:
             command = ["mount", "-t", self._config.backup_hdd_file_system,
                        self._partition_info.path, self._config.backup_hdd_mount_point]

@@ -97,7 +97,6 @@ class DriveInspector:
                                                  device.serial_number == self._partition_signature.serial_number and
                                                  device.bytes_size == self._partition_signature.bytes_size
         ]
-        print(self._devices)
         if not len(candidates) == 1:
             LOG.error("Backup HDD not found!")
             return None
