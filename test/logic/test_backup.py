@@ -41,5 +41,6 @@ def backup(tmpdir):
     print("target contents:", os.listdir(str(target)))
 
 
+@pytest.mark.skip("not functional if source location is on local machine")
 def test_backup(backup):
     backup.on_backup_request()

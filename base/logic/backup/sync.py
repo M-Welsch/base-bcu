@@ -77,9 +77,9 @@ class SshRsync:
         def __str__(self):
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
-    def __init__(self, local_target_location):
+    def __init__(self, local_target_location, source_location):
         self._local_target_location = local_target_location
-        self._command = self._compose_rsync_command(local_target_location)
+        self._command = self._compose_rsync_command(local_target_location, source_location)
         self._process = None
         self._status = self.Status()
 
@@ -93,26 +93,33 @@ class SshRsync:
         except ProcessLookupError:
             pass
 
-    def _compose_rsync_command(self, local_target_location):
+    def _compose_rsync_command(self, local_target_location, source_location):
         sync_config = Config("sync.json")
         nas_config = Config("nas.json")
         host = nas_config.ssh_host
         user = nas_config.ssh_user
-        remote_source_path = Path(sync_config.remote_backup_source_location)
-        local_nas_hdd_mount_path = Path(sync_config.local_nas_hdd_mount_point)
         protocol = sync_config.protocol
         command = "sudo rsync -avH".split()
-        if protocol == "smb":
-            # orig: source_path = Path(sync_config.local_nas_hdd_mount_point)/sync_config.remote_backup_source_path
-            source_path = self._nas_source_path_on_base(remote_source_path, local_nas_hdd_mount_path)
-            command.extend(f'{source_path}/* {local_target_location}'.split())
+        if source_location:
+            if protocol == "smb":
+                command.extend(f'{source_location}/ {local_target_location}'.split())
+            else:
+                raise NotImplementedError
         else:
-            command.append('-e')
-            command.append("ssh -i /home/base/.ssh/id_rsa")
-            source_path = remote_source_path
-            command.extend(f"{user}@{host}:{source_path}/* {local_target_location}".split())
+            remote_source_path = Path(sync_config.remote_backup_source_location)
+            local_nas_hdd_mount_path = Path(sync_config.local_nas_hdd_mount_point)
+
+            if protocol == "smb":
+                # orig: source_path = Path(sync_config.local_nas_hdd_mount_point)/sync_config.remote_backup_source_path
+                source_path = self._nas_source_path_on_base(remote_source_path, local_nas_hdd_mount_path)
+                command.extend(f'{source_path}/* {local_target_location}'.split())
+            else:
+                command.append('-e')
+                command.append("ssh -i /home/base/.ssh/id_rsa")
+                source_path = remote_source_path
+                command.extend(f"{user}@{host}:{source_path}/* {local_target_location}".split())
         command.extend('--outbuf=N --info=progress2'.split())
-        LOG.debug(f"rsync_command: {command}")
+        LOG.info(f"About to sync with: {command}")
         return command
 
     @staticmethod
@@ -150,10 +157,11 @@ class SshRsync:
 class RsyncWrapperThread(Thread):
     terminated = Signal()
 
-    def __init__(self, local_target_location):
+    def __init__(self, local_target_location, source_location=None):
         super().__init__()
         self._ssh_rsync = None
         self._local_target_location = local_target_location
+        self._source_location = source_location
 
     @property
     def running(self):
@@ -161,7 +169,7 @@ class RsyncWrapperThread(Thread):
         return self.is_alive()
 
     def run(self):
-        self._ssh_rsync = SshRsync(self._local_target_location)
+        self._ssh_rsync = SshRsync(self._local_target_location, self._source_location)
         with self._ssh_rsync as output_generator:
             for status in output_generator:
                 LOG.debug(status)

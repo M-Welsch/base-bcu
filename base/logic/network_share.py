@@ -18,6 +18,8 @@ class NetworkShare:
             Path(self._config.local_nas_hdd_mount_point).mkdir(exist_ok=True)
         except FileExistsError:
             pass  # exist_ok=True was intended to supress this error, howe it works in a different way
+        except OSError as e:
+            LOG.warning(f"strange OS-Error occured on trying to create the NAS-HDD Mountpoint: {e}")
         command = f"mount -t cifs " \
                   f"-o credentials=/etc/win-credentials " \
                   f"//{Config('nas.json').ssh_host}/hdd " \

@@ -78,9 +78,10 @@ class Backup:
             LOG.debug("Don't do backup via smb")
         self._nas.stop_services()
         self.hardware_engage_request.emit()
-        new_backup_directory = IncrementalBackupPreparator().prepare()
-        LOG.info(f"Backing up into: {new_backup_directory}")
-        self._sync = RsyncWrapperThread(new_backup_directory)
+        backup_source_directory = self._backup_source_directory()
+        backup_target_directory = IncrementalBackupPreparator().prepare()
+        LOG.info(f"Backing up into: {backup_target_directory}")
+        self._sync = RsyncWrapperThread(backup_target_directory, backup_source_directory)
         self._sync.terminated.connect(self.on_backup_finished)
         self._sync.start()
 
@@ -91,4 +92,15 @@ class Backup:
             NetworkShare().unmount_datasource_via_smb()
             self._nas.smb_normal_mode()
 
-
+    def _backup_source_directory(self) -> Path:
+        config_sync = Config("sync.json")
+        protocol = config_sync.protocol
+        remote_source_path = Path(config_sync.remote_backup_source_location)
+        local_nas_hdd_mount_path = Path(config_sync.local_nas_hdd_mount_point)
+        if protocol == "smb":
+            source_mountpoint = Nas().mount_point(remote_source_path)
+            subfolder_on_mountpoint = remote_source_path.relative_to(source_mountpoint)
+            source_directory = local_nas_hdd_mount_path/subfolder_on_mountpoint
+        elif protocol == "ssh":
+            raise NotImplementedError
+        return source_directory
