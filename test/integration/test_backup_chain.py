@@ -45,7 +45,7 @@ def make_base_application():
 
 
 @pytest.fixture()
-def app(tmpdir_factory, configure_logger):
+def app_smb(tmpdir_factory, configure_logger):
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir)/"config").resolve()
     shutil.copytree('/home/base/python.base/base/config', config_dir)
@@ -56,7 +56,8 @@ def app(tmpdir_factory, configure_logger):
     update_conf(
         config_dir/"sync.json",
         {
-            "remote_backup_source_location": "/mnt/HDD/testfiles"
+            "remote_backup_source_location": "/mnt/HDD/testfiles",
+            "protocol": "smb"
         }
     )
     update_conf(
@@ -69,5 +70,38 @@ def app(tmpdir_factory, configure_logger):
     yield make_base_application()
 
 
-def test_backup_chain(app):
-    app._backup.on_backup_request()
+@pytest.fixture()
+def app_ssh(tmpdir_factory, configure_logger):
+    tmpdir = tmpdir_factory.mktemp("test_dir")
+    config_dir = (Path(tmpdir)/"config").resolve()
+    shutil.copytree('/home/base/python.base/base/config', config_dir)
+    update_conf(
+        config_dir/"base.json",
+        {"logs_directory": configure_logger["tmpdir"]}
+    )
+    update_conf(
+        config_dir/"sync.json",
+        {
+            "remote_backup_source_location": "/mnt/HDD/testfiles",
+            "protocol": "ssh"
+        }
+    )
+    update_conf(
+        config_dir/"backup.json",
+        {
+            "shutdown_between_backups": False
+        }
+    )
+    Config.set_config_base_path(config_dir)
+    yield make_base_application()
+
+
+#@pytest.mark.skip
+def test_backup_chain_via_smb(app_smb):
+    app_smb._backup.on_backup_request()
+
+
+# Todo: find a way to wait for last test to complete! Use backup_running request or so ...
+@pytest.mark.skip("find a way to wait for last test to complete! Use backup_running request or so ...")
+def test_backup_chain_via_ssh(app_ssh):
+    app_ssh._backup.on_backup_request()
