@@ -4,11 +4,13 @@ import os
 from pathlib import Path
 from re import findall
 from subprocess import Popen, PIPE
+from typing import List
 
 from base.common.config import Config
 from base.common.exceptions import NewBuDirCreationError
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.ssh_interface import SSHInterface
+from base.logic.nas import Nas
 
 
 LOG = logging.getLogger(Path(__file__).name)
@@ -20,9 +22,9 @@ class IncrementalBackupPreparator:
         self._config_sync = Config("sync.json")
         self._new_backup_folder = None
 
-    def prepare(self) -> Path:
+    def prepare(self) -> List[Path]:
         self._free_space_on_backup_hdd_if_necessary()
-        return self._create_folder_for_backup()
+        return [self._backup_source_directory(), self._create_folder_for_backup()]
 
     def _free_space_on_backup_hdd_if_necessary(self):
         while not self.enough_space_for_full_backup():
@@ -125,3 +127,25 @@ class IncrementalBackupPreparator:
         new_backup_folder = self._get_path_for_new_bu_directory()
         os.rename(newest_existing_bu_dir, new_backup_folder)
         self._new_backup_folder = new_backup_folder
+
+    def _backup_source_directory(self) -> Path:
+        protocol = self._config_sync.protocol
+        remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
+        local_nas_hdd_mount_path = Path(self._config_sync.local_nas_hdd_mount_point)
+        if protocol == "smb":
+            source_directory = self._derive_backup_source_directory_smb(local_nas_hdd_mount_path,
+                                                                        remote_backup_source_location)
+        elif protocol == "ssh":
+            source_directory = remote_backup_source_location
+        else:
+            LOG.error(f"{protocol} is not a valid protocoll! Defaulting to smb")
+            source_directory = self._derive_backup_source_directory_smb(local_nas_hdd_mount_path,
+                                                                        remote_backup_source_location)
+        return Path(source_directory)
+
+    @staticmethod
+    def _derive_backup_source_directory_smb(local_nas_hdd_mount_path, remote_backup_source_location):
+        source_mountpoint = Nas().mount_point(remote_backup_source_location)
+        subfolder_on_mountpoint = remote_backup_source_location.relative_to(source_mountpoint)
+        source_directory = local_nas_hdd_mount_path / subfolder_on_mountpoint
+        return source_directory
