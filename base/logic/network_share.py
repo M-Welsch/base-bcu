@@ -38,9 +38,9 @@ class NetworkShare:
         for line in process.stderr:
             if "error(16)" in line:
                 # Device or resource busy
-                LOG.warning("Device probably already mounted")
+                LOG.warning(f"Device probably already mounted: {line}")
             elif "error(2)" in line:
                 # No such file or directory
-                raise NetworkError("Network share not available!")
+                raise NetworkError(f"Network share not available: {line}")
             else:
                 LOG.debug("stderr: " + line)

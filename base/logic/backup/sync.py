@@ -9,6 +9,7 @@ from threading import Thread
 from signalslot import Signal
 
 from base.common.config import Config
+from base.logic.nas import Nas
 
 
 LOG = logging.getLogger(Path(__file__).name)
@@ -92,26 +93,33 @@ class SshRsync:
         except ProcessLookupError:
             pass
 
-    @staticmethod
-    def _compose_rsync_command(local_target_location):
+    def _compose_rsync_command(self, local_target_location):
         sync_config = Config("sync.json")
         nas_config = Config("nas.json")
         host = nas_config.ssh_host
         user = nas_config.ssh_user
         remote_source_path = Path(sync_config.remote_backup_source_location)
+        local_nas_hdd_mount_path = Path(sync_config.local_nas_hdd_mount_point)
         protocol = sync_config.protocol
         command = "sudo rsync -avH".split()
         if protocol == "smb":
-            source_path = Path(sync_config.local_nas_hdd_mount_point)/sync_config.remote_backup_source_path
+            # orig: source_path = Path(sync_config.local_nas_hdd_mount_point)/sync_config.remote_backup_source_path
+            source_path = self._nas_source_path_on_base(remote_source_path, local_nas_hdd_mount_path)
             command.extend(f'{source_path}/* {local_target_location}'.split())
         else:
             command.append('-e')
             command.append("ssh -i /home/base/.ssh/id_rsa")
-            source_path = remote_source_path / sync_config.remote_backup_source_path
+            source_path = remote_source_path
             command.extend(f"{user}@{host}:{source_path}/* {local_target_location}".split())
         command.extend('--outbuf=N --info=progress2'.split())
         LOG.debug(f"rsync_command: {command}")
         return command
+
+    @staticmethod
+    def _nas_source_path_on_base(remote_source_path: Path, local_nas_hdd_mount_point: Path) -> Path:
+        source_mountpoint = Nas().mount_point(remote_source_path)
+        subfolder_on_mountpoint = remote_source_path.relative_to(source_mountpoint)
+        return local_nas_hdd_mount_point/subfolder_on_mountpoint
 
     def _output_generator(self):
         while True:

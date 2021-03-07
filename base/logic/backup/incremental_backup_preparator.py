@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
+from re import findall
 from subprocess import Popen, PIPE
 
 from base.common.config import Config
@@ -29,7 +30,7 @@ class IncrementalBackupPreparator:
 
     def enough_space_for_full_backup(self) -> bool:
         free_space_on_bu_hdd = self._obtain_free_space_on_backup_hdd()
-        space_needed_for_full_bu = self.space_occupied_on_nas_hdd()
+        space_needed_for_full_bu = self.space_occupied_by_backup_source_data()
         LOG.info(f"Space free on BU HDD: {free_space_on_bu_hdd}, Space needed: {space_needed_for_full_bu}")
         return free_space_on_bu_hdd > space_needed_for_full_bu
 
@@ -56,7 +57,22 @@ class IncrementalBackupPreparator:
         return space_occupied
 
     def space_occupied_by_backup_source_data(self) -> int:
-        path_on_nas = Path(self._config_sync.remote_backup_source_location)/self._config_sync.remote_backup_source_path
+        path_on_nas = self._config_sync.remote_backup_source_location
+        try:
+            with SSHInterface() as ssh:
+                ssh.connect(self._config_nas.ssh_host, self._config_nas.ssh_user)
+                command = f"du {path_on_nas} -s --block-size=1"
+                response = ssh.run_and_raise(command)
+                LOG.info(f"obtaining space occupied nas hdd with command: {command}. Received {response}")
+            space_occupied = int(findall("\d+", response)[0])
+        except RuntimeError as e:
+            if "No such file or directory" in str(e):
+                LOG.warning("couldn't assess space needed for backup. Assuming it's 0 so the backup can go on!")
+                space_occupied = 0
+        except IndexError as e:
+            LOG.warning("couldn't assess space needed for backup. Assuming it's 0 so the backup can go on!")
+            space_occupied = 0
+        return space_occupied
 
     def delete_oldest_backup(self):
         with BackupBrowser() as bb:

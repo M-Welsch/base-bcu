@@ -32,6 +32,9 @@ def backup(tmpdir):
     with open(config_path/"nas.json", "r") as src, open(config_test_path/"nas.json", "w") as dst:
         nas_config_data = json.load(src)
         json.dump(nas_config_data, dst)
+    with open(config_path/"drive.json", "r") as src, open(config_test_path/"drive.json", "w") as dst:
+        nas_config_data = json.load(src)
+        json.dump(nas_config_data, dst)
     Config.set_config_base_path(config_test_path)
     yield Backup(false)
     print("source contents:", os.listdir(str(source)))

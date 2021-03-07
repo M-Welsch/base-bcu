@@ -56,9 +56,7 @@ def app(tmpdir_factory, configure_logger):
     update_conf(
         config_dir/"sync.json",
         {
-            "ssh_host": "192.168.178.64",
-            "remote_backup_source_location": "/mnt/hdd",
-            "remote_backup_source_path": "testfiles"
+            "remote_backup_source_location": "/mnt/HDD/testfiles"
         }
     )
     update_conf(

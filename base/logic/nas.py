@@ -62,8 +62,15 @@ class Nas:
             smb_confs = sshi.run("ls /etc/samba")
             assert "smb.conf_backupmode" in str(smb_confs)
 
-    def correct_smb_conf(self):
+    def correct_smb_conf(self, mode: str = "normalmode"):
         with SSHInterface() as sshi:
             sshi.connect(self._config.ssh_host, self._config.ssh_user)
-            cmp = sshi.run_and_raise("cmp /etc/samba/smb.conf /etc/samba/smb.conf_normalmode")
+            cmp = sshi.run_and_raise(f"cmp /etc/samba/smb.conf /etc/samba/smb.conf_{mode}")
         return not cmp
+
+    def mount_point(self, file) -> Path:
+        with SSHInterface() as sshi:
+            sshi.connect(self._config.ssh_host, self._config.ssh_user)
+            response = sshi.run_and_raise(f'findmnt -T {file} --output="TARGET" -nf')
+            response = response.replace('\n', '')
+            return Path(response)

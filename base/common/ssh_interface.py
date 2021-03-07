@@ -11,9 +11,15 @@ class SSHInterface:
     def __init__(self):
         self._client = paramiko.SSHClient()
 
+    def _set_paramiko_loglevel_to_warning(self):
+        for logger in [logging.getLogger(name) for name in logging.root.manager.loggerDict]:
+            if "paramiko" in logger.name:
+                logging.getLogger(logger.name).setLevel(30)
+
     def connect(self, host, user):
         try:
             self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self._set_paramiko_loglevel_to_warning()
             k = paramiko.RSAKey.from_private_key_file('/home/base/.ssh/id_rsa')
             self._client.connect(host, username=user, pkey=k, timeout=10)
         except paramiko.AuthenticationException as e:

@@ -1,13 +1,11 @@
 from pathlib import Path
 from shutil import copytree
-import json
 
 import pytest
 
 from base.common.config import Config
 from base.hardware.drive import Drive
 from base.common.exceptions import MountingError
-from base.common.drive_inspector import DriveInspector
 from base.hardware.hardware import Hardware
 
 

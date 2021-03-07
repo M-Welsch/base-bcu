@@ -6,6 +6,7 @@ import pytest
 
 from base.logic.network_share import NetworkShare
 from base.common.config import Config
+from base.logic.nas import Nas
 
 
 def update_conf(file_path, updates):
@@ -15,7 +16,8 @@ def update_conf(file_path, updates):
     with open(file_path, "w") as dst:
         json.dump(obj, dst)
 
-@pytest.fixture()
+
+@pytest.fixture(scope="class")
 def network_share(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir)/"config").resolve()
@@ -24,9 +26,17 @@ def network_share(tmpdir_factory):
     yield NetworkShare()
 
 
-def test_mount_datasource_via_smb(network_share):
-    network_share.mount_datasource_via_smb()
+class TestNetworkShare:
+    @staticmethod
+    def test_mount_datasource_via_smb(network_share):
+        nas = Nas()
+        nas.smb_backup_mode()
+        network_share.mount_datasource_via_smb()
+        assert nas.correct_smb_conf("backupmode")
 
-
-def test_unmount_datasource_via_smb(network_share):
-    network_share.unmount_datasource_via_smb()
+    @staticmethod
+    def test_unmount_datasource_via_smb(network_share):
+        nas = Nas()
+        nas.smb_normal_mode()
+        network_share.unmount_datasource_via_smb()
+        assert nas.correct_smb_conf("normalmode")
