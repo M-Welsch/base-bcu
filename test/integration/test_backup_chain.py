@@ -99,9 +99,9 @@ def app_ssh(tmpdir_factory, configure_logger):
 #@pytest.mark.skip
 def test_backup_chain_via_smb(app_smb):
     app_smb._backup.on_backup_request()
-
+    app_smb._backup._sync.join()
 
 # Todo: find a way to wait for last test to complete! Use backup_running request or so ...
-@pytest.mark.skip("find a way to wait for last test to complete! Use backup_running request or so ...")
+# @pytest.mark.skip("find a way to wait for last test to complete! Use backup_running request or so ...")
 def test_backup_chain_via_ssh(app_ssh):
     app_ssh._backup.on_backup_request()

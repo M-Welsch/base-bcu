@@ -72,5 +72,5 @@ class Nas:
         with SSHInterface() as sshi:
             sshi.connect(self._config.ssh_host, self._config.ssh_user)
             response = sshi.run_and_raise(f'findmnt -T {file} --output="TARGET" -nf')
-            response = response.replace('\n', '')
+            response = response.strip()
             return Path(response)

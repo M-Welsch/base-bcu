@@ -78,7 +78,7 @@ class Backup:
             LOG.debug("Don't do backup via smb")
         self._nas.stop_services()
         self.hardware_engage_request.emit()
-        [backup_source_directory, backup_target_directory] = IncrementalBackupPreparator().prepare()
+        backup_source_directory, backup_target_directory = IncrementalBackupPreparator().prepare()
         LOG.info(f"Backing up into: {backup_target_directory}")
         self._sync = RsyncWrapperThread(backup_target_directory, backup_source_directory)
         self._sync.terminated.connect(self.on_backup_finished)

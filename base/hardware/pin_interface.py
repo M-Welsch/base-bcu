@@ -16,7 +16,7 @@ class PinInterface:
             cls.__instance = cls.__new__(cls)
             GPIO.setmode(GPIO.BOARD)
         # this kind of disables the ramp. It sounds best ...
-        cls.__instance.step_interval_initial = cls.__instance.step_interval = 0.001
+        cls.__instance.step_interval_initial = cls.__instance.step_interval = 0.0005
         cls.__instance._initialize_pins()
         return cls.__instance
 

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from re import findall
 from subprocess import Popen, PIPE
-from typing import List
+from typing import Tuple
 
 from base.common.config import Config
 from base.common.exceptions import NewBuDirCreationError
@@ -22,9 +22,9 @@ class IncrementalBackupPreparator:
         self._config_sync = Config("sync.json")
         self._new_backup_folder = None
 
-    def prepare(self) -> List[Path]:
+    def prepare(self) -> Tuple[Path]:
         self._free_space_on_backup_hdd_if_necessary()
-        return [self._backup_source_directory(), self._create_folder_for_backup()]
+        return self._backup_source_directory(), self._create_folder_for_backup()
 
     def _free_space_on_backup_hdd_if_necessary(self):
         while not self.enough_space_for_full_backup():

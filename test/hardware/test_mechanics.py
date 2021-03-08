@@ -16,7 +16,7 @@ def mechanics():
 
 class TestMechanics:
     @staticmethod
-    @pytest.mark.skip(reason="Mechanics need some grease!")
+    #@pytest.mark.skip(reason="Mechanics need some grease!")
     @pytest.mark.slow
     def test_dock(mechanics):
         mechanics.dock()
@@ -24,7 +24,7 @@ class TestMechanics:
         assert not PinInterface.global_instance().docked_sensor_pin_high
 
     @staticmethod
-    @pytest.mark.skip(reason="Mechanics need some grease!")
+    #@pytest.mark.skip(reason="Mechanics need some grease!")
     @pytest.mark.slow
     def test_undock(mechanics):
         mechanics.undock()
