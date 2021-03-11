@@ -57,7 +57,7 @@ class BaSeApplication:
     button_1_pressed = Signal()
 
     def __init__(self):
-        Config.set_config_base_path(Path("base/config/"))
+        Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
         self._config: Config = Config("base.json")
         self._setup_logger()
         self._maintenance_mode = MaintenanceMode()
@@ -71,8 +71,10 @@ class BaSeApplication:
         self._connect_signals()
 
     def start(self):
+        self._schedule.on_reschedule_requested()
         while not self._shutting_down:
             try:
+                # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
                 self._schedule.run_pending()
                 sleep(1)
             except ShutdownInterrupt:
@@ -87,6 +89,7 @@ class BaSeApplication:
             self._schedule.next_backup_seconds
         )
         self._execute_shutdown()
+        sleep(1)
 
     def _connect_signals(self):
         self._schedule.shutdown_request.connect(self._initiate_shutdown)
@@ -110,9 +113,11 @@ class BaSeApplication:
         pass
 
     def _setup_logger(self):
-        Path(self._config.logs_directory).mkdir(exist_ok=True)
+        logs_dir = Path.cwd()/Path(self._config.logs_directory)
+        logs_dir.mkdir(exist_ok=True)
+        logfile = logs_dir/datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
         logging.basicConfig(
-            filename=Path(self._config.logs_directory)/datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log'),
+            filename=logfile,
             level=logging.DEBUG,
             format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
             datefmt='%m.%d.%Y %H:%M:%S'

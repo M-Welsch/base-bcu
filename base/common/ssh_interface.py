@@ -1,10 +1,11 @@
+from base.common.exceptions import RemoteCommandError
 import paramiko
 import socket
 import logging
 from pathlib import Path
 
 
-log = logging.getLogger(Path(__file__).name)
+LOG = logging.getLogger(Path(__file__).name)
 
 
 class SSHInterface:
@@ -23,29 +24,20 @@ class SSHInterface:
             k = paramiko.RSAKey.from_private_key_file('/home/base/.ssh/id_rsa')
             self._client.connect(host, username=user, pkey=k, timeout=10)
         except paramiko.AuthenticationException as e:
-            msg = f"Authentication failed, please verify your credentials. Error = {e}"
-            print(msg)
-            log.error(msg)
-            response = e
+            LOG.error(f"Authentication failed, please verify your credentials. Error = {e}")
+            raise RemoteCommandError(e)
         except paramiko.SSHException as e:
             if not str(e).find('not found in known_hosts') == 0:
-                msg = f"Keyfile Authentication not established! " \
-                      f"Please refer to https://staabc.spdns.de/basewiki/doku.php?id=inbetriebnahme. Error: {e}"
-                log.error(msg)
-                print(msg)
+                LOG.error(f"Keyfile Authentication not established! " \
+                      f"Please refer to https://staabc.spdns.de/basewiki/doku.php?id=inbetriebnahme. Error: {e}")
             else:
-                msg = f"SSH exception occured. Error = {e}"
-                print(msg)
-                log.error(msg)
+                LOG.error(f"SSH exception occured. Error = {e}")
             response = e
         except socket.timeout as e:
-            msg = f"connection timed out. Error = {e}"
-            print(msg)
-            log.error(e)
+            LOG.error(f"connection timed out. Error = {e}")
             response = e
         except Exception as e:
-            print('\nException in connecting to the server')
-            print('PYTHON SAYS:', e)
+            LOG.error('Exception in connecting to the server. PYTHON SAYS:', e)
             response = e
         else:
             response = 'Established'
@@ -65,14 +57,10 @@ class SSHInterface:
             response_stderr = stderr.read()
             response = [response_stdout.decode(), response_stderr.decode()]
         except socket.timeout as e:
-            msg = f"connection timed out. Error = {e}"
-            print(msg)
-            log.error(e)
+            LOG.error(f"connection timed out. Error = {e}")
             response = e
         except paramiko.SSHException as e:
-            msg = f"Failed to execute the command {command}. Error = {e}"
-            log.error(msg)
-            print(msg)
+            LOG.error(f"Failed to execute the command {command}. Error = {e}")
         return response
 
     def run_and_raise(self, command):

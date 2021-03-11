@@ -29,6 +29,10 @@ class Schedule:
         self._backup_job: Optional[sched.Event] = None
         self._postponed_backup_job: Optional[sched.Event] = None
 
+    @property
+    def queue(self):
+        return self._scheduler.queue
+
     def run_pending(self) -> None:
         self._scheduler.run(blocking=False)
 
@@ -57,10 +61,13 @@ class Schedule:
         self._reschedule_backup()
 
     def _reschedule_backup(self):
-        due = TimeCalculator().next_backup(self._schedule)
+        tc = TimeCalculator()
+        due = tc.next_backup(self._schedule).timestamp()
+        LOG.info(f"Scheduled next backup on {tc.next_backup_timestring(self._schedule)}")
         self._backup_job = self._scheduler.enterabs(due, 2, self._invoke_backup)
 
     def on_postpone_backup(self, seconds, **kwargs):
+        LOG.info(f"Backup shall be postponed by {seconds} seconds")
         if self._postponed_backup_job is None or self._postponed_backup_job not in self._scheduler.queue:
             self._postponed_backup_job = self._scheduler.enter(seconds, 2, self._invoke_backup)
 

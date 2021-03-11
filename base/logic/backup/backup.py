@@ -65,6 +65,7 @@ class Backup:
             LOG.error(e)
         finally:
             self.reschedule_request.emit()
+            LOG.info(f"Now {'' if self._config.shutdown_between_backups else 'not '}going to sleep")
             if self._config.shutdown_between_backups:
                 self.delayed_shutdown_request.emit()
 

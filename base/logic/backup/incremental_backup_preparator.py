@@ -8,8 +8,8 @@ from typing import Tuple
 
 from base.common.config import Config
 from base.common.exceptions import NewBuDirCreationError
+from base.common.ssh_interface import SSHInterface
 from base.logic.backup.backup_browser import BackupBrowser
-from base.logic.ssh_interface import SSHInterface
 from base.logic.nas import Nas
 
 
@@ -24,7 +24,11 @@ class IncrementalBackupPreparator:
 
     def prepare(self) -> Tuple[Path]:
         self._free_space_on_backup_hdd_if_necessary()
-        return self._backup_source_directory(), self._create_folder_for_backup()
+        backup_source = self._backup_source_directory()
+        most_recent_backup = self._newest_backup_dir_path()
+        backup_target = self._create_folder_for_backup()
+        self._copy_newest_backup_with_hardlinks(most_recent_backup, backup_target)
+        return backup_source, backup_target
 
     def _free_space_on_backup_hdd_if_necessary(self):
         while not self.enough_space_for_full_backup():
@@ -114,13 +118,13 @@ class IncrementalBackupPreparator:
 
     def _copy_newest_backup_with_hardlinks(self, recent_backup, new_backup):
         copy_command = f"cp -al {recent_backup}/* {new_backup}"
-        print(f"copy command: {copy_command}")
+        LOG.info(f"copy command: {copy_command}")
         p = Popen(copy_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         # p.communicate(timeout=10)
         for line in p.stdout:
-            print(f"copying with hl: {line}")
+            LOG.debug(f"copying with hl: {line}")
         for line in p.stderr:
-            print(line)
+            LOG.warning(line)
 
     def _rename_bu_directory_to_new_timestamp(self):
         newest_existing_bu_dir = self._newest_backup_dir_path()

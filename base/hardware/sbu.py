@@ -239,6 +239,7 @@ class SBU:
         LOG.info(f"Command: message_code = {command.message_code}, payload = {payload}")
         assertion_message = self._process_command(command, payload)
         value_in_cmp_register = int(findall(r'\d+', assertion_message)[0])
+        LOG.info(f"value_in_cmp_register: {value_in_cmp_register}, derived from {assertion_message}")
         assert value_in_cmp_register == int(seconds/32)
 
     def send_readable_timestamp(self, timestamp):

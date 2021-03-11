@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from base.common.config import Config
-from base.logic.ssh_interface import SSHInterface
+from base.common.ssh_interface import SSHInterface
 
 LOG = logging.getLogger(Path(__file__).name)
 
