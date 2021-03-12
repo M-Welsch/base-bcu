@@ -12,6 +12,7 @@ from base.logic.backup.backup import Backup
 from base.logic.schedule import Schedule
 from base.common.config import Config
 from base.common.interrupts import ShutdownInterrupt, Button0Interrupt, Button1Interrupt
+from base.common.debug_utils import copy_logfiles_to_nas
 
 
 LOG = logging.getLogger(Path(__file__).name)
@@ -88,6 +89,7 @@ class BaSeApplication:
             self._schedule.next_backup_timestamp,
             self._schedule.next_backup_seconds
         )
+
         self._execute_shutdown()
         sleep(1)
 
@@ -107,6 +109,7 @@ class BaSeApplication:
     @staticmethod
     def _execute_shutdown():
         LOG.info("executing shutdown command NOW")
+        copy_logfiles_to_nas()  # Here to catch last log-message as well
         os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().
 
     def _stop_threads(self):

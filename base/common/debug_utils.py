@@ -20,19 +20,19 @@ def dump_ifconfig():
 
 def copy_logfiles_to_nas():
     try:
-        remote_user = "root"
-        remote_host = "192.168.0.100"
-        remote_directory = "/mnt/HDD/share/Max/BaSe_Logs/"
-        logs_directory = Config("base.json").logs_directory
-        command = f"scp -i /home/base/.ssh/id_rsa -o LogLevel=DEBUG3 {logs_directory}* " \
-                  f"{remote_user}@{remote_host}:{remote_directory}"
-        print(command)
+        config_debug = Config("debug.json")
+        local_log_directory = Path("/home/base")/Path(Config("base.json").logs_directory)
+        command = f'rsync -avH -e "ssh -i /home/base/.ssh/id_rsa" {local_log_directory}/* ' \
+                  f'{config_debug.ssh_user}@{config_debug.ssh_host}:{config_debug.logfile_target_path}'
+        LOG.info(f"Copying logfiles to Nas with command {command}")
         _run_external_command_as_generator_shell(command, timeout=10)
-        LOG.info(f"Copied Logfiles to NAS into: {remote_directory}")
-    except TimeoutExpired:
-        LOG.warning(f"Copying logfiles timed out! {TimeoutExpired}")
+        LOG.info(f"Copied Logfiles to NAS into: {config_debug.logfile_target_path}")
+    except TimeoutExpired as e:
+        LOG.warning(f"Copying logfiles timed out! {e}")
     except SubprocessError as e:
         LOG.warning(f"Copying Logfile wasn't sucessful (not due to timeout): {e}")
+    except Exception as e:
+        LOG.warning(f"some unexprected error happend during copying the logfiles to nas: {e}")
 
 
 def _run_external_command_as_generator_shell(command, timeout=None):
