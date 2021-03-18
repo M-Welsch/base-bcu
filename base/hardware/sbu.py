@@ -332,6 +332,9 @@ class SbuUpdater:
         self._pin_interface.set_sbu_serial_path_to_communication()
         self._pin_interface.enable_receiving_messages_from_sbu()
         sbu_uart_channel = self._get_sbu_uart_channel()
+        if sbu_uart_channel is None:
+            LOG.warning("SBU didn't respond on any UART Interface. Defaulting to /dev/ttyS1")
+            sbu_uart_channel = '/dev/ttyS1'
         self._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
         if not sbu_fw_filename:
             sbu_fw_filename = self._get_filename_of_newest_hex_file()

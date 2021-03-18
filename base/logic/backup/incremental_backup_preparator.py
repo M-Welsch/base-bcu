@@ -67,7 +67,7 @@ class IncrementalBackupPreparator:
         try:
             with SSHInterface() as ssh:
                 ssh.connect(self._config_nas.ssh_host, self._config_nas.ssh_user)
-                command = f"du {path_on_nas} -s --block-size=1"
+                command = f"du {path_on_nas} -s"
                 response = ssh.run_and_raise(command)
                 LOG.info(f"obtaining space occupied nas hdd with command: {command}. Received {response}")
             space_occupied = int(findall("\d+", response)[0])

@@ -56,6 +56,13 @@ class DriveInfo:
             partitions=[PartitionInfo.from_json(partition_info) for partition_info in json_info.get("children", [])]
         )
 
+    def to_dict(self):
+        return {
+            "model_name": self.model_name,
+            "serial_number": self.serial_number,
+            "bytes_size": self.bytes_size,
+        }
+
 
 @dataclass
 class PartitionSignature:
