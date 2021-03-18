@@ -13,6 +13,7 @@ from base.logic.schedule import Schedule
 from base.common.config import Config
 from base.common.interrupts import ShutdownInterrupt, Button0Interrupt, Button1Interrupt
 from base.common.debug_utils import copy_logfiles_to_nas
+from base.webapp.webapp_server import WebappServer
 
 
 LOG = logging.getLogger(Path(__file__).name)
@@ -68,6 +69,8 @@ class BaSeApplication:
         self._maintenance_mode.set_connections(
             [(self._schedule.backup_request, self._backup.on_backup_request)]
         )
+        self._webapp_server = WebappServer()
+        self._webapp_server.start()
         self._shutting_down = False
         self._connect_signals()
 

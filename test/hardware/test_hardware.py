@@ -16,7 +16,7 @@ def hardware():
 
 class TestMechanics:
     @staticmethod
-    #@pytest.mark.skip(reason="Mechanics need some grease!")
+    @pytest.mark.skip(reason="Mechanics need some grease!")
     @pytest.mark.slow
     def test_engage(hardware):
         hardware.engage()
