@@ -73,11 +73,13 @@ class Backup:
         LOG.debug("Running backup sequence")
         if Config("sync.json").protocol == "smb":
             LOG.debug("Mounting data source via smb")
-            self._nas.smb_backup_mode()
+            if self._config.stop_services_on_nas:  # Fixme: is there a way to ask this only once?
+                self._nas.smb_backup_mode()
             NetworkShare().mount_datasource_via_smb()
         else:
             LOG.debug("Don't do backup via smb")
-        self._nas.stop_services()
+        if self._config.stop_services_on_nas:  # Fixme: is there a way to ask this only once?
+            self._nas.stop_services()
         self.hardware_engage_request.emit()
         backup_source_directory, backup_target_directory = IncrementalBackupPreparator().prepare()
         LOG.info(f"Backing up into: {backup_target_directory}")
@@ -87,7 +89,8 @@ class Backup:
 
     def _return_to_default_state(self):
         self.hardware_disengage_request.emit()
-        self._nas.resume_services()
+        if self._config.stop_services_on_nas:
+            self._nas.resume_services()
         if Config("sync.json").protocol == "smb":
             NetworkShare().unmount_datasource_via_smb()
             self._nas.smb_normal_mode()

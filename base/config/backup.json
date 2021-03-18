@@ -9,5 +9,6 @@
   "seconds_between_hardware_ready_checks": 2,
   "retrials_after_hdd_not_ready": 3,
   "seconds_between_hdd_ready_checks": 2,
+  "stop_services_on_nas": false,
   "shutdown_between_backups": true
 }

@@ -87,7 +87,7 @@ class BaSeApplication:
         LOG.info("Exiting Mainloop, initiating Shutdown")
         self._hardware.prepare_sbu_for_shutdown(
             self._schedule.next_backup_timestamp,
-            self._schedule.next_backup_seconds
+            self._schedule.next_backup_seconds  # Todo: wake BCU a little earlier?
         )
 
         self._execute_shutdown()

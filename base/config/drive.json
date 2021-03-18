@@ -1,7 +1,7 @@
 {
     "backup_hdd_file_system": "ext4",
     "backup_hdd_mount_point": "/media/BackupHDD",
-    "backup_device_file_timeout": 20,
+    "backup_hdd_spinup_timeout": 20,
     "backup_hdd_device_signature": {
         "model_name": "SAMSUNG_HD501LJ",
         "serial_number": "S0MUJ1FPC26555",
