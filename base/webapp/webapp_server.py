@@ -17,11 +17,15 @@ class WebappServer(Thread):
         print(status)
 
     @staticmethod
-    async def echo(websocket):
-        name = await websocket.recv()
-        print(f"< {name}")
+    async def echo(websocket, path):
+        message = await websocket.recv()
+        print(f"< {message}")
 
-        greeting = f"Hello {name}!"
+        if message == "shutdown_request":
+            print("SHUTDOWN REQUESTED!!!")
+            raise RuntimeError
+
+        greeting = f"Hello {message}!"
 
         await websocket.send(greeting)
         print(f"> {greeting}")
