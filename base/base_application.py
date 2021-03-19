@@ -1,4 +1,6 @@
+from collections import OrderedDict
 from datetime import datetime
+import json
 import logging
 import os
 from pathlib import Path
@@ -90,6 +92,7 @@ class BaSeApplication:
             try:
                 # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
                 self._schedule.run_pending()
+                self._webapp_server.current_status = self.collect_status
                 sleep(1)
             except ShutdownInterrupt:
                 self._shutting_down = True
@@ -146,6 +149,19 @@ class BaSeApplication:
         for logger in loggers:
             if "websockets" in logger.name:
                 logging.getLogger(logger.name).setLevel(30)
+
+    @property
+    def collect_status(self) -> dict:
+        current_status = json.dumps({
+            "diagnose": OrderedDict({
+                "Stromaufnahme": f"{self._hardware.input_current} A",
+                "Systemspannung": f"{self._hardware.system_voltage_vcc3v} V",
+                "Temperatur": f"{self._hardware.temperature} °C"
+            }),
+            "docked": self._hardware.docked,
+            "mounted": self._hardware.mounted
+        })
+        return current_status
 
     def on_webapp_event(self, payload, **kwargs):
         LOG.debug(f"received webapp event with payload: {payload}")

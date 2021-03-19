@@ -41,8 +41,12 @@ class Hardware:
         self._sbu.request_shutdown()
 
     @property
-    def docked(self):
+    def docked(self) -> bool:
         return self._mechanics.docked
+
+    @property
+    def mounted(self) -> bool:
+        return self._drive.is_mounted
 
     def power(self):
         self._power.hdd_power_on()
@@ -61,5 +65,17 @@ class Hardware:
 
     def unmount(self):
         self._drive.unmount()
+
+    @property
+    def input_current(self) -> float:
+        return self._sbu.measure_base_input_current()
+
+    @property
+    def system_voltage_vcc3v(self) -> float:
+        return self._sbu.measure_vcc3v_voltage()
+
+    @property
+    def temperature(self) -> float:
+        return self._sbu.measure_sbu_temperature()
 
     # Todo: Heartbeat. Implement as Daemon Thread (because it dies with baseApplication) or toggle pin in mainloop

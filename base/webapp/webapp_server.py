@@ -18,6 +18,7 @@ class WebappServer(Thread):
         self._codebook = codebook
         self._start_server = websockets.serve(self.echo, "0.0.0.0", 8453)
         self._event_loop = asyncio.get_event_loop()
+        self.current_status = None
 
     def on_status(self, status, **kwargs):
         print(status)
@@ -28,6 +29,9 @@ class WebappServer(Thread):
             print(f"< {message}")
             if message in self._codebook:
                 self.webapp_event.emit(payload=message)
+
+            if message == "heartbeat?":
+                await websocket.send(self.current_status)
 
             # greeting = f"Hello {message}!"
             #

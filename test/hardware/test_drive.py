@@ -22,13 +22,13 @@ class TestDrive:
 
     @staticmethod
     def test_is_mounted(drive):
-        print(f"drive._is_mounted: {drive._is_mounted}")
+        print(f"drive._is_mounted: {drive.is_mounted}")
 
     @staticmethod
     def test_mount(drive):
         if Hardware().docked:
             drive.mount()
-            assert drive._is_mounted
+            assert drive.is_mounted
         else:
             with pytest.raises(MountingError):
                 drive.mount()
@@ -37,5 +37,5 @@ class TestDrive:
     def test_unmount(drive):
         if drive._partition_info is not None:
             drive.unmount()
-            assert not drive._is_mounted
+            assert not drive.is_mounted
             assert not Path(drive._partition_info.path).is_mount()

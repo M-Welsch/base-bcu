@@ -50,7 +50,7 @@ class Drive:
             LOG.error(f"Unmounting didnt work: {RuntimeError}")
 
     @property
-    def _is_mounted(self):
+    def is_mounted(self):
         return path.ismount(self._config.backup_hdd_mount_point)
 
     # Todo: cleanup this mess

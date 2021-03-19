@@ -267,7 +267,7 @@ class SBU:
         elif command.message_code == "3V":
             converted_value = raw_value * 3.234 / 1008
         elif command.message_code == "TP":
-            raise NotImplementedError("Temperature Measurement lacks implementation on SBU side!")
+            converted_value = raw_value  # Todo: implement this in sbu
         else:
             LOG.warning(f"cannot convert anything from {command.message_code} (raw value given is {raw_value})")
             converted_value = None
