@@ -44,4 +44,22 @@ class Hardware:
     def docked(self):
         return self._mechanics.docked
 
+    def power(self):
+        self._power.hdd_power_on()
+
+    def unpower(self):
+        self._power.hdd_power_off()
+
+    def dock(self):
+        self._mechanics.dock()
+
+    def undock(self):
+        self._mechanics.undock()
+
+    def mount(self):
+        self._drive.mount()
+
+    def unmount(self):
+        self._drive.unmount()
+
     # Todo: Heartbeat. Implement as Daemon Thread (because it dies with baseApplication) or toggle pin in mainloop

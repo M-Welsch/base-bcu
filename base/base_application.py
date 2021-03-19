@@ -69,10 +69,20 @@ class BaSeApplication:
         self._maintenance_mode.set_connections(
             [(self._schedule.backup_request, self._backup.on_backup_request)]
         )
-        self._webapp_server = WebappServer()
+        self._codebook = {
+            "dock": self._hardware.dock,
+            "undock": self._hardware.undock,
+            "power": self._hardware.power,
+            "unpower": self._hardware.unpower,
+            "mount": self._hardware.mount,
+            "unmount": self._hardware.unmount,
+            "shutdown": lambda: True
+        }
+        self._webapp_server = WebappServer(set(self._codebook.keys()))
         self._webapp_server.start()
         self._shutting_down = False
         self._connect_signals()
+        self._suppress_websocket_logger()
 
     def start(self):
         self._schedule.on_reschedule_requested()
@@ -104,6 +114,7 @@ class BaSeApplication:
         self._backup.delayed_shutdown_request.connect(self._schedule.on_shutdown_requested)
         self._backup.hardware_engage_request.connect(self._hardware.engage)
         self._backup.hardware_disengage_request.connect(self._hardware.disengage)
+        self._webapp_server.webapp_event.connect(self.on_webapp_event)
 
     def _initiate_shutdown(self, **kwargs):
         self._stop_threads()
@@ -129,3 +140,15 @@ class BaSeApplication:
             datefmt='%m.%d.%Y %H:%M:%S'
         )
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+    def _suppress_websocket_logger(self):
+        loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+        for logger in loggers:
+            if "websockets" in logger.name:
+                logging.getLogger(logger.name).setLevel(30)
+
+    def on_webapp_event(self, payload, **kwargs):
+        LOG.debug(f"received webapp event with payload: {payload}")
+        self._codebook[payload]()
+
+
