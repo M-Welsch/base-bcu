@@ -30,7 +30,7 @@ class WebappServer(Thread):
             if message in self._codebook:
                 self.webapp_event.emit(payload=message)
 
-            if message == "heartbeat?":
+            if message == "heartbeat?" and self.current_status is not None:
                 await websocket.send(self.current_status)
 
             # greeting = f"Hello {message}!"
@@ -39,6 +39,10 @@ class WebappServer(Thread):
             # print(f"> {greeting}")
         except websockets.exceptions.ConnectionClosedOK as e:
             LOG.debug(f"Client went away: {e}")
+        except websockets.exceptions.ConnectionClosed as e:
+            LOG.debug(f"Connection died :-( : {e}")
+        except websockets.exceptions.ConnectionClosedError as e:
+            LOG.debug(f"Connection died X-P : {e}")
 
     def run(self):
         self._event_loop.run_until_complete(self._start_server)

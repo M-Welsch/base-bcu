@@ -35,11 +35,11 @@ class Backup:
 
     @property
     def backup_conditions_met(self):
-        return (
-                not self._is_maintenance_mode_on() and
-                (self._sync is None or not self._sync.running) and
-                WeatherFrog().allright()
-        )
+        return not self._is_maintenance_mode_on() and self.backup_running and WeatherFrog().allright()
+
+    @property
+    def backup_running(self):
+        return self._sync is None or not self._sync.running
 
     def on_backup_request(self, **kwargs):
         LOG.debug("Received backup request...")

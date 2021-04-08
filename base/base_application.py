@@ -151,17 +151,22 @@ class BaSeApplication:
                 logging.getLogger(logger.name).setLevel(30)
 
     @property
-    def collect_status(self) -> dict:
-        current_status = json.dumps({
+    def collect_status(self) -> str:
+        return json.dumps({
             "diagnose": OrderedDict({
                 "Stromaufnahme": f"{self._hardware.input_current} A",
                 "Systemspannung": f"{self._hardware.system_voltage_vcc3v} V",
                 "Temperatur": f"{self._hardware.temperature} °C"
             }),
+            "next_backup_due": self._schedule.next_backup_timestamp,
             "docked": self._hardware.docked,
-            "mounted": self._hardware.mounted
+            "powered": False,
+            "mounted": self._hardware.mounted,
+            "backup_running": self._backup.backup_running,
+            "backup_hdd_usage": 0.42,
+            "recent_warnings_count": 3,
+            "log_tail": ["Log entry 1", "Log entry 2", "Log entry 3", "Log entry 4", "Log entry 5"]
         })
-        return current_status
 
     def on_webapp_event(self, payload, **kwargs):
         LOG.debug(f"received webapp event with payload: {payload}")
