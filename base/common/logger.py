@@ -1,12 +1,15 @@
 from datetime import datetime
 import logging
+import os
 from pathlib import Path
+from typing import BinaryIO
 
 from base.common.config import Config
 
 
 class LoggerFactory:
     _parent_logger_name = None
+    _current_log_name = ""
 
     @classmethod
     def setup(cls, parent_logger_name, development_mode=False):
@@ -22,13 +25,13 @@ class LoggerFactory:
         cls._setup_file_handler(logger, development_mode)
         cls._setup_console_handler(logger, development_mode)
 
-    @staticmethod
-    def _setup_file_handler(logger, development_mode):
+    @classmethod
+    def _setup_file_handler(cls, logger, development_mode):
         config: Config = Config("base.json")
         logs_dir = Path.cwd()/Path(config.logs_directory)
         logs_dir.mkdir(exist_ok=True)
-        logfile = logs_dir / datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
-        handler = logging.FileHandler(logfile)
+        cls._current_log_name = logs_dir / datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
+        handler = logging.FileHandler(cls._current_log_name)
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s')
         formatter.datefmt = '%m.%d.%Y %H:%M:%S'
