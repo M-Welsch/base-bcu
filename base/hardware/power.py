@@ -1,10 +1,8 @@
-import logging
-from pathlib import Path
-
 from base.hardware.pin_interface import PinInterface
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class Power:

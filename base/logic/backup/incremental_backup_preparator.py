@@ -1,5 +1,4 @@
 from datetime import datetime
-import logging
 import os
 from pathlib import Path
 from re import findall
@@ -11,9 +10,10 @@ from base.common.exceptions import NewBuDirCreationError
 from base.common.ssh_interface import SSHInterface
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.nas import Nas
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class IncrementalBackupPreparator:

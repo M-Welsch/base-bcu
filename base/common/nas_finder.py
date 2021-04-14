@@ -1,17 +1,16 @@
 import socket
 import re
 from time import sleep
-import logging
-from pathlib import Path
 import json
 
 from base.common.ssh_interface import SSHInterface
 from base.common.debug_utils import dump_ifconfig
 from base.common.config import Config
 from base.common.exceptions import NetworkError, NasNotCorrectError, NasNotMountedError
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class NasFinder:

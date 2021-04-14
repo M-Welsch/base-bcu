@@ -1,4 +1,3 @@
-import logging
 import os
 from pathlib import Path
 from subprocess import Popen, PIPE
@@ -6,9 +5,10 @@ from typing import List
 
 from base.common.config import Config
 from base.common.exceptions import BackupHddAccessError
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class BackupBrowser:

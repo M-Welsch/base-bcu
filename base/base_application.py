@@ -1,10 +1,6 @@
 from collections import OrderedDict
-from datetime import datetime
 import json
-import logging
 import os
-from pathlib import Path
-import sys
 from time import sleep
 
 from signalslot import Signal
@@ -16,9 +12,10 @@ from base.common.config import Config
 from base.common.interrupts import ShutdownInterrupt, Button0Interrupt, Button1Interrupt
 from base.common.debug_utils import copy_logfiles_to_nas
 from base.webapp.webapp_server import WebappServer
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class MaintenanceMode:
@@ -61,9 +58,7 @@ class BaSeApplication:
     button_1_pressed = Signal()
 
     def __init__(self):
-        Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
         self._config: Config = Config("base.json")
-        self._setup_logger()
         self._maintenance_mode = MaintenanceMode()
         self._hardware = Hardware()
         self._backup = Backup(self._maintenance_mode.is_on)
@@ -84,7 +79,6 @@ class BaSeApplication:
         self._webapp_server.start()
         self._shutting_down = False
         self._connect_signals()
-        self._suppress_websocket_logger()
 
     def start(self):
         self._schedule.on_reschedule_requested()
@@ -131,24 +125,6 @@ class BaSeApplication:
 
     def _stop_threads(self):
         pass
-
-    def _setup_logger(self):
-        logs_dir = Path.cwd()/Path(self._config.logs_directory)
-        logs_dir.mkdir(exist_ok=True)
-        logfile = logs_dir/datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
-        logging.basicConfig(
-            filename=logfile,
-            level=logging.DEBUG,
-            format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
-            datefmt='%m.%d.%Y %H:%M:%S'
-        )
-        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-
-    def _suppress_websocket_logger(self):
-        loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
-        for logger in loggers:
-            if "websockets" in logger.name:
-                logging.getLogger(logger.name).setLevel(30)
 
     @property
     def collect_status(self) -> str:

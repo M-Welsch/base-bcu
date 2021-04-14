@@ -1,11 +1,11 @@
-import logging
-from pathlib import Path
 from socket import socket, AF_INET, SOCK_DGRAM
 from sys import exc_info
 
+from base.common.logger import LoggerFactory
+
 
 # TODO: Remove everything logging related after proper exception is being catched in get_ip_address
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 def get_ip_address() -> str:

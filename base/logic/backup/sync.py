@@ -1,4 +1,3 @@
-import logging
 import os
 from pathlib import Path
 import re
@@ -9,10 +8,10 @@ from threading import Thread
 from signalslot import Signal
 
 from base.common.config import Config
-from base.logic.nas import Nas
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class RemoteDirectoryException(Exception):

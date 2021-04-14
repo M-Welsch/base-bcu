@@ -1,14 +1,13 @@
-import logging
-from pathlib import Path
 from time import sleep
 from typing import List, Optional, Callable
 
 import pyinotify
 
 from base.common.drive_inspector import DriveInspector, PartitionInfo
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class MyNotifier(pyinotify.Notifier):

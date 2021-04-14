@@ -1,16 +1,15 @@
 from os import path
 from time import sleep
-import logging
-from pathlib import Path
 from subprocess import run, PIPE
 
 from base.common.config import Config
 from base.common.exceptions import MountingError, UnmountError, ExternalCommandError
 from base.common.drive_inspector import DriveInspector
 from base.common.file_system import FileSystemWatcher
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class Drive:

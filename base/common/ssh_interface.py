@@ -1,26 +1,20 @@
 from base.common.exceptions import RemoteCommandError
 import paramiko
 import socket
-import logging
-from pathlib import Path
+
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class SSHInterface:
     def __init__(self):
         self._client = paramiko.SSHClient()
 
-    def _set_paramiko_loglevel_to_warning(self):
-        for logger in [logging.getLogger(name) for name in logging.root.manager.loggerDict]:
-            if "paramiko" in logger.name:
-                logging.getLogger(logger.name).setLevel(30)
-
     def connect(self, host, user):
         try:
             self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self._set_paramiko_loglevel_to_warning()
             k = paramiko.RSAKey.from_private_key_file('/home/base/.ssh/id_rsa')
             self._client.connect(host, username=user, pkey=k, timeout=10)
         except paramiko.AuthenticationException as e:
@@ -28,8 +22,10 @@ class SSHInterface:
             raise RemoteCommandError(e)
         except paramiko.SSHException as e:
             if not str(e).find('not found in known_hosts') == 0:
-                LOG.error(f"Keyfile Authentication not established! " \
-                      f"Please refer to https://staabc.spdns.de/basewiki/doku.php?id=inbetriebnahme. Error: {e}")
+                LOG.error(
+                    f"Keyfile Authentication not established! "
+                    f"Please refer to https://staabc.spdns.de/basewiki/doku.php?id=inbetriebnahme. Error: {e}"
+                )
             else:
                 LOG.error(f"SSH exception occured. Error = {e}")
             response = e

@@ -3,14 +3,13 @@ from dataclasses import dataclass
 import json
 from subprocess import run, PIPE
 from typing import Any, Dict, List, Optional
-import logging
-from pathlib import Path
 
 from base.common.config import Config
 from base.common.exceptions import ExternalCommandError
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 @dataclass

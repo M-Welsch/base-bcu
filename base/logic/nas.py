@@ -1,10 +1,11 @@
-import logging
 from pathlib import Path
 
 from base.common.config import Config
 from base.common.ssh_interface import SSHInterface
+from base.common.logger import LoggerFactory
 
-LOG = logging.getLogger(Path(__file__).name)
+
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class Nas:

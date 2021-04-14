@@ -1,5 +1,3 @@
-import logging
-from pathlib import Path
 from time import sleep
 
 from base.hardware.mechanics import Mechanics
@@ -8,9 +6,10 @@ from base.hardware.hmi import HMI
 from base.hardware.sbu import SBU
 from base.hardware.drive import Drive
 from base.common.config import Config
+from base.common.logger import LoggerFactory
 
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class Hardware:

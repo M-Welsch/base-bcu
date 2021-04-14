@@ -1,6 +1,3 @@
-import logging
-from pathlib import Path
-
 from signalslot import Signal
 
 from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
@@ -9,8 +6,10 @@ from base.logic.network_share import NetworkShare
 from base.logic.nas import Nas
 from base.common.config import Config
 from base.common.exceptions import NetworkError, DockingError
+from base.common.logger import LoggerFactory
 
-LOG = logging.getLogger(Path(__file__).name)
+
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class WeatherFrog:

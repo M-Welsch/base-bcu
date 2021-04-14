@@ -1,9 +1,7 @@
 import serial
 import glob
 import os
-import logging
 from dataclasses import dataclass
-from pathlib import Path
 from time import time, sleep
 from re import findall
 from subprocess import Popen, PIPE
@@ -11,8 +9,9 @@ from subprocess import Popen, PIPE
 from base.hardware.pin_interface import PinInterface
 from base.common.config import Config
 from base.common.exceptions import SbuCommunicationTimeout
+from base.common.logger import LoggerFactory
 
-LOG = logging.getLogger(Path(__file__).name)
+LOG = LoggerFactory.get_logger(__name__)
 
 
 @dataclass

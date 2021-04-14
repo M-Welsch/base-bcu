@@ -1,12 +1,13 @@
 import asyncio
-import logging
-from pathlib import Path
 from threading import Thread
 
 import websockets
 from signalslot import Signal
 
-LOG = logging.getLogger(Path(__file__).name)
+from base.common.logger import LoggerFactory
+
+
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class WebappServer(Thread):

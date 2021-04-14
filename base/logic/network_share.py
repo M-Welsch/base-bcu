@@ -1,11 +1,12 @@
-import logging
 from pathlib import Path
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
 
 from base.common.config import Config
 from base.common.exceptions import NetworkError
+from base.common.logger import LoggerFactory
 
-LOG = logging.getLogger(Path(__file__).name)
+
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class NetworkShare:
