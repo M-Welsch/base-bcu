@@ -1,29 +1,60 @@
 from datetime import datetime
 import logging
-import os
 from pathlib import Path
-from typing import BinaryIO
+from typing import List, Tuple
 
 from base.common.config import Config
 
 
+class LineBuffer(list):
+    def __init__(self, size: int) -> None:
+        super().__init__()
+        self._size: int = size
+
+    def push(self, item: str) -> None:
+        if len(self) >= self._size:
+            del self[0]
+        self.append(item)
+
+    @property
+    def content(self) -> Tuple[str]:
+        return tuple(self)
+
+
 class LoggerFactory:
-    _parent_logger_name = None
-    _current_log_name = ""
+    __instance = None
+    __parent_logger_name = None
+    __file_handler = None
+    __warning_file_handler = None
+
+    def __init__(self, parent_logger_name: str, development_mode: bool = False) -> None:
+        """ Virtually private constructor. """
+        if LoggerFactory.__instance is None:
+            self.__class__.__parent_logger_name = parent_logger_name
+            self._development_mode: bool = development_mode
+            self._current_log_name: str = ""
+            self._parent_logger: logging.Logger
+            self._file_handler: CachingFileHandler
+            self._warning_file_handler: WarningFileHandler
+            self._setup_project_logger()
+            LoggerFactory.__instance = self
+        else:
+            raise RuntimeError(f"{self.__class__.__name__} is a singleton and was already instantiated!")
 
     @classmethod
-    def setup(cls, parent_logger_name, development_mode=False):
-        if cls._parent_logger_name is not None:
-            raise RuntimeError(f"{cls.__name__}.setup() can only be called once.")
-        cls._parent_logger_name = parent_logger_name
-        cls._setup_project_logger(development_mode)
+    def get_last_lines(cls) -> List[str]:
+        return cls.__file_handler.message_cache
 
     @classmethod
-    def _setup_project_logger(cls, development_mode):
-        logger = logging.getLogger(cls._parent_logger_name)
-        logger.setLevel(logging.DEBUG if development_mode else logging.INFO)
-        cls._setup_file_handler(logger, development_mode)
-        cls._setup_console_handler(logger, development_mode)
+    def get_warning_count(cls) -> int:
+        return cls.__warning_file_handler.warning_count
+
+    def _setup_project_logger(self) -> None:
+        self._parent_logger = logging.getLogger(self.__class__.__parent_logger_name)
+        self._parent_logger.setLevel(logging.DEBUG if self._development_mode else logging.INFO)
+        self._setup_file_handler()
+        self._setup_warning_file_handler()
+        self._setup_console_handler()
 
     @classmethod
     def _setup_file_handler(cls, logger, development_mode):
@@ -35,20 +66,66 @@ class LoggerFactory:
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s')
         formatter.datefmt = '%m.%d.%Y %H:%M:%S'
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        self.__class__.__file_handler.setFormatter(formatter)
+        self._parent_logger.addHandler(self.__class__.__file_handler)
 
-    @staticmethod
-    def _setup_console_handler(logger, development_mode):
+    def _setup_warning_file_handler(self) -> None:
+        config: Config = Config("base.json")
+        logs_dir = Path.cwd()/Path(config.logs_directory)
+        logs_dir.mkdir(exist_ok=True)
+        self._current_log_name = logs_dir / Path("warnings.log")
+        self.__class__.__warning_file_handler = WarningFileHandler(self._current_log_name)
+        self.__class__.__warning_file_handler.setLevel(logging.WARNING)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s')
+        formatter.datefmt = '%m.%d.%Y %H:%M:%S'
+        self.__class__.__warning_file_handler.setFormatter(formatter)
+        self._parent_logger.addHandler(self.__class__.__warning_file_handler)
+
+    def _setup_console_handler(self) -> None:
         handler = logging.StreamHandler()
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(levelname)s: %(name)s: %(message)s')
         formatter.datefmt = '%m.%d.%Y %H:%M:%S'
         handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        self._parent_logger.addHandler(handler)
 
     @classmethod
-    def get_logger(cls, module_name):
-        if cls._parent_logger_name is None:
-            raise RuntimeError(f"Call {cls.__name__}.setup() first.")
-        return logging.getLogger(f"{cls._parent_logger_name}.{module_name}")
+    def get_logger(cls, module_name: str) -> logging.Logger:
+        if cls.__instance is None:
+            raise RuntimeError(f"Instantiate {cls.__name__} first.")
+        return logging.getLogger(f"{cls.__parent_logger_name}.{module_name}")
+
+
+class CachingFileHandler(logging.FileHandler):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._message_cache: LineBuffer = LineBuffer(5)
+
+    def emit(self, record: logging.LogRecord):
+        self._message_cache.push(record.msg)
+        super().emit(record)
+
+    @property
+    def message_cache(self) -> Tuple[str]:
+        return self._message_cache.content
+
+
+class WarningFileHandler(logging.FileHandler):
+    def __init__(self, log_path, *args, **kwargs) -> None:
+        super().__init__(log_path, *args, **kwargs)
+        self._warning_counter: int = self._count_lines(log_path)
+
+    def emit(self, record: logging.LogRecord):
+        self._warning_counter += 1
+        super().emit(record)
+
+    @property
+    def warning_count(self) -> int:
+        return self._warning_counter
+
+    @staticmethod
+    def _count_lines(log_path: Path) -> int:
+        if not log_path.is_file():
+            return 0
+        with open(log_path, 'r') as f:
+            return sum([1 for _ in f])

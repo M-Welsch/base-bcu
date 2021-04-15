@@ -104,7 +104,6 @@ class DriveInspector:
                                                  device.bytes_size == self._partition_signature.bytes_size
         ]
         if not len(candidates) == 1:
-            LOG.error("Backup HDD not found!")
             return None
         partitions = [
             p for p in candidates[0].partitions if p.path.endswith(str(self._partition_signature.partition_index))

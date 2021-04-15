@@ -4,6 +4,7 @@ from threading import Thread
 import websockets
 from signalslot import Signal
 
+from base.common.exceptions import MountingError
 from base.common.logger import LoggerFactory
 
 
@@ -40,10 +41,12 @@ class WebappServer(Thread):
             # print(f"> {greeting}")
         except websockets.exceptions.ConnectionClosedOK as e:
             LOG.debug(f"Client went away: {e}")
-        except websockets.exceptions.ConnectionClosed as e:
-            LOG.debug(f"Connection died :-( : {e}")
         except websockets.exceptions.ConnectionClosedError as e:
             LOG.debug(f"Connection died X-P : {e}")
+        except websockets.exceptions.ConnectionClosed as e:
+            LOG.debug(f"Connection died :-( : {e}")
+        except MountingError as e:
+            LOG.error(f"Mounting error occurred: {e}")  # TODO: Display error message in webapp
 
     def run(self):
         self._event_loop.run_until_complete(self._start_server)

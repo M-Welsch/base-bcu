@@ -7,6 +7,7 @@ from base.common.exceptions import MountingError, UnmountError, ExternalCommandE
 from base.common.drive_inspector import DriveInspector
 from base.common.file_system import FileSystemWatcher
 from base.common.logger import LoggerFactory
+from base.common.status import HddState
 
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -16,6 +17,7 @@ class Drive:
     def __init__(self):
         self._config = Config("drive.json")
         self._partition_info = None
+        self._available = HddState.unknown
 
     @property
     def backup_hdd_device_info(self):
@@ -27,6 +29,8 @@ class Drive:
         file_system_watcher.add_watches(["/dev"])
         self._partition_info = file_system_watcher.backup_partition_info()
         if self._partition_info is None:
+            LOG.error("Backup HDD not found!")
+            self._available = HddState.not_available
             raise MountingError(f"Backup HDD not available!")
         if self._partition_info.mount_point is None:
             command = ["mount", "-t", self._config.backup_hdd_file_system,
@@ -36,21 +40,27 @@ class Drive:
                 run_external_command(command)
                 LOG.info(f"Mounted HDD {self._partition_info.path} at {self._config.backup_hdd_mount_point}")
             except ExternalCommandError:
+                self._available = HddState.not_available
                 raise MountingError(f"Backup HDD could not be mounted")
         assert DriveInspector().backup_partition_info.mount_point
+        self._available = HddState.available
 
     def unmount(self):
         try:
             LOG.debug("Unmounting drive")
             self._unmount_backup_hdd()
         except UnmountError:
-            LOG.error(f"Unmounting didnt work: {UnmountError}")
+            LOG.error(f"Unmounting didn't work: {UnmountError}")
         except RuntimeError:
-            LOG.error(f"Unmounting didnt work: {RuntimeError}")
+            LOG.error(f"Unmounting didn't work: {RuntimeError}")
 
     @property
-    def is_mounted(self):
+    def is_mounted(self) -> bool:
         return path.ismount(self._config.backup_hdd_mount_point)
+
+    @property
+    def is_available(self) -> HddState:
+        return self._available
 
     # Todo: cleanup this mess
     def _unmount_backup_hdd(self):

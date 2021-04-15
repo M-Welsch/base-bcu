@@ -132,7 +132,9 @@ class BaSeApplication:
             "diagnose": OrderedDict({
                 "Stromaufnahme": f"{self._hardware.input_current} A",
                 "Systemspannung": f"{self._hardware.system_voltage_vcc3v} V",
-                "Temperatur": f"{self._hardware.temperature} °C"
+                "Umgebungstemperatur": f"{self._hardware.temperature} °C",
+                "Backup-HDD verfügbar": self._hardware.drive_available.value,
+                "NAS-HDD verfügbar": self._backup.network_share.is_available.value
             }),
             "next_backup_due": self._schedule.next_backup_timestamp,
             "docked": self._hardware.docked,
@@ -140,8 +142,8 @@ class BaSeApplication:
             "mounted": self._hardware.mounted,
             "backup_running": self._backup.backup_running,
             "backup_hdd_usage": 0.42,
-            "recent_warnings_count": 3,
-            "log_tail": LoggerFactory.get_last_lines(5)
+            "recent_warnings_count": LoggerFactory.get_warning_count(),
+            "log_tail": LoggerFactory.get_last_lines()
         })
 
     def on_webapp_event(self, payload, **kwargs):

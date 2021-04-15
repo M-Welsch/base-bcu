@@ -5,7 +5,7 @@ from base.logic.backup.sync import RsyncWrapperThread
 from base.logic.network_share import NetworkShare
 from base.logic.nas import Nas
 from base.common.config import Config
-from base.common.exceptions import NetworkError, DockingError
+from base.common.exceptions import NetworkError, DockingError, MountingError
 from base.common.logger import LoggerFactory
 
 
@@ -31,6 +31,11 @@ class Backup:
         self._config = Config("backup.json")
         self._postpone_count = 0
         self._nas = Nas()
+        self._network_share = NetworkShare()
+
+    @property
+    def network_share(self) -> NetworkShare:
+        return self._network_share
 
     @property
     def backup_conditions_met(self):
@@ -51,6 +56,8 @@ class Backup:
         except NetworkError as e:
             LOG.error(e)
         except DockingError as e:
+            LOG.error(e)
+        except MountingError as e:
             LOG.error(e)
 
     def on_backup_finished(self, **kwargs):
@@ -74,7 +81,7 @@ class Backup:
             LOG.debug("Mounting data source via smb")
             if self._config.stop_services_on_nas:  # Fixme: is there a way to ask this only once?
                 self._nas.smb_backup_mode()
-            NetworkShare().mount_datasource_via_smb()
+            self._network_share.mount_datasource_via_smb()
         else:
             LOG.debug("Don't do backup via smb")
         if self._config.stop_services_on_nas:  # Fixme: is there a way to ask this only once?
@@ -91,5 +98,5 @@ class Backup:
         if self._config.stop_services_on_nas:
             self._nas.resume_services()
         if Config("sync.json").protocol == "smb":
-            NetworkShare().unmount_datasource_via_smb()
+            self._network_share.unmount_datasource_via_smb()
             self._nas.smb_normal_mode()

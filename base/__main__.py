@@ -17,7 +17,7 @@ def setup_config():
 
 def setup_logger():
 	from base.common.logger import LoggerFactory
-	LoggerFactory.setup("BaSe", development_mode=True)
+	LoggerFactory("BaSe", development_mode=True)
 
 
 def main():

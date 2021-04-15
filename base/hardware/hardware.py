@@ -7,6 +7,7 @@ from base.hardware.sbu import SBU
 from base.hardware.drive import Drive
 from base.common.config import Config
 from base.common.logger import LoggerFactory
+from base.common.status import HddState
 
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -38,6 +39,10 @@ class Hardware:
         self._sbu.send_readable_timestamp(timestamp)
         self._sbu.send_seconds_to_next_bu(seconds)
         self._sbu.request_shutdown()
+
+    @property
+    def drive_available(self) -> HddState:
+        return self._drive.is_available
 
     @property
     def docked(self) -> bool:
