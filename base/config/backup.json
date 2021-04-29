@@ -10,5 +10,9 @@
   "retrials_after_hdd_not_ready": 3,
   "seconds_between_hdd_ready_checks": 2,
   "stop_services_on_nas": false,
-  "shutdown_between_backups": true
+  "shutdown_between_backups": true,
+  "use_pre_backup_hook": false,
+  "pre_backup_hook": null,
+  "use_post_backup_hook": false,
+  "post_backup_hook": null
 }

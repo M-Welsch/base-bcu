@@ -8,18 +8,18 @@ class ConfigValidationError(Exception):
 
 
 class Config(dict):
-	_base_path = Path("base/config/")
+	base_path = Path("base/config/")
 
 	def __init__(self, config_file_name: str, read_only: bool = True, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._read_only: bool = read_only
-		self._config_path: Path = self._base_path / config_file_name
+		self._config_path: Path = self.base_path / config_file_name
 		self._initialized: bool = True
 		self.reload()
 
 	@classmethod
 	def set_config_base_path(cls, base_dir: Path) -> None:
-		cls._base_path = base_dir
+		cls.base_path = base_dir
 
 	def reload(self) -> None:
 		with open(self._config_path, "r") as jf:

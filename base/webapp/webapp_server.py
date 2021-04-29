@@ -6,6 +6,7 @@ from signalslot import Signal
 
 from base.common.exceptions import MountingError
 from base.common.logger import LoggerFactory
+from base.webapp.config_data import get_config_data
 
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -34,6 +35,8 @@ class WebappServer(Thread):
 
             if message == "heartbeat?" and self.current_status is not None:
                 await websocket.send(self.current_status)
+            elif message == "request_config":
+                await websocket.send(get_config_data())
 
             # greeting = f"Hello {message}!"
             #
