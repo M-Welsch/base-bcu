@@ -4,17 +4,20 @@ from threading import Thread
 import websockets
 from signalslot import Signal
 
+from base.common.config import Config
 from base.common.exceptions import MountingError
 from base.common.logger import LoggerFactory
-from base.webapp.config_data import get_config_data
+from base.webapp.config_data import get_config_data, update_config_data
 
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
 class WebappServer(Thread):
-
     webapp_event = Signal()
+    reschedule_request = Signal()
+    display_brightness_change = Signal(args=['brightness'])
+    display_text = Signal(args=['text'])
 
     def __init__(self, codebook):
         super().__init__()
@@ -37,6 +40,22 @@ class WebappServer(Thread):
                 await websocket.send(self.current_status)
             elif message == "request_config":
                 await websocket.send(get_config_data())
+            elif message.startswith("new config: "):
+                update_config_data(message[len("new config: "):])
+                Config.config_changed.emit()
+                self.reschedule_request.emit()
+            elif message.startswith("display brightness: "):
+                payload = message[len("display brightness: "):]
+                try:
+                    self.display_brightness_change.emit(brightness=float(payload))
+                except ValueError:
+                    LOG.warning(f"cannot process brightness value: {payload}")
+            elif message.startswith("display text: "):
+                payload = message[len("display text: "):]
+                # Todo: äöü etc are displayed strangely
+                self.display_text.emit(text=payload)
+            else:
+                LOG.info(f"unknown message code: {message}")
 
             # greeting = f"Hello {message}!"
             #

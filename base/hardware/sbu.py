@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import serial
 import glob
 import os
@@ -183,17 +185,17 @@ class SBU:
         message = message + '\0'
         self._serial_connection.write(message.encode())
 
-    def _await_acknowledge(self, message_code) -> int:
+    def _await_acknowledge(self, message_code) -> List[Union[float, str]]:
         return self._wait_for_response(f"ACK:{message_code}")
 
     def _wait_for_sbu_ready(self):
         return self._wait_for_response(f"Ready")
 
-    def _wait_for_response(self, response) -> int:
+    def _wait_for_response(self, response) -> List[Union[float, str]]:
         time_start = time()
         while True:
             time_diff = time() - time_start
-            tmp = self._serial_connection.read_until().decode()
+            tmp: str = self._serial_connection.read_until().decode()
             if response in tmp:
                 break
             if time_diff > self._config.sbu_response_timeout:
@@ -203,8 +205,8 @@ class SBU:
     def write_to_display(self, line1, line2):
         self.check_display_line_for_length(line1)
         self.check_display_line_for_length(line2)
-        self._process_command(SbuCommands.write_to_display_line1, line1)
-        self._process_command(SbuCommands.write_to_display_line2, line2)
+        self._process_command(SbuCommands.write_to_display_line1, line1[:16])
+        self._process_command(SbuCommands.write_to_display_line2, line2[:16])
 
     @staticmethod
     def check_display_line_for_length(line):

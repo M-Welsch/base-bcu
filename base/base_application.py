@@ -112,6 +112,9 @@ class BaSeApplication:
         self._backup.hardware_engage_request.connect(self._hardware.engage)
         self._backup.hardware_disengage_request.connect(self._hardware.disengage)
         self._webapp_server.webapp_event.connect(self.on_webapp_event)
+        self._webapp_server.reschedule_request.connect(self._schedule.on_reschedule_requested)
+        self._webapp_server.display_brightness_change.connect(self._hardware.set_display_brightness)
+        self._webapp_server.display_text.connect(self._hardware.write_to_display)
 
     def _initiate_shutdown(self, **kwargs):
         self._stop_threads()

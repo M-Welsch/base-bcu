@@ -70,6 +70,12 @@ class Hardware:
     def unmount(self):
         self._drive.unmount()
 
+    def set_display_brightness(self, brightness, **kwargs):
+        self._sbu.set_display_brightness_percent(brightness)
+
+    def write_to_display(self, text, **kwargs):
+        self._sbu.write_to_display(text[:16], text[16:])
+
     @property
     def input_current(self) -> float:
         return self._sbu.measure_base_input_current()

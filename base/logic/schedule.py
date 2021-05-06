@@ -89,3 +89,5 @@ class Schedule:
     @property
     def next_backup_seconds(self):
         return TimeCalculator().next_backup_seconds(self._schedule)
+
+# TODO: Rename backup frequency to backup interval!

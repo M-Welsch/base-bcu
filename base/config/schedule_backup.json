@@ -4,5 +4,6 @@
     "day_of_week": 6,
     "hour": 22,
     "minute": 13,
-    "second": 0
+    "second": 0,
+    "backup_interval": "months"
 }

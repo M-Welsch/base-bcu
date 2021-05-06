@@ -1,6 +1,13 @@
 import json
 from pathlib import Path
 from typing import Any, Set
+from signalslot import Signal
+
+
+from base.common.logger import LoggerFactory
+
+
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class ConfigValidationError(Exception):
@@ -8,6 +15,7 @@ class ConfigValidationError(Exception):
 
 
 class Config(dict):
+	config_changed = Signal()
 	base_path = Path("base/config/")
 
 	def __init__(self, config_file_name: str, read_only: bool = True, *args, **kwargs):
@@ -15,13 +23,15 @@ class Config(dict):
 		self._read_only: bool = read_only
 		self._config_path: Path = self.base_path / config_file_name
 		self._initialized: bool = True
+		self.config_changed.connect(self.reload)
 		self.reload()
 
 	@classmethod
 	def set_config_base_path(cls, base_dir: Path) -> None:
 		cls.base_path = base_dir
 
-	def reload(self) -> None:
+	def reload(self, **kwargs):
+		LOG.info(f"reloading config: {self._config_path}")
 		with open(self._config_path, "r") as jf:
 			self.update(json.load(jf))
 

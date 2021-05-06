@@ -5,5 +5,7 @@
     "smb_host": "192.168.179.64",
     "smb_port": 22,
     "smb_user": "root",
-    "services": ["smbd"]
+    "services": [
+        "smbd"
+    ]
 }
