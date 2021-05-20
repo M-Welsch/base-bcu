@@ -7,6 +7,7 @@ from signalslot import Signal
 
 from base.hardware.hardware import Hardware
 from base.logic.backup.backup import Backup
+from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.schedule import Schedule
 from base.common.config import Config
 from base.common.interrupts import ShutdownInterrupt, Button0Interrupt, Button1Interrupt
@@ -60,8 +61,9 @@ class BaSeApplication:
     def __init__(self):
         self._config: Config = Config("base.json")
         self._maintenance_mode = MaintenanceMode()
-        self._hardware = Hardware()
-        self._backup = Backup(self._maintenance_mode.is_on)
+        self._backup_browser = BackupBrowser()
+        self._hardware = Hardware(self._backup_browser)
+        self._backup = Backup(self._maintenance_mode.is_on, self._backup_browser)
         self._schedule = Schedule()
         self._maintenance_mode.set_connections(
             [(self._schedule.backup_request, self._backup.on_backup_request)]
@@ -75,7 +77,7 @@ class BaSeApplication:
             "unmount": self._hardware.unmount,
             "shutdown": lambda: True
         }
-        self._webapp_server = WebappServer(set(self._codebook.keys()))
+        self._webapp_server = WebappServer(set(self._codebook.keys()), self._backup_browser)
         self._webapp_server.start()
         self._shutting_down = False
         self._connect_signals()
@@ -133,18 +135,19 @@ class BaSeApplication:
     def collect_status(self) -> str:
         return json.dumps({
             "diagnose": OrderedDict({
-                "Stromaufnahme": f"{self._hardware.input_current} A",
-                "Systemspannung": f"{self._hardware.system_voltage_vcc3v} V",
-                "Umgebungstemperatur": f"{self._hardware.temperature} °C",
+                "Stromaufnahme": f"{self._hardware.input_current:0.2f} A",
+                "Systemspannung": f"{self._hardware.system_voltage_vcc3v:0.2f} V",
+                "Umgebungstemperatur": f"{self._hardware.sbu_temperature:0.2f} °C",
+                "Prozessortemperatur": f"{self._hardware.bcu_temperature:0.2f} °C",
                 "Backup-HDD verfügbar": self._hardware.drive_available.value,
                 "NAS-HDD verfügbar": self._backup.network_share.is_available.value
             }),
             "next_backup_due": self._schedule.next_backup_timestamp,
             "docked": self._hardware.docked,
-            "powered": False,
+            "powered": self._hardware.powered,
             "mounted": self._hardware.mounted,
             "backup_running": self._backup.backup_running,
-            "backup_hdd_usage": 0.42,
+            "backup_hdd_usage": self._hardware.drive_space_used,
             "recent_warnings_count": LoggerFactory.get_warning_count(),
             "log_tail": LoggerFactory.get_last_lines()
         })

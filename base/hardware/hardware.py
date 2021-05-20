@@ -14,13 +14,13 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Hardware:
-    def __init__(self):
+    def __init__(self, backup_browser):
         self._config = Config("hardware.json")
         self._mechanics = Mechanics()
         self._power = Power()
         self._hmi = HMI()
         self._sbu = SBU()
-        self._drive = Drive()
+        self._drive = Drive(backup_browser)
 
     def engage(self, **kwargs):
         LOG.debug("engaging hardware")
@@ -52,8 +52,16 @@ class Hardware:
     def mounted(self) -> bool:
         return self._drive.is_mounted
 
+    @property
+    def drive_space_used(self) -> float:
+        return self._drive.space_used_percent()
+
     def power(self):
         self._power.hdd_power_on()
+
+    @property
+    def powered(self) -> bool:
+        return self.docked and self._sbu.measure_base_input_current() > 0.3
 
     def unpower(self):
         self._power.hdd_power_off()
@@ -85,7 +93,15 @@ class Hardware:
         return self._sbu.measure_vcc3v_voltage()
 
     @property
-    def temperature(self) -> float:
+    def sbu_temperature(self) -> float:
         return self._sbu.measure_sbu_temperature()
+
+    @property
+    def bcu_temperature(self) -> float:
+        try:
+            with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                return float(f.read().strip())/1000
+        except Exception:
+            return 0
 
     # Todo: Heartbeat. Implement as Daemon Thread (because it dies with baseApplication) or toggle pin in mainloop

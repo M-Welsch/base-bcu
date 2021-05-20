@@ -17,7 +17,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class IncrementalBackupPreparator:
-    def __init__(self):
+    def __init__(self, backup_browser):
+        self._backup_browser = backup_browser
         self._config_nas = Config("nas.json")
         self._config_sync = Config("sync.json")
         self._new_backup_folder = None
@@ -81,12 +82,12 @@ class IncrementalBackupPreparator:
         return space_occupied
 
     def delete_oldest_backup(self):
-        with BackupBrowser() as bb:
+        with self._backup_browser as bb:
             oldest_backup = bb.get_oldest_backup()
         LOG.info("deleting {} to free space for new backup".format(oldest_backup))
 
     def _newest_backup_dir_path(self) -> Path:
-        with BackupBrowser() as bb:
+        with self._backup_browser as bb:
             return bb.get_newest_backup_abolutepath()
 
     def _create_folder_for_backup(self) -> Path:

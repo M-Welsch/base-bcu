@@ -39,3 +39,7 @@ class TestDrive:
             drive.unmount()
             assert not drive.is_mounted
             assert not Path(drive._partition_info.path).is_mount()
+
+    @staticmethod
+    def test_space_used_percent(drive: Drive):
+        print(drive.space_used_percent())

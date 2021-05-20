@@ -1,8 +1,9 @@
 from os import path
 from time import sleep
-from subprocess import run, PIPE
+from subprocess import run, Popen, PIPE
 
 from base.common.config import Config
+from base.logic.backup.backup_browser import BackupBrowser
 from base.common.exceptions import MountingError, UnmountError, ExternalCommandError
 from base.common.drive_inspector import DriveInspector
 from base.common.file_system import FileSystemWatcher
@@ -14,7 +15,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Drive:
-    def __init__(self):
+    def __init__(self, backup_browser: BackupBrowser):
+        self._backup_browser = backup_browser
         self._config = Config("drive.json")
         self._partition_info = None
         self._available = HddState.unknown
@@ -43,6 +45,7 @@ class Drive:
                 self._available = HddState.not_available
                 raise MountingError(f"Backup HDD could not be mounted")
         assert DriveInspector().backup_partition_info.mount_point
+        self._backup_browser.update_backup_list()
         self._available = HddState.available
 
     def unmount(self):
@@ -85,6 +88,27 @@ class Drive:
                         raise UnmountError(e)
                     else:
                         raise RuntimeError
+
+    def space_used_percent(self) -> float:
+        if self._partition_info:
+            command = (["df", "--output=pcent", self._partition_info.mount_point])
+            try:
+                out = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
+                space_used = float(self._remove_heading_from_df_output(out.stdout))
+                # LOG.info(f"Space used on Backup HDD: {space_used}%")
+            except ValueError:
+                space_used = 0
+            except FileNotFoundError:
+                space_used = 0
+            except IndexError:
+                space_used = 0
+            return space_used
+        else:
+            return 0
+
+    @staticmethod
+    def _remove_heading_from_df_output(df_output) -> str:
+        return [item.split('%')[0] for item in df_output if not item.strip() == "Use%"][0]
 
 
 def run_external_command(command):

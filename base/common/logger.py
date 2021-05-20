@@ -1,9 +1,8 @@
 from datetime import datetime
+import json
 import logging
 from pathlib import Path
 from typing import List, Tuple
-
-from base.common.config import Config
 
 
 class LineBuffer(list):
@@ -27,9 +26,10 @@ class LoggerFactory:
     __file_handler = None
     __warning_file_handler = None
 
-    def __init__(self, parent_logger_name: str, development_mode: bool = False) -> None:
+    def __init__(self, config_path: Path, parent_logger_name: str, development_mode: bool = False) -> None:
         """ Virtually private constructor. """
         if LoggerFactory.__instance is None:
+            self._logs_directory = self.get_logs_directory(config_path)
             self.__class__.__parent_logger_name = parent_logger_name
             self._development_mode: bool = development_mode
             self._current_log_name: str = ""
@@ -40,6 +40,12 @@ class LoggerFactory:
             LoggerFactory.__instance = self
         else:
             raise RuntimeError(f"{self.__class__.__name__} is a singleton and was already instantiated!")
+
+    @staticmethod
+    def get_logs_directory(config_path: Path) -> Path:
+        with open(config_path/"base.json", 'r') as cfg_file:
+            logs_directory = json.load(cfg_file)["logs_directory"]
+        return Path.cwd() / Path(logs_directory)
 
     @classmethod
     def get_last_lines(cls) -> List[str]:
@@ -70,10 +76,8 @@ class LoggerFactory:
         self._parent_logger.addHandler(self.__class__.__file_handler)
 
     def _setup_warning_file_handler(self) -> None:
-        config: Config = Config("base.json")
-        logs_dir = Path.cwd()/Path(config.logs_directory)
-        logs_dir.mkdir(exist_ok=True)
-        self._current_log_name = logs_dir / Path("warnings.log")
+        self._logs_directory.mkdir(exist_ok=True)
+        self._current_log_name = self._logs_directory / Path("warnings.log")
         self.__class__.__warning_file_handler = WarningFileHandler(self._current_log_name)
         self.__class__.__warning_file_handler.setLevel(logging.WARNING)
         formatter = logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s')

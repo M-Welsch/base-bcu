@@ -25,8 +25,9 @@ class Backup:
     reschedule_request = Signal()
     delayed_shutdown_request = Signal()
 
-    def __init__(self, is_maintenance_mode_on):
+    def __init__(self, is_maintenance_mode_on, backup_browser):
         self._is_maintenance_mode_on = is_maintenance_mode_on
+        self._backup_browser = backup_browser
         self._sync = None
         self._config = Config("backup.json")
         self._postpone_count = 0
@@ -39,11 +40,11 @@ class Backup:
 
     @property
     def backup_conditions_met(self):
-        return not self._is_maintenance_mode_on() and self.backup_running and WeatherFrog().allright()
+        return not self._is_maintenance_mode_on() and not self.backup_running and WeatherFrog().allright()
 
     @property
     def backup_running(self):
-        return self._sync is None or not self._sync.running
+        return self._sync is not None and self._sync.running
 
     def on_backup_request(self, **kwargs):
         LOG.debug("Received backup request...")
@@ -87,7 +88,7 @@ class Backup:
         if self._config.stop_services_on_nas:  # Fixme: is there a way to ask this only once?
             self._nas.stop_services()
         self.hardware_engage_request.emit()
-        backup_source_directory, backup_target_directory = IncrementalBackupPreparator().prepare()
+        backup_source_directory, backup_target_directory = IncrementalBackupPreparator(self._backup_browser).prepare()
         LOG.info(f"Backing up into: {backup_target_directory}")
         self._sync = RsyncWrapperThread(backup_target_directory, backup_source_directory)
         self._sync.terminated.connect(self.on_backup_finished)

@@ -1,5 +1,6 @@
 import asyncio
 from threading import Thread
+import json
 
 import websockets
 from signalslot import Signal
@@ -8,6 +9,7 @@ from base.common.config import Config
 from base.common.exceptions import MountingError
 from base.common.logger import LoggerFactory
 from base.webapp.config_data import get_config_data, update_config_data
+from base.logic.backup.backup_browser import BackupBrowser
 
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -19,9 +21,10 @@ class WebappServer(Thread):
     display_brightness_change = Signal(args=['brightness'])
     display_text = Signal(args=['text'])
 
-    def __init__(self, codebook):
+    def __init__(self, codebook, backup_browser):
         super().__init__()
         self._codebook = codebook
+        self._backup_browser: BackupBrowser = backup_browser
         self._start_server = websockets.serve(self.echo, "0.0.0.0", 8453)
         self._event_loop = asyncio.get_event_loop()
         self.current_status = None
@@ -35,8 +38,7 @@ class WebappServer(Thread):
             print(f"< {message}")
             if message in self._codebook:
                 self.webapp_event.emit(payload=message)
-
-            if message == "heartbeat?" and self.current_status is not None:
+            elif message == "heartbeat?" and self.current_status is not None:
                 await websocket.send(self.current_status)
             elif message == "request_config":
                 await websocket.send(get_config_data())
@@ -54,6 +56,8 @@ class WebappServer(Thread):
                 payload = message[len("display text: "):]
                 # Todo: äöü etc are displayed strangely
                 self.display_text.emit(text=payload)
+            elif message.startswith("backup_index"):
+                await websocket.send(json.dumps(self._backup_browser.index))
             else:
                 LOG.info(f"unknown message code: {message}")
 

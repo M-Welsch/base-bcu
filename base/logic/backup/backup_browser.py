@@ -14,6 +14,11 @@ LOG = LoggerFactory.get_logger(__name__)
 class BackupBrowser:
     def __init__(self):
         self._config_sync = Config("sync.json")
+        self._backup_index = []
+
+    @property
+    def index(self) -> List[str]:
+        return [str(bu) for bu in self._backup_index]
 
     def __enter__(self):
         return self
@@ -21,7 +26,7 @@ class BackupBrowser:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         pass
 
-    def list_backups_by_age(self) -> List[Path]:
+    def update_backup_list(self):
         # lowest index is the oldest
         list_of_backups = []
         try:
@@ -35,17 +40,17 @@ class BackupBrowser:
         backup_paths = []
         for bu in list_of_backups:
             backup_paths.append(Path(bu))
-        return backup_paths
+        self._backup_index = backup_paths
 
     def get_oldest_backup(self) -> Path:
-        backups = self.list_backups_by_age()
-        if backups:
-            return backups[0]
+        self.update_backup_list()
+        if self._backup_index:
+            return self._backup_index[0]
 
     def get_newest_backup_abolutepath(self) -> Path:
-        backups = self.list_backups_by_age()
-        if backups:
-            return Path(self._config_sync.local_backup_target_location)/backups[-1]
+        self.update_backup_list()
+        if self._backup_index:
+            return Path(self._config_sync.local_backup_target_location)/self._backup_index[-1]
 
     @staticmethod
     def get_backup_size(path) -> int:
