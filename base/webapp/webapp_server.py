@@ -9,6 +9,7 @@ from base.common.config import Config
 from base.common.exceptions import MountingError
 from base.common.logger import LoggerFactory
 from base.webapp.config_data import get_config_data, update_config_data
+from base.webapp.log_data import list_logfiles, logfile_content
 from base.logic.backup.backup_browser import BackupBrowser
 
 
@@ -17,6 +18,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class WebappServer(Thread):
     webapp_event = Signal()
+    backup_now_request = Signal()
+    backup_abort = Signal()
     reschedule_request = Signal()
     display_brightness_change = Signal(args=['brightness'])
     display_text = Signal(args=['text'])
@@ -38,8 +41,20 @@ class WebappServer(Thread):
             print(f"< {message}")
             if message in self._codebook:
                 self.webapp_event.emit(payload=message)
-            elif message == "heartbeat?" and self.current_status is not None:
-                await websocket.send(self.current_status)
+            elif message == "heartbeat?":
+                if self.current_status is not None:
+                    await websocket.send(self.current_status)
+                else:
+                    pass  # send nothing
+            elif message == "backup_now":
+                LOG.info("Backup requested by user")
+                # Todo: log some information about the requester
+                self.backup_now_request.emit()
+                await websocket.send("backup_request_acknowledged")
+            elif message == "backup_abort":
+                LOG.info("Backup abort requested by user")
+                self.backup_abort.emit()
+                await websocket.send("backup_abort_acknowledged")
             elif message == "request_config":
                 await websocket.send(get_config_data())
             elif message.startswith("new config: "):
@@ -58,6 +73,11 @@ class WebappServer(Thread):
                 self.display_text.emit(text=payload)
             elif message.startswith("backup_index"):
                 await websocket.send(json.dumps(self._backup_browser.index))
+            elif message.startswith("logfile_index"):
+                await websocket.send(json.dumps(list_logfiles(newest_first=True)))
+            elif message.startswith("request_logfile"):
+                logfile_name = message[len("request_logfile: "):]
+                await websocket.send(json.dumps(logfile_content(logfile_name, recent_line_first=True)))
             else:
                 LOG.info(f"unknown message code: {message}")
 

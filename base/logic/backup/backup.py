@@ -61,6 +61,10 @@ class Backup:
         except MountingError as e:
             LOG.error(e)
 
+    def on_backup_abort(self, **kwargs):
+        if self._sync is not None:
+            self._sync.terminate()
+
     def on_backup_finished(self, **kwargs):
         self._sync.terminated.disconnect(self.on_backup_finished)
         LOG.info("Backup terminated")
@@ -88,6 +92,7 @@ class Backup:
         if self._config.stop_services_on_nas:  # Fixme: is there a way to ask this only once?
             self._nas.stop_services()
         self.hardware_engage_request.emit()
+        # Todo: put IncrementalBackupPrepararor into sync-thread to be interruptable
         backup_source_directory, backup_target_directory = IncrementalBackupPreparator(self._backup_browser).prepare()
         LOG.info(f"Backing up into: {backup_target_directory}")
         self._sync = RsyncWrapperThread(backup_target_directory, backup_source_directory)

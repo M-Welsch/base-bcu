@@ -102,9 +102,9 @@ class Drive:
                 space_used = 0
             except IndexError:
                 space_used = 0
-            return space_used
-        else:
-            return 0
+            if space_used is not None:
+                return space_used
+        return 0
 
     @staticmethod
     def _remove_heading_from_df_output(df_output) -> str:

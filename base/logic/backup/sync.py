@@ -125,12 +125,14 @@ class SshRsync:
             yield self._status
 
     def terminate(self):
+        # Fixme: this terminates the whole base application
         try:
             os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
         except AttributeError as e:
             LOG.warning(f"No process to terminate: {e}")
 
     def kill(self):
+        # Fixme: this terminates the whole base application
         # self._process.kill()  # Not working!
         os.killpg(os.getpgid(self._process.pid), signal.SIGKILL)
 
