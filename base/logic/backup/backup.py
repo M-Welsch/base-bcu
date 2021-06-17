@@ -64,6 +64,7 @@ class Backup:
     def on_backup_abort(self, **kwargs):
         if self._sync is not None:
             self._sync.terminate()
+        # Todo: cleanup? Mark as unfinished??
 
     def on_backup_finished(self, **kwargs):
         self._sync.terminated.disconnect(self.on_backup_finished)

@@ -83,7 +83,7 @@ class SshRsync:
         self._status = self.Status()
 
     def __enter__(self):
-        self._process = Popen(self._command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
+        self._process = Popen(self._command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=STDOUT, shell=False)
         return self._output_generator()
 
     def __exit__(self, *args):
@@ -112,7 +112,7 @@ class SshRsync:
     def _output_generator(self):
         while True:
             line = self._process.stdout.readline()
-            LOG.debug(f"line: {line}")
+            # LOG.debug(f"line: {line}")
             code = self._process.poll()
 
             if not line:
@@ -125,16 +125,17 @@ class SshRsync:
             yield self._status
 
     def terminate(self):
-        # Fixme: this terminates the whole base application
-        try:
-            os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
-        except AttributeError as e:
-            LOG.warning(f"No process to terminate: {e}")
+        LOG.debug(f"terminating process ID {self._process.pid}")
+        # self._process.terminate()
+        # self._process.wait()
+        # os.kill(self._process.pid, 15)
+        p = Popen(f"sudo kill -15 {self._process.pid}".split(), stdout=PIPE, stderr=STDOUT)
+        for line in p.stdout:
+            print(f"stdout: {line}")
 
-    def kill(self):
-        # Fixme: this terminates the whole base application
-        # self._process.kill()  # Not working!
-        os.killpg(os.getpgid(self._process.pid), signal.SIGKILL)
+    @property
+    def pid(self):
+        return self._process.pid
 
 
 class RsyncWrapperThread(Thread):
@@ -151,6 +152,10 @@ class RsyncWrapperThread(Thread):
         LOG.debug(f"Backup is {'running' if self.is_alive() else 'not running'} yet")
         return self.is_alive()
 
+    @property
+    def pid(self):
+        return self._ssh_rsync.pid
+
     def run(self):
         self._ssh_rsync = SshRsync(self._local_target_location, self._source_location)
         with self._ssh_rsync as output_generator:
@@ -161,6 +166,3 @@ class RsyncWrapperThread(Thread):
 
     def terminate(self):
         self._ssh_rsync.terminate()
-
-    def kill(self):
-        self._ssh_rsync.kill()
