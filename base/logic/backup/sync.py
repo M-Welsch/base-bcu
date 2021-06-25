@@ -83,7 +83,15 @@ class SshRsync:
         self._status = self.Status()
 
     def __enter__(self):
-        self._process = Popen(self._command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=STDOUT, shell=False)
+        self._process = Popen(
+            self._command,
+            bufsize=0,
+            universal_newlines=True,
+            stdout=PIPE,
+            stderr=STDOUT,
+            shell=False,
+            preexec_fn=os.setsid
+        )
         return self._output_generator()
 
     def __exit__(self, *args):
@@ -126,12 +134,7 @@ class SshRsync:
 
     def terminate(self):
         LOG.debug(f"terminating process ID {self._process.pid}")
-        # self._process.terminate()
-        # self._process.wait()
-        # os.kill(self._process.pid, 15)
-        p = Popen(f"sudo kill -15 {self._process.pid}".split(), stdout=PIPE, stderr=STDOUT)
-        for line in p.stdout:
-            print(f"stdout: {line}")
+        os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
 
     @property
     def pid(self):
