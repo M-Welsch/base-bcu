@@ -1,5 +1,5 @@
-from base.hardware.display import Display
 from base.hardware.button import Button
+from base.hardware.display import Display
 
 
 class HMI:

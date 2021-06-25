@@ -1,12 +1,12 @@
 import json
-from pathlib import Path
 import os
+from pathlib import Path
 
 import pytest
 
-from base.logic.backup.backup import Backup
 from base.common.config import Config
-from base.common.exceptions import NasNotMountedError, BackupRequestError
+from base.common.exceptions import BackupRequestError, NasNotMountedError
+from base.logic.backup.backup import Backup
 
 
 def false():

@@ -1,6 +1,6 @@
 import asyncio
-from threading import Thread
 import json
+from threading import Thread
 
 import websockets
 from signalslot import Signal
@@ -8,10 +8,9 @@ from signalslot import Signal
 from base.common.config import Config
 from base.common.exceptions import MountingError
 from base.common.logger import LoggerFactory
+from base.logic.backup.backup_browser import BackupBrowser
 from base.webapp.config_data import get_config_data, update_config_data
 from base.webapp.log_data import list_logfiles, logfile_content
-from base.logic.backup.backup_browser import BackupBrowser
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

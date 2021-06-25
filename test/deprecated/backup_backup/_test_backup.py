@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from time import sleep
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -6,8 +7,7 @@ print(path_to_module)
 sys.path.append(path_to_module)
 
 from base.common.config import Config
-from base.deprecated.backup import BackupManager, BackupBrowser
-
+from base.deprecated.backup import BackupBrowser, BackupManager
 
 if __name__ == "__main__":
     config = Config("/home/base/base/config.json")

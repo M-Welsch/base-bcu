@@ -1,14 +1,14 @@
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 
-from base.common.drive_inspector import DriveInspector, DriveInfo
 from base.common.config import Config
+from base.common.drive_inspector import DriveInfo, DriveInspector
 
 
 class BuHddSetter:

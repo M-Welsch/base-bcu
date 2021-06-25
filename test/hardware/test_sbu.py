@@ -1,12 +1,12 @@
-from pathlib import Path
 import json
-from random import random
 from datetime import datetime
+from pathlib import Path
+from random import random
 
 import pytest
 
-from base.hardware.sbu import SBU, SbuUartFinder
 from base.common.config import Config
+from base.hardware.sbu import SBU, SbuUartFinder
 
 
 @pytest.fixture(scope="session")

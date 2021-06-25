@@ -1,14 +1,13 @@
-import socket
-import re
-from time import sleep
 import json
+import re
+import socket
+from time import sleep
 
-from base.common.ssh_interface import SSHInterface
-from base.common.debug_utils import dump_ifconfig
 from base.common.config import Config
-from base.common.exceptions import NetworkError, NasNotCorrectError, NasNotMountedError
+from base.common.debug_utils import dump_ifconfig
+from base.common.exceptions import NasNotCorrectError, NasNotMountedError, NetworkError
 from base.common.logger import LoggerFactory
-
+from base.common.ssh_interface import SSHInterface
 
 LOG = LoggerFactory.get_logger(__name__)
 

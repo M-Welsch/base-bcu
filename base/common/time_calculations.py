@@ -1,10 +1,9 @@
 from collections import namedtuple
 from datetime import datetime
 
-from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY
+from dateutil.rrule import DAILY, MONTHLY, WEEKLY, rrule
 
 from base.common.config import Config
-
 
 _Plan = namedtuple("Plan", "frequency monthday weekday hour minute second")
 

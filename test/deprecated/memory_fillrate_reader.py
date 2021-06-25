@@ -1,4 +1,4 @@
-from subprocess import run, Popen, PIPE, STDOUT, call
+from subprocess import PIPE, STDOUT, Popen, call, run
 from time import sleep
 
 

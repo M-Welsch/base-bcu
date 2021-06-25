@@ -1,15 +1,14 @@
 from os import path
+from subprocess import PIPE, Popen, run
 from time import sleep
-from subprocess import run, Popen, PIPE
 
 from base.common.config import Config
-from base.logic.backup.backup_browser import BackupBrowser
-from base.common.exceptions import MountingError, UnmountError, ExternalCommandError
 from base.common.drive_inspector import DriveInspector
+from base.common.exceptions import ExternalCommandError, MountingError, UnmountError
 from base.common.file_system import FileSystemWatcher
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
-
+from base.logic.backup.backup_browser import BackupBrowser
 
 LOG = LoggerFactory.get_logger(__name__)
 

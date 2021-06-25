@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request
+from flask import Flask, redirect, request, url_for
 
 app = Flask(__name__)
 

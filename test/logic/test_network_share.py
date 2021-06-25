@@ -1,12 +1,12 @@
-import shutil
 import json
+import shutil
 from pathlib import Path
 
 import pytest
 
-from base.logic.network_share import NetworkShare
 from base.common.config import Config
 from base.logic.nas import Nas
+from base.logic.network_share import NetworkShare
 
 
 def update_conf(file_path, updates):

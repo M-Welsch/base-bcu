@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 from platform import system
 
-
 log = logging.getLogger(Path(__file__).name)
 
 

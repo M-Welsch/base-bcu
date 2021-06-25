@@ -1,17 +1,16 @@
-from datetime import datetime
 import os
+from datetime import datetime
 from pathlib import Path
 from re import findall
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from typing import Tuple
 
 from base.common.config import Config
 from base.common.exceptions import NewBuDirCreationError
+from base.common.logger import LoggerFactory
 from base.common.ssh_interface import SSHInterface
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.nas import Nas
-from base.common.logger import LoggerFactory
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

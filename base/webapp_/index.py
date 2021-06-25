@@ -1,12 +1,13 @@
-from flask import Flask, redirect, url_for, render_template, request
-from werkzeug.serving import make_server
-from werkzeug.utils import secure_filename
-import socket
-import os
-import sys
 import json
+import os
+import socket
+import sys
 from threading import Thread
 from time import sleep
+
+from flask import Flask, redirect, render_template, request, url_for
+from werkzeug.serving import make_server
+from werkzeug.utils import secure_filename
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)

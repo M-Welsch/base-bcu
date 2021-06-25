@@ -1,12 +1,12 @@
 #!/usr/bin/python3           # This is server.py file
-import socket
-from time import sleep
 import os
+import socket
 import sys
+from time import sleep
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
-from base.common.utils import run_external_command_as_generator_shell, readout_hdd_parameters
+from base.common.utils import readout_hdd_parameters, run_external_command_as_generator_shell
 
 
 def start_server():

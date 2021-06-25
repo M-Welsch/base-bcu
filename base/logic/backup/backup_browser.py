@@ -1,12 +1,11 @@
 import os
 from pathlib import Path
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from typing import List
 
 from base.common.config import Config
 from base.common.exceptions import BackupHddAccessError
 from base.common.logger import LoggerFactory
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

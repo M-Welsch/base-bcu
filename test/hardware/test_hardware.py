@@ -3,9 +3,9 @@ from time import sleep
 
 import pytest
 
+from base.common.config import Config
 from base.hardware.hardware import Hardware
 from base.hardware.pin_interface import PinInterface
-from base.common.config import Config
 
 
 @pytest.fixture(scope="class")

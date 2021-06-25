@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 from pathlib import Path
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -1,11 +1,10 @@
 import json
 from pathlib import Path
 from typing import Any, Set
+
 from signalslot import Signal
 
-
 from base.common.logger import LoggerFactory
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

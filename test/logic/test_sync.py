@@ -1,10 +1,10 @@
-from datetime import datetime
 import json
-import sys
 import os
 import shutil
-from time import sleep
+import sys
+from datetime import datetime
 from pathlib import Path
+from time import sleep
 
 import pytest
 

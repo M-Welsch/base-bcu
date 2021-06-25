@@ -1,14 +1,13 @@
 from time import sleep
 
-from base.hardware.mechanics import Mechanics
-from base.hardware.power import Power
-from base.hardware.hmi import HMI
-from base.hardware.sbu import SBU
-from base.hardware.drive import Drive
 from base.common.config import Config
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
-
+from base.hardware.drive import Drive
+from base.hardware.hmi import HMI
+from base.hardware.mechanics import Mechanics
+from base.hardware.power import Power
+from base.hardware.sbu import SBU
 
 LOG = LoggerFactory.get_logger(__name__)
 

@@ -1,6 +1,6 @@
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)

@@ -4,8 +4,8 @@ from shutil import copytree
 import pytest
 
 from base.common.config import Config
-from base.hardware.drive import Drive
 from base.common.exceptions import MountingError
+from base.hardware.drive import Drive
 from base.hardware.hardware import Hardware
 
 

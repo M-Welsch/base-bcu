@@ -1,20 +1,19 @@
-from collections import OrderedDict
 import json
 import os
+from collections import OrderedDict
 from time import sleep
 
 from signalslot import Signal
 
+from base.common.config import Config
+from base.common.debug_utils import copy_logfiles_to_nas
+from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
+from base.common.logger import LoggerFactory
 from base.hardware.hardware import Hardware
 from base.logic.backup.backup import Backup
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.schedule import Schedule
-from base.common.config import Config
-from base.common.interrupts import ShutdownInterrupt, Button0Interrupt, Button1Interrupt
-from base.common.debug_utils import copy_logfiles_to_nas
 from base.webapp.webapp_server import WebappServer
-from base.common.logger import LoggerFactory
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

@@ -1,8 +1,9 @@
-import pytest
 from pathlib import Path
 
+import pytest
+
 from base.common.config import Config
-from base.common.drive_inspector import DriveInspector, DriveInfo, PartitionInfo
+from base.common.drive_inspector import DriveInfo, DriveInspector, PartitionInfo
 from base.hardware.hardware import Hardware
 
 

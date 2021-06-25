@@ -1,11 +1,10 @@
 from pathlib import Path
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 
 from base.common.config import Config
 from base.common.exceptions import NetworkError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

@@ -1,6 +1,5 @@
-from base.hardware.pin_interface import PinInterface
 from base.common.logger import LoggerFactory
-
+from base.hardware.pin_interface import PinInterface
 
 LOG = LoggerFactory.get_logger(__name__)
 

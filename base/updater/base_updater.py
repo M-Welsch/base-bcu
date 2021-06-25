@@ -1,14 +1,16 @@
-import os, sys
+import os
+import sys
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
+import git
+from sysdmanager import SystemdManager
+
 from base.common.tcp import TCPClientInterface
-from base.hmi.display import *
 from base.deprecated.sbu_interface.sbu_communicator import *
 from base.deprecated.sbu_interface.sbu_updater import *
-from sysdmanager import SystemdManager
-import git
+from base.hmi.display import *
 
 
 class BaseUpdater:

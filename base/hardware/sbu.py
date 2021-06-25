@@ -1,17 +1,17 @@
-from typing import List, Union
-
-import serial
 import glob
 import os
 from dataclasses import dataclass
-from time import time, sleep
 from re import findall
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
+from time import sleep, time
+from typing import List, Union
 
-from base.hardware.pin_interface import PinInterface
+import serial
+
 from base.common.config import Config
 from base.common.exceptions import SbuCommunicationTimeout
 from base.common.logger import LoggerFactory
+from base.hardware.pin_interface import PinInterface
 
 LOG = LoggerFactory.get_logger(__name__)
 

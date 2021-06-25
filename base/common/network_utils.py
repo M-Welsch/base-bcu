@@ -1,8 +1,7 @@
-from socket import socket, AF_INET, SOCK_DGRAM
+from socket import AF_INET, SOCK_DGRAM, socket
 from sys import exc_info
 
 from base.common.logger import LoggerFactory
-
 
 # TODO: Remove everything logging related after proper exception is being catched in get_ip_address
 LOG = LoggerFactory.get_logger(__name__)

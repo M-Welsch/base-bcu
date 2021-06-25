@@ -1,9 +1,10 @@
 from pathlib import Path
-import pytest
 from random import randint
 
-from base.common.debug_utils import copy_logfiles_to_nas
+import pytest
+
 from base.common.config import Config
+from base.common.debug_utils import copy_logfiles_to_nas
 from base.common.ssh_interface import SSHInterface
 
 

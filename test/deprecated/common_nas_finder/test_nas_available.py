@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 print(path_to_module)

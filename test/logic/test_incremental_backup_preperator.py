@@ -1,12 +1,13 @@
-import sys
+import json
 import os
 import shutil
-import json
-from pathlib import Path
+import sys
 from datetime import datetime
-import pytest
-from time import sleep
 from filecmp import dircmp
+from pathlib import Path
+from time import sleep
+
+import pytest
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # TODO: Fix this somehow...
@@ -16,8 +17,8 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 from base.common.config import Config
-from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
 from base.logic.backup.backup_browser import BackupBrowser
+from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
 
 
 def update_conf(file_path, updates):

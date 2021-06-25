@@ -1,13 +1,13 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
 import json
-from subprocess import run, PIPE
+from dataclasses import dataclass
+from subprocess import PIPE, run
 from typing import Any, Dict, List, Optional
 
 from base.common.config import Config
 from base.common.exceptions import ExternalCommandError
 from base.common.logger import LoggerFactory
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

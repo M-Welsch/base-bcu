@@ -1,13 +1,12 @@
 import sched
-from time import time, sleep
+from time import sleep, time
 from typing import Optional
 
 from signalslot import Signal
 
 from base.common.config import Config
-from base.common.time_calculations import TimeCalculator
 from base.common.logger import LoggerFactory
-
+from base.common.time_calculations import TimeCalculator
 
 LOG = LoggerFactory.get_logger(__name__)
 

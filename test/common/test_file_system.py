@@ -1,5 +1,6 @@
-from threading import Timer
 from pathlib import Path
+from threading import Timer
+
 import pytest
 
 from base.common.config import Config

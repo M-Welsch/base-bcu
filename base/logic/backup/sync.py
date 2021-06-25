@@ -1,15 +1,14 @@
 import os
-from pathlib import Path
 import re
 import signal
-from subprocess import Popen, PIPE, STDOUT
+from pathlib import Path
+from subprocess import PIPE, STDOUT, Popen
 from threading import Thread
 
 from signalslot import Signal
 
 from base.common.config import Config
 from base.common.logger import LoggerFactory
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

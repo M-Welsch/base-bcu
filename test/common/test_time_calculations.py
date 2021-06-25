@@ -1,5 +1,6 @@
-import pytest
 from dataclasses import dataclass
+
+import pytest
 
 from base.common.time_calculations import TimeCalculator
 

@@ -1,10 +1,9 @@
 from time import time
 
-from base.hardware.pin_interface import PinInterface
 from base.common.config import Config
 from base.common.exceptions import DockingError
 from base.common.logger import LoggerFactory
-
+from base.hardware.pin_interface import PinInterface
 
 LOG = LoggerFactory.get_logger(__name__)
 

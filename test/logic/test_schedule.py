@@ -1,12 +1,12 @@
-from datetime import datetime
 import json
-from pathlib import Path
 import sched
+from datetime import datetime
+from pathlib import Path
 
 import pytest
 
-from base.logic.schedule import Schedule
 from base.common.config import Config
+from base.logic.schedule import Schedule
 
 
 @pytest.fixture()

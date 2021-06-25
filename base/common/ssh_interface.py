@@ -1,9 +1,9 @@
-from base.common.exceptions import RemoteCommandError
-import paramiko
 import socket
 
-from base.common.logger import LoggerFactory
+import paramiko
 
+from base.common.exceptions import RemoteCommandError
+from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
 

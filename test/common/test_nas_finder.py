@@ -1,5 +1,6 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 from base.common.config import Config
 from base.common.exceptions import NetworkError

@@ -1,9 +1,8 @@
 from pathlib import Path
 
 from base.common.config import Config
-from base.common.ssh_interface import SSHInterface
 from base.common.logger import LoggerFactory
-
+from base.common.ssh_interface import SSHInterface
 
 LOG = LoggerFactory.get_logger(__name__)
 

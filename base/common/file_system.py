@@ -1,11 +1,10 @@
 from time import sleep
-from typing import List, Optional, Callable
+from typing import Callable, List, Optional
 
 import pyinotify
 
 from base.common.drive_inspector import DriveInspector, PartitionInfo
 from base.common.logger import LoggerFactory
-
 
 LOG = LoggerFactory.get_logger(__name__)
 

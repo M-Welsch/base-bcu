@@ -4,9 +4,9 @@ from datetime import timedelta
 path_to_module = "/home/base"
 sys.path.append(path_to_module)
 
-from base.deprecated.sbu_interface.sbu_communicator import *
 from base.common.config import Config
 from base.common.utils import shutdown_bcu
+from base.deprecated.sbu_interface.sbu_communicator import *
 
 
 def warn_user_and_ask_whether_to_continue(warning):

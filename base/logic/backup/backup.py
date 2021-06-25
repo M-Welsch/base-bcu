@@ -1,13 +1,12 @@
 from signalslot import Signal
 
+from base.common.config import Config
+from base.common.exceptions import DockingError, MountingError, NetworkError
+from base.common.logger import LoggerFactory
 from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
 from base.logic.backup.sync import RsyncWrapperThread
-from base.logic.network_share import NetworkShare
 from base.logic.nas import Nas
-from base.common.config import Config
-from base.common.exceptions import NetworkError, DockingError, MountingError
-from base.common.logger import LoggerFactory
-
+from base.logic.network_share import NetworkShare
 
 LOG = LoggerFactory.get_logger(__name__)
 
