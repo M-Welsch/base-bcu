@@ -26,8 +26,7 @@ class NasFinder:
     def _assert_nas_ip_available(self, target):
         ssh_port = 22
         target_ip = socket.gethostbyname(target)
-        socket.setdefaulttimeout(
-            self._config.nas_finder_timeout)
+        socket.setdefaulttimeout(self._config.nas_finder_timeout)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             sock.connect((target_ip, ssh_port))
@@ -35,43 +34,44 @@ class NasFinder:
         except OSError as e:
             if "Errno 101" in str(e):  # network unreachable
                 dump_ifconfig()
-                raise NetworkError(f'Nas Finder. Network is unreachable! OSError: {e}')
+                raise NetworkError(f"Nas Finder. Network is unreachable! OSError: {e}")
             elif "Errno 113" in str(e):
-                raise NetworkError(f'No route to host: NAS Finder: {target}:{ssh_port} is not open! OSError: {e}')
+                raise NetworkError(f"No route to host: NAS Finder: {target}:{ssh_port} is not open! OSError: {e}")
         finally:
             sock.close()
 
     def _assert_nas_correct(self, target_ip, target_user):
         with SSHInterface() as sshi:
-            if sshi.connect(target_ip, target_user) == 'Established':
+            if sshi.connect(target_ip, target_user) == "Established":
                 self._assert_nas_connection(sshi, target_ip)
 
     def assert_nas_hdd_mounted(self):
         target_ip = Config("nas.json").ssh_host
         target_user = Config("nas.json").ssh_user
         with SSHInterface() as sshi:
-            if sshi.connect(target_ip, target_user) == 'Established':
+            if sshi.connect(target_ip, target_user) == "Established":
                 self._assert_check_nas_hdd_mounted(sshi)
 
     def _assert_nas_connection(self, sshi, target_ip):
-        stdout, stderr = sshi.run('cat nas_for_backup')
+        stdout, stderr = sshi.run("cat nas_for_backup")
         if stderr:
             raise NasNotCorrectError(
-                f"NAS on {target_ip} is not the correct one? Couldn't open file 'nas_for_backup'. "
-                f"Error = {stderr}"
+                f"NAS on {target_ip} is not the correct one? Couldn't open file 'nas_for_backup'. " f"Error = {stderr}"
             )
         my_mac_address = self.get_eth0_mac_address()
         valid_backup_servers = json.loads(stdout)["valid_backup_servers"]
         if my_mac_address not in valid_backup_servers:
-            raise NasNotCorrectError(f"MAC authentication with NAS on {target_ip} failed. "
-                                     f"My MAC is {my_mac_address}, "
-                                     f"NAS only accepts {valid_backup_servers}")
+            raise NasNotCorrectError(
+                f"MAC authentication with NAS on {target_ip} failed. "
+                f"My MAC is {my_mac_address}, "
+                f"NAS only accepts {valid_backup_servers}"
+            )
 
     def _assert_check_nas_hdd_mounted(self, sshi):
         source = self._config.remote_backup_source_location
-        sshi.run(f'cd {source}')
+        sshi.run(f"cd {source}")
         sleep(1)
-        stdout, stderr = sshi.run(f'mount | grep {source}')
+        stdout, stderr = sshi.run(f"mount | grep {source}")
         LOG.info(f"command = 'mount | grep {source}' on nas, stdout = {stdout}, stderr = {stderr}")
         if not re.search(f"sd.. on {source}", stdout):
             raise NasNotMountedError(f"NAS not mounted: mount | grep {source} returned {stdout}")
@@ -79,7 +79,7 @@ class NasFinder:
     @staticmethod
     def get_eth0_mac_address() -> str:
         try:
-            mac = open('/sys/class/net/eth0/address').readline()
+            mac = open("/sys/class/net/eth0/address").readline()
         except NameError:
             LOG.error("Cannot determine my MAC address!")
         return mac[0:17]

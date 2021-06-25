@@ -99,8 +99,8 @@ class Hardware:
     @property
     def bcu_temperature(self) -> float:
         try:
-            with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
-                return float(f.read().strip())/1000
+            with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+                return float(f.read().strip()) / 1000
         except Exception:
             return 0
 

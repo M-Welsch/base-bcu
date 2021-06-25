@@ -18,6 +18,6 @@ class UpdateSbu:
         SbuUpdater.update()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     usbu = UpdateSbu()
     usbu.update()

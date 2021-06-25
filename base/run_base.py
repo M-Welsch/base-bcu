@@ -18,13 +18,13 @@ def main():
 
     Path(logs_directory).mkdir(exist_ok=True)
     logging.basicConfig(
-        filename=Path(logs_directory)/datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log'),
+        filename=Path(logs_directory) / datetime.now().strftime("%Y-%m-%d_%H-%M-%S.log"),
         level=logging.DEBUG,
-        format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
-        datefmt='%m.%d.%Y %H:%M:%S'
+        format="%(asctime)s %(levelname)s: %(name)s: %(message)s",
+        datefmt="%m.%d.%Y %H:%M:%S",
     )
     Daemon()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

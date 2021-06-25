@@ -19,7 +19,7 @@ class WeatherFrog:
 
 
 class Backup:
-    postpone_request = Signal(args=['seconds'])
+    postpone_request = Signal(args=["seconds"])
     hardware_engage_request = Signal()
     hardware_disengage_request = Signal()
     reschedule_request = Signal()

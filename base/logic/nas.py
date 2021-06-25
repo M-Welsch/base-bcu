@@ -28,7 +28,9 @@ class Nas:
 
     def resume_services(self):
         with SSHInterface() as sshi:
-            LOG.info(f"Resuming {self._services_stopped} on nas {self._config.ssh_host} with user {self._config.ssh_user}")
+            LOG.info(
+                f"Resuming {self._services_stopped} on nas {self._config.ssh_host} with user {self._config.ssh_user}"
+            )
             for service in self._services_stopped:
                 sshi.connect(self._config.ssh_host, self._config.ssh_user)
                 try:
@@ -38,9 +40,9 @@ class Nas:
 
     def _filter_services(self):
         services_filtered = self._services
-        if Config("sync.json").protocol == 'smb':
+        if Config("sync.json").protocol == "smb":
             try:
-                services_filtered.remove('smbd')
+                services_filtered.remove("smbd")
             except ValueError:
                 pass
         return services_filtered

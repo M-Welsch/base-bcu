@@ -10,7 +10,7 @@ from base.common.ssh_interface import SSHInterface
 def test_nasfinder_with_cm(command):
     global sshi, response
     with SSHInterface() as sshi:
-        if sshi.connect('192.168.0.100', 'root') == 'Established':
+        if sshi.connect("192.168.0.100", "root") == "Established":
             response_stdout, response_stderr = sshi.run(command)
             print_result_to_console(response_stderr, response_stdout)
 
@@ -27,15 +27,15 @@ def print_result_to_console(response_stderr, response_stdout):
 def test_nasfinder_without_cm(command):
     global sshi, response
     sshi = SSHInterface()
-    if sshi.connect('192.168.0.100', 'root') == 'Established':
+    if sshi.connect("192.168.0.100", "root") == "Established":
         response_stdout, response_stderr = sshi.run(command)
         print_result_to_console(response_stderr, response_stdout)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cm = True
-    correct_command = 'ls -a'
-    incorrect_command = 'ls- a'
+    correct_command = "ls -a"
+    incorrect_command = "ls- a"
     print(f"Testing correctly written command {correct_command}")
     if cm:
         test_nasfinder_with_cm(correct_command)

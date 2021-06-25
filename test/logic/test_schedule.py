@@ -13,9 +13,13 @@ from base.common.config import Config
 def schedule(tmpdir):
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir)
-    with open(config_path/"schedule_config.json", "r") as src, open(config_test_path/"schedule_config.json", "w") as dst:
+    with open(config_path / "schedule_config.json", "r") as src, open(
+        config_test_path / "schedule_config.json", "w"
+    ) as dst:
         json.dump(json.load(src), dst)
-    with open(config_path/"schedule_backup.json", "r") as src, open(config_test_path/"schedule_backup.json", "w") as dst:
+    with open(config_path / "schedule_backup.json", "r") as src, open(
+        config_test_path / "schedule_backup.json", "w"
+    ) as dst:
         schedule_data = json.load(src)
         now = datetime.now()
         schedule_data["backup_frequency"] = "days"

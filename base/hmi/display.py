@@ -1,6 +1,7 @@
 from base.common.config import Config
 from base.deprecated.hwctrl import HWCTRL
 
+
 class Display:
     def __init__(self, sbu_communicator):
         self._hwctrl = HWCTRL.global_instance()
@@ -11,16 +12,16 @@ class Display:
         self._lcd = self._init_display_rev2()
 
     def _init_display_rev2(self):
-        if self._hw_rev == 'rev2':
+        if self._hw_rev == "rev2":
             lcd = LCD(int(self._config["display_default_brightness"]), self._pin_interface)
         else:
             lcd = None
         return lcd
 
     def write(self, line1, line2):
-        if self._hw_rev == 'rev2':
-            self._lcd.message(line1 + '\n' + line2)
-        elif self._hw_rev == 'rev3':
+        if self._hw_rev == "rev2":
+            self._lcd.message(line1 + "\n" + line2)
+        elif self._hw_rev == "rev3":
             self._sbu_communicator.write_to_display(line1, line2)
         else:
             raise LookupError

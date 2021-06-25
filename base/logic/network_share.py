@@ -27,10 +27,12 @@ class NetworkShare:
             pass  # exist_ok=True was intended to supress this error, howe it works in a different way
         except OSError as e:
             LOG.warning(f"strange OS-Error occured on trying to create the NAS-HDD Mountpoint: {e}")
-        command = f"mount -t cifs " \
-                  f"-o credentials=/etc/win-credentials " \
-                  f"//{Config('nas.json').ssh_host}/hdd " \
-                  f"{self._config.local_nas_hdd_mount_point}".split()
+        command = (
+            f"mount -t cifs "
+            f"-o credentials=/etc/win-credentials "
+            f"//{Config('nas.json').ssh_host}/hdd "
+            f"{self._config.local_nas_hdd_mount_point}".split()
+        )
         LOG.info(f"mount datasource with command: {command}")
         process = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         self._parse_process_output(process)

@@ -11,19 +11,21 @@ LOG = LoggerFactory.get_logger(__name__)
 
 def dump_ifconfig():
     logs_directory = Config("base.json").logs_directory
-    filename = Path(logs_directory)/datetime.now().strftime('ifconfig_%Y-%m-%d_%H-%M-%S.log')
+    filename = Path(logs_directory) / datetime.now().strftime("ifconfig_%Y-%m-%d_%H-%M-%S.log")
     command = f"ifconfig > {filename}"
     for line in _run_external_command_as_generator_shell(command):
         print(line)
-    LOG.debug(f'Dumped ifconfig into {filename}')
+    LOG.debug(f"Dumped ifconfig into {filename}")
 
 
 def copy_logfiles_to_nas():
     try:
         config_debug = Config("debug.json")
-        local_log_directory = Path("/home/base")/Path(Config("base.json").logs_directory)
-        command = f'rsync -avH -e "ssh -i /home/base/.ssh/id_rsa" {local_log_directory}/* ' \
-                  f'{config_debug.ssh_user}@{config_debug.ssh_host}:{config_debug.logfile_target_path}'
+        local_log_directory = Path("/home/base") / Path(Config("base.json").logs_directory)
+        command = (
+            f'rsync -avH -e "ssh -i /home/base/.ssh/id_rsa" {local_log_directory}/* '
+            f"{config_debug.ssh_user}@{config_debug.ssh_host}:{config_debug.logfile_target_path}"
+        )
         LOG.info(f"Copying logfiles to Nas with command {command}")
         _run_external_command_as_generator_shell(command, timeout=10)
         LOG.info(f"Copied Logfiles to NAS into: {config_debug.logfile_target_path}")

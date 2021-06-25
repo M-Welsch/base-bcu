@@ -16,7 +16,7 @@ def config():
 class TestDebugUtils:
     def test_copy_logfiles_to_nas(self, config):
         testfile_name = "testfile.txt"
-        testfile_path = Path.cwd().parent.parent/Path(config.logs_directory)/testfile_name
+        testfile_path = Path.cwd().parent.parent / Path(config.logs_directory) / testfile_name
         testfile_content = str(randint(1, 10000))
         with open(testfile_path, "w") as file:
             file.write(testfile_content)
@@ -33,4 +33,3 @@ class TestDebugUtils:
             response = sshi.run_and_raise(f"cat {Path(config.logfile_target_path)/file}")
         if response == content:
             return True
-

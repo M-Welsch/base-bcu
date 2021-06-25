@@ -18,7 +18,7 @@ class ScheduleTester:
         print(f"seconds to next Backup: {self._scheduler.seconds_to_next_bu()}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     CONFIG = Config("/home/base/base/config.json")
     ST = ScheduleTester(CONFIG)
     ST.test()

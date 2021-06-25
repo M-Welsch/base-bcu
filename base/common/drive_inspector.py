@@ -20,11 +20,7 @@ class PartitionInfo:
 
     @classmethod
     def from_json(cls, json_info: Dict[str, Any]) -> PartitionInfo:
-        return cls(
-            path=json_info["path"],
-            mount_point=json_info["mountpoint"],
-            bytes_size=int(json_info["size"])
-        )
+        return cls(path=json_info["path"], mount_point=json_info["mountpoint"], bytes_size=int(json_info["size"]))
 
 
 @dataclass
@@ -52,7 +48,7 @@ class DriveInfo:
             rotational=bool(json_info["rota"]),
             drive_type=json_info["type"],
             state=json_info["state"],
-            partitions=[PartitionInfo.from_json(partition_info) for partition_info in json_info.get("children", [])]
+            partitions=[PartitionInfo.from_json(partition_info) for partition_info in json_info.get("children", [])],
         )
 
     def to_dict(self):
@@ -76,7 +72,7 @@ class PartitionSignature:
             model_name=json_info["model_name"],
             serial_number=json_info["serial_number"],
             bytes_size=json_info["bytes_size"],
-            partition_index=json_info["partition_index"]
+            partition_index=json_info["partition_index"],
         )
 
 
@@ -99,9 +95,11 @@ class DriveInspector:
     @property
     def backup_partition_info(self) -> Optional[PartitionInfo]:
         candidates = [
-            device for device in self.devices if device.model_name == self._partition_signature.model_name and
-                                                 device.serial_number == self._partition_signature.serial_number and
-                                                 device.bytes_size == self._partition_signature.bytes_size
+            device
+            for device in self.devices
+            if device.model_name == self._partition_signature.model_name
+            and device.serial_number == self._partition_signature.serial_number
+            and device.bytes_size == self._partition_signature.bytes_size
         ]
         if not len(candidates) == 1:
             return None

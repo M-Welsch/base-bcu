@@ -11,11 +11,11 @@ def nas(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp("nas_test_config_dir")
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))
-    with open(config_path/"nas.json", "r") as src, open(config_test_path/"nas.json", "w") as dst:
+    with open(config_path / "nas.json", "r") as src, open(config_test_path / "nas.json", "w") as dst:
         sync_config_data = json.load(src)
         sync_config_data["services"].append("nonexistent_test_service")
         json.dump(sync_config_data, dst)
-    with open(config_path/"sync.json", "r") as src, open(config_test_path/"sync.json", "w") as dst:
+    with open(config_path / "sync.json", "r") as src, open(config_test_path / "sync.json", "w") as dst:
         sync_config_data = json.load(src)
         sync_config_data["protocol"] = "sftp"
         json.dump(sync_config_data, dst)
@@ -42,4 +42,4 @@ class TestNas:
 
     @staticmethod
     def test_correct_smb_conf(nas):
-        assert(nas.correct_smb_conf())
+        assert nas.correct_smb_conf()

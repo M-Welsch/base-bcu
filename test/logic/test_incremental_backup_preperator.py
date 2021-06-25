@@ -33,21 +33,18 @@ def incremental_backup_preparator(tmpdir_factory, configure_logger):
     tmpdir = tmpdir_factory.mktemp("test_dir")
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
-    backup_target_location = (Path(general_backup_target_location)/f"backup_{timestamp}")
-    shutil.copytree('/home/base/python.base/test/dummy_files', backup_target_location)
+    backup_target_location = Path(general_backup_target_location) / f"backup_{timestamp}"
+    shutil.copytree("/home/base/python.base/test/dummy_files", backup_target_location)
     print(f"backup_target_location = {str(backup_target_location)}")
-    config_dir = (Path(tmpdir)/"config").resolve()
-    shutil.copytree('/home/base/python.base/base/config', config_dir)
+    config_dir = (Path(tmpdir) / "config").resolve()
+    shutil.copytree("/home/base/python.base/base/config", config_dir)
+    update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(
-        config_dir/"base.json",
-        {"logs_directory": configure_logger["tmpdir"]}
-    )
-    update_conf(
-        config_dir/"sync.json",
+        config_dir / "sync.json",
         {
             "local_backup_target_location": str(general_backup_target_location),
-            "remote_backup_source_location": "/mnt/HDD/testfiles"
-        }
+            "remote_backup_source_location": "/mnt/HDD/testfiles",
+        },
     )
     Config.set_config_base_path(config_dir)
     yield IncrementalBackupPreparator()
@@ -90,7 +87,7 @@ class TestIncrementalBackupPreperator:
         size_difference = abs(recent_bu_size - new_bu_size)
         print(f"size of recent backup: {recent_bu_size}, new backup: {new_bu_size}. Diff = {size_difference}")
         assert recent_bu_size == new_bu_size
-        assert total_size < 2*recent_bu_size
+        assert total_size < 2 * recent_bu_size
 
     @staticmethod
     def test_delete_oldest_backup(incremental_backup_preparator):

@@ -20,8 +20,8 @@ def update_conf(file_path, updates):
 @pytest.fixture(scope="class")
 def network_share(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp("test_dir")
-    config_dir = (Path(tmpdir)/"config").resolve()
-    shutil.copytree('/home/base/python.base/base/config', config_dir)
+    config_dir = (Path(tmpdir) / "config").resolve()
+    shutil.copytree("/home/base/python.base/base/config", config_dir)
     Config.set_config_base_path(config_dir)
     yield NetworkShare()
 

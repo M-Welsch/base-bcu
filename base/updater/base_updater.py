@@ -13,7 +13,7 @@ import git
 
 class BaseUpdater:
     def __init__(self):
-        self._base_repo = git.Repo('/home/base/base/')
+        self._base_repo = git.Repo("/home/base/base/")
 
     def update_all(self):
         if self.update_available():
@@ -27,7 +27,7 @@ class BaseUpdater:
             print("base already up to date")
 
     def update_available(self):
-        self._base_repo.git.checkout('master')
+        self._base_repo.git.checkout("master")
         return self._base_repo.is_dirty(untracked_files=True)
 
     def _terminate_base(self):
@@ -49,7 +49,7 @@ class BaseUpdater:
 
     def _get_tcp_port(self):
         path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self._config = Config(path+"/config.json")
+        self._config = Config(path + "/config.json")
         return self._config.tcp_port
 
     def _take_over_display(self):
@@ -83,6 +83,6 @@ class BaseUpdater:
         # shutdown_bcu()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     BU = BaseUpdater()
     BU.update_all()

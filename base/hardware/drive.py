@@ -35,8 +35,13 @@ class Drive:
             self._available = HddState.not_available
             raise MountingError(f"Backup HDD not available!")
         if self._partition_info.mount_point is None:
-            command = ["mount", "-t", self._config.backup_hdd_file_system,
-                       self._partition_info.path, self._config.backup_hdd_mount_point]
+            command = [
+                "mount",
+                "-t",
+                self._config.backup_hdd_file_system,
+                self._partition_info.path,
+                self._config.backup_hdd_mount_point,
+            ]
             try:
                 LOG.debug(command)
                 run_external_command(command)
@@ -91,7 +96,7 @@ class Drive:
 
     def space_used_percent(self) -> float:
         if self._partition_info:
-            command = (["df", "--output=pcent", self._partition_info.mount_point])
+            command = ["df", "--output=pcent", self._partition_info.mount_point]
             try:
                 out = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
                 space_used = float(self._remove_heading_from_df_output(out.stdout))
@@ -108,7 +113,7 @@ class Drive:
 
     @staticmethod
     def _remove_heading_from_df_output(df_output) -> str:
-        return [item.split('%')[0] for item in df_output if not item.strip() == "Use%"][0]
+        return [item.split("%")[0] for item in df_output if not item.strip() == "Use%"][0]
 
 
 def run_external_command(command):

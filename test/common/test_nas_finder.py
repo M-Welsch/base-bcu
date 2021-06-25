@@ -25,7 +25,7 @@ class TestNasFinder:
     @staticmethod
     def test_wrong_nas_ip_not_available(nas_finder):
         with pytest.raises(NetworkError):
-            assert nas_finder._assert_nas_ip_available('255.255.255.255')
+            assert nas_finder._assert_nas_ip_available("255.255.255.255")
 
     @staticmethod
     def test_nas_correct(nas_finder, nas_config):

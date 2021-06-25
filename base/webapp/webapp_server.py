@@ -21,8 +21,8 @@ class WebappServer(Thread):
     backup_now_request = Signal()
     backup_abort = Signal()
     reschedule_request = Signal()
-    display_brightness_change = Signal(args=['brightness'])
-    display_text = Signal(args=['text'])
+    display_brightness_change = Signal(args=["brightness"])
+    display_text = Signal(args=["text"])
 
     def __init__(self, codebook, backup_browser):
         super().__init__()
@@ -58,17 +58,17 @@ class WebappServer(Thread):
             elif message == "request_config":
                 await websocket.send(get_config_data())
             elif message.startswith("new config: "):
-                update_config_data(message[len("new config: "):])
+                update_config_data(message[len("new config: ") :])
                 Config.config_changed.emit()
                 self.reschedule_request.emit()
             elif message.startswith("display brightness: "):
-                payload = message[len("display brightness: "):]
+                payload = message[len("display brightness: ") :]
                 try:
                     self.display_brightness_change.emit(brightness=float(payload))
                 except ValueError:
                     LOG.warning(f"cannot process brightness value: {payload}")
             elif message.startswith("display text: "):
-                payload = message[len("display text: "):]
+                payload = message[len("display text: ") :]
                 # Todo: äöü etc are displayed strangely
                 self.display_text.emit(text=payload)
             elif message.startswith("backup_index"):
@@ -76,7 +76,7 @@ class WebappServer(Thread):
             elif message.startswith("logfile_index"):
                 await websocket.send(json.dumps(list_logfiles(newest_first=True)))
             elif message.startswith("request_logfile"):
-                logfile_name = message[len("request_logfile: "):]
+                logfile_name = message[len("request_logfile: ") :]
                 await websocket.send(json.dumps(logfile_content(logfile_name, recent_line_first=True)))
             else:
                 LOG.info(f"unknown message code: {message}")

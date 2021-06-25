@@ -39,6 +39,6 @@ class BuHddSetter:
             exit(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     bhs = BuHddSetter()
     bhs.set_conneted_hdd_as_backup_hdd()

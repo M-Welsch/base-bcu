@@ -25,6 +25,6 @@ class ConfigSbu:
         self._sbu.request_shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     confsbu = ConfigSbu()
     confsbu.set_timer_according_to_config_file()

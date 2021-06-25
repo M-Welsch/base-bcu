@@ -8,13 +8,13 @@ class Display:
     @staticmethod
     def write(line1, line2):
         max_chars = max(len(line1), len(line2))
-        line1 = line1.ljust(max_chars, ' ')
-        line2 = line2.ljust(max_chars, ' ')
+        line1 = line1.ljust(max_chars, " ")
+        line2 = line2.ljust(max_chars, " ")
         line1 = f"| {line1} |   (0)"
         line2 = f"| {line2} |   (1)"
 
         top_and_bottom_border = "+"
-        top_and_bottom_border = top_and_bottom_border.ljust(max_chars + 3, '-')
+        top_and_bottom_border = top_and_bottom_border.ljust(max_chars + 3, "-")
         top_and_bottom_border += "+"
 
         print(top_and_bottom_border)

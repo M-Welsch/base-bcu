@@ -27,7 +27,7 @@ class LoggerFactory:
     __warning_file_handler = None
 
     def __init__(self, config_path: Path, parent_logger_name: str, development_mode: bool = False) -> None:
-        """ Virtually private constructor. """
+        """Virtually private constructor."""
         if LoggerFactory.__instance is None:
             self._logs_directory = self.get_logs_directory(config_path)
             self.__class__.__parent_logger_name = parent_logger_name
@@ -43,7 +43,7 @@ class LoggerFactory:
 
     @staticmethod
     def get_logs_directory(config_path: Path) -> Path:
-        with open(config_path/"base.json", 'r') as cfg_file:
+        with open(config_path / "base.json", "r") as cfg_file:
             logs_directory = json.load(cfg_file)["logs_directory"]
         return Path.cwd() / Path(logs_directory)
 
@@ -65,13 +65,13 @@ class LoggerFactory:
     @classmethod
     def _setup_file_handler(cls, logger, development_mode):
         config: Config = Config("base.json")
-        logs_dir = Path.cwd()/Path(config.logs_directory)
+        logs_dir = Path.cwd() / Path(config.logs_directory)
         logs_dir.mkdir(exist_ok=True)
-        cls._current_log_name = logs_dir / datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
+        cls._current_log_name = logs_dir / datetime.now().strftime("%Y-%m-%d_%H-%M-%S.log")
         handler = logging.FileHandler(cls._current_log_name)
         handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s')
-        formatter.datefmt = '%m.%d.%Y %H:%M:%S'
+        formatter = logging.Formatter("%(asctime)s %(levelname)s: %(name)s: %(message)s")
+        formatter.datefmt = "%m.%d.%Y %H:%M:%S"
         self.__class__.__file_handler.setFormatter(formatter)
         self._parent_logger.addHandler(self.__class__.__file_handler)
 
@@ -80,16 +80,16 @@ class LoggerFactory:
         self._current_log_name = self._logs_directory / Path("warnings.log")
         self.__class__.__warning_file_handler = WarningFileHandler(self._current_log_name)
         self.__class__.__warning_file_handler.setLevel(logging.WARNING)
-        formatter = logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s')
-        formatter.datefmt = '%m.%d.%Y %H:%M:%S'
+        formatter = logging.Formatter("%(asctime)s %(levelname)s: %(name)s: %(message)s")
+        formatter.datefmt = "%m.%d.%Y %H:%M:%S"
         self.__class__.__warning_file_handler.setFormatter(formatter)
         self._parent_logger.addHandler(self.__class__.__warning_file_handler)
 
     def _setup_console_handler(self) -> None:
         handler = logging.StreamHandler()
         handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(levelname)s: %(name)s: %(message)s')
-        formatter.datefmt = '%m.%d.%Y %H:%M:%S'
+        formatter = logging.Formatter("%(levelname)s: %(name)s: %(message)s")
+        formatter.datefmt = "%m.%d.%Y %H:%M:%S"
         handler.setFormatter(formatter)
         self._parent_logger.addHandler(handler)
 
@@ -131,5 +131,5 @@ class WarningFileHandler(logging.FileHandler):
     def _count_lines(log_path: Path) -> int:
         if not log_path.is_file():
             return 0
-        with open(log_path, 'r') as f:
+        with open(log_path, "r") as f:
             return sum([1 for _ in f])

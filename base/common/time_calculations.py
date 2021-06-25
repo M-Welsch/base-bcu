@@ -10,26 +10,26 @@ _Plan = namedtuple("Plan", "frequency monthday weekday hour minute second")
 
 
 class TimeCalculator:
-    _frequencies = {
-        "days": DAILY,
-        "weeks": WEEKLY,
-        "months": MONTHLY
-    }
+    _frequencies = {"days": DAILY, "weeks": WEEKLY, "months": MONTHLY}
 
     def next_backup(self, config: Config) -> datetime:
         plan = self._plan_from_config(config)
-        return next(iter(rrule(
-            freq=plan.frequency,
-            bymonthday=plan.monthday,
-            byweekday=plan.weekday,
-            byhour=plan.hour,
-            byminute=plan.minute,
-            bysecond=plan.second
-        )))
+        return next(
+            iter(
+                rrule(
+                    freq=plan.frequency,
+                    bymonthday=plan.monthday,
+                    byweekday=plan.weekday,
+                    byhour=plan.hour,
+                    byminute=plan.minute,
+                    bysecond=plan.second,
+                )
+            )
+        )
 
     def next_backup_timestring(self, config: Config) -> str:
         dt = self.next_backup(config)
-        return dt.strftime('%d.%m.%Y %H:%M')
+        return dt.strftime("%d.%m.%Y %H:%M")
 
     def next_backup_seconds(self, config: Config) -> int:
         dt = self.next_backup(config)
@@ -44,7 +44,7 @@ class TimeCalculator:
             weekday=config.day_of_week if frequency == WEEKLY else None,
             hour=config.hour,
             minute=config.minute,
-            second=config.second
+            second=config.second,
         )
 
     @staticmethod
@@ -57,7 +57,7 @@ class TimeCalculator:
         assert 0 <= config.second <= 59
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from pathlib import Path
 
     Config.set_config_base_path(Path(__file__).parent.parent / "config")

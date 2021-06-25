@@ -9,7 +9,7 @@ from base.common.config import Config
 from base.deprecated.backup import BackupManager, BackupBrowser
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     config = Config("/home/base/base/config.json")
     BM = BackupManager(config.config_backup)
     BM.backup()

@@ -1,5 +1,5 @@
-
 from time import sleep
+
 try:
     import RPi.GPIO as GPIO
 except ImportError:
@@ -124,7 +124,7 @@ class PinInterface:
         sleep(self.step_interval)
 
         if self.step_interval > 0.0005:
-            PinInterface.step_interval = self.step_interval/1.2
+            PinInterface.step_interval = self.step_interval / 1.2
 
     @staticmethod
     def set_step_pin_high():

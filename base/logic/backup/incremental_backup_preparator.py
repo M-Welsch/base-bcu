@@ -42,7 +42,7 @@ class IncrementalBackupPreparator:
         return free_space_on_bu_hdd > space_needed_for_full_bu
 
     def _obtain_free_space_on_backup_hdd(self) -> int:
-        command = (["df", "--output=avail", self._config_sync.local_backup_target_location])
+        command = ["df", "--output=avail", self._config_sync.local_backup_target_location]
         LOG.info(f"obtaining free space on bu hdd with command: {command}")
         out = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         free_space_on_bu_hdd = self._remove_heading_from_df_output(out.stdout)
@@ -99,19 +99,18 @@ class IncrementalBackupPreparator:
 
     def _get_path_for_new_bu_directory(self) -> Path:
         timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-        path = Path(Path(self._config_sync.local_backup_target_location)/f"backup_{timestamp}")
+        path = Path(Path(self._config_sync.local_backup_target_location) / f"backup_{timestamp}")
         return path
 
     def _create_that_very_directory(self, path):
         try:
             os.mkdir(path)
         except OSError:
-            LOG.error(
-                f'Could not create directory for new backup in {self._config_sync.local_backup_target_location}')
+            LOG.error(f"Could not create directory for new backup in {self._config_sync.local_backup_target_location}")
 
     def _check_whether_directory_was_created(self, path):
         if os.path.isdir(path):
-            LOG.info(f'Created directory for new backup: {path}')
+            LOG.info(f"Created directory for new backup: {path}")
             self._new_backup_folder = path
         else:
             LOG.error(f"Directory {path} wasn't created!")
@@ -138,14 +137,16 @@ class IncrementalBackupPreparator:
         remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
         local_nas_hdd_mount_path = Path(self._config_sync.local_nas_hdd_mount_point)
         if protocol == "smb":
-            source_directory = self._derive_backup_source_directory_smb(local_nas_hdd_mount_path,
-                                                                        remote_backup_source_location)
+            source_directory = self._derive_backup_source_directory_smb(
+                local_nas_hdd_mount_path, remote_backup_source_location
+            )
         elif protocol == "ssh":
             source_directory = remote_backup_source_location
         else:
             LOG.error(f"{protocol} is not a valid protocoll! Defaulting to smb")
-            source_directory = self._derive_backup_source_directory_smb(local_nas_hdd_mount_path,
-                                                                        remote_backup_source_location)
+            source_directory = self._derive_backup_source_directory_smb(
+                local_nas_hdd_mount_path, remote_backup_source_location
+            )
         return Path(source_directory)
 
     @staticmethod

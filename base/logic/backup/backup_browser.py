@@ -50,7 +50,7 @@ class BackupBrowser:
     def get_newest_backup_abolutepath(self) -> Path:
         self.update_backup_list()
         if self._backup_index:
-            return Path(self._config_sync.local_backup_target_location)/self._backup_index[-1]
+            return Path(self._config_sync.local_backup_target_location) / self._backup_index[-1]
 
     @staticmethod
     def get_backup_size(path) -> int:

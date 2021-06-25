@@ -33,9 +33,7 @@ class Patterns:
     _path = r"[^\0]+"
 
     path = re.compile(_path)
-    file_stats = re.compile(
-            _spaces + _number + _spaces + _percentage + _spaces + _speed + _spaces + _time + _rest
-        )
+    file_stats = re.compile(_spaces + _number + _spaces + _percentage + _spaces + _speed + _spaces + _time + _rest)
     percentage = re.compile(_percentage)
     end_stats_a = re.compile(
         r"sent " + _number + r" bytes {2}received " + _number + r" bytes {2}" + _decimal + r" bytes/sec"
@@ -90,7 +88,7 @@ class SshRsync:
             stdout=PIPE,
             stderr=STDOUT,
             shell=False,
-            preexec_fn=os.setsid
+            preexec_fn=os.setsid,
         )
         return self._output_generator()
 
@@ -108,12 +106,12 @@ class SshRsync:
         protocol = sync_config.protocol
         command = "sudo rsync -avH".split()
         if protocol == "smb":
-            command.extend(f'{source_location}/ {local_target_location}'.split())
+            command.extend(f"{source_location}/ {local_target_location}".split())
         else:
-            command.append('-e')
+            command.append("-e")
             command.append("ssh -i /home/base/.ssh/id_rsa")
             command.extend(f"{user}@{host}:{source_location}/ {local_target_location}".split())
-        command.extend('--outbuf=N --info=progress2'.split())
+        command.extend("--outbuf=N --info=progress2".split())
         LOG.info(f"About to sync with: {command}")
         return command
 

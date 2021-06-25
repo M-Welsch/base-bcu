@@ -1,13 +1,13 @@
 from subprocess import run, Popen, PIPE, STDOUT, call
 from time import sleep
 
+
 def run_external_command_as_generator(command):
     p = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
     return p.stdout
 
 
 class MemoryFillrateReader:
-
     def readout_memory_fill_level(self):
         out = run_external_command_as_generator(["df", "--output=avail", "/media/BackupHDD"])
         return self.remove_heading_from_df_output(out)
@@ -33,7 +33,7 @@ def print_memory_fill_rate(MFR):
     except KeyboardInterrupt:
         print("Bye")
 
+
 if __name__ == "__main__":
     MFR = MemoryFillrateReader()
     print_memory_fill_rate(MFR)
-    

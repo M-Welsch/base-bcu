@@ -1,16 +1,20 @@
 from flask import Flask, render_template, request
+
 app = Flask(__name__)
 
-@app.route('/')
+
+@app.route("/")
 def student():
-   default_values = {'Name':'Manu','Physics':'10','Chemistry':'20','Maths':'30'}
-   return render_template('007_student.html', defaults = default_values)
+    default_values = {"Name": "Manu", "Physics": "10", "Chemistry": "20", "Maths": "30"}
+    return render_template("007_student.html", defaults=default_values)
 
-@app.route('/result',methods = ['POST', 'GET'])
+
+@app.route("/result", methods=["POST", "GET"])
 def result():
-   if request.method == 'POST':
-      result = request.form
-      return render_template("007_result.html",result = result)
+    if request.method == "POST":
+        result = request.form
+        return render_template("007_result.html", result=result)
 
-if __name__ == '__main__':
-   app.run(debug = True)
+
+if __name__ == "__main__":
+    app.run(debug=True)

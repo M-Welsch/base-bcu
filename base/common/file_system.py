@@ -29,7 +29,7 @@ class EventHandler(pyinotify.ProcessEvent):
         assert isinstance(self._stop_notifier, Callable), "Call set_notifier() first."
         LOG.debug(f"File {event.pathname} was created")
         sleep(0.5)  # Todo: wait for model_number and serial_number to be written completely in a more elegant way
-                    # (lsof). See notes at bottom of file
+        # (lsof). See notes at bottom of file
         LOG.info("Try to find partition...")
         partition_info = self._drive_inspector.backup_partition_info
         if partition_info is not None:
@@ -45,9 +45,7 @@ class FileSystemWatcher:
         self._watch_manager: pyinotify.WatchManager = pyinotify.WatchManager()
         self._event_handler: EventHandler = EventHandler(self._set_partition_info, self._drive_inspector)
         timeout_milliseconds = timeout_seconds * 1000
-        self._notifier: MyNotifier = MyNotifier(
-            self._watch_manager, self._event_handler, timeout=timeout_milliseconds
-        )
+        self._notifier: MyNotifier = MyNotifier(self._watch_manager, self._event_handler, timeout=timeout_milliseconds)
         self._event_handler.set_notifier_callback(self._notifier.cancel)
         self._partition_info: Optional[PartitionInfo] = None
 
@@ -71,7 +69,7 @@ class FileSystemWatcher:
         return self._partition_info
 
     def _watch_until_timeout(self):
-        assert self._notifier._timeout is not None, 'Notifier must be constructed with a short timeout'
+        assert self._notifier._timeout is not None, "Notifier must be constructed with a short timeout"
         self._notifier.process_events()
         while self._notifier.check_events():
             self._notifier.read_events()
@@ -82,7 +80,6 @@ if __name__ == "__main__":
     watcher = FileSystemWatcher(timeout_seconds=10)
     watcher.add_watches(dirs_to_watch=["/dev", "/home/base"])
     watcher.backup_partition_info()
-
 
 
 # # bug 1

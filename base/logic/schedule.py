@@ -41,14 +41,10 @@ class Schedule:
         day_of_week = self._schedule.day_of_week
         if backup_frequency not in Schedule.valid_backup_frequencies:
             raise ValueError(
-                f"Invalid backup frequency '{backup_frequency}'. "
-                f"Use one of {Schedule.valid_backup_frequencies}"
+                f"Invalid backup frequency '{backup_frequency}'. " f"Use one of {Schedule.valid_backup_frequencies}"
             )
         if day_of_week not in Schedule.valid_days_of_week:
-            raise ValueError(
-                f"{day_of_week} is no valid day!"
-                f"Use one of {Schedule.valid_days_of_week}"
-            )
+            raise ValueError(f"{day_of_week} is no valid day!" f"Use one of {Schedule.valid_days_of_week}")
         if self._backup_job is not None:
             self._scheduler.cancel(self._backup_job)
         self._reschedule_backup()
@@ -89,5 +85,6 @@ class Schedule:
     @property
     def next_backup_seconds(self):
         return TimeCalculator().next_backup_seconds(self._schedule)
+
 
 # TODO: Rename backup frequency to backup interval!

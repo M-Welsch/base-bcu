@@ -19,7 +19,7 @@ def warn_user_and_ask_whether_to_continue(warning):
 
 def create_human_readable_timestamp(seconds):
     f = datetime.now() + timedelta(seconds=seconds)
-    return f.strftime('%d.%m.%Y %H:%M')
+    return f.strftime("%d.%m.%Y %H:%M")
 
 
 class Rev3bEndswitchTester:
@@ -248,7 +248,7 @@ class Rev3bSbuShutdownAndWakeAfter500sTester(Rev3bSbuTester):
         super(Rev3bSbuShutdownAndWakeAfter500sTester, self).__init__(hwctrl, config_sbuc)
 
     def test(self):
-        wake_after = 120*32  # seconds * 32. Factor 32 because for debugging purposes the rtc counts 32 times as fast
+        wake_after = 120 * 32  # seconds * 32. Factor 32 because for debugging purposes the rtc counts 32 times as fast
         timestamp_hr = create_human_readable_timestamp(wake_after)
         self._sbu_c.send_human_readable_timestamp_next_bu(timestamp_hr)
         self._sbu_c.send_seconds_to_next_bu_to_sbu(wake_after)
@@ -297,7 +297,7 @@ class Rev3bBringupTestSuite:
             "rev3b_sbu_send_seconds_to_next_bu_tester": ["b", "rev3b_sbu_send_seconds_to_next_bu_tester"],
             "rev3b_sbu_shutdown_and_wake_after_500s_tester": ["c", "rev3b_sbu_shutdown_and_wake_after_500s_tester"],
             "rev3b_sbu_display_dimming_tester": ["d", "rev3b_sbu_display_dimming_tester"],
-            "rev3b_sbu_hmi_led_dimming_tester": ["e", "rev3b_sbu_hmi_led_dimming_tester"]
+            "rev3b_sbu_hmi_led_dimming_tester": ["e", "rev3b_sbu_hmi_led_dimming_tester"],
         }
 
         self._config = Config("/home/base/base/config.json")

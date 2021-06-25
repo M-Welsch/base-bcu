@@ -18,7 +18,7 @@ class DriveInspectorMockup:
 @pytest.fixture()
 def file_system_watcher(tmpdir):
     Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
-    device_file_path = Path(tmpdir)/"sdx1"
+    device_file_path = Path(tmpdir) / "sdx1"
     file_system_watcher = FileSystemWatcher(timeout_seconds=0.4)
     file_system_watcher._event_handler._drive_inspector = DriveInspectorMockup(device_file_path)
     file_system_watcher.add_watches(dirs_to_watch=[str(tmpdir)])
