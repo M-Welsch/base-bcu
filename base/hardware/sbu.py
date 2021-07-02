@@ -118,7 +118,7 @@ class SBU:
             if command.await_ready_signal:
                 [ready_delay, _] = self._wait_for_sbu_ready()
                 log_message += f", ready after {ready_delay}"
-            LOG.info(log_message)
+            # LOG.info(log_message)
         except SbuCommunicationTimeout as e:
             LOG.error(e)
             self._flush_sbu_channel()
@@ -216,7 +216,7 @@ class SBU:
 
     def _measure(self, command: SbuCommand) -> float:
         response = self._process_command(command)
-        print(f"response is {response}")
+        # LOG.debug(f"response is {response}")
         response_16bit_value = int(findall(r"[0-9]+", response[2:])[0])
         return self._convert_measurement_result(command, response_16bit_value)
 

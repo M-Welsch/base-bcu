@@ -1,8 +1,8 @@
 {
-    "ssh_host": "192.168.179.64",
+    "ssh_host": "192.168.178.64",
     "ssh_port": 22,
     "ssh_user": "root",
-    "smb_host": "192.168.179.64",
+    "smb_host": "192.168.178.64",
     "smb_port": 22,
     "smb_user": "root",
     "services": [

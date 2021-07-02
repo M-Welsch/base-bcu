@@ -63,7 +63,7 @@ def parse_line_to_status(line, status):
 
 
 class SshRsync:
-    class Status:
+    class SyncStatus:
         def __init__(self, path="", progress=0.0):
             self.path = path
             self.progress = progress
@@ -77,7 +77,7 @@ class SshRsync:
         self._local_target_location = local_target_location
         self._command = self._compose_rsync_command(local_target_location, source_location)
         self._process = None
-        self._status = self.Status()
+        self._status = self.SyncStatus()
 
     def __enter__(self):
         self._process = Popen(
@@ -93,11 +93,12 @@ class SshRsync:
 
     def __exit__(self, *args):
         try:
-            self.kill()
+            self.terminate()
         except ProcessLookupError:
             pass
 
-    def _compose_rsync_command(self, local_target_location: Path, source_location: Path) -> list:
+    @staticmethod
+    def _compose_rsync_command(local_target_location: Path, source_location: Path) -> list:
         sync_config = Config("sync.json")
         nas_config = Config("nas.json")
         host = nas_config.ssh_host

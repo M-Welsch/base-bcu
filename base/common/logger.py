@@ -13,18 +13,53 @@ class LineBuffer(list):
     def push(self, item: str) -> None:
         if len(self) >= self._size:
             del self[0]
-        self.append(item)
+        self.append(str(item))
 
     @property
     def content(self) -> Tuple[str]:
         return tuple(self)
 
 
+class CachingFileHandler(logging.FileHandler):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._message_cache: LineBuffer = LineBuffer(5)
+
+    def emit(self, record: logging.LogRecord):
+        self._message_cache.push(record.msg)
+        super().emit(record)
+
+    @property
+    def message_cache(self) -> Tuple[str]:
+        return self._message_cache.content
+
+
+class WarningFileHandler(logging.FileHandler):
+    def __init__(self, log_path, *args, **kwargs) -> None:
+        super().__init__(log_path, *args, **kwargs)
+        self._warning_counter: int = self._count_lines(log_path)
+
+    def emit(self, record: logging.LogRecord):
+        self._warning_counter += 1
+        super().emit(record)
+
+    @property
+    def warning_count(self) -> int:
+        return self._warning_counter
+
+    @staticmethod
+    def _count_lines(log_path: Path) -> int:
+        if not log_path.is_file():
+            return 0
+        with open(log_path, "r") as f:
+            return sum([1 for _ in f])
+
+
 class LoggerFactory:
     __instance = None
-    __parent_logger_name = None
-    __file_handler = None
-    __warning_file_handler = None
+    __parent_logger_name: str = None
+    __file_handler: CachingFileHandler = None
+    __warning_file_handler: WarningFileHandler = None
 
     def __init__(self, config_path: Path, parent_logger_name: str, development_mode: bool = False) -> None:
         """Virtually private constructor."""
@@ -96,38 +131,3 @@ class LoggerFactory:
         if cls.__instance is None:
             raise RuntimeError(f"Instantiate {cls.__name__} first.")
         return logging.getLogger(f"{cls.__parent_logger_name}.{module_name}")
-
-
-class CachingFileHandler(logging.FileHandler):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._message_cache: LineBuffer = LineBuffer(5)
-
-    def emit(self, record: logging.LogRecord):
-        self._message_cache.push(record.msg)
-        super().emit(record)
-
-    @property
-    def message_cache(self) -> Tuple[str]:
-        return self._message_cache.content
-
-
-class WarningFileHandler(logging.FileHandler):
-    def __init__(self, log_path, *args, **kwargs) -> None:
-        super().__init__(log_path, *args, **kwargs)
-        self._warning_counter: int = self._count_lines(log_path)
-
-    def emit(self, record: logging.LogRecord):
-        self._warning_counter += 1
-        super().emit(record)
-
-    @property
-    def warning_count(self) -> int:
-        return self._warning_counter
-
-    @staticmethod
-    def _count_lines(log_path: Path) -> int:
-        if not log_path.is_file():
-            return 0
-        with open(log_path, "r") as f:
-            return sum([1 for _ in f])

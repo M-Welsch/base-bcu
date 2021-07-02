@@ -95,19 +95,28 @@ class Drive:
 
     def space_used_percent(self) -> float:
         if self._partition_info:
-            command = ["df", "--output=pcent", self._partition_info.mount_point]
+            mount_point = Config('drive.json').backup_hdd_mount_point
+            command = ["df", "--output=pcent", mount_point]
+            LOG.debug(f"obtaining space used on bu hdd with command: {command}")
             try:
                 out = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
                 space_used = float(self._remove_heading_from_df_output(out.stdout))
                 # LOG.info(f"Space used on Backup HDD: {space_used}%")
             except ValueError:
+                LOG.debug(f"Value Error during 'space_used_percent' with command {command}")
                 space_used = 0
             except FileNotFoundError:
+                LOG.debug(f"FileNotFound during 'space_used_percent' with command {command}")
                 space_used = 0
             except IndexError:
+                LOG.debug(f"IndexError during 'space_used_percent' with command {command}")
+                space_used = 0
+            except TypeError:
+                LOG.debug(f"Retrival of used space not possible yet. Mounting still in progress")
                 space_used = 0
             if space_used is not None:
                 return space_used
+        LOG.debug("no partition info in 'space_used_percent'")
         return 0
 
     @staticmethod
