@@ -32,7 +32,8 @@ class LoggerFactory:
             self._logs_directory = self.get_logs_directory(config_path)
             self.__class__.__parent_logger_name = parent_logger_name
             self._development_mode: bool = development_mode
-            self._current_log_name: str = ""
+            self._current_log_name: Path = Path()
+            self._current_warning_log_name: Path = Path()
             self._parent_logger: logging.Logger
             self._file_handler: CachingFileHandler
             self._warning_file_handler: WarningFileHandler
@@ -62,14 +63,11 @@ class LoggerFactory:
         self._setup_warning_file_handler()
         self._setup_console_handler()
 
-    @classmethod
-    def _setup_file_handler(cls, logger, development_mode):
-        config: Config = Config("base.json")
-        logs_dir = Path.cwd() / Path(config.logs_directory)
-        logs_dir.mkdir(exist_ok=True)
-        cls._current_log_name = logs_dir / datetime.now().strftime("%Y-%m-%d_%H-%M-%S.log")
-        handler = logging.FileHandler(cls._current_log_name)
-        handler.setLevel(logging.DEBUG)
+    def _setup_file_handler(self):
+        self._logs_directory.mkdir(exist_ok=True)
+        self._current_log_name = self._logs_directory / datetime.now().strftime("%Y-%m-%d_%H-%M-%S.log")
+        self.__class__.__file_handler = CachingFileHandler(self._current_log_name)
+        self.__class__.__file_handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s %(levelname)s: %(name)s: %(message)s")
         formatter.datefmt = "%m.%d.%Y %H:%M:%S"
         self.__class__.__file_handler.setFormatter(formatter)
@@ -77,7 +75,7 @@ class LoggerFactory:
 
     def _setup_warning_file_handler(self) -> None:
         self._logs_directory.mkdir(exist_ok=True)
-        self._current_log_name = self._logs_directory / Path("warnings.log")
+        self._current_warning_log_name = self._logs_directory / Path("warnings.log")
         self.__class__.__warning_file_handler = WarningFileHandler(self._current_log_name)
         self.__class__.__warning_file_handler.setLevel(logging.WARNING)
         formatter = logging.Formatter("%(asctime)s %(levelname)s: %(name)s: %(message)s")
