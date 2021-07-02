@@ -10,19 +10,19 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 
-def setup_config(config_path: Path):
+def setup_config(config_path: Path) -> None:
     from base.common.config import Config
 
     Config.set_config_base_path(config_path)
 
 
-def setup_logger(config_path: Path):
+def setup_logger(config_path: Path) -> None:
     from base.common.logger import LoggerFactory
 
     LoggerFactory(config_path, "BaSe", development_mode=True)
 
 
-def main():
+def main() -> None:
     from base.base_application import BaSeApplication
 
     app = BaSeApplication()

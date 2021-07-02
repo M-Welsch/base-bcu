@@ -95,7 +95,7 @@ class Drive:
 
     def space_used_percent(self) -> float:
         if self._partition_info:
-            mount_point = Config('drive.json').backup_hdd_mount_point
+            mount_point = Config("drive.json").backup_hdd_mount_point
             command = ["df", "--output=pcent", mount_point]
             LOG.debug(f"obtaining space used on bu hdd with command: {command}")
             try:

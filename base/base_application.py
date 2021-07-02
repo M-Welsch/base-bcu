@@ -2,6 +2,7 @@ import json
 import os
 from collections import OrderedDict
 from time import sleep
+from typing import Callable, List, Tuple
 
 from signalslot import Signal
 
@@ -19,18 +20,18 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class MaintenanceMode:
-    def __init__(self):
+    def __init__(self) -> None:
         self._connections = []
         self._is_on = False
 
-    def is_on(self):
+    def is_on(self) -> bool:
         LOG.debug(f"Maintenance mode is {'on' if self._is_on else 'off'}")
         return self._is_on
 
-    def set_connections(self, connections):
+    def set_connections(self, connections: List[Tuple[Signal, Callable]]) -> None:
         self._connections = connections
 
-    def on(self):
+    def on(self) -> None:
         if not self._is_on:
             for signal, slot in self._connections:
                 signal.disconnect(slot)
@@ -39,7 +40,7 @@ class MaintenanceMode:
         else:
             LOG.warning("Maintenance mode already is on!")
 
-    def off(self):
+    def off(self) -> None:
         if self._is_on:
             for signal, slot in self._connections:
                 signal.disconnect(self._log_warning)
@@ -49,7 +50,7 @@ class MaintenanceMode:
             LOG.warning("Maintenance mode already is off!")
 
     @staticmethod
-    def _log_warning():
+    def _log_warning() -> None:
         LOG.warning("Backup request received during maintenance mode!")
 
 
@@ -57,7 +58,7 @@ class BaSeApplication:
     button_0_pressed = Signal()
     button_1_pressed = Signal()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._config: Config = Config("base.json")
         self._maintenance_mode = MaintenanceMode()
         self._backup_browser = BackupBrowser()
@@ -79,7 +80,7 @@ class BaSeApplication:
         self._shutting_down = False
         self._connect_signals()
 
-    def start(self):
+    def start(self) -> None:
         self._schedule.on_reschedule_requested()
         while not self._shutting_down:
             try:
@@ -101,7 +102,7 @@ class BaSeApplication:
         self._execute_shutdown()
         sleep(1)
 
-    def _connect_signals(self):
+    def _connect_signals(self) -> None:
         self._schedule.shutdown_request.connect(self._initiate_shutdown)
         self._schedule.backup_request.connect(self._backup.on_backup_request)
         self._backup.postpone_request.connect(self._schedule.on_postpone_backup)
@@ -116,17 +117,17 @@ class BaSeApplication:
         self._webapp_server.display_brightness_change.connect(self._hardware.set_display_brightness)
         self._webapp_server.display_text.connect(self._hardware.write_to_display)
 
-    def _initiate_shutdown(self, **kwargs):
+    def _initiate_shutdown(self, **kwargs):  # type: ignore
         self._stop_threads()
         self._shutting_down = True
 
     @staticmethod
-    def _execute_shutdown():
+    def _execute_shutdown() -> None:
         LOG.info("executing shutdown command NOW")
         copy_logfiles_to_nas()  # Here to catch last log-message as well
         os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().
 
-    def _stop_threads(self):
+    def _stop_threads(self) -> None:
         pass
 
     @property
@@ -154,6 +155,6 @@ class BaSeApplication:
             }
         )
 
-    def on_webapp_event(self, payload, **kwargs):
+    def on_webapp_event(self, payload, **kwargs):  # type: ignore
         LOG.debug(f"received webapp event with payload: {payload}")
         self._codebook[payload]()
