@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from time import sleep
 
 try:
@@ -11,7 +13,7 @@ class PinInterface:
     __instance = None
 
     @classmethod
-    def global_instance(cls):
+    def global_instance(cls) -> PinInterface:
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
             GPIO.setmode(GPIO.BOARD)
@@ -20,10 +22,10 @@ class PinInterface:
         cls.__instance._initialize_pins()
         return cls.__instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         raise Exception("This class is a singleton. Use global_instance() instead!")
 
-    def _initialize_pins(self):
+    def _initialize_pins(self) -> None:
         GPIO.setup(Pins.sw_hdd_on, GPIO.OUT)
         GPIO.setup(Pins.nsensor_docked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(Pins.nsensor_undocked, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -43,35 +45,35 @@ class PinInterface:
         self.enable_receiving_messages_from_sbu()
 
     @staticmethod
-    def cleanup():
+    def cleanup() -> None:
         GPIO.cleanup()
 
     @property
-    def docked_sensor_pin_high(self):
+    def docked_sensor_pin_high(self) -> int:
         return GPIO.input(Pins.nsensor_docked)
 
     @property
-    def docked(self):
+    def docked(self) -> bool:
         return not GPIO.input(Pins.nsensor_docked)
 
     @property
-    def undocked(self):
+    def undocked(self) -> bool:
         return not GPIO.input(Pins.nsensor_undocked)
 
     @property
-    def undocked_sensor_pin_high(self):
+    def undocked_sensor_pin_high(self) -> int:
         return GPIO.input(Pins.nsensor_undocked)
 
     @property
-    def button_0_pin_high(self):
+    def button_0_pin_high(self) -> int:
         return GPIO.input(Pins.button_0)
 
     @property
-    def button_1_pin_high(self):
+    def button_1_pin_high(self) -> int:
         return GPIO.input(Pins.button_1)
 
     @staticmethod
-    def activate_hdd_pin():
+    def activate_hdd_pin() -> None:
         # rev3 uses a bistable relay with two coils.
         # These have to be powered for at least 4ms. We use 100ms to be safe.
         GPIO.output(Pins.sw_hdd_on, GPIO.HIGH)
@@ -79,7 +81,7 @@ class PinInterface:
         GPIO.output(Pins.sw_hdd_on, GPIO.LOW)
 
     @staticmethod
-    def deactivate_hdd_pin():
+    def deactivate_hdd_pin() -> None:
         # rev3 uses a bistable relay with two coils.
         # These have to be powered for at least 4ms. We use 100ms to be safe.
         GPIO.output(Pins.sw_hdd_off, GPIO.HIGH)
@@ -87,37 +89,37 @@ class PinInterface:
         GPIO.output(Pins.sw_hdd_off, GPIO.LOW)
 
     @staticmethod
-    def set_motor_pins_for_braking():
+    def set_motor_pins_for_braking() -> None:
         GPIO.output(Pins.Motordriver_L, GPIO.LOW)
         GPIO.output(Pins.Motordriver_R, GPIO.LOW)
 
     @staticmethod
-    def set_motor_pins_for_docking():
+    def set_motor_pins_for_docking() -> None:
         GPIO.output(Pins.Motordriver_L, GPIO.HIGH)
         GPIO.output(Pins.Motordriver_R, GPIO.LOW)
 
     @staticmethod
-    def set_motor_pins_for_undocking():
+    def set_motor_pins_for_undocking() -> None:
         GPIO.output(Pins.Motordriver_L, GPIO.LOW)
         GPIO.output(Pins.Motordriver_R, GPIO.HIGH)
 
-    def stepper_driver_on(self):
+    def stepper_driver_on(self) -> None:
         self.set_nreset_pin_high()
         self.step_interval = self.step_interval_initial
 
-    def stepper_driver_off(self):
+    def stepper_driver_off(self) -> None:
         self.set_nreset_pin_low()
         self.step_interval = self.step_interval_initial
 
     @staticmethod
-    def set_nreset_pin_high():
+    def set_nreset_pin_high() -> None:
         GPIO.output(Pins.stepper_nreset, GPIO.HIGH)
 
     @staticmethod
-    def set_nreset_pin_low():
+    def set_nreset_pin_low() -> None:
         GPIO.output(Pins.stepper_nreset, GPIO.LOW)
 
-    def stepper_step(self):
+    def stepper_step(self) -> None:
         self.set_step_pin_high()
         sleep(self.step_interval)
         self.set_step_pin_low()
@@ -127,49 +129,49 @@ class PinInterface:
             PinInterface.step_interval = self.step_interval / 1.2
 
     @staticmethod
-    def set_step_pin_high():
+    def set_step_pin_high() -> None:
         GPIO.output(Pins.stepper_step, GPIO.HIGH)
 
     @staticmethod
-    def set_step_pin_low():
+    def set_step_pin_low() -> None:
         GPIO.output(Pins.stepper_step, GPIO.LOW)
 
-    def stepper_direction_docking(self):
+    def stepper_direction_docking(self) -> None:
         self.set_direction_pin_high()
 
-    def stepper_direction_undocking(self):
+    def stepper_direction_undocking(self) -> None:
         self.set_direction_pin_low()
 
     @staticmethod
-    def set_direction_pin_high():
+    def set_direction_pin_high() -> None:
         GPIO.output(Pins.stepper_dir, GPIO.HIGH)
 
     @staticmethod
-    def set_direction_pin_low():
+    def set_direction_pin_low() -> None:
         GPIO.output(Pins.stepper_dir, GPIO.LOW)
 
     @staticmethod
-    def set_sbu_serial_path_to_sbu_fw_update():
+    def set_sbu_serial_path_to_sbu_fw_update() -> None:
         GPIO.output(Pins.sbu_program_ncommunicate, GPIO.HIGH)
 
     @staticmethod
-    def set_sbu_serial_path_to_communication():
+    def set_sbu_serial_path_to_communication() -> None:
         GPIO.output(Pins.sbu_program_ncommunicate, GPIO.LOW)
 
     @staticmethod
-    def enable_receiving_messages_from_sbu():
+    def enable_receiving_messages_from_sbu() -> None:
         GPIO.output(Pins.en_sbu_link, GPIO.HIGH)
 
     @staticmethod
-    def disable_receiving_messages_from_sbu():
+    def disable_receiving_messages_from_sbu() -> None:
         GPIO.output(Pins.en_sbu_link, GPIO.LOW)
 
     @staticmethod
-    def set_heartbeat_high():
+    def set_heartbeat_high() -> None:
         GPIO.output(Pins.heartbeat, GPIO.HIGH)
 
     @staticmethod
-    def set_heartbeat_low():
+    def set_heartbeat_low() -> None:
         GPIO.output(Pins.heartbeat, GPIO.LOW)
 
 

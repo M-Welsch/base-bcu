@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, Optional, Tuple
 
 
 class LineBuffer(list):
@@ -21,11 +21,11 @@ class LineBuffer(list):
 
 
 class CachingFileHandler(logging.FileHandler):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._message_cache: LineBuffer = LineBuffer(5)
 
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
         self._message_cache.push(record.msg)
         super().emit(record)
 
@@ -35,11 +35,11 @@ class CachingFileHandler(logging.FileHandler):
 
 
 class WarningFileHandler(logging.FileHandler):
-    def __init__(self, log_path, *args, **kwargs) -> None:
+    def __init__(self, log_path: Path, *args: Any, **kwargs: Any) -> None:
         super().__init__(log_path, *args, **kwargs)
         self._warning_counter: int = self._count_lines(log_path)
 
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
         self._warning_counter += 1
         super().emit(record)
 
@@ -57,9 +57,9 @@ class WarningFileHandler(logging.FileHandler):
 
 class LoggerFactory:
     __instance = None
-    __parent_logger_name: str = None
-    __file_handler: CachingFileHandler = None
-    __warning_file_handler: WarningFileHandler = None
+    __parent_logger_name: Optional[str] = None
+    __file_handler: Optional[CachingFileHandler] = None
+    __warning_file_handler: Optional[WarningFileHandler] = None
 
     def __init__(self, config_path: Path, parent_logger_name: str, development_mode: bool = False) -> None:
         """Virtually private constructor."""
@@ -84,7 +84,7 @@ class LoggerFactory:
         return Path.cwd() / Path(logs_directory)
 
     @classmethod
-    def get_last_lines(cls) -> List[str]:
+    def get_last_lines(cls) -> Tuple[str]:
         return cls.__file_handler.message_cache
 
     @classmethod
@@ -98,7 +98,7 @@ class LoggerFactory:
         self._setup_warning_file_handler()
         self._setup_console_handler()
 
-    def _setup_file_handler(self):
+    def _setup_file_handler(self) -> None:
         self._logs_directory.mkdir(exist_ok=True)
         self._current_log_name = self._logs_directory / datetime.now().strftime("%Y-%m-%d_%H-%M-%S.log")
         self.__class__.__file_handler = CachingFileHandler(self._current_log_name)

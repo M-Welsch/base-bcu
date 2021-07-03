@@ -1,6 +1,7 @@
 import asyncio
 import json
 from threading import Thread
+from typing import Optional, Set
 
 import websockets
 from signalslot import Signal
@@ -23,15 +24,15 @@ class WebappServer(Thread):
     display_brightness_change = Signal(args=["brightness"])
     display_text = Signal(args=["text"])
 
-    def __init__(self, codebook, backup_browser):
+    def __init__(self, codebook: Set[str], backup_browser: BackupBrowser) -> None:
         super().__init__()
         self._codebook = codebook
         self._backup_browser: BackupBrowser = backup_browser
         self._start_server = websockets.serve(self.echo, "0.0.0.0", 8453)
         self._event_loop = asyncio.get_event_loop()
-        self.current_status = None
+        self.current_status = Optional[str]
 
-    def on_status(self, status, **kwargs):
+    def on_status(self, status, **kwargs):  # type: ignore
         print(status)
 
     async def echo(self, websocket, path):
@@ -93,6 +94,6 @@ class WebappServer(Thread):
         except MountingError as e:
             LOG.error(f"Mounting error occurred: {e}")  # TODO: Display error message in webapp
 
-    def run(self):
+    def run(self) -> None:
         self._event_loop.run_until_complete(self._start_server)
         self._event_loop.run_forever()

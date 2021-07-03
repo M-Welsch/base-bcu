@@ -21,7 +21,7 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class MaintenanceMode:
     def __init__(self) -> None:
-        self._connections = []
+        self._connections: List[Tuple[Signal, Callable]] = []
         self._is_on = False
 
     def is_on(self) -> bool:

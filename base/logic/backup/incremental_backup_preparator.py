@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from re import findall
 from subprocess import PIPE, Popen
-from typing import Tuple
+from typing import IO, Optional, Tuple
 
 from base.common.config import Config
 from base.common.exceptions import NewBuDirCreationError
@@ -16,13 +16,13 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class IncrementalBackupPreparator:
-    def __init__(self, backup_browser):
-        self._backup_browser = backup_browser
+    def __init__(self, backup_browser) -> None:
+        self._backup_browser: BackupBrowser = backup_browser
         self._config_nas = Config("nas.json")
         self._config_sync = Config("sync.json")
         self._new_backup_folder = None
 
-    def prepare(self) -> Tuple[Path]:
+    def prepare(self) -> Tuple[Path, Path]:
         self._free_space_on_backup_hdd_if_necessary()
         backup_source = self._backup_source_directory()
         most_recent_backup = self._newest_backup_dir_path()
@@ -30,7 +30,7 @@ class IncrementalBackupPreparator:
         self._copy_newest_backup_with_hardlinks(most_recent_backup, backup_target)
         return backup_source, backup_target
 
-    def _free_space_on_backup_hdd_if_necessary(self):
+    def _free_space_on_backup_hdd_if_necessary(self) -> None:
         while not self.enough_space_for_full_backup():
             self.delete_oldest_backup()
 
@@ -47,7 +47,8 @@ class IncrementalBackupPreparator:
         free_space_on_bu_hdd = self._remove_heading_from_df_output(out.stdout)
         return free_space_on_bu_hdd
 
-    def _remove_heading_from_df_output(self, df_output) -> int:
+    @staticmethod
+    def _remove_heading_from_df_output(df_output: Optional[IO[str]]) -> int:
         df_output_cleaned = ""
         for line in df_output:
             if not line.strip() == "Avail":
@@ -80,7 +81,7 @@ class IncrementalBackupPreparator:
             space_occupied = 0
         return space_occupied
 
-    def delete_oldest_backup(self):
+    def delete_oldest_backup(self) -> None:
         with self._backup_browser as bb:
             oldest_backup = bb.get_oldest_backup()
         LOG.info("deleting {} to free space for new backup".format(oldest_backup))
@@ -98,24 +99,26 @@ class IncrementalBackupPreparator:
 
     def _get_path_for_new_bu_directory(self) -> Path:
         timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-        path = Path(Path(self._config_sync.local_backup_target_location) / f"backup_{timestamp}")
-        return path
+        return Path(self._config_sync.local_backup_target_location) / f"backup_{timestamp}"
 
-    def _create_that_very_directory(self, path):
+    def _create_that_very_directory(self, path: Path) -> None:
         try:
-            os.mkdir(path)
-        except OSError:
-            LOG.error(f"Could not create directory for new backup in {self._config_sync.local_backup_target_location}")
+            path.mkdir(exist_ok=False)
+        except FileExistsError:
+            LOG.error(f"Directory for new backup in {self._config_sync.local_backup_target_location} already exists")
+        except FileNotFoundError:
+            LOG.error(f"Parent directory for new backup in {self._config_sync.local_backup_target_location} not found")
 
-    def _check_whether_directory_was_created(self, path):
-        if os.path.isdir(path):
+    def _check_whether_directory_was_created(self, path: Path) -> None:
+        if path.is_dir():
             LOG.info(f"Created directory for new backup: {path}")
             self._new_backup_folder = path
         else:
             LOG.error(f"Directory {path} wasn't created!")
             raise NewBuDirCreationError
 
-    def _copy_newest_backup_with_hardlinks(self, recent_backup, new_backup):
+    @staticmethod
+    def _copy_newest_backup_with_hardlinks(recent_backup: Path, new_backup: Path) -> None:
         copy_command = f"cp -al {recent_backup}/* {new_backup}"
         LOG.info(f"copy command: {copy_command}")
         p = Popen(copy_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE)
@@ -125,7 +128,7 @@ class IncrementalBackupPreparator:
         for line in p.stderr:
             LOG.warning(line)
 
-    def _rename_bu_directory_to_new_timestamp(self):
+    def _rename_bu_directory_to_new_timestamp(self) -> None:
         newest_existing_bu_dir = self._newest_backup_dir_path()
         new_backup_folder = self._get_path_for_new_bu_directory()
         os.rename(newest_existing_bu_dir, new_backup_folder)
@@ -142,14 +145,16 @@ class IncrementalBackupPreparator:
         elif protocol == "ssh":
             source_directory = remote_backup_source_location
         else:
-            LOG.error(f"{protocol} is not a valid protocoll! Defaulting to smb")
+            LOG.error(f"{protocol} is not a valid protocol! Defaulting to smb")
             source_directory = self._derive_backup_source_directory_smb(
                 local_nas_hdd_mount_path, remote_backup_source_location
             )
         return Path(source_directory)
 
     @staticmethod
-    def _derive_backup_source_directory_smb(local_nas_hdd_mount_path, remote_backup_source_location):
+    def _derive_backup_source_directory_smb(
+        local_nas_hdd_mount_path: Path, remote_backup_source_location: Path
+    ) -> Path:
         source_mountpoint = Nas().mount_point(remote_backup_source_location)
         subfolder_on_mountpoint = remote_backup_source_location.relative_to(source_mountpoint)
         source_directory = local_nas_hdd_mount_path / subfolder_on_mountpoint

@@ -14,10 +14,10 @@ from base.hmi.display import *
 
 
 class BaseUpdater:
-    def __init__(self):
+    def __init__(self) -> None:
         self._base_repo = git.Repo("/home/base/base/")
 
-    def update_all(self):
+    def update_all(self) -> None:
         if self.update_available():
             self._terminate_base()
             self._take_over_display()
@@ -28,11 +28,11 @@ class BaseUpdater:
         else:
             print("base already up to date")
 
-    def update_available(self):
+    def update_available(self) -> bool:
         self._base_repo.git.checkout("master")
         return self._base_repo.is_dirty(untracked_files=True)
 
-    def _terminate_base(self):
+    def _terminate_base(self) -> None:
         tcp_port_orig = self._get_tcp_port()
         tcp_port = tcp_port_orig
         sysdmanager = SystemdManager()
@@ -49,28 +49,28 @@ class BaseUpdater:
         else:
             print("BaSe already down")
 
-    def _get_tcp_port(self):
+    def _get_tcp_port(self) -> int:
         path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self._config = Config(path + "/config.json")
         return self._config.tcp_port
 
-    def _take_over_display(self):
+    def _take_over_display(self) -> None:
         self._hwctrl = HWCTRL.global_instance(self._config.config_hwctrl)
         self._sbuc = SbuCommunicator.global_instance()
         self._display = Display(self._hwctrl, self._sbuc, self._config)
 
-    def _update_base(self):
+    def _update_base(self) -> None:
         self._display.write("Getting new", "Files ...")
         self._get_new_files_from_repo()
 
-    def _get_new_files_from_repo(self):
+    def _get_new_files_from_repo(self) -> None:
         # Todo: git pull @branch release or stable or ... tbd
         print(self._base_repo.remotes.origin.pull())
 
-    def _give_back_serial_connection(self):
+    def _give_back_serial_connection(self) -> None:
         self._sbuc.terminate()
 
-    def _update_sbu(self):
+    def _update_sbu(self) -> None:
         self._hwctrl.enable_receiving_messages_from_sbu()
         self._hwctrl.set_attiny_serial_path_to_sbc_fw_update()
 
@@ -80,7 +80,7 @@ class BaseUpdater:
         self._hwctrl.disable_receiving_messages_from_attiny()
         self._hwctrl.set_sbu_serial_path_to_communication()
 
-    def _reboot(self):
+    def _reboot(self) -> None:
         self._hwctrl.terminate()
         # shutdown_bcu()
 

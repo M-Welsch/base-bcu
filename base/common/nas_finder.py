@@ -13,16 +13,17 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class NasFinder:
-    def __init__(self):
+    def __init__(self) -> None:
         self._config: Config = Config("sync.json")
+        self._nas_config: Config = Config("nas.json")
 
-    def assert_nas_available(self):
-        target_ip = Config("nas.json").ssh_host
-        target_user = Config("nas.json").ssh_user
+    def assert_nas_available(self) -> None:
+        target_ip = self._nas_config.ssh_host
+        target_user = self._nas_config.ssh_user
         self._assert_nas_ip_available(target_ip)
         self._assert_nas_correct(target_ip, target_user)
 
-    def _assert_nas_ip_available(self, target):
+    def _assert_nas_ip_available(self, target: str) -> None:
         ssh_port = 22
         target_ip = socket.gethostbyname(target)
         socket.setdefaulttimeout(self._config.nas_finder_timeout)
@@ -39,19 +40,19 @@ class NasFinder:
         finally:
             sock.close()
 
-    def _assert_nas_correct(self, target_ip, target_user):
+    def _assert_nas_correct(self, target_ip: str, target_user: str) -> None:
         with SSHInterface() as sshi:
             if sshi.connect(target_ip, target_user) == "Established":
                 self._assert_nas_connection(sshi, target_ip)
 
-    def assert_nas_hdd_mounted(self):
-        target_ip = Config("nas.json").ssh_host
-        target_user = Config("nas.json").ssh_user
+    def assert_nas_hdd_mounted(self) -> None:
+        target_ip = self._nas_config.ssh_host
+        target_user = self._nas_config.ssh_user
         with SSHInterface() as sshi:
             if sshi.connect(target_ip, target_user) == "Established":
                 self._assert_check_nas_hdd_mounted(sshi)
 
-    def _assert_nas_connection(self, sshi, target_ip):
+    def _assert_nas_connection(self, sshi: SSHInterface, target_ip: str) -> None:
         stdout, stderr = sshi.run("cat nas_for_backup")
         if stderr:
             raise NasNotCorrectError(
@@ -66,7 +67,7 @@ class NasFinder:
                 f"NAS only accepts {valid_backup_servers}"
             )
 
-    def _assert_check_nas_hdd_mounted(self, sshi):
+    def _assert_check_nas_hdd_mounted(self, sshi: SSHInterface) -> None:
         source = self._config.remote_backup_source_location
         sshi.run(f"cd {source}")
         sleep(1)
@@ -78,7 +79,9 @@ class NasFinder:
     @staticmethod
     def get_eth0_mac_address() -> str:
         try:
-            mac = open("/sys/class/net/eth0/address").readline()
+            with open("/sys/class/net/eth0/address") as f:
+                mac = f.readline().strip()
         except NameError:
-            LOG.error("Cannot determine my MAC address!")
-        return mac[0:17]
+            LOG.error("Cannot determine my MAC address, unable to open '/sys/class/net/eth0/address'.")
+            mac = ""
+        return mac

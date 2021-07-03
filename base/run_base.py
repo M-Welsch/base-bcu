@@ -11,7 +11,7 @@ sys.path.append(path_to_module)
 from base.deprecated.daemon.daemon import Daemon
 
 
-def main():
+def main() -> None:
     # TODO: Replace
     with open("base/config.json", "r") as file:
         logs_directory = json.load(file)["Logging"]["logs_directory"]
