@@ -15,3 +15,9 @@ repos:
       rev: v0.812
       hooks:
           - id: mypy
+
+    - repo: git://github.com/Lucas-C/pre-commit-hooks
+      rev: v1.1.10
+      hooks:
+          - id: remove-crlf
+          - id: remove-tabs
