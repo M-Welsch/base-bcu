@@ -19,4 +19,5 @@ def get_ip_address() -> str:
         ip_address = "127.0.0.1"
     finally:
         sock.close()
+    assert isinstance(ip_address, str)
     return ip_address

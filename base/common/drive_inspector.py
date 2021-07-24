@@ -51,7 +51,7 @@ class DriveInfo:
             partitions=[PartitionInfo.from_json(partition_info) for partition_info in json_info.get("children", [])],
         )
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "model_name": self.model_name,
             "serial_number": self.serial_number,

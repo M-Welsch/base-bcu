@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Any
 
 from base.common.config import Config
 from base.common.logger import LoggerFactory
@@ -7,15 +8,15 @@ from base.common.logger import LoggerFactory
 LOG = LoggerFactory.get_logger(__name__)
 
 
-def get_config_data():
-    def json_content(path):
+def get_config_data() -> str:
+    def json_content(path: Path) -> Any:
         with open(path, "r") as jf:
             return json.load(jf)
 
     return json.dumps({file.stem: json_content(file) for file in Path(Config.base_path).glob("*.json")})
 
 
-def update_config_data(new_cfg_s: str):
+def update_config_data(new_cfg_s: str) -> None:
     new_cfg = {}
     try:
         new_cfg = json.loads(new_cfg_s)
@@ -25,7 +26,7 @@ def update_config_data(new_cfg_s: str):
         update_config_file(content, file)
 
 
-def update_config_file(content, file):
+def update_config_file(content: Any, file: str) -> None:
     try:
         cfg_filename = Path(Config.base_path) / f"{file}.json"
         with open(cfg_filename, "r") as cfg_file:

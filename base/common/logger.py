@@ -85,10 +85,12 @@ class LoggerFactory:
 
     @classmethod
     def get_last_lines(cls) -> Tuple[str]:
+        assert isinstance(cls.__file_handler, CachingFileHandler)
         return cls.__file_handler.message_cache
 
     @classmethod
     def get_warning_count(cls) -> int:
+        assert isinstance(cls.__warning_file_handler, WarningFileHandler)
         return cls.__warning_file_handler.warning_count
 
     def _setup_project_logger(self) -> None:

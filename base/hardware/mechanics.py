@@ -9,11 +9,11 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Mechanics:
-    def __init__(self):
-        self._config = Config("mechanics.json")
-        self._pin_interface = PinInterface.global_instance()
+    def __init__(self) -> None:
+        self._config: Config = Config("mechanics.json")
+        self._pin_interface: PinInterface = PinInterface.global_instance()
 
-    def dock(self):
+    def dock(self) -> None:
         if not self._pin_interface.docked:
             LOG.debug("Docking...")
             self._pin_interface.stepper_driver_on()
@@ -27,7 +27,7 @@ class Mechanics:
         else:
             LOG.debug("Already docked")
 
-    def undock(self):
+    def undock(self) -> None:
         if not self._pin_interface.undocked:
             LOG.debug("Undocking...")
             self._pin_interface.stepper_driver_on()
@@ -41,12 +41,12 @@ class Mechanics:
         else:
             LOG.debug("Already undocked")
 
-    def _check_for_timeout(self, time_start):
+    def _check_for_timeout(self, time_start: float) -> None:
         diff_time = time() - time_start
         if diff_time > self._config.maximum_docking_time:
             self._pin_interface.stepper_driver_off()
             raise DockingError("Maximum Docking Time exceeded: {}".format(diff_time))
 
     @property
-    def docked(self):
+    def docked(self) -> bool:
         return self._pin_interface.docked

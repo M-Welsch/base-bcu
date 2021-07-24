@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 from subprocess import PIPE, STDOUT, Popen, SubprocessError, TimeoutExpired
+from typing import IO, Optional
 
 from base.common.config import Config
 from base.common.logger import LoggerFactory
@@ -8,7 +9,7 @@ from base.common.logger import LoggerFactory
 LOG = LoggerFactory.get_logger(__name__)
 
 
-def dump_ifconfig():
+def dump_ifconfig() -> None:
     logs_directory = Config("base.json").logs_directory
     filename = Path(logs_directory) / datetime.now().strftime("ifconfig_%Y-%m-%d_%H-%M-%S.log")
     command = f"ifconfig > {filename}"
@@ -17,7 +18,7 @@ def dump_ifconfig():
     LOG.debug(f"Dumped ifconfig into {filename}")
 
 
-def copy_logfiles_to_nas():
+def copy_logfiles_to_nas() -> None:
     try:
         config_debug = Config("debug.json")
         local_log_directory = Path("/home/base") / Path(Config("base.json").logs_directory)
@@ -36,8 +37,9 @@ def copy_logfiles_to_nas():
         LOG.warning(f"some unexprected error happend during copying the logfiles to nas: {e}")
 
 
-def _run_external_command_as_generator_shell(command, timeout=None):
+def _run_external_command_as_generator_shell(command: str, timeout: int = None) -> IO[str]:
     p = Popen(command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=STDOUT)
     if timeout:
         p.communicate(timeout=timeout)
+    assert p.stdout is not None
     return p.stdout

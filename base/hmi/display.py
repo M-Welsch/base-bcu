@@ -1,12 +1,13 @@
 from base.common.config import Config
-from base.deprecated.hwctrl import HWCTRL
+from base.hardware.hardware import Hardware
+from base.hardware.pin_interface import PinInterface
 
 
 class Display:
-    def __init__(self, sbu_communicator):
-        self._hwctrl = HWCTRL.global_instance()
-        self._pin_interface = self._hwctrl._pin_interface
-        self._hw_rev = self._hwctrl.get_hw_revision()
+    def __init__(self, hardware: Hardware, sbu_communicator) -> None:
+        self._hardware = hardware
+        self._pin_interface = PinInterface.global_instance()
+        self._hw_rev = self._hardware.get_hw_revision()
         self._sbu_communicator = sbu_communicator
         self._config = Config.global_instance()
         self._lcd = self._init_display_rev2()

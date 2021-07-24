@@ -1,10 +1,10 @@
-import glob
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from re import findall
 from subprocess import PIPE, Popen
 from time import sleep, time
-from typing import List, Union
+from typing import Generator, Optional, Tuple
 
 import serial
 
@@ -62,61 +62,63 @@ class SbuCommands:
 
 
 class SBU:
-    def __init__(self):
-        self._config = Config("sbu.json")
-        self._pin_interface = PinInterface.global_instance()
-        self._serial_connection = None
+    def __init__(self) -> None:
+        self._config: Config = Config("sbu.json")
+        self._pin_interface: PinInterface = PinInterface.global_instance()
+        self._serial_connection: Optional[serial.Serial] = None
         self._init_serial_interface()
 
-    def _init_serial_interface(self):
+    def _init_serial_interface(self) -> None:
         self._connect_serial_communication_path()
         self._prepare_serial_connection()
         self._open_serial_connection()
 
-    def _connect_serial_communication_path(self):
+    def _connect_serial_communication_path(self) -> None:
         self._pin_interface.set_sbu_serial_path_to_communication()
         self._pin_interface.enable_receiving_messages_from_sbu()
 
-    def _prepare_serial_connection(self):
+    def _prepare_serial_connection(self) -> None:
         self._serial_connection = serial.Serial()
         self._serial_connection.baudrate = 9600
         self._serial_connection.timeout = 1
 
-    def _open_serial_connection(self):
+    def _open_serial_connection(self) -> None:
         sbu_uart_interface = SbuUartFinder().get_sbu_uart_interface()
         if sbu_uart_interface is None:
             LOG.warning("WARNING! Serial port to SBC could not found! Display and buttons will not work!")
         else:
             LOG.info(f"SBU answered on {sbu_uart_interface}")
+            assert isinstance(self._serial_connection, serial.Serial)
             self._serial_connection.port = sbu_uart_interface
             self._serial_connection.open()
             self._flush_sbu_channel()
             self._channel_busy = False
             self._sbu_ready = True
 
-    def close_serial_connection(self):
+    def close_serial_connection(self) -> None:
         LOG.info("SBU Communicator is terminating. So long and thanks for all the bytes!")
-        self._serial_connection.close()
+        if self._serial_connection is not None:
+            self._serial_connection.close()
         self._pin_interface.disable_receiving_messages_from_sbu()
 
-    def _flush_sbu_channel(self):
+    def _flush_sbu_channel(self) -> None:
         self._send_message_to_sbu("\0")
 
-    def _process_command(self, command: SbuCommand, payload=""):
+    def _process_command(self, command: SbuCommand, payload: str = "") -> Optional[str]:
         log_message = ""
-        sbu_response = None
+        sbu_response: Optional[str] = None
         self._wait_for_channel_free()
         self._channel_busy = True
         try:
             self._send_message_to_sbu(f"{command.message_code}:{payload}")
             if command.await_acknowledge:
-                [acknowledge_delay, _] = self._await_acknowledge(command.message_code)
+                acknowledge_delay, _ = self._await_acknowledge(command.message_code)
                 log_message = f"{command.message_code} with payload {payload} acknowledged after {acknowledge_delay}s"
             if command.await_response:
-                [response_delay, sbu_response] = self._wait_for_response(command.response_keyword)
+                response_delay, sbu_response = self._wait_for_response(command.response_keyword)
                 log_message += f", special string received after {response_delay}"
             if command.await_ready_signal:
-                [ready_delay, _] = self._wait_for_sbu_ready()
+                ready_delay, _ = self._wait_for_sbu_ready()
                 log_message += f", ready after {ready_delay}"
             # LOG.info(log_message)
         except SbuCommunicationTimeout as e:
@@ -127,7 +129,7 @@ class SBU:
                 self._channel_busy = False
         return sbu_response
 
-    def _wait_for_channel_free(self):
+    def _wait_for_channel_free(self) -> None:
         time_start = time()
         while self._channel_busy or not self._sbu_ready:
             sleep(0.05)
@@ -136,17 +138,17 @@ class SBU:
                     f"Waiting for longer than {self._config.wait_for_channel_free_timeout} " f"for channel to be free."
                 )
 
-    def _send_message_to_sbu(self, message):
+    def _send_message_to_sbu(self, message: str) -> None:
         message = message + "\0"
         self._serial_connection.write(message.encode())
 
-    def _await_acknowledge(self, message_code) -> List[Union[float, str]]:
+    def _await_acknowledge(self, message_code: str) -> Tuple[float, str]:
         return self._wait_for_response(f"ACK:{message_code}")
 
-    def _wait_for_sbu_ready(self):
+    def _wait_for_sbu_ready(self) -> Tuple[float, str]:
         return self._wait_for_response(f"Ready")
 
-    def _wait_for_response(self, response) -> List[Union[float, str]]:
+    def _wait_for_response(self, response: str) -> Tuple[float, str]:
         time_start = time()
         while True:
             time_diff = time() - time_start
@@ -155,25 +157,25 @@ class SBU:
                 break
             if time_diff > self._config.sbu_response_timeout:
                 raise SbuCommunicationTimeout(f"waiting for {response} took {time_diff}")
-        return [time_diff, tmp]
+        return time_diff, tmp
 
-    def write_to_display(self, line1, line2):
+    def write_to_display(self, line1: str, line2: str) -> None:
         self.check_display_line_for_length(line1)
         self.check_display_line_for_length(line2)
         self._process_command(SbuCommands.write_to_display_line1, line1[:16])
         self._process_command(SbuCommands.write_to_display_line2, line2[:16])
 
     @staticmethod
-    def check_display_line_for_length(line):
+    def check_display_line_for_length(line: str) -> None:
         if len(line) > 16:
             LOG.warning(f"Display string {line} is too long!")
 
-    def set_display_brightness_percent(self, display_brightness_in_percent):
+    def set_display_brightness_percent(self, display_brightness_in_percent: float) -> None:
         self._process_command(
             SbuCommands.set_display_brightness, self._condition_brightness_value(display_brightness_in_percent)
         )
 
-    def set_led_brightness_percent(self, led_brightness_in_percent):
+    def set_led_brightness_percent(self, led_brightness_in_percent: float) -> None:
         self._process_command(
             SbuCommands.set_led_brightness, self._condition_brightness_value(led_brightness_in_percent)
         )
@@ -251,8 +253,8 @@ class SbuUartFinder:
         return uart_sbu
 
     @staticmethod
-    def _get_available_uart_interfaces() -> list:
-        return glob.glob("/dev/ttyS*")
+    def _get_available_uart_interfaces() -> Generator[Path, None, None]:
+        return Path("/dev").glob("ttyS*")
 
     def _test_uart_interfaces_for_echo(self, uart_interfaces):
         sbu_uart_interface = None
@@ -285,10 +287,10 @@ class SbuUartFinder:
 
 class SbuUpdater:
     # Todo: cleanup
-    def __init__(self):
-        self._pin_interface = PinInterface.global_instance()
+    def __init__(self) -> None:
+        self._pin_interface: PinInterface = PinInterface.global_instance()
 
-    def update(self, sbu_fw_filename=""):
+    def update(self, sbu_fw_filename: Optional[Path] = None) -> None:
         self._pin_interface.set_sbu_serial_path_to_communication()
         self._pin_interface.enable_receiving_messages_from_sbu()
         sbu_uart_channel = self._get_sbu_uart_channel()
@@ -296,33 +298,35 @@ class SbuUpdater:
             LOG.warning("SBU didn't respond on any UART Interface. Defaulting to /dev/ttyS1")
             sbu_uart_channel = "/dev/ttyS1"
         self._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
-        if not sbu_fw_filename:
+        if sbu_fw_filename is None:
             sbu_fw_filename = self._get_filename_of_newest_hex_file()
         self._execute_sbu_update(sbu_fw_filename, sbu_uart_channel)
 
-    def _execute_sbu_update(self, sbu_fw_filename, sbu_uart_channel):
+    def _execute_sbu_update(self, sbu_fw_filename: Path, sbu_uart_channel: str) -> None:
         sbu_update_command = f'sudo su - base -c "pyupdi -d tiny816 -c {sbu_uart_channel} -f {sbu_fw_filename}"'
         try:
             process = Popen(
                 sbu_update_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE
             )
-            for line in process.stdout:
-                LOG.info(line)
-            if process.stderr:
-                LOG.error(process.stderr)
+            if process.stdout is not None:
+                for line in process.stdout:
+                    LOG.info(line)
+            if process.stderr is not None:
+                if process.stderr:
+                    LOG.error(process.stderr)
         finally:
             self._pin_interface.set_sbu_serial_path_to_communication()
 
     @staticmethod
-    def _get_sbu_uart_channel():
+    def _get_sbu_uart_channel() -> str:
         sbu_uart_channel = SbuUartFinder().get_sbu_uart_interface()
         if not sbu_uart_channel:
             sbu_uart_channel = "/dev/ttyS1"
         return sbu_uart_channel
 
     @staticmethod
-    def _get_filename_of_newest_hex_file():
-        list_of_sbc_fw_files = glob.glob("/home/base/python.base/sbu_fw_files/*")
+    def _get_filename_of_newest_hex_file() -> Path:
+        list_of_sbc_fw_files = Path("/home/base/python.base/sbu_fw_files/").glob("*")
         latest_sbc_fw_file = max(list_of_sbc_fw_files, key=os.path.getctime)
         return latest_sbc_fw_file
 

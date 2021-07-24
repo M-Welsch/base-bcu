@@ -1,12 +1,13 @@
-from time import sleep
+from abc import ABC
+from typing import Callable
 
 
 class Display:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @staticmethod
-    def write(line1, line2):
+    def write(line1: str, line2: str) -> None:
         max_chars = max(len(line1), len(line2))
         line1 = line1.ljust(max_chars, " ")
         line2 = line2.ljust(max_chars, " ")
@@ -23,48 +24,48 @@ class Display:
         print(top_and_bottom_border)
 
 
-class Menu:
-    def __init__(self, set_current_menu):
-        self._set_current_menu = set_current_menu
+class Menu(ABC):
+    def __init__(self, set_current_menu: Callable) -> None:
+        self._set_current_menu: Callable = set_current_menu
 
 
 class MainMenu(Menu):
-    def button0_action(self):
-        print(f"executing button action 0 for {self.__class__.__name__}")
-        self._set_current_menu("DisplayStatusMenu")
-
-    def button1_action(self):
-        print(f"executing button action 1 for {self.__class__.__name__}")
-
     display_line1 = "Display Status >"
     display_line2 = "Actions        >"
 
+    def button0_action(self) -> None:
+        print(f"executing button action 0 for {self.__class__.__name__}")
+        self._set_current_menu("DisplayStatusMenu")
+
+    def button1_action(self) -> None:
+        print(f"executing button action 1 for {self.__class__.__name__}")
+
 
 class DisplayStatusMenu(Menu):
-    def button0_action(self):
-        print(f"executing button action 0 for {self.__class__.__name__}")
-
-    def button1_action(self):
-        print(f"executing button action 1 for {self.__class__.__name__}")
-        self._set_current_menu("MainMenu")
-
     display_line1 = "Status: blabla"
     display_line2 = "          back >"
 
+    def button0_action(self) -> None:
+        print(f"executing button action 0 for {self.__class__.__name__}")
+
+    def button1_action(self) -> None:
+        print(f"executing button action 1 for {self.__class__.__name__}")
+        self._set_current_menu("MainMenu")
+
 
 class HmInterface:
-    def __init__(self):
-        self._display = Display()
-        self._exitflag = False
-        self._current_menu = "MainMenu"
+    def __init__(self) -> None:
+        self._display: Display = Display()
+        self._exitflag: bool = False
+        self._current_menu: str = "MainMenu"
         print(f"id von self._current_menu in Hauptklasse: {id(self._current_menu)}")
-        self._mm = MainMenu(self.set_current_menu)
-        self._dsm = DisplayStatusMenu(self.set_current_menu)
+        self._mm: MainMenu = MainMenu(self.set_current_menu)
+        self._dsm: DisplayStatusMenu = DisplayStatusMenu(self.set_current_menu)
 
-    def set_current_menu(self, menu):
+    def set_current_menu(self, menu: str) -> None:
         self._current_menu = menu
 
-    def mainloop(self):
+    def mainloop(self) -> None:
         while not self._exitflag:
             print(f"current menu: {self._current_menu}. ID: {id(self._current_menu)}")
             if self._current_menu == "MainMenu":
@@ -74,7 +75,7 @@ class HmInterface:
             user_input = input("Taste [0,1,q]: ")
             self._handle_user_input(user_input)
 
-    def _handle_user_input(self, user_input):
+    def _handle_user_input(self, user_input: str) -> None:
         if user_input == "q":
             self._exitflag = True
         elif user_input == "0":

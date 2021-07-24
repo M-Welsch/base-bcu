@@ -17,7 +17,7 @@ class Config(dict):
     config_changed = Signal()
     base_path = Path("base/config/")
 
-    def __init__(self, config_file_name: str, read_only: bool = True, *args, **kwargs):
+    def __init__(self, config_file_name: str, read_only: bool = True, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._read_only: bool = read_only
         self._config_path: Path = self.base_path / config_file_name
@@ -29,7 +29,7 @@ class Config(dict):
     def set_config_base_path(cls, base_dir: Path) -> None:
         cls.base_path = base_dir
 
-    def reload(self, **kwargs):
+    def reload(self, **kwargs):  # type: ignore
         LOG.info(f"reloading config: {self._config_path}")
         with open(self._config_path, "r") as jf:
             self.update(json.load(jf))
@@ -38,7 +38,7 @@ class Config(dict):
         with open(self._config_path, "w") as jf:
             json.dump(self, jf)
 
-    def assert_keys(self, keys: Set[str]):
+    def assert_keys(self, keys: Set[str]) -> None:
         missing_keys = keys - set(self.keys())
         if missing_keys:
             raise ConfigValidationError(f"Keys {missing_keys} are missing in {self._config_path}.")

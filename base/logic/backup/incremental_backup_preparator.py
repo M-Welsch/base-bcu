@@ -16,11 +16,11 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class IncrementalBackupPreparator:
-    def __init__(self, backup_browser) -> None:
+    def __init__(self, backup_browser: BackupBrowser) -> None:
         self._backup_browser: BackupBrowser = backup_browser
-        self._config_nas = Config("nas.json")
-        self._config_sync = Config("sync.json")
-        self._new_backup_folder = None
+        self._config_nas: Config = Config("nas.json")
+        self._config_sync: Config = Config("sync.json")
+        self._new_backup_folder: Optional[Path] = None
 
     def prepare(self) -> Tuple[Path, Path]:
         self._free_space_on_backup_hdd_if_necessary()
@@ -44,16 +44,17 @@ class IncrementalBackupPreparator:
         command = ["df", "--output=avail", self._config_sync.local_backup_target_location]
         LOG.info(f"obtaining free space on bu hdd with command: {command}")
         out = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
+        assert out.stdout is not None
         free_space_on_bu_hdd = self._remove_heading_from_df_output(out.stdout)
         return free_space_on_bu_hdd
 
     @staticmethod
-    def _remove_heading_from_df_output(df_output: Optional[IO[str]]) -> int:
-        df_output_cleaned = ""
+    def _remove_heading_from_df_output(df_output: IO[str]) -> int:
+        df_output_cleaned = 0
         for line in df_output:
             if not line.strip() == "Avail":
                 df_output_cleaned = int(line.strip())
-        return int(df_output_cleaned)
+        return df_output_cleaned
 
     def space_occupied_on_nas_hdd(self) -> int:
         with SSHInterface() as ssh:
@@ -123,10 +124,12 @@ class IncrementalBackupPreparator:
         LOG.info(f"copy command: {copy_command}")
         p = Popen(copy_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         # p.communicate(timeout=10)
-        for line in p.stdout:
-            LOG.debug(f"copying with hl: {line}")
-        for line in p.stderr:
-            LOG.warning(line)
+        if p.stdout is not None:
+            for line in p.stdout:
+                LOG.debug(f"copying with hl: {line}")
+        if p.stderr is not None:
+            for line in p.stderr:
+                LOG.warning(line)
 
     def _rename_bu_directory_to_new_timestamp(self) -> None:
         newest_existing_bu_dir = self._newest_backup_dir_path()

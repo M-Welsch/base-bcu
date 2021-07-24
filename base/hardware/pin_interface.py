@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from time import sleep
+from typing import Optional
 
 try:
     import RPi.GPIO as GPIO
@@ -10,19 +11,22 @@ except ImportError:
 
 
 class PinInterface:
-    __instance = None
+    __instance: Optional[PinInterface] = None
 
     @classmethod
     def global_instance(cls) -> PinInterface:
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
             GPIO.setmode(GPIO.BOARD)
+        assert isinstance(cls.__instance, PinInterface)
         # this kind of disables the ramp. It sounds best ...
         cls.__instance.step_interval_initial = cls.__instance.step_interval = 0.0005
         cls.__instance._initialize_pins()
         return cls.__instance
 
     def __init__(self) -> None:
+        self.step_interval: float
+        self.step_interval_initial: float
         raise Exception("This class is a singleton. Use global_instance() instead!")
 
     def _initialize_pins(self) -> None:

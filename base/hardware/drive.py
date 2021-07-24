@@ -1,9 +1,11 @@
 from os import path
 from subprocess import PIPE, Popen, run
 from time import sleep
+from typing import Optional
+from typing.io import IO
 
 from base.common.config import Config
-from base.common.drive_inspector import DriveInspector
+from base.common.drive_inspector import DriveInspector, PartitionInfo
 from base.common.exceptions import ExternalCommandError, MountingError, UnmountError
 from base.common.file_system import FileSystemWatcher
 from base.common.logger import LoggerFactory
@@ -15,16 +17,16 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Drive:
     def __init__(self, backup_browser: BackupBrowser):
-        self._backup_browser = backup_browser
-        self._config = Config("drive.json")
-        self._partition_info = None
-        self._available = HddState.unknown
+        self._backup_browser: BackupBrowser = backup_browser
+        self._config: Config = Config("drive.json")
+        self._partition_info: Optional[PartitionInfo] = None
+        self._available: HddState = HddState.unknown
 
     @property
-    def backup_hdd_device_info(self):
+    def backup_hdd_device_info(self) -> PartitionInfo:
         return self._partition_info
 
-    def mount(self):
+    def mount(self) -> None:
         LOG.debug("Mounting drive")
         file_system_watcher = FileSystemWatcher(self._config.backup_hdd_spinup_timeout)
         file_system_watcher.add_watches(["/dev"])
@@ -52,7 +54,7 @@ class Drive:
         self._backup_browser.update_backup_list()
         self._available = HddState.available
 
-    def unmount(self):
+    def unmount(self) -> None:
         try:
             LOG.debug("Unmounting drive")
             self._unmount_backup_hdd()
@@ -70,7 +72,7 @@ class Drive:
         return self._available
 
     # Todo: cleanup this mess
-    def _unmount_backup_hdd(self):
+    def _unmount_backup_hdd(self) -> None:
         LOG.debug("Trying to unmount backup HDD...")
         command = ["sudo", "umount", self._config.backup_hdd_mount_point]
         unmount_trials = 0
@@ -99,8 +101,9 @@ class Drive:
             command = ["df", "--output=pcent", mount_point]
             LOG.debug(f"obtaining space used on bu hdd with command: {command}")
             try:
-                out = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
-                space_used = float(self._remove_heading_from_df_output(out.stdout))
+                proc = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
+                assert proc.stdout is not None
+                space_used = float(self._remove_heading_from_df_output(proc.stdout))
                 # LOG.info(f"Space used on Backup HDD: {space_used}%")
             except ValueError:
                 LOG.debug(f"Value Error during 'space_used_percent' with command {command}")
@@ -120,7 +123,7 @@ class Drive:
         return 0
 
     @staticmethod
-    def _remove_heading_from_df_output(df_output) -> str:
+    def _remove_heading_from_df_output(df_output: IO[str]) -> str:
         return [item.split("%")[0] for item in df_output if not item.strip() == "Use%"][0]
 
 

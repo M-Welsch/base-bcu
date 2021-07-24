@@ -5,7 +5,7 @@ from dateutil.rrule import DAILY, MONTHLY, WEEKLY, rrule
 
 from base.common.config import Config
 
-_Plan = namedtuple("Plan", "frequency monthday weekday hour minute second")
+_Plan = namedtuple("_Plan", "frequency monthday weekday hour minute second")
 
 
 class TimeCalculator:
@@ -13,7 +13,7 @@ class TimeCalculator:
 
     def next_backup(self, config: Config) -> datetime:
         plan = self._plan_from_config(config)
-        return next(
+        next_backup_time: datetime = next(
             iter(
                 rrule(
                     freq=plan.frequency,
@@ -25,6 +25,7 @@ class TimeCalculator:
                 )
             )
         )
+        return next_backup_time
 
     def next_backup_timestring(self, config: Config) -> str:
         dt = self.next_backup(config)

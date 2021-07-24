@@ -8,33 +8,34 @@ from base.hardware.hmi import HMI
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
 from base.hardware.sbu import SBU
+from base.logic.backup.backup_browser import BackupBrowser
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
 class Hardware:
-    def __init__(self, backup_browser):
-        self._config = Config("hardware.json")
-        self._mechanics = Mechanics()
-        self._power = Power()
-        self._hmi = HMI()
-        self._sbu = SBU()
-        self._drive = Drive(backup_browser)
+    def __init__(self, backup_browser: BackupBrowser) -> None:
+        self._config: Config = Config("hardware.json")
+        self._mechanics: Mechanics = Mechanics()
+        self._power: Power = Power()
+        self._hmi: HMI = HMI()
+        self._sbu: SBU = SBU()
+        self._drive: Drive = Drive(backup_browser)
 
-    def engage(self, **kwargs):
+    def engage(self, **kwargs):  # type: ignore
         LOG.debug("engaging hardware")
         self._mechanics.dock()
         self._power.hdd_power_on()
         self._drive.mount()
 
-    def disengage(self, **kwargs):
+    def disengage(self, **kwargs):  # type: ignore
         LOG.debug("disengaging hardware")
         self._drive.unmount()
         self._power.hdd_power_off()
         sleep(self._config.hdd_spindown_time)
         self._mechanics.undock()
 
-    def prepare_sbu_for_shutdown(self, timestamp, seconds):
+    def prepare_sbu_for_shutdown(self, timestamp: str, seconds: int) -> None:
         self._sbu.send_readable_timestamp(timestamp)
         self._sbu.send_seconds_to_next_bu(seconds)
         self._sbu.request_shutdown()
@@ -55,32 +56,32 @@ class Hardware:
     def drive_space_used(self) -> float:
         return self._drive.space_used_percent()
 
-    def power(self):
+    def power(self) -> None:
         self._power.hdd_power_on()
 
     @property
     def powered(self) -> bool:
         return self.docked and self._sbu.measure_base_input_current() > 0.3
 
-    def unpower(self):
+    def unpower(self) -> None:
         self._power.hdd_power_off()
 
-    def dock(self):
+    def dock(self) -> None:
         self._mechanics.dock()
 
-    def undock(self):
+    def undock(self) -> None:
         self._mechanics.undock()
 
-    def mount(self):
+    def mount(self) -> None:
         self._drive.mount()
 
-    def unmount(self):
+    def unmount(self) -> None:
         self._drive.unmount()
 
-    def set_display_brightness(self, brightness, **kwargs):
+    def set_display_brightness(self, brightness, **kwargs):  # type: ignore
         self._sbu.set_display_brightness_percent(brightness)
 
-    def write_to_display(self, text, **kwargs):
+    def write_to_display(self, text, **kwargs):  # type: ignore
         self._sbu.write_to_display(text[:16], text[16:])
 
     @property

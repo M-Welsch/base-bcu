@@ -9,7 +9,7 @@ from base.common.exceptions import BackupRequestError, NasNotMountedError
 from base.logic.backup.backup import Backup
 
 
-def false():
+def false() -> bool:
     return False
 
 
@@ -42,5 +42,5 @@ def backup(tmpdir):
 
 
 @pytest.mark.skip("not functional if source location is on local machine")
-def test_backup(backup):
+def test_backup(backup) -> None:
     backup.on_backup_request()
