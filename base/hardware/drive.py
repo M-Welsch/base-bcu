@@ -1,7 +1,7 @@
 from os import path
 from subprocess import PIPE, Popen, run
 from time import sleep
-from typing import Optional
+from typing import List, Optional
 from typing.io import IO
 
 from base.common.config import Config
@@ -23,7 +23,7 @@ class Drive:
         self._available: HddState = HddState.unknown
 
     @property
-    def backup_hdd_device_info(self) -> PartitionInfo:
+    def backup_hdd_device_info(self) -> Optional[PartitionInfo]:
         return self._partition_info
 
     def mount(self) -> None:
@@ -39,9 +39,9 @@ class Drive:
             command = [
                 "mount",
                 "-t",
-                self._config.backup_hdd_file_system,
-                self._partition_info.path,
-                self._config.backup_hdd_mount_point,
+                str(self._config.backup_hdd_file_system),
+                str(self._partition_info.path),
+                str(self._config.backup_hdd_mount_point),
             ]
             try:
                 LOG.debug(command)
@@ -127,7 +127,7 @@ class Drive:
         return [item.split("%")[0] for item in df_output if not item.strip() == "Use%"][0]
 
 
-def run_external_command(command):
+def run_external_command(command: List[str]) -> None:
     cp = run(command, stdout=PIPE, stderr=PIPE)
     if cp.stderr:
         raise ExternalCommandError(cp.stderr)

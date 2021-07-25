@@ -1,5 +1,6 @@
 import asyncio
 import json
+from pathlib import Path
 from threading import Thread
 from typing import Optional, Set
 
@@ -35,7 +36,7 @@ class WebappServer(Thread):
     def on_status(self, status, **kwargs):  # type: ignore
         print(status)
 
-    async def echo(self, websocket, path):
+    async def echo(self, websocket: websockets.WebSocketServer, path: Path) -> None:
         try:
             message = await websocket.recv()
             print(f"< {message}")

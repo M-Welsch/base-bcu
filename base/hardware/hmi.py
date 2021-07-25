@@ -3,7 +3,7 @@ from base.hardware.display import Display
 
 
 class HMI:
-    def __init__(self):
+    def __init__(self) -> None:
         self._display = Display()
         self._button_0 = Button()
         self._button_1 = Button()

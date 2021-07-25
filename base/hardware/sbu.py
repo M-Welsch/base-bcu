@@ -181,7 +181,7 @@ class SBU:
         )
 
     @staticmethod
-    def _condition_brightness_value(brightness_in_percent):
+    def _condition_brightness_value(brightness_in_percent: float) -> int:
         brightness_16bit = int(brightness_in_percent / 100 * 65535)
         maximum_brightness = 65535  # 16bit
         if brightness_16bit > maximum_brightness:
@@ -195,7 +195,7 @@ class SBU:
             brightness_16bit = 0
         return brightness_16bit
 
-    def send_seconds_to_next_bu(self, seconds):
+    def send_seconds_to_next_bu(self, seconds: int) -> None:
         command = SbuCommands.set_seconds_to_next_bu
         payload = int(seconds)
         LOG.info(f"Command: message_code = {command.message_code}, payload = {payload}")
@@ -204,7 +204,7 @@ class SBU:
         LOG.info(f"value_in_cmp_register: {value_in_cmp_register}, derived from {assertion_message}")
         assert value_in_cmp_register == int(seconds / 32)
 
-    def send_readable_timestamp(self, timestamp):
+    def send_readable_timestamp(self, timestamp: str) -> None:
         self._process_command(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
 
     def measure_base_input_current(self) -> float:
@@ -216,14 +216,15 @@ class SBU:
     def measure_sbu_temperature(self) -> float:
         return self._measure(SbuCommands.measure_temperature)
 
-    def _measure(self, command: SbuCommand) -> float:
+    def _measure(self, command: SbuCommand) -> Optional[float]:
         response = self._process_command(command)
         # LOG.debug(f"response is {response}")
         response_16bit_value = int(findall(r"[0-9]+", response[2:])[0])
         return self._convert_measurement_result(command, response_16bit_value)
 
     @staticmethod
-    def _convert_measurement_result(command: SbuCommand, raw_value: int) -> float:
+    def _convert_measurement_result(command: SbuCommand, raw_value: int) -> Optional[float]:
+        converted_value: Optional[float]
         if command.message_code == "CC":
             converted_value = raw_value * 0.00234
         elif command.message_code == "3V":
@@ -235,15 +236,15 @@ class SBU:
             converted_value = None
         return converted_value
 
-    def request_shutdown(self):
+    def request_shutdown(self) -> None:
         self._process_command(SbuCommands.request_shutdown)
 
-    def abort_shutdown(self):
+    def abort_shutdown(self) -> None:
         self._process_command(SbuCommands.abort_shutdown)
 
 
 class SbuUartFinder:
-    def get_sbu_uart_interface(self) -> str:
+    def get_sbu_uart_interface(self) -> Optional[Path]:
         uart_interfaces = self._get_available_uart_interfaces()
         uart_sbu = self._test_uart_interfaces_for_echo(uart_interfaces)
         if uart_sbu:
@@ -256,7 +257,7 @@ class SbuUartFinder:
     def _get_available_uart_interfaces() -> Generator[Path, None, None]:
         return Path("/dev").glob("ttyS*")
 
-    def _test_uart_interfaces_for_echo(self, uart_interfaces):
+    def _test_uart_interfaces_for_echo(self, uart_interfaces: Generator[Path, None, None]) -> Optional[Path]:
         sbu_uart_interface = None
         for uart_interface in uart_interfaces:
             if self._test_uart_interface_for_echo(uart_interface):
@@ -265,7 +266,7 @@ class SbuUartFinder:
         return sbu_uart_interface
 
     @staticmethod
-    def _test_uart_interface_for_echo(uart_interface) -> bool:
+    def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
         try:
             response = SbuUartFinder._challenge_interface(uart_interface)
         except serial.SerialException:
@@ -274,7 +275,7 @@ class SbuUartFinder:
             return response.endswith(b"Echo")
 
     @staticmethod
-    def _challenge_interface(uart_interface) -> bytes:
+    def _challenge_interface(uart_interface: Path) -> bytes:
         with serial.Serial(uart_interface, 9600, timeout=1) as ser:
             ser.reset_input_buffer()
             ser.write(b"\0")
@@ -296,13 +297,13 @@ class SbuUpdater:
         sbu_uart_channel = self._get_sbu_uart_channel()
         if sbu_uart_channel is None:
             LOG.warning("SBU didn't respond on any UART Interface. Defaulting to /dev/ttyS1")
-            sbu_uart_channel = "/dev/ttyS1"
+            sbu_uart_channel = Path("/dev/ttyS1")
         self._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
         if sbu_fw_filename is None:
             sbu_fw_filename = self._get_filename_of_newest_hex_file()
         self._execute_sbu_update(sbu_fw_filename, sbu_uart_channel)
 
-    def _execute_sbu_update(self, sbu_fw_filename: Path, sbu_uart_channel: str) -> None:
+    def _execute_sbu_update(self, sbu_fw_filename: Path, sbu_uart_channel: Path) -> None:
         sbu_update_command = f'sudo su - base -c "pyupdi -d tiny816 -c {sbu_uart_channel} -f {sbu_fw_filename}"'
         try:
             process = Popen(
@@ -318,10 +319,10 @@ class SbuUpdater:
             self._pin_interface.set_sbu_serial_path_to_communication()
 
     @staticmethod
-    def _get_sbu_uart_channel() -> str:
+    def _get_sbu_uart_channel() -> Path:
         sbu_uart_channel = SbuUartFinder().get_sbu_uart_interface()
         if not sbu_uart_channel:
-            sbu_uart_channel = "/dev/ttyS1"
+            sbu_uart_channel = Path("/dev/ttyS1")
         return sbu_uart_channel
 
     @staticmethod

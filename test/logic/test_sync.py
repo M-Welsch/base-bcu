@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from time import sleep
+from typing import Any, Generator
 
 import pytest
 
@@ -15,7 +16,7 @@ from base.common.config import Config
 from base.logic.backup.sync import RsyncWrapperThread
 
 
-def update_conf(file_path, updates):
+def update_conf(file_path: Path, updates: Any) -> None:
     with open(file_path, "r") as src:
         obj = json.load(src)
     obj.update(updates)
@@ -24,7 +25,7 @@ def update_conf(file_path, updates):
 
 
 @pytest.fixture
-def sync_smb(tmpdir_factory, configure_logger):
+def sync_smb(tmpdir_factory, configure_logger) -> Generator[RsyncWrapperThread, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
@@ -43,7 +44,7 @@ def sync_smb(tmpdir_factory, configure_logger):
 
 
 @pytest.fixture
-def sync_ssh(tmpdir_factory, configure_logger):
+def sync_ssh(tmpdir_factory, configure_logger) -> Generator[RsyncWrapperThread, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
@@ -62,12 +63,12 @@ def sync_ssh(tmpdir_factory, configure_logger):
     yield RsyncWrapperThread(backup_target_location, backup_source_location)
 
 
-def test_sync_smb(sync_smb):
+def test_sync_smb(sync_smb: RsyncWrapperThread) -> None:
     sync_smb.start()
     sleep(2)
 
 
-def test_sync_ssh(sync_ssh):
+def test_sync_ssh(sync_smb: RsyncWrapperThread) -> None:
     print(
         "for this test to work you have to enable ssh access to yourself by "
         "'sudo ssh-copy-id -i ~/.ssh/id_rsa.pub base@192.168.0.61'. Replace the ip-address with yours."

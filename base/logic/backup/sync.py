@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 import os
 import re
 import signal
+import subprocess
 from pathlib import Path
 from subprocess import PIPE, STDOUT, Popen
 from threading import Thread
+from types import TracebackType
+from typing import Generator, List, Optional, Type
 
 from signalslot import Signal
 
@@ -41,45 +46,24 @@ class Patterns:
     dir_not_found = re.compile(r'rsync: link_stat "' + _path + r'" failed: No such file or directory (2)')
 
 
-def parse_line_to_status(line, status):
-    if not line:
-        pass
-    elif line == "receiving incremental file list":
-        pass
-    elif re.fullmatch(Patterns.file_stats, line):
-        status.progress = float(re.search(Patterns.percentage, line)[0][:-1]) / 100
-    elif re.fullmatch(Patterns.end_stats_a, line):
-        status.path = ""
-    elif re.fullmatch(Patterns.end_stats_b, line):
-        status.finished = True
-    elif re.fullmatch(Patterns.path, line):
-        status.path = line
-    elif re.fullmatch(Patterns.dir_not_found, line):
-        status.finished = True
-        status.error = True
-    else:
-        pass
-    return status
-
-
 class SshRsync:
     class SyncStatus:
-        def __init__(self, path="", progress=0.0):
-            self.path = path
-            self.progress = progress
-            self.finished = False
-            self.error = False
+        def __init__(self, path: Path = Path(), progress: float = 0.0) -> None:
+            self.path: Path = path
+            self.progress: float = progress
+            self.finished: bool = False
+            self.error: bool = False
 
-        def __str__(self):
+        def __str__(self) -> str:
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
-    def __init__(self, local_target_location, source_location):
-        self._local_target_location = local_target_location
-        self._command = self._compose_rsync_command(local_target_location, source_location)
-        self._process = None
-        self._status = self.SyncStatus()
+    def __init__(self, local_target_location: Path, source_location: Path) -> None:
+        self._local_target_location: Path = local_target_location
+        self._command: List[str] = self._compose_rsync_command(local_target_location, source_location)
+        self._process: Optional[subprocess.Popen] = None
+        self._status: SshRsync.SyncStatus = self.SyncStatus()
 
-    def __enter__(self):
+    def __enter__(self) -> Generator[SshRsync.SyncStatus, None, None]:
         self._process = Popen(
             self._command,
             bufsize=0,
@@ -91,14 +75,19 @@ class SshRsync:
         )
         return self._output_generator()
 
-    def __exit__(self, *args):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        exc_traceback: Optional[TracebackType],
+    ) -> None:
         try:
             self.terminate()
         except ProcessLookupError:
             pass
 
     @staticmethod
-    def _compose_rsync_command(local_target_location: Path, source_location: Path) -> list:
+    def _compose_rsync_command(local_target_location: Path, source_location: Path) -> List[str]:
         sync_config = Config("sync.json")
         nas_config = Config("nas.json")
         host = nas_config.ssh_host
@@ -115,7 +104,8 @@ class SshRsync:
         LOG.info(f"About to sync with: {command}")
         return command
 
-    def _output_generator(self):
+    def _output_generator(self) -> Generator[SshRsync.SyncStatus, None, None]:
+        assert isinstance(self._process, subprocess.Popen)
         while True:
             line = self._process.stdout.readline()
             # LOG.debug(f"line: {line}")
@@ -130,34 +120,60 @@ class SshRsync:
             self._status = parse_line_to_status(line.rstrip(), self._status)
             yield self._status
 
-    def terminate(self):
+    def terminate(self) -> None:
+        assert isinstance(self._process, subprocess.Popen)
         LOG.debug(f"terminating process ID {self._process.pid}")
         os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
 
     @property
-    def pid(self):
+    def pid(self) -> int:
+        assert isinstance(self._process, subprocess.Popen)
         return self._process.pid
+
+
+def parse_line_to_status(line: str, status: SshRsync.SyncStatus) -> SshRsync.SyncStatus:
+    if not line:
+        pass
+    elif line == "receiving incremental file list":
+        pass
+    elif re.fullmatch(Patterns.file_stats, line):
+        match = re.search(Patterns.percentage, line)
+        assert isinstance(match, re.Match)
+        status.progress = float(match[0][:-1]) / 100
+    elif re.fullmatch(Patterns.end_stats_a, line):
+        status.path = Path()
+    elif re.fullmatch(Patterns.end_stats_b, line):
+        status.finished = True
+    elif re.fullmatch(Patterns.path, line):
+        status.path = Path(line)
+    elif re.fullmatch(Patterns.dir_not_found, line):
+        status.finished = True
+        status.error = True
+    else:
+        pass
+    return status
 
 
 class RsyncWrapperThread(Thread):
     terminated = Signal()
 
-    def __init__(self, local_target_location, source_location=None):
+    def __init__(self, local_target_location: Path, source_location: Path) -> None:
         super().__init__()
-        self._ssh_rsync = None
-        self._local_target_location = local_target_location
-        self._source_location = source_location
+        self._ssh_rsync: Optional[SshRsync] = None
+        self._local_target_location: Path = local_target_location
+        self._source_location: Path = source_location
 
     @property
-    def running(self):
+    def running(self) -> bool:
         LOG.debug(f"Backup is {'running' if self.is_alive() else 'not running'} yet")
         return self.is_alive()
 
     @property
-    def pid(self):
+    def pid(self) -> int:
+        assert isinstance(self._ssh_rsync, SshRsync)
         return self._ssh_rsync.pid
 
-    def run(self):
+    def run(self) -> None:
         self._ssh_rsync = SshRsync(self._local_target_location, self._source_location)
         with self._ssh_rsync as output_generator:
             for status in output_generator:
@@ -165,5 +181,6 @@ class RsyncWrapperThread(Thread):
             LOG.info("Backup finished!")
             self.terminated.emit()
 
-    def terminate(self):
-        self._ssh_rsync.terminate()
+    def terminate(self) -> None:
+        if self._ssh_rsync is not None:
+            self._ssh_rsync.terminate()

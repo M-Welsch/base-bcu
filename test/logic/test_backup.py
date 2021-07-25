@@ -1,12 +1,14 @@
 import json
 import os
 from pathlib import Path
+from typing import Generator
 
 import pytest
+from py import path
 
 from base.common.config import Config
-from base.common.exceptions import BackupRequestError, NasNotMountedError
 from base.logic.backup.backup import Backup
+from base.logic.backup.backup_browser import BackupBrowser
 
 
 def false() -> bool:
@@ -14,7 +16,7 @@ def false() -> bool:
 
 
 @pytest.fixture()
-def backup(tmpdir):
+def backup(tmpdir: path) -> Generator[Backup, None, None]:
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))
     source = tmpdir.mkdir("source")
@@ -36,11 +38,11 @@ def backup(tmpdir):
         nas_config_data = json.load(src)
         json.dump(nas_config_data, dst)
     Config.set_config_base_path(config_test_path)
-    yield Backup(false)
+    yield Backup(false, BackupBrowser())
     print("source contents:", os.listdir(str(source)))
     print("target contents:", os.listdir(str(target)))
 
 
 @pytest.mark.skip("not functional if source location is on local machine")
-def test_backup(backup) -> None:
+def test_backup(backup: Backup) -> None:
     backup.on_backup_request()

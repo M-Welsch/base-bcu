@@ -11,12 +11,12 @@ from base.hardware.sbu import SBU
 
 
 class ConfigSbu:
-    def __init__(self):
+    def __init__(self) -> None:
         Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
-        self._schedule = Config("schedule_backup.json")
-        self._sbu = SBU()
+        self._schedule: Config = Config("schedule_backup.json")
+        self._sbu: SBU = SBU()
 
-    def set_timer_according_to_config_file(self):
+    def set_timer_according_to_config_file(self) -> None:
         self._sbu.write_to_display("Test", "123")
         seconds_to_next_bu = TimeCalculator().next_backup_seconds(self._schedule)
         self._sbu.send_seconds_to_next_bu(seconds_to_next_bu)

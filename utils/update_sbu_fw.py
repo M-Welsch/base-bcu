@@ -10,12 +10,12 @@ from base.hardware.sbu import SbuUpdater
 
 
 class UpdateSbu:
-    def __init__(self):
+    def __init__(self) -> None:
         Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
         self._sbuu = SbuUpdater()
 
-    def update(self):
-        SbuUpdater.update()
+    def update(self) -> None:
+        self._sbuu.update()
 
 
 if __name__ == "__main__":

@@ -118,4 +118,5 @@ class DriveInspector:
             raise ExternalCommandError(cp.stderr)
         elif not cp.stdout:
             raise ExternalCommandError("Dreck funktioniert ned!")
-        return json.loads(cp.stdout.decode())["blockdevices"]
+        devices: List[Dict[str, Any]] = json.loads(cp.stdout.decode())["blockdevices"]
+        return devices

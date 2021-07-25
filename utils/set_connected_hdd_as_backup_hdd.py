@@ -12,11 +12,11 @@ from base.common.drive_inspector import DriveInfo, DriveInspector
 
 
 class BuHddSetter:
-    def __init__(self):
+    def __init__(self) -> None:
         Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
         self._drive_inspector = DriveInspector()
 
-    def set_conneted_hdd_as_backup_hdd(self):
+    def set_conneted_hdd_as_backup_hdd(self) -> None:
         drive = self.current_hdd_driveinfo()
         drive_dict = drive.to_dict()
         drive_dict["partition_index"] = 1

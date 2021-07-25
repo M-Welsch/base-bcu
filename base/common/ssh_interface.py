@@ -32,13 +32,13 @@ class SSHInterface:
                 )
             else:
                 LOG.error(f"SSH exception occured. Error = {e}")
-            response = e
+            response = str(e)
         except socket.timeout as e:
             LOG.error(f"connection timed out. Error = {e}")
-            response = e
+            response = str(e)
         except Exception as e:
             LOG.error("Exception in connecting to the server. PYTHON SAYS:", e)
-            response = e
+            response = str(e)
         else:
             response = "Established"
         return response

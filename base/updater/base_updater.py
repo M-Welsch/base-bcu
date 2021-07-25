@@ -1,16 +1,14 @@
 import os
 import sys
 
+from base.common.config import Config
+from base.hardware.sbu import SbuUpdater
+
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
 
 import git
 from sysdmanager import SystemdManager
-
-from base.common.tcp import TCPClientInterface
-from base.deprecated.sbu_interface.sbu_communicator import *
-from base.deprecated.sbu_interface.sbu_updater import *
-from base.hmi.display import *
 
 
 class BaseUpdater:

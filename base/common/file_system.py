@@ -11,12 +11,13 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class MyNotifier(pyinotify.Notifier):
     # NOTE: Use this hack because self.stop() does not work
-    def cancel(self):
+    def cancel(self) -> None:
         self._timeout = 0
 
 
 class EventHandler(pyinotify.ProcessEvent):
-    def __init__(self, partition_info_setter: Callable, drive_inspector: DriveInspector):
+    def __init__(self, partition_info_setter: Callable, drive_inspector: DriveInspector) -> None:
+        super().__init__()
         self._set_partition_info: Callable = partition_info_setter
         self._drive_inspector: DriveInspector = drive_inspector
         self._stop_notifier: Callable
@@ -48,7 +49,7 @@ class FileSystemWatcher:
         self._event_handler.set_notifier_callback(self._notifier.cancel)
         self._partition_info: Optional[PartitionInfo] = None
 
-    def _set_partition_info(self, info):
+    def _set_partition_info(self, info: PartitionInfo) -> None:
         self._partition_info = info
 
     def add_watches(self, dirs_to_watch: List[str]) -> None:
@@ -56,7 +57,7 @@ class FileSystemWatcher:
         for directory in dirs_to_watch:
             self._watch_manager.add_watch(directory, FileSystemWatcher.dir_events)
 
-    def backup_partition_info(self) -> PartitionInfo:
+    def backup_partition_info(self) -> Optional[PartitionInfo]:
         LOG.info("Try to find partition for the first time...")
         partition_info = self._drive_inspector.backup_partition_info
         if partition_info is not None:
@@ -67,7 +68,7 @@ class FileSystemWatcher:
             self._partition_info = self._drive_inspector.backup_partition_info
         return self._partition_info
 
-    def _watch_until_timeout(self):
+    def _watch_until_timeout(self) -> None:
         assert self._notifier._timeout is not None, "Notifier must be constructed with a short timeout"
         self._notifier.process_events()
         while self._notifier.check_events():
