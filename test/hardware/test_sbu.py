@@ -6,7 +6,8 @@ from random import random
 import pytest
 
 from base.common.config import Config
-from base.hardware.sbu import SBU, SbuUartFinder
+from base.hardware.sbu import SBU
+from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
 
 
 @pytest.fixture(scope="session")

@@ -67,3 +67,7 @@ if __name__ == "__main__":
         raise DockingError("Timout exceeded!")
     except DockingError:
         print(f"Cannot Do Backup due to DockingError: {DockingError}")
+
+
+class SbuNotAvailableError(Exception):
+    """Raise if UART interface is not found."""

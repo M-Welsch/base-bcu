@@ -2,7 +2,7 @@ import os
 import sys
 
 from base.common.config import Config
-from base.hardware.sbu import SbuUpdater
+from base.hardware.sbu.sbu_updater import SbuUpdater
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path_to_module)
