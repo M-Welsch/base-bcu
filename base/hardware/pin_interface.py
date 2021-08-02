@@ -1,13 +1,10 @@
 from __future__ import annotations
 
+from enum import IntEnum
 from time import sleep
-from typing import Optional
+from typing import Optional, cast
 
-try:
-    import RPi.GPIO as GPIO
-except ImportError:
-    print("RPi.GPIO is not available. Switching to mockup mode")
-    from base.mockups.mockupgpio import GPIO
+import RPi.GPIO as GPIO
 
 
 class PinInterface:
@@ -20,13 +17,12 @@ class PinInterface:
             GPIO.setmode(GPIO.BOARD)
         assert isinstance(cls.__instance, PinInterface)
         # this kind of disables the ramp. It sounds best ...
-        cls.__instance.step_interval_initial = cls.__instance.step_interval = 0.0005
+        cls.__instance.step_interval = 0.0005
         cls.__instance._initialize_pins()
         return cls.__instance
 
     def __init__(self) -> None:
-        self.step_interval: float
-        self.step_interval_initial: float
+        self.step_interval: float = 0.0005
         raise Exception("This class is a singleton. Use global_instance() instead!")
 
     def _initialize_pins(self) -> None:
@@ -54,7 +50,7 @@ class PinInterface:
 
     @property
     def docked_sensor_pin_high(self) -> int:
-        return GPIO.input(Pins.nsensor_docked)
+        return cast(int, GPIO.input(Pins.nsensor_docked))
 
     @property
     def docked(self) -> bool:
@@ -66,15 +62,15 @@ class PinInterface:
 
     @property
     def undocked_sensor_pin_high(self) -> int:
-        return GPIO.input(Pins.nsensor_undocked)
+        return cast(int, GPIO.input(Pins.nsensor_undocked))
 
     @property
     def button_0_pin_high(self) -> int:
-        return GPIO.input(Pins.button_0)
+        return cast(int, GPIO.input(Pins.button_0))
 
     @property
     def button_1_pin_high(self) -> int:
-        return GPIO.input(Pins.button_1)
+        return cast(int, GPIO.input(Pins.button_1))
 
     @staticmethod
     def activate_hdd_pin() -> None:
@@ -92,28 +88,11 @@ class PinInterface:
         sleep(0.1)
         GPIO.output(Pins.sw_hdd_off, GPIO.LOW)
 
-    @staticmethod
-    def set_motor_pins_for_braking() -> None:
-        GPIO.output(Pins.Motordriver_L, GPIO.LOW)
-        GPIO.output(Pins.Motordriver_R, GPIO.LOW)
-
-    @staticmethod
-    def set_motor_pins_for_docking() -> None:
-        GPIO.output(Pins.Motordriver_L, GPIO.HIGH)
-        GPIO.output(Pins.Motordriver_R, GPIO.LOW)
-
-    @staticmethod
-    def set_motor_pins_for_undocking() -> None:
-        GPIO.output(Pins.Motordriver_L, GPIO.LOW)
-        GPIO.output(Pins.Motordriver_R, GPIO.HIGH)
-
     def stepper_driver_on(self) -> None:
         self.set_nreset_pin_high()
-        self.step_interval = self.step_interval_initial
 
     def stepper_driver_off(self) -> None:
         self.set_nreset_pin_low()
-        self.step_interval = self.step_interval_initial
 
     @staticmethod
     def set_nreset_pin_high() -> None:
@@ -128,9 +107,6 @@ class PinInterface:
         sleep(self.step_interval)
         self.set_step_pin_low()
         sleep(self.step_interval)
-
-        if self.step_interval > 0.0005:
-            PinInterface.step_interval = self.step_interval / 1.2
 
     @staticmethod
     def set_step_pin_high() -> None:
@@ -179,7 +155,7 @@ class PinInterface:
         GPIO.output(Pins.heartbeat, GPIO.LOW)
 
 
-class Pins:
+class Pins(IntEnum):
     sw_hdd_on = 7
     sw_hdd_off = 18
     nsensor_docked = 13
