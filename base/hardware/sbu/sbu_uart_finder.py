@@ -40,7 +40,7 @@ class SbuUartFinder:
 
     @staticmethod
     def _challenge_interface(uart_interface: Path) -> bytes:
-        with serial.Serial(uart_interface, 9600, timeout=1) as ser:
+        with serial.Serial(str(uart_interface), 9600, timeout=1) as ser:
             ser.reset_input_buffer()
             ser.write(b"\0")
             ser.write(b"Test\0")

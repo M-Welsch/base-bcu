@@ -31,7 +31,7 @@ class SbuCommunicator:
         self._pin_interface: PinInterface = PinInterface.global_instance()
         self._connect_serial_communication_path()
         self._serial_connection = serial.Serial(
-            port=self._port, baud_rate=self._baud_rate, timeout=self._config.serial_connection_timeout
+            port=self._port, baudrate=self._baud_rate, timeout=self._config.serial_connection_timeout
         )
         self._serial_connection.open()
         self._flush_sbu_channel()

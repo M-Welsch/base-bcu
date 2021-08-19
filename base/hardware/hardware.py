@@ -7,7 +7,7 @@ from base.hardware.drive import Drive
 from base.hardware.hmi import HMI
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
-from base.hardware.sbu import SBU
+from base.hardware.sbu.sbu import SBU
 from base.logic.backup.backup_browser import BackupBrowser
 
 LOG = LoggerFactory.get_logger(__name__)

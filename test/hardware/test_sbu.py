@@ -6,7 +6,7 @@ from random import random
 import pytest
 
 from base.common.config import Config
-from base.hardware.sbu import SBU
+from base.hardware.sbu.sbu import SBU
 from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
 
 
@@ -23,8 +23,8 @@ def sbu(tmpdir_factory):
 
 
 @pytest.mark.slow
-def test_sbu_uart_finder():
-    assert SbuUartFinder().get_sbu_uart_interface().startswith("/dev/ttyS")
+def test_sbu_uart_finder(sbu):
+    assert str(SbuUartFinder().get_sbu_uart_interface()).startswith("/dev/ttyS")
 
 
 def test_write_to_display(sbu):

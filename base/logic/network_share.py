@@ -42,7 +42,7 @@ class NetworkShare:
         process = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         self._parse_process_output(process)
 
-    def _parse_process_output(self, process: Popen[str]) -> None:
+    def _parse_process_output(self, process: Popen) -> None:
         if process.stdout is not None:
             for line in process.stdout:
                 LOG.debug("stdout: " + line)
