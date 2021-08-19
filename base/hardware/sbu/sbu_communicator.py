@@ -34,14 +34,14 @@ class SbuCommunicator:
             baudrate=self._baud_rate,
             timeout=self._config.serial_connection_timeout
         )
-        self._serial_connection.open()
+        # self._serial_connection.open() is called implicitly!
         self._flush_sbu_channel()
         return self
 
     def __exit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
     ) -> None:
-        LOG.info("SBU Communicator is terminating. So long and thanks for all the bytes!")
+        # LOG.info("SBU Communicator is terminating. So long and thanks for all the bytes!")
         if self._serial_connection is not None:
             self._flush_sbu_channel()
             self._serial_connection.close()
@@ -55,21 +55,13 @@ class SbuCommunicator:
         self._send_message_to_sbu("\0")
 
     def _send_message_to_sbu(self, message: str) -> None:
-        self._wait_for_channel_free()
         message = message + "\0"
         self._serial_connection.write(message.encode())
-
-    def _wait_for_channel_free(self) -> None:
-        channel_timeout: int = self._config.wait_for_channel_free_timeout
-        time_start = time()
-        while self._channel_busy or not self._sbu_ready:
-            sleep(0.05)
-            if time() - time_start > channel_timeout:
-                raise SbuCommunicationTimeout(f"Waiting for longer than {channel_timeout} for channel to be free.")
 
     def process_command(self, command: SbuCommand, payload: str = "") -> Optional[str]:
         log_message = ""
         sbu_response: Optional[str] = None
+        self._wait_for_channel_free()
         self._channel_busy = True
         try:
             self._send_message_to_sbu(f"{command.message_code}:{payload}")
@@ -90,6 +82,14 @@ class SbuCommunicator:
             if command.automatically_free_channel:
                 self._channel_busy = False
         return sbu_response
+
+    def _wait_for_channel_free(self) -> None:
+        channel_timeout: int = self._config.wait_for_channel_free_timeout
+        time_start = time()
+        while self._channel_busy or not self._sbu_ready:
+            sleep(0.05)
+            if time() - time_start > channel_timeout:
+                raise SbuCommunicationTimeout(f"Waiting for longer than {channel_timeout} for channel to be free.")
 
     def _await_acknowledge(self, message_code: str) -> Tuple[float, str]:
         return self._wait_for_response(f"ACK:{message_code}")

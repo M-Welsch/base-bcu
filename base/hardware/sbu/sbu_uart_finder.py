@@ -49,6 +49,7 @@ class SbuUartFinder:
             ser.write(b"\0")
             ser.write(b"Test\0")
             response = ser.read_until(b"Echo")
+            print(f"response: {response}")
             ser.reset_input_buffer()
             ser.reset_output_buffer()
         return response
