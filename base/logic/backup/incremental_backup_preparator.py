@@ -67,6 +67,7 @@ class IncrementalBackupPreparator:
 
     def space_occupied_by_backup_source_data(self) -> int:
         path_on_nas = self._config_sync.remote_backup_source_location
+        space_occupied = 0
         try:
             with SSHInterface() as ssh:
                 ssh.connect(self._config_nas.ssh_host, self._config_nas.ssh_user)
@@ -77,10 +78,8 @@ class IncrementalBackupPreparator:
         except RuntimeError as e:
             if "No such file or directory" in str(e):
                 LOG.warning("couldn't assess space needed for backup. Assuming it's 0 so the backup can go on!")
-                space_occupied = 0
         except IndexError as e:
             LOG.warning("couldn't assess space needed for backup. Assuming it's 0 so the backup can go on!")
-            space_occupied = 0
         return space_occupied
 
     def delete_oldest_backup(self) -> None:

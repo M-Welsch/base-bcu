@@ -27,17 +27,15 @@ def test_sbu_uart_finder(sbu):
     assert str(SbuUartFinder().get_sbu_uart_interface()).startswith("/dev/ttyS")
 
 
-def test_write_to_display(sbu):
+def test_write_to_display(sbu: SBU):
     sbu.write_to_display("Write to Display", f"Random: {random():07f}")
 
 
-@pytest.mark.slow
 def test_set_display_brightness(sbu):
     for brightness in range(0, 101, 10):
         sbu.set_display_brightness_percent(brightness)
 
 
-@pytest.mark.slow
 def test_set_led_brightness(sbu):
     for brightness in range(0, 101, 10):
         sbu.set_led_brightness_percent(brightness)

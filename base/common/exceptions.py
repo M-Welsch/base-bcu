@@ -71,3 +71,7 @@ if __name__ == "__main__":
 
 class SbuNotAvailableError(Exception):
     """Raise if UART interface is not found."""
+
+
+class SerialWrapperError(Exception):
+    pass

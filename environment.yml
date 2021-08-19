@@ -1,7 +1,7 @@
-name: BaSe
+name: backup_server
 channels:
-  - conda-forge
   - defaults
+  - conda-forge
 dependencies:
   - paramiko=2.7.1
   - pip=20.2.2

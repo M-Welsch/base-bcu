@@ -17,6 +17,7 @@ from base.base_application import BaSeApplication, MaintenanceMode
 from base.common.config import Config
 from base.hardware.hardware import Hardware
 from base.logic.backup.backup import Backup
+from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.schedule import Schedule
 
 
@@ -33,8 +34,9 @@ def make_base_application():
     base_app._config: Config = Config("base.json")
     # base_app._setup_logger() # don't use it here! Otherwise everything will be logged twice.
     base_app._maintenance_mode = MaintenanceMode()
-    base_app._hardware = Hardware()
-    base_app._backup = Backup(base_app._maintenance_mode.is_on)
+    base_app._backup_browser = BackupBrowser()
+    base_app._hardware = Hardware(base_app._backup_browser)
+    base_app._backup = Backup(base_app._maintenance_mode.is_on, backup_browser=base_app._backup_browser)
     base_app._schedule = Schedule()
     base_app._maintenance_mode.set_connections(
         [(base_app._schedule.backup_request, base_app._backup.on_backup_request)]
@@ -45,11 +47,11 @@ def make_base_application():
 
 
 @pytest.fixture()
-def app_smb(tmpdir_factory, configure_logger):
+def app_smb(tmpdir_factory):  # , configure_logger):
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     shutil.copytree("/home/base/python.base/base/config", config_dir)
-    update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
+    # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(config_dir / "sync.json", {"remote_backup_source_location": "/mnt/HDD/testfiles", "protocol": "smb"})
     update_conf(config_dir / "backup.json", {"shutdown_between_backups": False})
     Config.set_config_base_path(config_dir)
@@ -57,11 +59,11 @@ def app_smb(tmpdir_factory, configure_logger):
 
 
 @pytest.fixture()
-def app_ssh(tmpdir_factory, configure_logger):
+def app_ssh(tmpdir_factory):  # , configure_logger):
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     shutil.copytree("/home/base/python.base/base/config", config_dir)
-    update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
+    # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(config_dir / "sync.json", {"remote_backup_source_location": "/mnt/HDD/testfiles", "protocol": "ssh"})
     update_conf(config_dir / "backup.json", {"shutdown_between_backups": False})
     Config.set_config_base_path(config_dir)

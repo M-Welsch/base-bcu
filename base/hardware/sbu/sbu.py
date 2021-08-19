@@ -1,35 +1,25 @@
-from pathlib import Path
 from re import findall
 from typing import Optional
 
-from base.common.config import Config
-from base.common.exceptions import SbuNotAvailableError
 from base.common.logger import LoggerFactory
 from base.hardware.sbu.sbu_commands import SbuCommand, SbuCommands
 from base.hardware.sbu.sbu_communicator import SbuCommunicator
-from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
 class SBU:
-    def __init__(self) -> None:
-        self._sbu_uart_interface = self._get_uart_interface()
-        self._config: Config = Config("sbu.json")
+    _sbu_communicator = None
 
-    @staticmethod
-    def _get_uart_interface() -> Path:
-        try:
-            return SbuUartFinder().get_sbu_uart_interface()
-        except SbuNotAvailableError:
-            LOG.error("WARNING! Serial port to SBC could not found! Display and buttons will not work!")  # TODO: #14
+    def __init__(self) -> None:
+        if self._sbu_communicator is None:
+            self._sbu_communicator = SbuCommunicator()
 
     def write_to_display(self, line1: str, line2: str) -> None:
         self.check_display_line_for_length(line1)
         self.check_display_line_for_length(line2)
-        with SbuCommunicator(self._config) as sbu_communicator:
-            sbu_communicator.process_command(SbuCommands.write_to_display_line1, line1[:16])
-            sbu_communicator.process_command(SbuCommands.write_to_display_line2, line2[:16])
+        self._sbu_communicator.process_command(SbuCommands.write_to_display_line1, line1[:16])
+        self._sbu_communicator.process_command(SbuCommands.write_to_display_line2, line2[:16])
 
     @staticmethod
     def check_display_line_for_length(line: str) -> None:
@@ -37,16 +27,14 @@ class SBU:
             LOG.warning(f"Display string {line} is too long!")
 
     def set_display_brightness_percent(self, display_brightness_in_percent: float) -> None:
-        with SbuCommunicator(self._config) as sbu_communicator:
-            sbu_communicator.process_command(
-                SbuCommands.set_display_brightness, str(self._condition_brightness_value(display_brightness_in_percent))
-            )
+        self._sbu_communicator.process_command(
+            SbuCommands.set_display_brightness, str(self._condition_brightness_value(display_brightness_in_percent))
+        )
 
     def set_led_brightness_percent(self, led_brightness_in_percent: float) -> None:
-        with SbuCommunicator(self._config) as sbu_communicator:
-            sbu_communicator.process_command(
-                SbuCommands.set_led_brightness, str(self._condition_brightness_value(led_brightness_in_percent))
-            )
+        self._sbu_communicator.process_command(
+            SbuCommands.set_led_brightness, str(self._condition_brightness_value(led_brightness_in_percent))
+        )
 
     @staticmethod
     def _condition_brightness_value(brightness_in_percent: float) -> int:
@@ -67,15 +55,13 @@ class SBU:
         command = SbuCommands.set_seconds_to_next_bu
         payload = str(int(seconds))
         LOG.info(f"Command: message_code = {command.message_code}, payload = {payload}")
-        with SbuCommunicator(self._config) as sbu_communicator:
-            assertion_message = sbu_communicator.process_command(command, payload)
+        assertion_message = self._sbu_communicator.process_command(command, payload)
         value_in_cmp_register = int(findall(r"\d+", assertion_message)[0])
         LOG.info(f"value_in_cmp_register: {value_in_cmp_register}, derived from {assertion_message}")
         assert value_in_cmp_register == int(seconds / 32)
 
     def send_readable_timestamp(self, timestamp: str) -> None:
-        with SbuCommunicator(self._config) as sbu_communicator:
-            sbu_communicator.process_command(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
+        self._sbu_communicator.process_command(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
 
     def measure_base_input_current(self) -> float:
         return self._measure(SbuCommands.measure_current)
@@ -87,8 +73,7 @@ class SBU:
         return self._measure(SbuCommands.measure_temperature)
 
     def _measure(self, command: SbuCommand) -> Optional[float]:
-        with SbuCommunicator(self._config) as sbu_communicator:
-            response = sbu_communicator.process_command(command)
+        response = self._sbu_communicator.process_command(command)
         # LOG.debug(f"response is {response}")
         response_16bit_value = int(findall(r"[0-9]+", response[2:])[0])
         return self._convert_measurement_result(command, response_16bit_value)
@@ -108,12 +93,10 @@ class SBU:
         return converted_value
 
     def request_shutdown(self) -> None:
-        with SbuCommunicator(self._config) as sbu_communicator:
-            sbu_communicator.process_command(SbuCommands.request_shutdown)
+        self._sbu_communicator.process_command(SbuCommands.request_shutdown)
 
     def abort_shutdown(self) -> None:
-        with SbuCommunicator(self._config) as sbu_communicator:
-            sbu_communicator.process_command(SbuCommands.abort_shutdown)
+        self._sbu_communicator.process_command(SbuCommands.abort_shutdown)
 
 
 """
