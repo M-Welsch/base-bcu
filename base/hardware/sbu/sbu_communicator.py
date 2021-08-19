@@ -21,9 +21,8 @@ class SbuCommunicator:
     _channel_busy: bool = False
     _sbu_ready: bool = True
 
-    def __init__(self, baud_rate: int = 9600) -> None:  # TODO: Move baud_rate to seperate constants file
-        self._config: Config = Config("sbu.json")
-        self._port: Path = Path(self._config.sbu_uart_interface)
+    def __init__(self, config, baud_rate: int = 9600) -> None:  # TODO: Move baud_rate to seperate constants file
+        self._config: Config = config
         self._baud_rate: int = baud_rate
         self._serial_connection: Optional[serial.Serial] = None
 
@@ -31,7 +30,9 @@ class SbuCommunicator:
         self._pin_interface: PinInterface = PinInterface.global_instance()
         self._connect_serial_communication_path()
         self._serial_connection = serial.Serial(
-            port=self._port, baudrate=self._baud_rate, timeout=self._config.serial_connection_timeout
+            port=self._config.sbu_uart_interface,
+            baudrate=self._baud_rate,
+            timeout=self._config.serial_connection_timeout
         )
         self._serial_connection.open()
         self._flush_sbu_channel()
