@@ -3,6 +3,7 @@ from typing import Generator, Optional
 
 import serial
 
+from base.common.config import Config
 from base.common.exceptions import SbuNotAvailableError
 from base.common.logger import LoggerFactory
 
@@ -14,6 +15,9 @@ class SbuUartFinder:
         uart_interfaces = self._get_available_uart_interfaces()
         uart_sbu = self._test_uart_interfaces_for_echo(uart_interfaces)
         if uart_sbu:
+            config = Config("sbu.json", read_only=False)
+            config.sbu_uart_interface = str(uart_sbu)
+            config.save()
             LOG.info("SBU answers on UART Interface {}".format(uart_sbu))
         else:
             LOG.error("SBU doesn't respond on any UART Interface!")
