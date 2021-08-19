@@ -31,9 +31,7 @@ def update_conf(file_path: Path, updates: Any) -> None:
 
 
 @pytest.fixture(scope="class")
-def incremental_backup_preparator(
-    tmpdir_factory, configure_logger
-) -> Generator[IncrementalBackupPreparator, None, None]:
+def incremental_backup_preparator(tmpdir_factory) -> Generator[IncrementalBackupPreparator, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
@@ -42,7 +40,7 @@ def incremental_backup_preparator(
     print(f"backup_target_location = {str(backup_target_location)}")
     config_dir = (Path(tmpdir) / "config").resolve()
     shutil.copytree("/home/base/python.base/base/config", config_dir)
-    update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
+    # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(
         config_dir / "sync.json",
         {

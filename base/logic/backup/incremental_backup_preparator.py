@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 from re import findall
@@ -42,10 +43,10 @@ class IncrementalBackupPreparator:
 
     def _obtain_free_space_on_backup_hdd(self) -> int:
         command = ["df", "--output=avail", self._config_sync.local_backup_target_location]
-        LOG.info(f"obtaining free space on bu hdd with command: {command}")
         out = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
         assert out.stdout is not None
         free_space_on_bu_hdd = self._remove_heading_from_df_output(out.stdout)
+        LOG.info(f"obtaining free space on bu hdd with command: {command}. Received {free_space_on_bu_hdd}")
         return free_space_on_bu_hdd
 
     @staticmethod
@@ -60,8 +61,8 @@ class IncrementalBackupPreparator:
         with SSHInterface() as ssh:
             ssh.connect(self._config_nas.ssh_host, self._config_nas.ssh_user)
             command = 'df --output="used" /mnt/HDD | tail -n 1'
-            LOG.info(f"obtaining space occupied nas hdd with command: {command}")
             space_occupied = int(ssh.run_and_raise(command))
+            LOG.info(f"obtaining space occupied nas hdd with command: {command}. Received {space_occupied}")
         return space_occupied
 
     def space_occupied_by_backup_source_data(self) -> int:
@@ -84,7 +85,8 @@ class IncrementalBackupPreparator:
 
     def delete_oldest_backup(self) -> None:
         with self._backup_browser as bb:
-            oldest_backup = bb.get_oldest_backup()
+            oldest_backup = bb.get_oldest_backup_absolutepath()
+        shutil.rmtree(oldest_backup)
         LOG.info("deleting {} to free space for new backup".format(oldest_backup))
 
     def _newest_backup_dir_path(self) -> Path:

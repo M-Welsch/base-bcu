@@ -55,6 +55,11 @@ class BackupBrowser:
             return self._backup_index[0]
         return None
 
+    def get_oldest_backup_absolutepath(self) -> Optional[Path]:
+        oldest_bu = self.get_oldest_backup()
+        if oldest_bu:
+            return Path(self._config_sync.local_backup_target_location) / oldest_bu
+
     def get_newest_backup_abolutepath(self) -> Optional[Path]:
         self.update_backup_list()
         if self._backup_index:
@@ -63,10 +68,12 @@ class BackupBrowser:
 
     @staticmethod
     def get_backup_size(path: Path) -> int:
-        p = Popen(f"du -s {path}".split(), stdout=PIPE, stderr=PIPE)
+        command = f"du -s {path}"
+        p = Popen(command.split(), stdout=PIPE, stderr=PIPE)
         try:
             assert p.stdout is not None
             size = int(p.stdout.readlines()[0].decode().split()[0])
+            LOG.info(f"obtaining free space on bu hdd with command: {command}. Received {size}")
         except ValueError as e:
             LOG.error(f"cannot check size of directory: {path}. Python says: {e}")
             size = 0
