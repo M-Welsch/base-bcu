@@ -62,5 +62,4 @@ def test_vcc3v_voltage_measurement(sbu):
 
 
 def test_sbu_temperature_measurement(sbu):
-    with pytest.raises(NotImplementedError):
-        print(sbu.measure_sbu_temperature())
+    print(sbu.measure_sbu_temperature())
