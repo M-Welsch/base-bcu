@@ -7,7 +7,7 @@ sys.path.append(path_to_module)
 
 from base.common.config import Config
 from base.common.time_calculations import TimeCalculator
-from base.hardware.sbu import SBU
+from base.hardware.sbu.sbu import SBU
 
 
 class ConfigSbu:

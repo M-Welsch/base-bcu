@@ -20,7 +20,7 @@ class SbuCommunicator:
             self._sbu_uart_interface = self._get_uart_interface()
 
     @staticmethod
-    def _get_uart_interface() -> Path:
+    def _get_uart_interface() -> Optional[Path]:
         try:
             return SbuUartFinder().get_sbu_uart_interface()
         except SbuNotAvailableError:

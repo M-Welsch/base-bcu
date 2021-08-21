@@ -72,7 +72,7 @@ class SBU:
     def measure_sbu_temperature(self) -> float:
         return self._measure(SbuCommands.measure_temperature)
 
-    def _measure(self, command: SbuCommand) -> Optional[float]:
+    def _measure(self, command: SbuCommand) -> float:
         response = self._sbu_communicator.process_command(command)
         # LOG.debug(f"response is {response}")
         response_16bit_value = int(findall(r"[0-9]+", response[2:])[0])

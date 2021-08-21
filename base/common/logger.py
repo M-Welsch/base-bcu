@@ -16,7 +16,7 @@ class LineBuffer(list):
         self.append(str(item))
 
     @property
-    def content(self) -> Tuple[str]:
+    def content(self) -> Tuple[Any]:
         return tuple(self)
 
 
