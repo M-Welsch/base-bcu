@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class BackupserverException(Exception):
     pass
 
@@ -75,3 +78,13 @@ class SbuNotAvailableError(Exception):
 
 class SerialWrapperError(Exception):
     pass
+
+
+class ComponentOffError(Exception):
+    def __init__(
+        self, message: str, component: str, avoids_backup: bool = False, avoids_shutdown: bool = False, *args: Any
+    ) -> None:
+        super().__init__(message, *args)
+        self.component: str = component
+        self.avoids_backup: bool = avoids_backup
+        self.avoids_shutdown: bool = avoids_shutdown

@@ -26,7 +26,7 @@ class EventHandler(pyinotify.ProcessEvent):
         self._stop_notifier = notifier_callback
 
     def process_IN_CREATE(self, event: pyinotify.Event) -> None:
-        assert isinstance(self._stop_notifier, Callable), "Call set_notifier() first."
+        assert callable(self._stop_notifier), "Call set_notifier() first."
         LOG.debug(f"File {event.pathname} was created")
         sleep(0.5)  # Todo: wait for model_number and serial_number to be written completely in a more elegant way
         # (lsof). See notes at bottom of file

@@ -9,13 +9,14 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class SBU:
-    _sbu_communicator = None
+    _sbu_communicator: Optional[SbuCommunicator] = None
 
     def __init__(self) -> None:
         if self._sbu_communicator is None:
             self._sbu_communicator = SbuCommunicator()
 
     def write_to_display(self, line1: str, line2: str) -> None:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
         self.check_display_line_for_length(line1)
         self.check_display_line_for_length(line2)
         self._sbu_communicator.process_command(SbuCommands.write_to_display_line1, line1[:16])
@@ -27,11 +28,13 @@ class SBU:
             LOG.warning(f"Display string {line} is too long!")
 
     def set_display_brightness_percent(self, display_brightness_in_percent: float) -> None:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
         self._sbu_communicator.process_command(
             SbuCommands.set_display_brightness, str(self._condition_brightness_value(display_brightness_in_percent))
         )
 
     def set_led_brightness_percent(self, led_brightness_in_percent: float) -> None:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
         self._sbu_communicator.process_command(
             SbuCommands.set_led_brightness, str(self._condition_brightness_value(led_brightness_in_percent))
         )
@@ -52,6 +55,7 @@ class SBU:
         return brightness_16bit
 
     def send_seconds_to_next_bu(self, seconds: int) -> None:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
         command = SbuCommands.set_seconds_to_next_bu
         payload = str(int(seconds))
         LOG.info(f"Command: message_code = {command.message_code}, payload = {payload}")
@@ -61,6 +65,7 @@ class SBU:
         assert value_in_cmp_register == int(seconds / 32)
 
     def send_readable_timestamp(self, timestamp: str) -> None:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
         self._sbu_communicator.process_command(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
 
     def measure_base_input_current(self) -> float:
@@ -73,6 +78,7 @@ class SBU:
         return self._measure(SbuCommands.measure_temperature)
 
     def _measure(self, command: SbuCommand) -> float:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
         response = self._sbu_communicator.process_command(command)
         # LOG.debug(f"response is {response}")
         response_16bit_value = int(findall(r"[0-9]+", response[2:])[0])
@@ -93,9 +99,11 @@ class SBU:
         return converted_value
 
     def request_shutdown(self) -> None:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
         self._sbu_communicator.process_command(SbuCommands.request_shutdown)
 
     def abort_shutdown(self) -> None:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
         self._sbu_communicator.process_command(SbuCommands.abort_shutdown)
 
 

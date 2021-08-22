@@ -24,13 +24,14 @@ class SerialWrapper:
         self, port: Path, automatically_free_channel: bool, baud_rate: int = 9600
     ) -> None:  # TODO: Move baud_rate to seperate constants file
         if SerialWrapper._config is None:
-            SerialWrapper._config: Config = Config("sbu.json")
+            SerialWrapper._config = Config("sbu.json")
         self._port: Path = port
         self._automatically_free_channel: bool = automatically_free_channel
         self._baud_rate: int = baud_rate
         self._serial_connection: Optional[serial.Serial] = None
 
     def __enter__(self) -> SerialWrapper:
+        assert isinstance(self._config, Config)
         self._wait_for_channel_free()
         SerialWrapper._channel_busy = True
         self._pin_interface: PinInterface = PinInterface.global_instance()
@@ -67,10 +68,12 @@ class SerialWrapper:
         self.send_message_to_sbu("\0")
 
     def send_message_to_sbu(self, message: str) -> None:
+        assert isinstance(self._serial_connection, serial.Serial)
         message = message + "\0"
         self._serial_connection.write(message.encode())
 
     def _wait_for_channel_free(self) -> None:
+        assert isinstance(self._config, Config)
         channel_timeout: int = self._config.wait_for_channel_free_timeout
         time_start = time()
         while SerialWrapper._channel_busy or not SerialWrapper._sbu_ready:
@@ -85,6 +88,8 @@ class SerialWrapper:
         return self.wait_for_response(f"Ready")
 
     def wait_for_response(self, response: str) -> Tuple[float, str]:
+        assert isinstance(self._config, Config)
+        assert isinstance(self._serial_connection, serial.Serial)
         time_start = time()
         while True:
             time_diff = time() - time_start

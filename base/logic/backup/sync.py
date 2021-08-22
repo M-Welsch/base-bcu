@@ -106,7 +106,7 @@ class SshRsync:
 
     def _output_generator(self) -> Generator[SshRsync.SyncStatus, None, None]:
         assert isinstance(self._process, subprocess.Popen)
-        while True:
+        while self._process.stdout is not None:
             line = self._process.stdout.readline()
             # LOG.debug(f"line: {line}")
             code = self._process.poll()

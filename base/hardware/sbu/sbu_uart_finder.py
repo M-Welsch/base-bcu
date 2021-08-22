@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator
 
 from base.common.exceptions import SbuNotAvailableError, SerialWrapperError
 from base.common.logger import LoggerFactory
@@ -9,20 +9,17 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class SbuUartFinder:
-    def get_sbu_uart_interface(self) -> Optional[Path]:
+    def get_sbu_uart_interface(self) -> Path:
         uart_interfaces = self._get_available_uart_interfaces()
         uart_sbu = self._test_uart_interfaces_for_echo(uart_interfaces)
-        if uart_sbu:
-            LOG.info("SBU answers on UART Interface {}".format(uart_sbu))
-        else:
-            LOG.error("SBU doesn't respond on any UART Interface!")
+        LOG.info("SBU answers on UART Interface {}".format(uart_sbu))
         return uart_sbu
 
     @staticmethod
     def _get_available_uart_interfaces() -> Generator[Path, None, None]:
         return Path("/dev").glob("ttyS*")
 
-    def _test_uart_interfaces_for_echo(self, uart_interfaces: Generator[Path, None, None]) -> Optional[Path]:
+    def _test_uart_interfaces_for_echo(self, uart_interfaces: Generator[Path, None, None]) -> Path:
         for uart_interface in uart_interfaces:
             if self._test_uart_interface_for_echo(uart_interface):
                 return uart_interface
@@ -44,8 +41,8 @@ class SbuUartFinder:
             ser.serial_connection.reset_output_buffer()
             ser.serial_connection.write(b"\0")
             ser.serial_connection.write(b"Test\0")
-            response = ser.serial_connection.read_until(b"Echo")
-            print(f"interface: {str(uart_interface)}, response: {response}")
+            response: bytes = ser.serial_connection.read_until(b"Echo")
+            LOG.debug(f"interface: {str(uart_interface)}, response: {str(response)}")
             ser.serial_connection.reset_input_buffer()
             ser.serial_connection.reset_output_buffer()
         return response

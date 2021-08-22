@@ -11,12 +11,14 @@ class LineBuffer(list):
         self._size: int = size
 
     def push(self, item: str) -> None:
+        if not isinstance(item, str):
+            raise ValueError(f"Item has to be of type str, but is of type {type(item)}")
         if len(self) >= self._size:
             del self[0]
         self.append(str(item))
 
     @property
-    def content(self) -> Tuple[Any]:
+    def content(self) -> Tuple[str, ...]:
         return tuple(self)
 
 
@@ -30,7 +32,7 @@ class CachingFileHandler(logging.FileHandler):
         super().emit(record)
 
     @property
-    def message_cache(self) -> Tuple[str]:
+    def message_cache(self) -> Tuple[str, ...]:
         return self._message_cache.content
 
 
@@ -84,7 +86,7 @@ class LoggerFactory:
         return Path.cwd() / Path(logs_directory)
 
     @classmethod
-    def get_last_lines(cls) -> Tuple[str]:
+    def get_last_lines(cls) -> Tuple[str, ...]:
         assert isinstance(cls.__file_handler, CachingFileHandler)
         return cls.__file_handler.message_cache
 
