@@ -6,7 +6,7 @@ from random import random
 import pytest
 
 from base.common.config import Config
-from base.hardware.sbu.sbu import SBU
+from base.hardware.sbu.sbu import SBU, WakeupReason
 from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
 
 
@@ -61,3 +61,14 @@ def test_vcc3v_voltage_measurement(sbu):
 
 def test_sbu_temperature_measurement(sbu):
     print(sbu.measure_sbu_temperature())
+
+
+@pytest.mark.parametrize(
+    "code, reason", [("WR_BACKUP", WakeupReason.BACKUP_NOW), ("WR_CONFIG", WakeupReason.CONFIGURATION)]
+)
+def test_wakeup_reason_backup_now(sbu, code, reason):
+    sbu.set_wakeup_reason(code)
+    received_reason: WakeupReason = sbu.request_wakeup_reason()
+    assert received_reason == reason
+    received_reason: WakeupReason = sbu.request_wakeup_reason()
+    assert received_reason == WakeupReason.NO_REASON

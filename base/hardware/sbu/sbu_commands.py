@@ -36,5 +36,8 @@ class SbuCommands:
     request_shutdown = SbuCommand(message_code="SR", await_acknowledge=True, await_ready_signal=False)
     abort_shutdown = SbuCommand(message_code="SA", await_acknowledge=True, await_ready_signal=False)
     request_wakeup_reason = SbuCommand(
-        message_code="WU", await_acknowledge=True, await_ready_signal=True, await_response=True, response_keyword="WU"
+        message_code="WR", await_acknowledge=True, await_ready_signal=True, await_response=True
+    )
+    set_wakeup_reason = SbuCommand(
+        message_code="WD", await_acknowledge=True, await_ready_signal=True, await_response=False
     )

@@ -55,4 +55,4 @@ class SbuCommunicator:
                     log_message += f", ready after {ready_delay}"
                 # LOG.info(log_message)
                 ser.flush_sbu_channel()
-        return sbu_response
+        return sbu_response.strip("\x00").strip()

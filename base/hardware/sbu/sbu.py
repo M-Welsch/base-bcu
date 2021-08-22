@@ -1,3 +1,4 @@
+from enum import Enum
 from re import findall
 from typing import Optional
 
@@ -8,12 +9,28 @@ from base.hardware.sbu.sbu_communicator import SbuCommunicator
 LOG = LoggerFactory.get_logger(__name__)
 
 
+class WakeupReason(Enum):
+    BACKUP_NOW = "WR_BACKUP"
+    CONFIGURATION = "WR_CONFIG"
+    HEARTBEAT_TIMEOUT = "WR_HB_TIMEOUT"
+    NO_REASON = ""
+
+
 class SBU:
     _sbu_communicator: Optional[SbuCommunicator] = None
 
     def __init__(self) -> None:
         if self._sbu_communicator is None:
             self._sbu_communicator = SbuCommunicator()
+
+    def request_wakeup_reason(self) -> WakeupReason:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
+        wakeup_reason_code = self._sbu_communicator.process_command(SbuCommands.request_wakeup_reason)
+        return WakeupReason(wakeup_reason_code)
+
+    def set_wakeup_reason(self, reason: str) -> None:
+        assert isinstance(self._sbu_communicator, SbuCommunicator)
+        self._sbu_communicator.process_command(SbuCommands.set_wakeup_reason, payload=reason)
 
     def write_to_display(self, line1: str, line2: str) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)

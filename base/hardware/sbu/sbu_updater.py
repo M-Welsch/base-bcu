@@ -15,9 +15,12 @@ class SbuUpdater:
     def __init__(self) -> None:
         self._pin_interface: PinInterface = PinInterface.global_instance()
 
-    def update(self, sbu_fw_filename: Optional[Path] = None) -> None:
-        self._pin_interface.set_sbu_serial_path_to_communication()
+    def prepare_update(self) -> None:
+        self._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
         self._pin_interface.enable_receiving_messages_from_sbu()
+
+    def update(self, sbu_fw_filename: Optional[Path] = None) -> None:
+        self.prepare_update()
         sbu_uart_channel = self._get_sbu_uart_channel()
         if sbu_uart_channel is None:
             LOG.warning("SBU didn't respond on any UART Interface. Defaulting to /dev/ttyS1")
@@ -35,10 +38,10 @@ class SbuUpdater:
             )
             if process.stdout is not None:
                 for line in process.stdout:
-                    LOG.info(line)
+                    LOG.info(str(line))
             if process.stderr is not None:
                 if process.stderr:
-                    LOG.error(process.stderr)
+                    LOG.error(str(process.stderr))
         finally:
             self._pin_interface.set_sbu_serial_path_to_communication()
 

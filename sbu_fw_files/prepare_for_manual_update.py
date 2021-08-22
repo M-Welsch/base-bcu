@@ -25,7 +25,7 @@ def setup_logger(config_path: Path) -> None:
 def main() -> None:
     from base.hardware.sbu.sbu_updater import SbuUpdater
 
-    SbuUpdater().update()
+    SbuUpdater().prepare_update()
 
 
 if __name__ == "__main__":
