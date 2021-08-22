@@ -1,4 +1,5 @@
 from time import sleep
+from typing import Optional
 
 from base.common.config import Config
 from base.common.logger import LoggerFactory
@@ -61,7 +62,11 @@ class Hardware:
 
     @property
     def powered(self) -> bool:
-        return self.docked and self._sbu.measure_base_input_current() > 0.3
+        input_current = self._sbu.measure_base_input_current()
+        if input_current:
+            return self.docked and input_current > 0.3
+        else:
+            return False
 
     def unpower(self) -> None:
         self._power.hdd_power_off()
@@ -85,15 +90,15 @@ class Hardware:
         self._sbu.write_to_display(text[:16], text[16:])
 
     @property
-    def input_current(self) -> float:
+    def input_current(self) -> Optional[float]:
         return self._sbu.measure_base_input_current()
 
     @property
-    def system_voltage_vcc3v(self) -> float:
+    def system_voltage_vcc3v(self) -> Optional[float]:
         return self._sbu.measure_vcc3v_voltage()
 
     @property
-    def sbu_temperature(self) -> float:
+    def sbu_temperature(self) -> Optional[float]:
         return self._sbu.measure_sbu_temperature()
 
     @property

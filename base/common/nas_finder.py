@@ -58,6 +58,11 @@ class NasFinder:
             raise NasNotCorrectError(
                 f"NAS on {target_ip} is not the correct one? Couldn't open file 'nas_for_backup'. " f"Error = {stderr}"
             )
+        if not stdout:
+            raise NasNotCorrectError(
+                f"NAS on {target_ip} holds no list of valid backup servers. "
+                f"Please create the file 'nas_for_backup' in the directory which is first entered on access via ssh"
+            )
         my_mac_address = self.get_eth0_mac_address()
         valid_backup_servers = json.loads(stdout)["valid_backup_servers"]
         if my_mac_address not in valid_backup_servers:
@@ -73,7 +78,7 @@ class NasFinder:
         sleep(1)
         stdout, stderr = sshi.run(f"mount | grep {source}")
         LOG.info(f"command = 'mount | grep {source}' on nas, stdout = {stdout}, stderr = {stderr}")
-        if not re.search(f"sd.. on {source}", stdout):
+        if not re.search(f"sd.. on {source}", str(stdout)):
             raise NasNotMountedError(f"NAS not mounted: mount | grep {source} returned {stdout}")
 
     @staticmethod

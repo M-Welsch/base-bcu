@@ -25,16 +25,16 @@ def update_conf(file_path: Path, updates: Any) -> None:
 
 
 @pytest.fixture
-def sync_smb(tmpdir_factory, configure_logger) -> Generator[RsyncWrapperThread, None, None]:
+def sync_smb(tmpdir_factory: pytest.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
-    backup_source_location = tmpdir_factory.mktemp(f"backup_source_location")
+    backup_source_location = Path(tmpdir_factory.mktemp(f"backup_source_location"))
     shutil.copytree("/home/base/python.base/base/config", config_dir)
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     backup_target_location = Path(general_backup_target_location) / f"backup_{timestamp}"
-    shutil.copytree("/home/base/python.base/test/dummy_files", backup_source_location, dirs_exist_ok=True)
-    update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
+    shutil.copytree("/home/base/python.base/test/dummy_files", str(backup_source_location), dirs_exist_ok=True)
+    # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(
         config_dir / "sync.json", {"remote_backup_source_location": str(backup_target_location), "protocol": "smb"}
     )
@@ -44,16 +44,16 @@ def sync_smb(tmpdir_factory, configure_logger) -> Generator[RsyncWrapperThread, 
 
 
 @pytest.fixture
-def sync_ssh(tmpdir_factory, configure_logger) -> Generator[RsyncWrapperThread, None, None]:
+def sync_ssh(tmpdir_factory: pytest.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
-    backup_source_location = tmpdir_factory.mktemp(f"backup_source_location")
+    backup_source_location = Path(tmpdir_factory.mktemp(f"backup_source_location"))
     shutil.copytree("/home/base/python.base/base/config", config_dir)
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     backup_target_location = Path(general_backup_target_location) / f"backup_{timestamp}"
-    shutil.copytree("/home/base/python.base/test/dummy_files", backup_source_location, dirs_exist_ok=True)
-    update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
+    shutil.copytree("/home/base/python.base/test/dummy_files", str(backup_source_location), dirs_exist_ok=True)
+    # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(
         config_dir / "sync.json", {"remote_backup_source_location": str(backup_target_location), "protocol": "ssh"}
     )
@@ -68,7 +68,7 @@ def test_sync_smb(sync_smb: RsyncWrapperThread) -> None:
     sleep(2)
 
 
-def test_sync_ssh(sync_smb: RsyncWrapperThread) -> None:
+def test_sync_ssh(sync_ssh: RsyncWrapperThread) -> None:
     print(
         "for this test to work you have to enable ssh access to yourself by "
         "'sudo ssh-copy-id -i ~/.ssh/id_rsa.pub base@192.168.0.61'. Replace the ip-address with yours."

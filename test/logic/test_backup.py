@@ -16,7 +16,7 @@ def false() -> bool:
 
 
 @pytest.fixture()
-def backup(tmpdir: path) -> Generator[Backup, None, None]:
+def backup(tmpdir: path.local) -> Generator[Backup, None, None]:
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))
     source = tmpdir.mkdir("source")

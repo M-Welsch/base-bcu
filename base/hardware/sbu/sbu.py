@@ -68,16 +68,16 @@ class SBU:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
         self._sbu_communicator.process_command(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
 
-    def measure_base_input_current(self) -> float:
+    def measure_base_input_current(self) -> Optional[float]:
         return self._measure(SbuCommands.measure_current)
 
-    def measure_vcc3v_voltage(self) -> float:
+    def measure_vcc3v_voltage(self) -> Optional[float]:
         return self._measure(SbuCommands.measure_vcc3v)
 
-    def measure_sbu_temperature(self) -> float:
+    def measure_sbu_temperature(self) -> Optional[float]:
         return self._measure(SbuCommands.measure_temperature)
 
-    def _measure(self, command: SbuCommand) -> float:
+    def _measure(self, command: SbuCommand) -> Optional[float]:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
         response = self._sbu_communicator.process_command(command)
         # LOG.debug(f"response is {response}")

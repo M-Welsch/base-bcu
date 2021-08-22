@@ -50,7 +50,7 @@ class Drive:
             except ExternalCommandError:
                 self._available = HddState.not_available
                 raise MountingError(f"Backup HDD could not be mounted")
-        assert DriveInspector().backup_partition_info.mount_point
+        # assert DriveInspector().backup_partition_info.mount_point  # what is this line good for?
         self._backup_browser.update_backup_list()
         self._available = HddState.available
 
@@ -124,7 +124,7 @@ class Drive:
 
     @staticmethod
     def _remove_heading_from_df_output(df_output: IO[str]) -> str:
-        return [item.split("%")[0] for item in df_output if not item.strip() == "Use%"][0]
+        return str([item.split("%")[0] for item in df_output if not item.strip() == "Use%"][0])
 
 
 def run_external_command(command: List[str]) -> None:

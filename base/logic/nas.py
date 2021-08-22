@@ -24,7 +24,7 @@ class Nas:
                 try:
                     sshi.run_and_raise(f"systemctl stop {service}")
                 except RuntimeError as e:
-                    LOG.error(e)
+                    LOG.error(str(e))
 
     def resume_services(self) -> None:
         with SSHInterface() as sshi:
@@ -36,7 +36,7 @@ class Nas:
                 try:
                     sshi.run_and_raise(f"systemctl start {service}")
                 except RuntimeError as e:
-                    LOG.error(e)
+                    LOG.error(str(e))
 
     def _filter_services(self) -> List[str]:
         return [service for service in self._config.services if not (service == "smbd" and self._protocol == "smb")]

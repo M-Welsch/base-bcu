@@ -12,7 +12,7 @@ from base.logic.schedule import Schedule
 
 
 @pytest.fixture()
-def schedule(tmpdir: path) -> Generator[Schedule, None, None]:
+def schedule(tmpdir: path.local) -> Generator[Schedule, None, None]:
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir)
     with open(config_path / "schedule_config.json", "r") as src, open(

@@ -1,14 +1,6 @@
-from base.hmi.display import Display
-from base.somewhere import SbuCommunicator
-
-
 class HumanMachineInterface:
     def __init__(self) -> None:
-        self._sbu_communicator = SbuCommunicator.global_instance()
-        self._display = Display(self._sbu_communicator)
+        pass
 
     def init_idle_menu(self) -> None:
         pass
-
-    def write_priority_message_to_display(self, line1: str, line2: str) -> None:
-        self._display.write(line1, line2)

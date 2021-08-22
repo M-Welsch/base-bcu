@@ -177,7 +177,7 @@ class RsyncWrapperThread(Thread):
         self._ssh_rsync = SshRsync(self._local_target_location, self._source_location)
         with self._ssh_rsync as output_generator:
             for status in output_generator:
-                LOG.debug(status)
+                LOG.debug(str(status))
             LOG.info("Backup finished!")
             self.terminated.emit()
 

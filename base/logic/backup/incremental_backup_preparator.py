@@ -28,7 +28,8 @@ class IncrementalBackupPreparator:
         backup_source = self._backup_source_directory()
         most_recent_backup = self._newest_backup_dir_path()
         backup_target = self._create_folder_for_backup()
-        self._copy_newest_backup_with_hardlinks(most_recent_backup, backup_target)
+        if most_recent_backup:
+            self._copy_newest_backup_with_hardlinks(most_recent_backup, backup_target)
         return backup_source, backup_target
 
     def _free_space_on_backup_hdd_if_necessary(self) -> None:
@@ -85,10 +86,13 @@ class IncrementalBackupPreparator:
     def delete_oldest_backup(self) -> None:
         with self._backup_browser as bb:
             oldest_backup = bb.get_oldest_backup_absolutepath()
-        shutil.rmtree(oldest_backup)
-        LOG.info("deleting {} to free space for new backup".format(oldest_backup))
+        if oldest_backup:
+            shutil.rmtree(oldest_backup)
+            LOG.info("deleting {} to free space for new backup".format(oldest_backup))
+        else:
+            LOG.error(f"no backup found to delete. Available backups: {bb.index}")
 
-    def _newest_backup_dir_path(self) -> Path:
+    def _newest_backup_dir_path(self) -> Optional[Path]:
         with self._backup_browser as bb:
             return bb.get_newest_backup_abolutepath()
 
@@ -135,7 +139,8 @@ class IncrementalBackupPreparator:
     def _rename_bu_directory_to_new_timestamp(self) -> None:
         newest_existing_bu_dir = self._newest_backup_dir_path()
         new_backup_folder = self._get_path_for_new_bu_directory()
-        os.rename(newest_existing_bu_dir, new_backup_folder)
+        if newest_existing_bu_dir:  # if there is any old (unfinished) backup, rename it to the current timestamp
+            os.rename(newest_existing_bu_dir, new_backup_folder)
         self._new_backup_folder = new_backup_folder
 
     def _backup_source_directory(self) -> Path:

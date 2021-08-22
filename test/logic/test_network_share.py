@@ -19,7 +19,7 @@ def update_conf(file_path: Path, updates: Any) -> None:
 
 
 @pytest.fixture(scope="class")
-def network_share(tmpdir_factory) -> Generator[NetworkShare, None, None]:
+def network_share(tmpdir_factory: pytest.TempdirFactory) -> Generator[NetworkShare, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     shutil.copytree("/home/base/python.base/base/config", config_dir)

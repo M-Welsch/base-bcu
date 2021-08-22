@@ -32,10 +32,10 @@ class SbuCommunicator:
             LOG.error(text)  # TODO: #14
             raise ComponentOffError(text, component="SBU", avoids_shutdown=True) from e
 
-    def process_command(self, command: SbuCommand, payload: str = "") -> Optional[str]:
+    def process_command(self, command: SbuCommand, payload: str = "") -> str:
         if isinstance(self._sbu_uart_interface, Path):
-            log_message = ""
-            sbu_response: Optional[str] = None
+            log_message: str = ""
+            sbu_response: str = ""
             with SerialWrapper(
                 port=self._sbu_uart_interface,
                 baud_rate=9600,
@@ -55,5 +55,4 @@ class SbuCommunicator:
                     log_message += f", ready after {ready_delay}"
                 # LOG.info(log_message)
                 ser.flush_sbu_channel()
-            return sbu_response
-        return None
+        return sbu_response
