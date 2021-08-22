@@ -5,3 +5,4 @@ log
 *.sublime-workspace
 *.idea
 *.log
+.pytest_cache
