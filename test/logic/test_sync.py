@@ -34,6 +34,7 @@ def sync_smb(tmpdir_factory: pytest.TempdirFactory) -> Generator[RsyncWrapperThr
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     backup_target_location = Path(general_backup_target_location) / f"backup_{timestamp}"
     shutil.copytree("/home/base/python.base/test/dummy_files", str(backup_source_location), dirs_exist_ok=True)
+    # TODO: Maybe collect logfiles from tests in single directory in the future. Via autouse fixture?
     # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(
         config_dir / "sync.json", {"remote_backup_source_location": str(backup_target_location), "protocol": "smb"}
@@ -53,6 +54,7 @@ def sync_ssh(tmpdir_factory: pytest.TempdirFactory) -> Generator[RsyncWrapperThr
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     backup_target_location = Path(general_backup_target_location) / f"backup_{timestamp}"
     shutil.copytree("/home/base/python.base/test/dummy_files", str(backup_source_location), dirs_exist_ok=True)
+    # TODO: Maybe collect logfiles from tests in single directory in the future. Via autouse fixture?
     # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(
         config_dir / "sync.json", {"remote_backup_source_location": str(backup_target_location), "protocol": "ssh"}

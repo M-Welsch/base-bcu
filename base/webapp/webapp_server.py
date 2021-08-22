@@ -2,7 +2,7 @@ import asyncio
 import json
 from pathlib import Path
 from threading import Thread
-from typing import Awaitable, Optional, Set
+from typing import Optional, Set
 
 import websockets
 from signalslot import Signal

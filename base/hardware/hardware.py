@@ -63,10 +63,7 @@ class Hardware:
     @property
     def powered(self) -> bool:
         input_current = self._sbu.measure_base_input_current()
-        if input_current:
-            return self.docked and input_current > 0.3
-        else:
-            return False
+        return False if input_current is None else self.docked and input_current > 0.3 or False
 
     def unpower(self) -> None:
         self._power.hdd_power_off()

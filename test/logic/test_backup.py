@@ -11,10 +11,6 @@ from base.logic.backup.backup import Backup
 from base.logic.backup.backup_browser import BackupBrowser
 
 
-def false() -> bool:
-    return False
-
-
 @pytest.fixture()
 def backup(tmpdir: path.local) -> Generator[Backup, None, None]:
     config_path = Path("/home/base/python.base/base/config/")
@@ -38,7 +34,7 @@ def backup(tmpdir: path.local) -> Generator[Backup, None, None]:
         nas_config_data = json.load(src)
         json.dump(nas_config_data, dst)
     Config.set_config_base_path(config_test_path)
-    yield Backup(false, BackupBrowser())
+    yield Backup(lambda: False, BackupBrowser())
     print("source contents:", os.listdir(str(source)))
     print("target contents:", os.listdir(str(target)))
 

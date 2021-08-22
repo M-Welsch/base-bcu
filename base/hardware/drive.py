@@ -50,7 +50,6 @@ class Drive:
             except ExternalCommandError:
                 self._available = HddState.not_available
                 raise MountingError(f"Backup HDD could not be mounted")
-        # assert DriveInspector().backup_partition_info.mount_point  # what is this line good for?
         self._backup_browser.update_backup_list()
         self._available = HddState.available
 
