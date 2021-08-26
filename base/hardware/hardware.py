@@ -8,7 +8,7 @@ from base.hardware.drive import Drive
 from base.hardware.hmi import HMI
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
-from base.hardware.sbu.sbu import SBU
+from base.hardware.sbu.sbu import SBU, WakeupReason
 from base.logic.backup.backup_browser import BackupBrowser
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -22,6 +22,9 @@ class Hardware:
         self._hmi: HMI = HMI()
         self._sbu: SBU = SBU()
         self._drive: Drive = Drive(backup_browser)
+
+    def get_wakeup_reason(self) -> WakeupReason:
+        return self._sbu.request_wakeup_reason()
 
     def engage(self, **kwargs):  # type: ignore
         LOG.debug("engaging hardware")

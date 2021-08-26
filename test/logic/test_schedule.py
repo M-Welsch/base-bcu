@@ -60,7 +60,7 @@ def test_schedule_postpone_backup(schedule: Schedule) -> None:
 
 
 def test_schedule_shutdown_request(schedule: Schedule) -> None:
-    schedule.on_shutdown_requested()
+    schedule.set_shutdown_timer()
     assert len(schedule._scheduler.queue) == 1
     event = schedule._scheduler.queue[0]
     assert isinstance(event, sched.Event)
@@ -82,5 +82,5 @@ def test_run_pending(schedule: Schedule) -> None:
 #
 #     received = []
 #     schedule.shutdown_request.connect(lambda **kwargs: on_shutdown_request(received))
-#     schedule.on_shutdown_requested()
+#     schedule.set_shutdown_timer()
 #     assert any(received)

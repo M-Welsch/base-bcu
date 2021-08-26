@@ -26,7 +26,8 @@ class Backup:
     hardware_engage_request = Signal()
     hardware_disengage_request = Signal()
     reschedule_request = Signal()
-    delayed_shutdown_request = Signal()
+    stop_shutdown_timer_request = Signal()
+    backup_finished_notification = Signal()
 
     def __init__(self, is_maintenance_mode_on: Callable, backup_browser: BackupBrowser) -> None:
         self._is_maintenance_mode_on = is_maintenance_mode_on
@@ -54,7 +55,9 @@ class Backup:
         try:
             if self.backup_conditions_met:
                 LOG.debug("...and backup conditions are met!")
+                self.stop_shutdown_timer_request.emit()
                 self._run_backup_sequence()
+                return
             else:
                 LOG.debug("...but backup conditions are not met.")
         except NetworkError as e:
@@ -63,6 +66,7 @@ class Backup:
             LOG.error(e)
         except MountingError as e:
             LOG.error(e)
+        # TODO: Postpone backup
 
     def on_backup_abort(self, **kwargs):  # type: ignore
         if self._sync is not None:
@@ -79,10 +83,7 @@ class Backup:
         except NetworkError as e:
             LOG.error(e)
         finally:
-            self.reschedule_request.emit()
-            LOG.info(f"Now {'' if self._config.shutdown_between_backups else 'not '}going to sleep")
-            if self._config.shutdown_between_backups:
-                self.delayed_shutdown_request.emit()
+            self.backup_finished_notification.emit()
 
     def _run_backup_sequence(self) -> None:
         LOG.debug("Running backup sequence")

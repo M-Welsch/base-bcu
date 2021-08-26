@@ -1,3 +1,4 @@
 {
-    "logs_directory": "python.base/base/log"
+    "logs_directory": "python.base/base/log",
+    "shutdown_between_backups": true
 }
