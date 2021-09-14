@@ -77,8 +77,6 @@ class PartitionSignature:
 
 
 class DriveInspector:
-    command = ["lsblk", "-o", "NAME,PATH,MODEL,SERIAL,SIZE,MOUNTPOINT,ROTA,TYPE,STATE", "-b", "-J"]
-
     def __init__(self) -> None:
         self._partition_signature = PartitionSignature.from_json(Config("drive.json").backup_hdd_device_signature)
         self._devices: List[DriveInfo] = []
@@ -89,7 +87,7 @@ class DriveInspector:
         return self._devices
 
     def refresh(self) -> None:
-        json_info = self._query(DriveInspector.command)
+        json_info = self._query()
         self._devices = [DriveInfo.from_json(drive_json_info) for drive_json_info in json_info]
 
     @property
@@ -112,7 +110,8 @@ class DriveInspector:
         return partitions[0]
 
     @staticmethod
-    def _query(command: List[str]) -> List[Dict[str, Any]]:
+    def _query() -> List[Dict[str, Any]]:
+        command = ["lsblk", "-o", "NAME,PATH,MODEL,SERIAL,SIZE,MOUNTPOINT,ROTA,TYPE,STATE", "-b", "-J"]
         cp = run(command, stdout=PIPE, stderr=PIPE)
         if cp.stderr:
             raise ExternalCommandError(cp.stderr)

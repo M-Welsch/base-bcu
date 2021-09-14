@@ -5,7 +5,7 @@ import pytest
 from base.common.time_calculations import TimeCalculator
 
 
-def test_validate_config():
+def test_validate_config() -> None:
     @dataclass
     class Config:
         backup_frequency = "months"
@@ -20,24 +20,24 @@ def test_validate_config():
 
     for frequency in time_calculator._frequencies:
         config.backup_frequency = frequency
-        time_calculator._validate_config(config)
+        time_calculator._validate_config(config)  # type: ignore
 
     with pytest.raises(AssertionError):
         config.day_of_month = 32
-        time_calculator._validate_config(config)
+        time_calculator._validate_config(config)  # type: ignore
 
     with pytest.raises(AssertionError):
         config.day_of_week = 7
-        time_calculator._validate_config(config)
+        time_calculator._validate_config(config)  # type: ignore
 
     with pytest.raises(AssertionError):
         config.hour = 24
-        time_calculator._validate_config(config)
+        time_calculator._validate_config(config)  # type: ignore
 
     with pytest.raises(AssertionError):
         config.minute = 60
-        time_calculator._validate_config(config)
+        time_calculator._validate_config(config)  # type: ignore
 
     with pytest.raises(AssertionError):
         config.second = 60
-        time_calculator._validate_config(config)
+        time_calculator._validate_config(config)  # type: ignore
