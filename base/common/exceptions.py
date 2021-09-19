@@ -88,3 +88,7 @@ class ComponentOffError(Exception):
         self.component: str = component
         self.avoids_backup: bool = avoids_backup
         self.avoids_shutdown: bool = avoids_shutdown
+
+
+class BackupPartitionError(Exception):
+    pass
