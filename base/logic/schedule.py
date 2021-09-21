@@ -75,7 +75,7 @@ class Schedule:
 
     def set_shutdown_timer(self, i_know_what_i_am_doing: bool = False) -> None:
         if i_know_what_i_am_doing:
-            delay = self._config.shutdown_delay_minutes
+            delay = self._config.shutdown_delay_minutes * 60
             self._shutdown_job = self._scheduler.enter(delay, 1, self.shutdown_request.emit)
             # TODO: delay shutdown for 5 minutes or so on every event from webapp
 
