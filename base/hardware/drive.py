@@ -96,39 +96,53 @@ class Drive:
 
     def space_used_percent(self) -> float:
         if self._partition_info:
-            mount_point = Config("drive.json").backup_hdd_mount_point
+            mount_point = self._config.backup_hdd_mount_point
             command = ["df", "--output=pcent", mount_point]
             LOG.debug(f"obtaining space used on bu hdd with command: {command}")
             try:
-                proc = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
+                proc = Popen(command, stdout=PIPE, stderr=PIPE)
                 assert proc.stdout is not None
-                space_used = float(self._remove_heading_from_df_output(proc.stdout))
                 # LOG.info(f"Space used on Backup HDD: {space_used}%")
-            except ValueError:
-                LOG.debug(f"Value Error during 'space_used_percent' with command {command}")
-                space_used = 0
             except FileNotFoundError:
                 LOG.debug(f"FileNotFound during 'space_used_percent' with command {command}")
-                space_used = 0
-            except IndexError:
-                LOG.debug(f"IndexError during 'space_used_percent' with command {command}")
                 space_used = 0
             except TypeError:
                 LOG.debug(f"Retrival of used space not possible yet. Mounting still in progress")
                 space_used = 0
+            try:
+                space_used = float(self._extract_space_used_from_output(proc.stdout))
+            except IndexError:
+                LOG.debug(f"IndexError during 'space_used_percent' with command {command}")
+                space_used = 0
+            except ValueError:
+                LOG.debug(f"Value Error during 'space_used_percent' with command {command}")
+                space_used = 0
+
             if space_used is not None:
                 return space_used
         LOG.debug("no partition info in 'space_used_percent'")
         return 0
 
+    def _extract_space_used_from_output(self, df_output: IO[str]) -> float:
+        df_output_str = self._get_string_from_df_output(df_output)
+        space_used_percentage = self._remove_heading_from_df_output(df_output_str)
+        return space_used_percentage
+
     @staticmethod
-    def _remove_heading_from_df_output(df_output: IO[str]) -> str:
-        return str([item.split("%")[0] for item in df_output if not item.strip() == "Use%"][0])
+    def _get_string_from_df_output(df_output: IO[str]) -> str:
+        return df_output.read().decode()
+
+    # Todo: big one! Test the following function!!
+    @staticmethod
+    def _remove_heading_from_df_output(df_output_str: str) -> float:
+        string = "".join(x for x in df_output_str if x.isdigit())
+        return float(string) if string else 0
+        # original: str([item.split("%")[0] for item in df_output if not item.strip() == "Use%"][0])
 
 
 def call_mount_command(partition: str, mount_point: Path, file_system: str) -> None:
     command = [f"mount", "-t", str(file_system), str(partition), str(mount_point)]
-    LOG.debug("".join(command))
+    LOG.debug(" ".join(command))
     cp = run(command, stdout=PIPE, stderr=PIPE)
     if cp.stderr:
         raise MountingError(f"Partition could not be mounted: {str(cp.stderr)}")
@@ -136,7 +150,7 @@ def call_mount_command(partition: str, mount_point: Path, file_system: str) -> N
 
 def call_unmount_command(mount_point: Path) -> None:
     command = ["sudo", "umount", str(mount_point)]
-    LOG.debug("".join(command))
+    LOG.debug(" ".join(command))
     cp = run(command, stdout=PIPE, stderr=PIPE)
     if cp.stderr:
         raise MountingError(f"Partition could not be unmounted: {str(cp.stderr)}")
