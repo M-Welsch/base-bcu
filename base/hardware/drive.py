@@ -1,4 +1,3 @@
-from os import path
 from pathlib import Path
 from subprocess import PIPE, Popen, run
 from time import sleep
@@ -47,7 +46,7 @@ class Drive:
 
     @property
     def is_mounted(self) -> bool:
-        return path.ismount(self._config.backup_hdd_mount_point)
+        return Path(self._config.backup_hdd_mount_point).is_mount()
 
     @property
     def is_available(self) -> HddState:
@@ -132,12 +131,10 @@ class Drive:
     def _get_string_from_df_output(df_output: IO[bytes]) -> str:
         return str(df_output.read().decode())
 
-    # Todo: big one! Test the following function!!
     @staticmethod
     def _remove_heading_from_df_output(df_output_str: str) -> float:
         string = "".join(x for x in df_output_str if x.isdigit())
         return float(string) if string else 0
-        # original: str([item.split("%")[0] for item in df_output if not item.strip() == "Use%"][0])
 
 
 def call_mount_command(partition: str, mount_point: Path, file_system: str) -> None:
