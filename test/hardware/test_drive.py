@@ -8,7 +8,7 @@ import pytest
 
 from base.common.config import Config
 from base.common.drive_inspector import PartitionInfo
-from base.common.exceptions import MountingError, UnmountError
+from base.common.exceptions import MountingError
 from base.common.status import HddState
 from base.hardware.drive import Drive
 from base.logic.backup.backup_browser import BackupBrowser
@@ -24,7 +24,7 @@ class MockDrive(Drive):
         self._config.backup_hdd_mount_point = str(virtual_hard_drive_mountpoint)
 
     def _get_partition_info_or_raise(self) -> PartitionInfo:
-        return PartitionInfo(path=str(self._virtual_hard_drive_location), mount_point=None, bytes_size=0)
+        return PartitionInfo(path=str(self._virtual_hard_drive_location), mount_point="", bytes_size=0)
 
 
 @pytest.fixture
@@ -102,11 +102,11 @@ class TestDrive:
 
     @staticmethod
     def test_space_used_percent_invalid_mountpoint(drive_invalid_mountpoint: MockDrive) -> None:
-        drive_invalid_mountpoint._partition_info = PartitionInfo(path=None, mount_point=None, bytes_size=None)
+        drive_invalid_mountpoint._partition_info = PartitionInfo(path="", mount_point="", bytes_size=0)
         assert drive_invalid_mountpoint.space_used_percent() == 0
 
     @staticmethod
-    def test_get_string_from_df_output(drive: MockDrive):
+    def test_get_string_from_df_output(drive: MockDrive) -> None:
         string_to_verify = "somestring"
         p = subprocess.Popen(["echo", string_to_verify], stdout=subprocess.PIPE)
         result = drive._get_string_from_df_output(p.stdout)
@@ -114,5 +114,5 @@ class TestDrive:
 
     @staticmethod
     @pytest.mark.parametrize("test_in, test_out", [("Use%\n3%\n", 3), ("SomeInvalidStuff", 0)])
-    def test_remove_heading_from_df_output(drive: MockDrive, test_in: str, test_out: str):
+    def test_remove_heading_from_df_output(drive: MockDrive, test_in: str, test_out: str) -> None:
         assert drive._remove_heading_from_df_output(test_in) == test_out
