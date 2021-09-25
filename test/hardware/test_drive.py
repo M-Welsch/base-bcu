@@ -57,6 +57,21 @@ def drive_invalid_device(drive: MockDrive) -> Generator[MockDrive, None, None]:
     yield drive
 
 
+@pytest.fixture
+def drive_mounted(drive: MockDrive) -> Generator[MockDrive, None, None]:
+    """
+    Return a mounted MockDrive.
+
+    Waits for mount command to complete before yield.
+    """
+    subprocess.run(
+        f"sudo mount -t ext4 {drive._virtual_hard_drive_location} {drive._config.backup_hdd_mount_point}".split()
+    )
+    assert drive.is_mounted
+    drive._partition_info = drive._get_partition_info_or_raise()
+    yield drive
+
+
 def create_virtual_hard_drive(filename: Path) -> None:
     subprocess.Popen(f"dd if=/dev/zero of={filename} bs=1M count=1".split())
     subprocess.Popen(f"mkfs -t ext4 {filename}".split())
@@ -91,11 +106,11 @@ class TestDrive:
         assert drive_invalid_mountpoint.is_available == HddState.not_available
 
     @staticmethod
-    def test_unmount(drive: MockDrive) -> None:
-        if drive._partition_info is not None:
-            drive.unmount()
-            assert not drive.is_mounted
-            assert not Path(drive._partition_info.path).is_mount()
+    def test_unmount(drive_mounted: MockDrive) -> None:
+        drive_mounted.unmount()
+        assert not drive_mounted.is_mounted
+        assert drive_mounted._partition_info is not None
+        assert not Path(drive_mounted._partition_info.path).is_mount()
 
     @staticmethod
     def test_space_used_percent(drive: MockDrive) -> None:
