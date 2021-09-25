@@ -42,7 +42,7 @@ def drive(tmpdir_factory: _pytest.tmpdir.tmpdir_factory) -> Generator[MockDrive,
         virtual_hard_drive_location=virtual_hard_drive_location,
         virtual_hard_drive_mountpoint=virtual_hard_drive_mountpoint,
     )
-    # teardown_virtual_hard_drive(virtual_hard_drive_mountpoint)  # Fixme
+    teardown_virtual_hard_drive(virtual_hard_drive_mountpoint)
 
 
 @pytest.fixture
@@ -63,7 +63,8 @@ def create_virtual_hard_drive(filename: Path) -> None:
 
 
 def teardown_virtual_hard_drive(virtual_hard_drive_mountpoint: Path) -> None:
-    subprocess.Popen(f"sudo umount {virtual_hard_drive_mountpoint}")
+    if virtual_hard_drive_mountpoint.is_mount():
+        subprocess.Popen(f"sudo umount {virtual_hard_drive_mountpoint}".split())
 
 
 class TestDrive:
