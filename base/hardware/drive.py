@@ -30,7 +30,7 @@ class Drive:
     def mount(self) -> None:
         LOG.debug("Mounting drive")
         self._partition_info = self._get_partition_info_or_raise()
-        if self._partition_info.mount_point is None:
+        if not self._partition_info.mount_point:
             self._mount_backup_partition_or_raise(self._partition_info)
         LOG.info(f"Mounted HDD {self._partition_info.path} at {self._config.backup_hdd_mount_point}")
         self._available = HddState.available
@@ -94,7 +94,7 @@ class Drive:
                     else:
                         raise RuntimeError
 
-    def space_used_percent(self) -> float:
+    def space_used_percent(self) -> int:
         if self._partition_info:
             mount_point = self._config.backup_hdd_mount_point
             command = ["df", "--output=pcent", mount_point]
@@ -105,31 +105,31 @@ class Drive:
                 # LOG.info(f"Space used on Backup HDD: {space_used}%")
             except FileNotFoundError:
                 LOG.debug(f"FileNotFound during 'space_used_percent' with command {command}")
-                space_used = 0.0
+                return 0
             except TypeError:
                 LOG.debug(f"Retrival of used space not possible yet. Mounting still in progress")
-                space_used = 0.0
+                return 0
             try:
-                space_used = float(self._extract_space_used_from_output(proc.stdout))
+                space_used = int(self._extract_space_used_from_output(proc.stdout))
             except IndexError:
                 LOG.debug(f"IndexError during 'space_used_percent' with command {command}")
-                space_used = 0.0
+                space_used = 0
             except ValueError:
                 LOG.debug(f"Value Error during 'space_used_percent' with command {command}")
-                space_used = 0.0
+                space_used = 0
 
             if space_used is not None:
                 return space_used
         LOG.debug("no partition info in 'space_used_percent'")
-        return 0.0
+        return 0
 
-    def _extract_space_used_from_output(self, df_output: IO[str]) -> float:
+    def _extract_space_used_from_output(self, df_output: IO[bytes]) -> float:
         df_output_str = self._get_string_from_df_output(df_output)
         space_used_percentage = self._remove_heading_from_df_output(df_output_str)
         return space_used_percentage
 
     @staticmethod
-    def _get_string_from_df_output(df_output: IO[str]) -> str:
+    def _get_string_from_df_output(df_output: IO[bytes]) -> str:
         return str(df_output.read().decode())
 
     # Todo: big one! Test the following function!!

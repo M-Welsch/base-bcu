@@ -47,13 +47,13 @@ def drive(tmpdir_factory: _pytest.tmpdir.tmpdir_factory) -> Generator[MockDrive,
 
 @pytest.fixture
 def drive_invalid_mountpoint(drive: MockDrive) -> Generator[MockDrive, None, None]:
-    drive._config.backup_hdd_mount_point = str(Path(drive._config.backup_hdd_mount_point) / "nonexisting_subdir")
+    drive._config.backup_hdd_mount_point = str(Path(drive._config.backup_hdd_mount_point).parent / "nonexisting_dir")
     yield drive
 
 
 @pytest.fixture
 def drive_invalid_device(drive: MockDrive) -> Generator[MockDrive, None, None]:
-    drive._virtual_hard_drive_location = drive._virtual_hard_drive_location / "nonexisting_subdir"
+    drive._virtual_hard_drive_location = drive._virtual_hard_drive_location.parent / "nonexisting_drive"
     yield drive
 
 
@@ -113,6 +113,6 @@ class TestDrive:
         assert result.strip() == string_to_verify
 
     @staticmethod
-    @pytest.mark.parametrize("test_in, test_out", [("Use%\n3%\n", 3), ("SomeInvalidStuff", 0)])
+    @pytest.mark.parametrize("test_in, test_out", [("Use%\n3%\n", 3), ("SomeInvalidStuff", 0), ("", 0)])
     def test_remove_heading_from_df_output(drive: MockDrive, test_in: str, test_out: str) -> None:
         assert drive._remove_heading_from_df_output(test_in) == test_out
