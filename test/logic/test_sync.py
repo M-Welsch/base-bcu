@@ -73,7 +73,7 @@ def test_sync_smb(sync_smb: RsyncWrapperThread) -> None:
 def test_sync_ssh(sync_ssh: RsyncWrapperThread) -> None:
     print(
         "for this test to work you have to enable ssh access to yourself by "
-        "'sudo ssh-copy-id -i ~/.ssh/id_rsa.pub base@192.168.0.61'. Replace the ip-address with yours."
+        "'sudo ssh-copy-id -i ~/.ssh/id_rsa.pub base@192.168.0.61'. Replace the ip-address with your BaSe's."
         "The 'sudo' is important."
     )
     sync_ssh.start()
