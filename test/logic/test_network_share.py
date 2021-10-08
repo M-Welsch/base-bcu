@@ -2,9 +2,9 @@ import json
 import shutil
 from pathlib import Path
 from subprocess import PIPE, Popen, call
-from time import sleep
-from typing import Any, Generator
+from typing import Any, Dict, Generator, Union
 
+import _pytest
 import pytest
 
 from base.common.config import Config
@@ -22,7 +22,7 @@ def update_conf(file_path: Path, updates: Any) -> None:
 
 
 @pytest.fixture(scope="class")
-def network_share(tmpdir_factory) -> Generator[NetworkShare, None, None]:
+def network_share(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[NetworkShare, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     shutil.copytree("/home/base/python.base/base/config", config_dir)
@@ -31,7 +31,9 @@ def network_share(tmpdir_factory) -> Generator[NetworkShare, None, None]:
 
 
 @pytest.fixture()
-def virtual_network_share(tmpdir_factory) -> Generator[NetworkShare, None, None]:
+def virtual_network_share(
+    tmpdir_factory: pytest.TempdirFactory,
+) -> Generator[Dict[str, Union[NetworkShare, Path]], None, None]:
     dirs = {
         "smb_datasource": tmpdir_factory.mktemp("smb_datasource"),
         "vanilla_smb_conf": Path(__file__).parent / "smb.conf",
@@ -86,7 +88,11 @@ def restart_smbd() -> None:
 
 
 def check_share_mounted(share_name: str) -> bool:
-    return share_name in str((Popen(f"mount | grep {share_name}", shell=True, stdout=PIPE).stdout.read()))
+    p = Popen(f"mount | grep {share_name}", shell=True, stdout=PIPE)
+    if p.stdout is not None:
+        return share_name in str(p.stdout.read())
+    else:
+        return False
 
 
 class TestNetworkShare:

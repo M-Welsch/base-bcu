@@ -38,7 +38,7 @@ class Drive:
     def unmount(self) -> None:
         try:
             LOG.debug("Unmounting drive")
-            self._unmount_backup_hdd()
+            self._unmount_backup_hdd_or_raise()
         except UnmountError:
             LOG.error(f"Unmounting didn't work: {UnmountError}")
         except RuntimeError:
@@ -70,29 +70,6 @@ class Drive:
             self._available = HddState.not_available
             raise e
 
-    # Todo: cleanup this mess
-    def _unmount_backup_hdd(self) -> None:
-        LOG.debug("Trying to unmount backup HDD...")
-        unmount_trials = 0
-        unmount_success = False
-        while unmount_trials < 5 and not unmount_success:
-            try:
-                call_unmount_command(self._config.backup_hdd_mount_point)
-                unmount_success = True
-            except ExternalCommandError as e:
-                if "not mounted" in str(e):
-                    LOG.warning(f"BackupHDD already unmounted. stderr: {e}")
-                    unmount_success = True
-                # Todo: find out who accesses the drive right now and write into logfile (with lsof?)
-                sleep(1)
-                unmount_trials += 1
-                if unmount_trials == 5:
-                    LOG.warning(f"Couldn't unmount BackupHDD within 5 trials. Error: {e}")
-                    if "target is busy" in str(e):
-                        raise UnmountError(e)
-                    else:
-                        raise RuntimeError
-
     def _unmount_backup_hdd_or_raise(self) -> None:
         LOG.debug("Trying to unmount backup HDD...")
         for i in range(self._config.backup_hdd_unmount_trials):
@@ -100,11 +77,15 @@ class Drive:
                 call_unmount_command(self._config.backup_hdd_mount_point)
                 return
             except UnmountError as e:
-                LOG.warning(f"Couldn't unmount BackupHDD after {i+1} trials. "
-                            f"Waiting for {self._config.backup_hdd_unmount_waiting_secs}s and try again. Error: {e}")
+                LOG.warning(
+                    f"Couldn't unmount BackupHDD after {i+1} trials. "
+                    f"Waiting for {self._config.backup_hdd_unmount_waiting_secs}s and try again. Error: {e}"
+                )
             sleep(self._config.backup_hdd_unmount_waiting_secs)
-        LOG.warning(f"Couldn't unmount BackupHDD within {self._config.backup_hdd_unmount_trials} trials and waiting "
-                    f"for {self._config.backup_hdd_unmount_waiting_secs}s between trials.")
+        LOG.warning(
+            f"Couldn't unmount BackupHDD within {self._config.backup_hdd_unmount_trials} trials and waiting "
+            f"for {self._config.backup_hdd_unmount_waiting_secs}s between trials."
+        )
         raise UnmountError
 
     def space_used_percent(self) -> int:

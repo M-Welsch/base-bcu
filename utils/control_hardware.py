@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+
 import click
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -8,17 +9,18 @@ sys.path.append(path_to_module)
 
 
 @click.command()
-@click.option('--dock', '-d', help='dock backup hdd', is_flag=True, default=False)
-@click.option('--undock', '-u', help='undock backup hdd', is_flag=True, default=False)
-@click.option('--power', '-p', help='power backup hdd', is_flag=True, default=False)
-@click.option('--unpower', '-r', help='unpower backup hdd', is_flag=True, default=False)
-def control_hardware(dock, undock, power, unpower):
+@click.option("--dock", "-d", help="dock backup hdd", is_flag=True, default=False)
+@click.option("--undock", "-u", help="undock backup hdd", is_flag=True, default=False)
+@click.option("--power", "-p", help="power backup hdd", is_flag=True, default=False)
+@click.option("--unpower", "-r", help="unpower backup hdd", is_flag=True, default=False)
+def control_hardware(dock: bool, undock: bool, power: bool, unpower: bool) -> None:
     cfg_path = Path("/home/base/python.base/base/config/")
     setup_logger(cfg_path)
     setup_config(cfg_path)
 
     from base.hardware.hardware import Hardware
     from base.logic.backup.backup_browser import BackupBrowser
+
     hardware = Hardware(backup_browser=BackupBrowser())
 
     if dock:

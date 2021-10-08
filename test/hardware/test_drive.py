@@ -1,3 +1,4 @@
+import logging
 import subprocess
 from pathlib import Path
 from shutil import copytree
@@ -5,13 +6,16 @@ from typing import Generator
 
 import _pytest
 import pytest
+from _pytest.logging import LogCaptureFixture
 
 from base.common.config import Config
 from base.common.drive_inspector import PartitionInfo
-from base.common.exceptions import MountError
+from base.common.exceptions import MountError, UnmountError
 from base.common.status import HddState
-from base.hardware.drive import Drive
+from base.hardware.drive import LOG, Drive
 from base.logic.backup.backup_browser import BackupBrowser
+
+LOG.propagate = True
 
 
 class MockDrive(Drive):
@@ -28,7 +32,7 @@ class MockDrive(Drive):
 
 
 @pytest.fixture
-def drive(tmpdir_factory: _pytest.tmpdir.tmpdir_factory) -> Generator[MockDrive, None, None]:
+def drive(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[MockDrive, None, None]:
     tmpdir = Path(tmpdir_factory.mktemp("drive_test_config_dir"))
     virtual_hard_drive_location = tmpdir / "VHD.img"
     virtual_hard_drive_mountpoint = (tmpdir / "VHD").resolve()
@@ -111,6 +115,14 @@ class TestDrive:
         assert not drive_mounted.is_mounted
         assert drive_mounted._partition_info is not None
         assert not Path(drive_mounted._partition_info.path).is_mount()
+
+    @staticmethod
+    def test_unmount_invalid_mountpoint(drive_invalid_mountpoint: MockDrive, caplog: LogCaptureFixture) -> None:
+        with caplog.at_level(logging.ERROR):
+            drive_invalid_mountpoint.unmount()
+        assert "Unmounting didn't work:" in caplog.text
+        with pytest.raises(UnmountError):
+            drive_invalid_mountpoint._unmount_backup_hdd_or_raise()
 
     @staticmethod
     def test_space_used_percent(drive: MockDrive) -> None:

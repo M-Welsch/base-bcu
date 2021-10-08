@@ -7,6 +7,7 @@ from pathlib import Path
 from time import sleep
 from typing import Any, Generator
 
+import _pytest
 import pytest
 
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +26,7 @@ def update_conf(file_path: Path, updates: Any) -> None:
 
 
 @pytest.fixture
-def sync_smb(tmpdir_factory: pytest.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
+def sync_smb(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
@@ -45,7 +46,7 @@ def sync_smb(tmpdir_factory: pytest.TempdirFactory) -> Generator[RsyncWrapperThr
 
 
 @pytest.fixture
-def sync_ssh(tmpdir_factory: pytest.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
+def sync_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")

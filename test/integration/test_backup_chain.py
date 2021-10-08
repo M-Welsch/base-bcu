@@ -49,7 +49,7 @@ def make_base_application() -> BaSeApplication:
 
 
 @pytest.fixture()
-def app_smb(tmpdir_factory: _pytest.tmpdir.tmpdir_factory) -> Generator[BaSeApplication, None, None]:
+def app_smb(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[BaSeApplication, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     shutil.copytree("/home/base/python.base/base/config", config_dir)
@@ -61,7 +61,7 @@ def app_smb(tmpdir_factory: _pytest.tmpdir.tmpdir_factory) -> Generator[BaSeAppl
 
 
 @pytest.fixture()
-def app_ssh(tmpdir_factory: _pytest.tmpdir.tmpdir_factory) -> Generator[BaSeApplication, None, None]:
+def app_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[BaSeApplication, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     shutil.copytree("/home/base/python.base/base/config", config_dir)
