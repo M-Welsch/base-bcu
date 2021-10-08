@@ -40,9 +40,9 @@ class Drive:
             LOG.debug("Unmounting drive")
             self._unmount_backup_hdd_or_raise()
         except UnmountError:
-            LOG.error(f"Unmounting didn't work: {UnmountError}")
+            LOG.warning(f"Unmounting didn't work: {UnmountError}")
         except RuntimeError:
-            LOG.error(f"Unmounting didn't work: {RuntimeError}")
+            LOG.warning(f"Unmounting didn't work: {RuntimeError}")
 
     @property
     def is_mounted(self) -> bool:

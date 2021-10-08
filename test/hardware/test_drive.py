@@ -118,7 +118,7 @@ class TestDrive:
 
     @staticmethod
     def test_unmount_invalid_mountpoint(drive_invalid_mountpoint: MockDrive, caplog: LogCaptureFixture) -> None:
-        with caplog.at_level(logging.ERROR):
+        with caplog.at_level(logging.WARNING):
             drive_invalid_mountpoint.unmount()
         assert "Unmounting didn't work:" in caplog.text
         with pytest.raises(UnmountError):

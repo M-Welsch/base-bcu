@@ -62,6 +62,8 @@ class SshRsync:
         self._command: List[str] = self._compose_rsync_command(local_target_location, source_location)
         self._process: Optional[subprocess.Popen] = None
         self._status: SshRsync.SyncStatus = self.SyncStatus()
+        self._sync_config = Config("sync.json")
+        self._nas_config = Config("nas.json")
 
     def __enter__(self) -> Generator[SshRsync.SyncStatus, None, None]:
         self._process = Popen(
@@ -86,19 +88,17 @@ class SshRsync:
         except ProcessLookupError:
             pass
 
-    @staticmethod
-    def _compose_rsync_command(local_target_location: Path, source_location: Path) -> List[str]:
-        sync_config = Config("sync.json")
-        nas_config = Config("nas.json")
-        host = nas_config.ssh_host
-        user = nas_config.ssh_user
-        protocol = sync_config.protocol
+    def _compose_rsync_command(self, local_target_location: Path, source_location: Path) -> List[str]:
+        host = self._nas_config.ssh_host
+        user = self._nas_config.ssh_user
+        protocol = self._sync_config.protocol
+        ssh_keyfile_path = self._sync_config.ssh_keyfile_path
         command = "sudo rsync -avH".split()
         if protocol == "smb":
             command.extend(f"{source_location}/ {local_target_location}".split())
         else:
             command.append("-e")
-            command.append("ssh -i /home/base/.ssh/id_rsa")
+            command.append(f"ssh -i {ssh_keyfile_path}")
             command.extend(f"{user}@{host}:{source_location}/ {local_target_location}".split())
         command.extend("--outbuf=N --info=progress2".split())
         LOG.info(f"About to sync with: {command}")
@@ -159,9 +159,7 @@ class RsyncWrapperThread(Thread):
 
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
         super().__init__()
-        self._ssh_rsync: Optional[SshRsync] = None
-        self._local_target_location: Path = local_target_location
-        self._source_location: Path = source_location
+        self._ssh_rsync = SshRsync(local_target_location, source_location)
 
     @property
     def running(self) -> bool:
@@ -174,7 +172,6 @@ class RsyncWrapperThread(Thread):
         return self._ssh_rsync.pid
 
     def run(self) -> None:
-        self._ssh_rsync = SshRsync(self._local_target_location, self._source_location)
         with self._ssh_rsync as output_generator:
             for status in output_generator:
                 LOG.debug(str(status))
