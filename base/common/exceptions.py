@@ -13,7 +13,7 @@ class UndockingError(BackupserverException):
     pass
 
 
-class MountingError(BackupserverException):
+class MountError(BackupserverException):
     pass
 
 

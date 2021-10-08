@@ -4,7 +4,7 @@ from typing import Optional
 from signalslot import Signal
 
 from base.common.config import Config
-from base.common.exceptions import DockingError, MountingError, NetworkError
+from base.common.exceptions import DockingError, MountError, NetworkError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
@@ -61,7 +61,7 @@ class Backup:
             LOG.error(e)
         except DockingError as e:
             LOG.error(e)
-        except MountingError as e:
+        except MountError as e:
             LOG.error(e)
 
     def on_backup_abort(self, **kwargs):  # type: ignore

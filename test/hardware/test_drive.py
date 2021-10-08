@@ -8,7 +8,7 @@ import pytest
 
 from base.common.config import Config
 from base.common.drive_inspector import PartitionInfo
-from base.common.exceptions import MountingError
+from base.common.exceptions import MountError
 from base.common.status import HddState
 from base.hardware.drive import Drive
 from base.logic.backup.backup_browser import BackupBrowser
