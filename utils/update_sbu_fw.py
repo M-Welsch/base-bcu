@@ -5,19 +5,28 @@ from pathlib import Path
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
-from base.common.config import Config
-from base.hardware.sbu.sbu_updater import SbuUpdater
+
+def setup_config(config_path: Path) -> None:
+    from base.common.config import Config
+
+    Config.set_config_base_path(config_path)
 
 
-class UpdateSbu:
-    def __init__(self) -> None:
-        Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
-        self._sbuu = SbuUpdater()
+def setup_logger(config_path: Path) -> None:
+    from base.common.logger import LoggerFactory
 
-    def update(self) -> None:
-        self._sbuu.update()
+    LoggerFactory(config_path, "BaSe", development_mode=True)
+
+
+def main() -> None:
+    from base.hardware.sbu.sbu_updater import SbuUpdater
+
+    usbu = SbuUpdater()
+    usbu.update()
 
 
 if __name__ == "__main__":
-    usbu = UpdateSbu()
-    usbu.update()
+    cfg_path = Path("/home/base/python.base/base/config/")
+    setup_logger(cfg_path)
+    setup_config(cfg_path)
+    main()

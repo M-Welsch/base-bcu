@@ -95,13 +95,13 @@ class TestDrive:
 
     @staticmethod
     def test_mount_invalid_device(drive_invalid_device: MockDrive) -> None:
-        with pytest.raises(MountingError):
+        with pytest.raises(MountError):
             drive_invalid_device.mount()
         assert drive_invalid_device.is_available == HddState.not_available
 
     @staticmethod
     def test_mount_invalid_mountpoint(drive_invalid_mountpoint: MockDrive) -> None:
-        with pytest.raises(MountingError):
+        with pytest.raises(MountError):
             drive_invalid_mountpoint.mount()
         assert drive_invalid_mountpoint.is_available == HddState.not_available
 

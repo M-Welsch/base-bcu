@@ -6,7 +6,7 @@ from typing.io import IO
 
 from base.common.config import Config
 from base.common.drive_inspector import PartitionInfo
-from base.common.exceptions import BackupPartitionError, ExternalCommandError, MountingError, UnmountError
+from base.common.exceptions import BackupPartitionError, ExternalCommandError, MountError, UnmountError
 from base.common.file_system import FileSystemWatcher
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
@@ -65,7 +65,7 @@ class Drive:
             call_mount_command(
                 partition_info.path, Path(self._config.backup_hdd_mount_point), self._config.backup_hdd_file_system
             )
-        except MountingError as e:
+        except MountError as e:
             LOG.error("Backup HDD could not be mounted!")
             self._available = HddState.not_available
             raise e
@@ -92,6 +92,20 @@ class Drive:
                         raise UnmountError(e)
                     else:
                         raise RuntimeError
+
+    def _unmount_backup_hdd_or_raise(self) -> None:
+        LOG.debug("Trying to unmount backup HDD...")
+        for i in range(self._config.backup_hdd_unmount_trials):
+            try:
+                call_unmount_command(self._config.backup_hdd_mount_point)
+                return
+            except UnmountError as e:
+                LOG.warning(f"Couldn't unmount BackupHDD after {i+1} trials. "
+                            f"Waiting for {self._config.backup_hdd_unmount_waiting_secs}s and try again. Error: {e}")
+            sleep(self._config.backup_hdd_unmount_waiting_secs)
+        LOG.warning(f"Couldn't unmount BackupHDD within {self._config.backup_hdd_unmount_trials} trials and waiting "
+                    f"for {self._config.backup_hdd_unmount_waiting_secs}s between trials.")
+        raise UnmountError
 
     def space_used_percent(self) -> int:
         if self._partition_info:
@@ -142,7 +156,7 @@ def call_mount_command(partition: str, mount_point: Path, file_system: str) -> N
     LOG.debug(" ".join(command))
     cp = run(command, stdout=PIPE, stderr=PIPE)
     if cp.stderr:
-        raise MountingError(f"Partition could not be mounted: {str(cp.stderr)}")
+        raise MountError(f"Partition could not be mounted: {str(cp.stderr)}")
 
 
 def call_unmount_command(mount_point: Path) -> None:
@@ -150,4 +164,4 @@ def call_unmount_command(mount_point: Path) -> None:
     LOG.debug(" ".join(command))
     cp = run(command, stdout=PIPE, stderr=PIPE)
     if cp.stderr:
-        raise MountingError(f"Partition could not be unmounted: {str(cp.stderr)}")
+        raise UnmountError(f"Partition could not be unmounted: {str(cp.stderr)}")

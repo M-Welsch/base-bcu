@@ -28,6 +28,7 @@ class SbuUpdater:
         self._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
         if sbu_fw_filename is None:
             sbu_fw_filename = self._get_filename_of_newest_hex_file()
+            LOG.info(f"updating sbu with file: {sbu_fw_filename}")
         self._execute_sbu_update(sbu_fw_filename, sbu_uart_channel)
 
     def _execute_sbu_update(self, sbu_fw_filename: Path, sbu_uart_channel: Path) -> None:
