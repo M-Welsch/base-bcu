@@ -58,12 +58,12 @@ class SshRsync:
             return f"Status(path={self.path}, progress={self.progress}, finished={self.finished})"
 
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
+        self._sync_config = Config("sync.json")
+        self._nas_config = Config("nas.json")
         self._local_target_location: Path = local_target_location
         self._command: List[str] = self._compose_rsync_command(local_target_location, source_location)
         self._process: Optional[subprocess.Popen] = None
         self._status: SshRsync.SyncStatus = self.SyncStatus()
-        self._sync_config = Config("sync.json")
-        self._nas_config = Config("nas.json")
 
     def __enter__(self) -> Generator[SshRsync.SyncStatus, None, None]:
         self._process = Popen(
