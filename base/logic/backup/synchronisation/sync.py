@@ -44,6 +44,7 @@ class Sync:
         exc_value: Optional[BaseException],
         exc_traceback: Optional[TracebackType],
     ) -> None:
+        self._process.wait(1)
         try:
             self.terminate()
         except ProcessLookupError:
