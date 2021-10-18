@@ -8,7 +8,7 @@ from base.common.exceptions import DockingError, MountError, NetworkError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
-from base.logic.backup.sync import RsyncWrapperThread
+from base.logic.backup.synchronisation.sync_thread import SyncThread
 from base.logic.nas import Nas
 from base.logic.network_share import NetworkShare
 
@@ -31,7 +31,7 @@ class Backup:
     def __init__(self, is_maintenance_mode_on: Callable, backup_browser: BackupBrowser) -> None:
         self._is_maintenance_mode_on = is_maintenance_mode_on
         self._backup_browser = backup_browser
-        self._sync: Optional[RsyncWrapperThread] = None
+        self._sync: Optional[SyncThread] = None
         self._config = Config("backup.json")
         self._postpone_count = 0
         self._nas = Nas()
@@ -99,7 +99,7 @@ class Backup:
         # Todo: put IncrementalBackupPrepararor into sync-thread to be interruptable
         backup_source_directory, backup_target_directory = IncrementalBackupPreparator(self._backup_browser).prepare()
         LOG.info(f"Backing up into: {backup_target_directory}")
-        self._sync = RsyncWrapperThread(backup_target_directory, backup_source_directory)
+        self._sync = SyncThread(backup_target_directory, backup_source_directory)
         self._sync.terminated.connect(self.on_backup_finished)
         self._sync.start()
 

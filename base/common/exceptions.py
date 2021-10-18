@@ -92,3 +92,11 @@ class ComponentOffError(Exception):
 
 class BackupPartitionError(Exception):
     pass
+
+
+class RemoteDirectoryException(Exception):
+    pass
+
+
+class LocalDirectoryException(Exception):
+    pass

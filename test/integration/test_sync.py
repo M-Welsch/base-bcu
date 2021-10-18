@@ -14,7 +14,7 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 from base.common.config import Config
-from base.logic.backup.sync import RsyncWrapperThread
+from base.logic.backup.synchronisation.sync_thread import SyncThread
 
 
 def update_conf(file_path: Path, updates: Any) -> None:
@@ -26,10 +26,10 @@ def update_conf(file_path: Path, updates: Any) -> None:
 
 
 @pytest.fixture
-def sync_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
+def sync_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SyncThread, None, None]:
     backup_source_location = Path(tmpdir_factory.mktemp("backup_source_location"))
     backup_target_location = Path(tmpdir_factory.mktemp("backup_target_location"))
-    rsync_wrapper_thread = RsyncWrapperThread(backup_target_location, backup_source_location)
+    rsync_wrapper_thread = SyncThread(backup_target_location, backup_source_location)
     raise ZeroDivisionError(f"y<<<<<<< {dir(rsync_wrapper_thread._ssh_rsync)}")
     rsync_wrapper_thread._ssh_rsync._nas_config["ssh_host"] = "localhost"
     rsync_wrapper_thread._ssh_rsync._nas_config["ssh_user"] = "base"
@@ -40,7 +40,7 @@ def sync_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[RsyncWr
 
 
 @pytest.fixture
-def sync_smb(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
+def sync_smb(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SyncThread, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
@@ -56,11 +56,11 @@ def sync_smb(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[RsyncWr
     )
     update_conf(config_dir / "backup.json", {"shutdown_between_backups": False})
     Config.set_config_base_path(config_dir)
-    yield RsyncWrapperThread(backup_target_location, backup_source_location)
+    yield SyncThread(backup_target_location, backup_source_location)
 
 
 @pytest.fixture
-def sync_ssh_(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[RsyncWrapperThread, None, None]:
+def sync_ssh_(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SyncThread, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
@@ -77,16 +77,16 @@ def sync_ssh_(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[RsyncW
     update_conf(config_dir / "backup.json", {"shutdown_between_backups": False})
     update_conf(config_dir / "nas.json", {"ssh_host": "192.168.0.61", "ssh_user": "base"})
     Config.set_config_base_path(config_dir)
-    yield RsyncWrapperThread(backup_target_location, backup_source_location)
+    yield SyncThread(backup_target_location, backup_source_location)
 
 
 @pytest.mark.skip
-def test_sync_smb(sync_smb: RsyncWrapperThread) -> None:
+def test_sync_smb(sync_smb: SyncThread) -> None:
     sync_smb.start()
     sleep(2)
 
 
-def test_sync_ssh(sync_ssh: RsyncWrapperThread) -> None:
+def test_sync_ssh(sync_ssh: SyncThread) -> None:
     print(
         "for this test to work you have to enable ssh access to yourself by "
         "'sudo ssh-copy-id -i ~/.ssh/id_rsa.pub base@192.168.0.61'. Replace the ip-address with your BaSe's."

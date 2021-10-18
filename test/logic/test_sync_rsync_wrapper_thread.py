@@ -2,12 +2,11 @@ import logging
 from time import sleep
 
 import pytest
-import pytest_mock
 from _pytest.logging import LogCaptureFixture
 from pathlib import Path
 from signalslot import Signal
 
-from base.logic.backup.sync import RsyncWrapperThread
+from base.logic.backup.synchronisation.sync_thread import SyncThread
 from base.common.config import Config
 
 
@@ -45,7 +44,7 @@ class SshRsyncMockLoooongLoop:
 def rsync_wrapper_thread(mocker):
     Config.set_config_base_path(Path('python.base/base/config'))
     mocker.patch('signalslot.Signal.emit')
-    rswt = RsyncWrapperThread(local_target_location=Path(), source_location=Path())
+    rswt = SyncThread(local_target_location=Path(), source_location=Path())
     # monkeypatch.setattr(sync.RsyncWrapperThread, '_ssh_rsync', SshRsyncMock(["first", "second"]))
     rswt._ssh_rsync = SshRsyncMock()
     yield rswt
@@ -55,13 +54,13 @@ def rsync_wrapper_thread(mocker):
 def rsync_wrapper_thread_loooong_loop(mocker):
     Config.set_config_base_path(Path('python.base/base/config'))
     mocker.patch('signalslot.Signal.emit')
-    rswt = RsyncWrapperThread(local_target_location=Path(), source_location=Path())
+    rswt = SyncThread(local_target_location=Path(), source_location=Path())
     rswt._ssh_rsync = SshRsyncMockLoooongLoop()
     yield rswt
 
 
 class TestRsyncWrapperThread:
-    def test_run_rsync_wrapper_thread(self, rsync_wrapper_thread: RsyncWrapperThread, caplog: LogCaptureFixture):
+    def test_run_rsync_wrapper_thread(self, rsync_wrapper_thread: SyncThread, caplog: LogCaptureFixture):
         with caplog.at_level(logging.DEBUG):
             rsync_wrapper_thread.start()
             rsync_wrapper_thread.join()
@@ -70,7 +69,7 @@ class TestRsyncWrapperThread:
         assert "Backup finished!" in caplog.text
         Signal.emit.assert_called_once_with()
 
-    def test_terminate_rsync_wrapper_thread(self, rsync_wrapper_thread_loooong_loop: RsyncWrapperThread):
+    def test_terminate_rsync_wrapper_thread(self, rsync_wrapper_thread_loooong_loop: SyncThread):
         rsync_wrapper_thread_loooong_loop.start()
         assert rsync_wrapper_thread_loooong_loop.running
         rsync_wrapper_thread_loooong_loop.terminate()
