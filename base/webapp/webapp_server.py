@@ -60,7 +60,7 @@ class WebappServer(Thread):
                 await websocket.send(get_config_data())
             elif message.startswith("new config: "):
                 update_config_data(message[len("new config: ") :])
-                Config.config_changed.emit()
+                Config.reload_all()
                 self.reschedule_request.emit()
             elif message.startswith("display brightness: "):
                 payload = message[len("display brightness: ") :]

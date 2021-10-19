@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Any, Set
-
-from signalslot import Signal
+from weakref import WeakValueDictionary
 
 from base.common.logger import LoggerFactory
 
@@ -14,20 +15,31 @@ class ConfigValidationError(Exception):
 
 
 class Config(dict):
-    config_changed = Signal()
     base_path = Path("base/config/")
+    __instances: WeakValueDictionary[str, Config] = WeakValueDictionary()
+
+    def __new__(cls, config_file_name: str, *args: Any, **kwargs: Any) -> Config:
+        if config_file_name in cls.__instances:
+            return cls.__instances[config_file_name]
+        self: Config = super().__new__(cls)
+        cls.__instances[config_file_name] = self
+        return self
 
     def __init__(self, config_file_name: str, read_only: bool = True, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._read_only: bool = read_only
         self._config_path: Path = self.base_path / config_file_name
         self._initialized: bool = True
-        self.config_changed.connect(self.reload)
         self.reload()
 
     @classmethod
     def set_config_base_path(cls, base_dir: Path) -> None:
         cls.base_path = base_dir
+
+    @classmethod
+    def reload_all(cls) -> None:
+        for config in cls.__instances.values():
+            config.reload()
 
     def reload(self, **kwargs):  # type: ignore
         LOG.info(f"reloading config: {self._config_path}")
