@@ -14,6 +14,10 @@ class ConfigValidationError(Exception):
     pass
 
 
+class ConfigSaveError(Exception):
+    pass
+
+
 class Config(dict):
     def __init__(self, data: Dict[str, Any], read_only: bool = True, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -82,6 +86,9 @@ class BoundConfig(Config):
             self.update(json.load(jf))
 
     def save(self) -> None:
+        LOG.info(f"saving config: {self._config_path}")
+        if self._read_only:
+            raise ConfigSaveError("This config is read-only and is therefore not savable")
         with open(self._config_path, "w") as jf:
             json.dump(self, jf)
 
