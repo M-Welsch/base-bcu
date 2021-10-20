@@ -7,13 +7,13 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.drive_inspector import DriveInfo, DriveInspector
 
 
 class BuHddSetter:
     def __init__(self) -> None:
-        Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
+        BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config/"))
         self._drive_inspector = DriveInspector()
 
     def set_conneted_hdd_as_backup_hdd(self) -> None:

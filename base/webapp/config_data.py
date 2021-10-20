@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -13,7 +13,7 @@ def get_config_data() -> str:
         with open(path, "r") as jf:
             return json.load(jf)
 
-    return json.dumps({file.stem: json_content(file) for file in Path(Config.base_path).glob("*.json")})
+    return json.dumps({file.stem: json_content(file) for file in Path(BoundConfig.base_path).glob("*.json")})
 
 
 def update_config_data(new_cfg_s: str) -> None:
@@ -28,7 +28,7 @@ def update_config_data(new_cfg_s: str) -> None:
 
 def update_config_file(content: Any, file: str) -> None:
     try:
-        cfg_filename = Path(Config.base_path) / f"{file}.json"
+        cfg_filename = Path(BoundConfig.base_path) / f"{file}.json"
         with open(cfg_filename, "r") as cfg_file:
             cfg: dict = json.load(cfg_file)
         cfg.update(content)
