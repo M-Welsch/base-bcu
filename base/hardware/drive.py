@@ -4,7 +4,7 @@ from time import sleep
 from typing import List, Optional
 from typing.io import IO
 
-from base.common.config import Config
+from base.common.config import BoundConfig, Config
 from base.common.drive_inspector import DriveInspector, PartitionInfo
 from base.common.exceptions import ExternalCommandError, MountingError, UnmountError
 from base.common.file_system import FileSystemWatcher
@@ -18,7 +18,7 @@ LOG = LoggerFactory.get_logger(__name__)
 class Drive:
     def __init__(self, backup_browser: BackupBrowser):
         self._backup_browser: BackupBrowser = backup_browser
-        self._config: Config = Config("drive.json")
+        self._config: Config = BoundConfig("drive.json")
         self._partition_info: Optional[PartitionInfo] = None
         self._available: HddState = HddState.unknown
 
@@ -96,7 +96,7 @@ class Drive:
 
     def space_used_percent(self) -> float:
         if self._partition_info:
-            mount_point = Config("drive.json").backup_hdd_mount_point
+            mount_point = BoundConfig("drive.json").backup_hdd_mount_point
             command = ["df", "--output=pcent", mount_point]
             LOG.debug(f"obtaining space used on bu hdd with command: {command}")
             try:

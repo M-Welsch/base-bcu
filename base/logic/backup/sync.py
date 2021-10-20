@@ -12,7 +12,7 @@ from typing import Generator, List, Optional, Type
 
 from signalslot import Signal
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -88,8 +88,8 @@ class SshRsync:
 
     @staticmethod
     def _compose_rsync_command(local_target_location: Path, source_location: Path) -> List[str]:
-        sync_config = Config("sync.json")
-        nas_config = Config("nas.json")
+        sync_config = BoundConfig("sync.json")
+        nas_config = BoundConfig("nas.json")
         host = nas_config.ssh_host
         user = nas_config.ssh_user
         protocol = sync_config.protocol
