@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Type
 
 import serial
 
-from base.common.config import Config
+from base.common.config import BoundConfig, Config
 from base.common.exceptions import SbuCommunicationTimeout, SerialWrapperError
 from base.common.logger import LoggerFactory
 from base.hardware.pin_interface import PinInterface
@@ -24,7 +24,7 @@ class SerialWrapper:
         self, port: Path, automatically_free_channel: bool, baud_rate: int = 9600
     ) -> None:  # TODO: Move baud_rate to seperate constants file
         if SerialWrapper._config is None:
-            SerialWrapper._config = Config("sbu.json")
+            SerialWrapper._config = BoundConfig("sbu.json")
         self._port: Path = port
         self._automatically_free_channel: bool = automatically_free_channel
         self._baud_rate: int = baud_rate

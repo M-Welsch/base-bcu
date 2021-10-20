@@ -5,7 +5,7 @@ from typing import Generator
 import _pytest
 import pytest
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.logic.nas import Nas
 
 
@@ -22,7 +22,7 @@ def nas(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[Nas, None, N
         sync_config_data = json.load(src)
         sync_config_data["protocol"] = "sftp"
         json.dump(sync_config_data, dst)
-    Config.set_config_base_path(config_test_path)
+    BoundConfig.set_config_base_path(config_test_path)
     yield Nas()
 
 

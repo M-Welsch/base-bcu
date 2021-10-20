@@ -7,7 +7,7 @@ from typing import Optional, Set
 import websockets
 from signalslot import Signal
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.exceptions import MountError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup_browser import BackupBrowser
@@ -60,7 +60,7 @@ class WebappServer(Thread):
                 await websocket.send(get_config_data())
             elif message.startswith("new config: "):
                 update_config_data(message[len("new config: ") :])
-                Config.config_changed.emit()
+                BoundConfig.reload_all()
                 self.reschedule_request.emit()
             elif message.startswith("display brightness: "):
                 payload = message[len("display brightness: ") :]

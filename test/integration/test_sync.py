@@ -13,7 +13,7 @@ import pytest
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.logic.backup.synchronisation.sync_thread import SyncThread
 
 
@@ -55,7 +55,7 @@ def sync_smb(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SyncThr
         config_dir / "sync.json", {"remote_backup_source_location": str(backup_target_location), "protocol": "smb"}
     )
     update_conf(config_dir / "backup.json", {"shutdown_between_backups": False})
-    Config.set_config_base_path(config_dir)
+    BoundConfig.set_config_base_path(config_dir)
     yield SyncThread(backup_target_location, backup_source_location)
 
 
@@ -76,7 +76,7 @@ def sync_ssh_(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SyncTh
     )
     update_conf(config_dir / "backup.json", {"shutdown_between_backups": False})
     update_conf(config_dir / "nas.json", {"ssh_host": "192.168.0.61", "ssh_user": "base"})
-    Config.set_config_base_path(config_dir)
+    BoundConfig.set_config_base_path(config_dir)
     yield SyncThread(backup_target_location, backup_source_location)
 
 

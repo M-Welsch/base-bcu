@@ -3,14 +3,14 @@ from pathlib import Path
 from subprocess import PIPE, STDOUT, Popen, SubprocessError, TimeoutExpired
 from typing import IO, Optional
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
 def dump_ifconfig() -> None:
-    logs_directory = Config("base.json").logs_directory
+    logs_directory = BoundConfig("base.json").logs_directory
     filename = Path(logs_directory) / datetime.now().strftime("ifconfig_%Y-%m-%d_%H-%M-%S.log")
     command = f"ifconfig > {filename}"
     for line in _run_external_command_as_generator_shell(command):
@@ -20,8 +20,8 @@ def dump_ifconfig() -> None:
 
 def copy_logfiles_to_nas() -> None:
     try:
-        config_debug = Config("debug.json")
-        local_log_directory = Path("/home/base") / Path(Config("base.json").logs_directory)
+        config_debug = BoundConfig("debug.json")
+        local_log_directory = Path("/home/base") / Path(BoundConfig("base.json").logs_directory)
         command = (
             f'rsync -avH -e "ssh -i /home/base/.ssh/id_rsa" {local_log_directory}/* '
             f"{config_debug.ssh_user}@{config_debug.ssh_host}:{config_debug.logfile_target_path}"

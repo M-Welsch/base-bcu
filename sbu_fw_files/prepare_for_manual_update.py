@@ -11,9 +11,9 @@ sys.path.append(path_to_module)
 
 
 def setup_config(config_path: Path) -> None:
-    from base.common.config import Config
+    from base.common.config import BoundConfig
 
-    Config.set_config_base_path(config_path)
+    BoundConfig.set_config_base_path(config_path)
 
 
 def setup_logger(config_path: Path) -> None:

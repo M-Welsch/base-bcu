@@ -4,7 +4,7 @@ from typing import Any, List, Optional
 
 from signalslot import Signal
 
-from base.common.config import Config
+from base.common.config import BoundConfig, Config
 from base.common.logger import LoggerFactory
 from base.common.time_calculations import TimeCalculator
 
@@ -20,9 +20,9 @@ class Schedule:
 
     def __init__(self) -> None:
         self._scheduler: sched.scheduler = sched.scheduler(time, sleep)
-        self._config: Config = Config("schedule_config.json")
+        self._config: Config = BoundConfig("schedule_config.json")
         self._config.assert_keys({"shutdown_delay_minutes"})
-        self._schedule: Config = Config("schedule_backup.json")
+        self._schedule: Config = BoundConfig("schedule_backup.json")
         self._schedule.assert_keys({"backup_frequency", "day_of_week"})
         self._backup_job: Optional[sched.Event] = None
         self._postponed_backup_job: Optional[sched.Event] = None

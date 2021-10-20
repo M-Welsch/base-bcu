@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from subprocess import PIPE, run
 from typing import Any, Dict, List, Optional
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.exceptions import ExternalCommandError
 from base.common.logger import LoggerFactory
 
@@ -78,7 +78,7 @@ class PartitionSignature:
 
 class DriveInspector:
     def __init__(self) -> None:
-        self._partition_signature = PartitionSignature.from_json(Config("drive.json").backup_hdd_device_signature)
+        self._partition_signature = PartitionSignature.from_json(BoundConfig("drive.json").backup_hdd_device_signature)
         self._devices: List[DriveInfo] = []
 
     @property

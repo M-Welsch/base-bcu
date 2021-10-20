@@ -7,7 +7,7 @@ from typing import Any, Dict, Generator, Union
 import _pytest
 import pytest
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.exceptions import NetworkError
 from base.logic.nas import Nas
 from base.logic.network_share import NetworkShare
@@ -26,7 +26,7 @@ def network_share(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[Ne
     tmpdir = tmpdir_factory.mktemp("test_dir")
     config_dir = (Path(tmpdir) / "config").resolve()
     shutil.copytree("/home/base/python.base/base/config", config_dir)
-    Config.set_config_base_path(config_dir)
+    BoundConfig.set_config_base_path(config_dir)
     yield NetworkShare()
 
 

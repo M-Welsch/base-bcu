@@ -3,7 +3,7 @@ from datetime import datetime
 
 from dateutil.rrule import DAILY, MONTHLY, WEEKLY, rrule
 
-from base.common.config import Config
+from base.common.config import BoundConfig, Config
 
 _Plan = namedtuple("_Plan", "frequency monthday weekday hour minute second")
 
@@ -60,7 +60,7 @@ class TimeCalculator:
 if __name__ == "__main__":
     from pathlib import Path
 
-    Config.set_config_base_path(Path(__file__).parent.parent / "config")
-    conf = Config("schedule_backup.json")
+    BoundConfig.set_config_base_path(Path(__file__).parent.parent / "config")
+    conf = BoundConfig("schedule_backup.json")
 
     print(TimeCalculator().next_backup(conf))
