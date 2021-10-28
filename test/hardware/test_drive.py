@@ -19,10 +19,10 @@ LOG.propagate = True
 
 class MockDrive(Drive):
     def __init__(
-            self,
-            config: Config,
-            backup_browser: BackupBrowser,
-            virtual_hard_drive_location: Path,
+        self,
+        config: Config,
+        backup_browser: BackupBrowser,
+        virtual_hard_drive_location: Path,
     ):
         super().__init__(config, backup_browser)
         self._virtual_hard_drive_location = virtual_hard_drive_location
@@ -39,13 +39,16 @@ def drive(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[MockDrive,
     virtual_hard_drive_mountpoint.mkdir()
     create_virtual_hard_drive(virtual_hard_drive_location)
     yield MockDrive(
-        Config({
-            "backup_hdd_file_system": "ext4",
-            "backup_hdd_mount_point": str(virtual_hard_drive_mountpoint),
-            "backup_hdd_spinup_timeout": 20,
-            "backup_hdd_unmount_trials": 5,
-            "backup_hdd_unmount_waiting_secs": 1
-        }, read_only=False),
+        Config(
+            {
+                "backup_hdd_file_system": "ext4",
+                "backup_hdd_mount_point": str(virtual_hard_drive_mountpoint),
+                "backup_hdd_spinup_timeout": 20,
+                "backup_hdd_unmount_trials": 5,
+                "backup_hdd_unmount_waiting_secs": 1,
+            },
+            read_only=False,
+        ),
         BackupBrowser(Config({"local_backup_target_location": "/media/BackupHDD"})),
         virtual_hard_drive_location=virtual_hard_drive_location,
     )

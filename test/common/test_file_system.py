@@ -25,7 +25,7 @@ def file_system_watcher(tmpdir: py.path.local) -> Generator[Tuple[FileSystemWatc
         backup_hdd_device_signature=PartitionSignature(
             model_name="MODEL_NAME", serial_number="SERIAL_NUMBER", bytes_size=42, partition_index=43
         ),
-        timeout_seconds=0.4
+        timeout_seconds=0.4,
     )
     file_system_watcher._event_handler._drive_inspector = DriveInspectorMockup(device_file_path)  # type: ignore
     file_system_watcher.add_watches(dirs_to_watch=[str(tmpdir)])

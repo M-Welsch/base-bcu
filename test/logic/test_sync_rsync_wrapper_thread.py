@@ -1,13 +1,13 @@
 import logging
+from pathlib import Path
 from time import sleep
 
 import pytest
 from _pytest.logging import LogCaptureFixture
-from pathlib import Path
 from signalslot import Signal
 
-from base.logic.backup.synchronisation.sync_thread import SyncThread
 from base.common.config import Config
+from base.logic.backup.synchronisation.sync_thread import SyncThread
 
 
 class SshRsyncMock:
@@ -42,8 +42,8 @@ class SshRsyncMockLoooongLoop:
 
 @pytest.fixture
 def rsync_wrapper_thread(mocker):
-    Config.set_config_base_path(Path('python.base/base/config'))
-    mocker.patch('signalslot.Signal.emit')
+    Config.set_config_base_path(Path("python.base/base/config"))
+    mocker.patch("signalslot.Signal.emit")
     rswt = SyncThread(local_target_location=Path(), source_location=Path())
     # monkeypatch.setattr(sync.RsyncWrapperThread, '_ssh_rsync', SshRsyncMock(["first", "second"]))
     rswt._ssh_rsync = SshRsyncMock()
@@ -52,8 +52,8 @@ def rsync_wrapper_thread(mocker):
 
 @pytest.fixture
 def rsync_wrapper_thread_loooong_loop(mocker):
-    Config.set_config_base_path(Path('python.base/base/config'))
-    mocker.patch('signalslot.Signal.emit')
+    Config.set_config_base_path(Path("python.base/base/config"))
+    mocker.patch("signalslot.Signal.emit")
     rswt = SyncThread(local_target_location=Path(), source_location=Path())
     rswt._ssh_rsync = SshRsyncMockLoooongLoop()
     yield rswt

@@ -6,7 +6,6 @@ from signalslot import Signal
 from base.common.logger import LoggerFactory
 from base.logic.backup.synchronisation.sync import Sync
 
-
 LOG = LoggerFactory.get_logger(__name__)
 
 

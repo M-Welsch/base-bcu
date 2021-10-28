@@ -154,5 +154,3 @@ class PinInterface:
     @staticmethod
     def set_heartbeat_low() -> None:
         GPIO.output(Pins.heartbeat, GPIO.LOW)
-
-

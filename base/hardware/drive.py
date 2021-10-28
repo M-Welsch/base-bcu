@@ -56,7 +56,7 @@ class Drive:
         try:
             return FileSystemWatcher(
                 backup_hdd_device_signature=PartitionSignature(**BoundConfig("drive.json").backup_hdd_device_signature),
-                timeout_seconds=self._config.backup_hdd_spinup_timeout
+                timeout_seconds=self._config.backup_hdd_spinup_timeout,
             ).backup_partition_info()
         except BackupPartitionError as e:
             LOG.error("Backup HDD not found!")

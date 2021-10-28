@@ -1,8 +1,8 @@
-from subprocess import Popen, PIPE
+from pathlib import Path
+from subprocess import PIPE, Popen
 from time import sleep
 
 import pytest
-from pathlib import Path
 
 from base.common.config import Config
 from base.logic.backup.synchronisation.sync import Sync
@@ -10,29 +10,25 @@ from base.logic.backup.synchronisation.sync import Sync
 
 @pytest.fixture
 def sync():
-    Config.set_config_base_path(Path('python.base/base/config'))
+    Config.set_config_base_path(Path("python.base/base/config"))
     sync = Sync(local_target_location=Path(), source_location=Path())
-    stimulus = [
-        'echo',
-        '-e',
-        'Status Line 1\n\nExit'
-    ]
+    stimulus = ["echo", "-e", "Status Line 1\n\nExit"]
     sync._process = Popen(stimulus, stdout=PIPE, stderr=PIPE, bufsize=0, universal_newlines=True)
     yield sync
 
 
 @pytest.fixture
 def sync_process_terminate_mocked(mocker):
-    Config.set_config_base_path(Path('python.base/base/config'))
+    Config.set_config_base_path(Path("python.base/base/config"))
     sync = Sync(local_target_location=Path(), source_location=Path())
-    mocker.patch('base.logic.backup.synchronisation.sync.Sync.terminate')
+    mocker.patch("base.logic.backup.synchronisation.sync.Sync.terminate")
     sync._command = ["echo", "no one will ever see this, so I can print everything I always wanted ... cobol rocks"]
     yield sync
 
 
 @pytest.fixture
 def sync_process():
-    Config.set_config_base_path(Path('python.base/base/config'))
+    Config.set_config_base_path(Path("python.base/base/config"))
     sync = Sync(local_target_location=Path(), source_location=Path())
     sync._command = ["/bin/sleep", "0.3"]
     yield sync
@@ -40,7 +36,7 @@ def sync_process():
 
 class TestSshRsync:
     def test_output_generator(self, sync, monkeypatch):
-        monkeypatch.setattr('base.logic.backup.synchronisation.sync.parse_line_to_status', lambda line, status: line)
+        monkeypatch.setattr("base.logic.backup.synchronisation.sync.parse_line_to_status", lambda line, status: line)
         output_generator = sync._output_generator()
         assert next(output_generator) == "Status Line 1"
         assert next(output_generator) == ""
