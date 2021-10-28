@@ -5,7 +5,7 @@ from typing import Generator, Tuple
 import py
 import pytest
 
-from base.common.config import Config
+from base.common.drive_inspector import PartitionSignature
 from base.common.file_system import FileSystemWatcher
 
 
@@ -20,9 +20,13 @@ class DriveInspectorMockup:
 
 @pytest.fixture()
 def file_system_watcher(tmpdir: py.path.local) -> Generator[Tuple[FileSystemWatcher, Path], None, None]:
-    Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
     device_file_path = Path(tmpdir) / "sdx1"
-    file_system_watcher = FileSystemWatcher(timeout_seconds=0.4)
+    file_system_watcher = FileSystemWatcher(
+        backup_hdd_device_signature=PartitionSignature(
+            model_name="MODEL_NAME", serial_number="SERIAL_NUMBER", bytes_size=42, partition_index=43
+        ),
+        timeout_seconds=0.4
+    )
     file_system_watcher._event_handler._drive_inspector = DriveInspectorMockup(device_file_path)  # type: ignore
     file_system_watcher.add_watches(dirs_to_watch=[str(tmpdir)])
     yield file_system_watcher, device_file_path

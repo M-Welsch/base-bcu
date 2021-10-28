@@ -3,7 +3,6 @@ from typing import Callable, List, Optional
 
 import pyinotify
 
-from base.common.config import BoundConfig
 from base.common.drive_inspector import DriveInspector, PartitionInfo, PartitionSignature
 from base.common.exceptions import BackupPartitionError
 from base.common.logger import LoggerFactory
@@ -42,10 +41,8 @@ class EventHandler(pyinotify.ProcessEvent):
 class FileSystemWatcher:
     dir_events = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
-    def __init__(self, timeout_seconds: float = 10.0) -> None:
-        self._drive_inspector: DriveInspector = DriveInspector(
-            partition_signature=PartitionSignature(**BoundConfig("drive.json").backup_hdd_device_signature)
-        )
+    def __init__(self, backup_hdd_device_signature: PartitionSignature, timeout_seconds: float = 10.0) -> None:
+        self._drive_inspector: DriveInspector = DriveInspector(partition_signature=backup_hdd_device_signature)
         self._watch_manager: pyinotify.WatchManager = pyinotify.WatchManager()
         self._event_handler: EventHandler = EventHandler(self._set_partition_info, self._drive_inspector)
         timeout_milliseconds = timeout_seconds * 1000
@@ -81,12 +78,6 @@ class FileSystemWatcher:
         while self._notifier.check_events():
             self._notifier.read_events()
             self._notifier.process_events()
-
-
-if __name__ == "__main__":
-    watcher = FileSystemWatcher(timeout_seconds=10)
-    watcher.add_watches(dirs_to_watch=["/dev", "/home/base"])
-    watcher.backup_partition_info()
 
 
 # # bug 1
