@@ -3,7 +3,8 @@ from typing import Callable, List, Optional
 
 import pyinotify
 
-from base.common.drive_inspector import DriveInspector, PartitionInfo
+from base.common.config import BoundConfig
+from base.common.drive_inspector import DriveInspector, PartitionInfo, PartitionSignature
 from base.common.exceptions import BackupPartitionError
 from base.common.logger import LoggerFactory
 
@@ -42,7 +43,9 @@ class FileSystemWatcher:
     dir_events = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
     def __init__(self, timeout_seconds: float = 10.0) -> None:
-        self._drive_inspector: DriveInspector = DriveInspector()
+        self._drive_inspector: DriveInspector = DriveInspector(
+            partition_signature=PartitionSignature(**BoundConfig("drive.json").backup_hdd_device_signature)
+        )
         self._watch_manager: pyinotify.WatchManager = pyinotify.WatchManager()
         self._event_handler: EventHandler = EventHandler(self._set_partition_info, self._drive_inspector)
         timeout_milliseconds = timeout_seconds * 1000

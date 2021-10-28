@@ -8,13 +8,15 @@ sys.path.append(path_to_module)
 
 
 from base.common.config import BoundConfig
-from base.common.drive_inspector import DriveInfo, DriveInspector
+from base.common.drive_inspector import DriveInfo, DriveInspector, PartitionSignature
 
 
 class BuHddSetter:
     def __init__(self) -> None:
         BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config/"))
-        self._drive_inspector = DriveInspector()
+        self._drive_inspector = DriveInspector(
+            partition_signature=PartitionSignature(**BoundConfig("drive.json").backup_hdd_device_signature)
+        )
 
     def set_conneted_hdd_as_backup_hdd(self) -> None:
         drive = self.current_hdd_driveinfo()

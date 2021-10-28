@@ -1,19 +1,21 @@
-from pathlib import Path
 from typing import Generator
 
 import pytest
 
-from base.common.config import Config
 from base.common.drive_inspector import DriveInfo, DriveInspector, PartitionInfo, PartitionSignature
 
 
 @pytest.fixture(scope="class")
-def patched_drive_inspector() -> Generator[DriveInspector, None, None]:
-    Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
-    drive_inspector = DriveInspector()
-    drive_inspector._partition_signature = PartitionSignature(
-        model_name="MODEL_NAME", serial_number="SERIAL_NUMBER", bytes_size=42, partition_index=43
+def drive_inspector() -> Generator[DriveInspector, None, None]:
+    yield DriveInspector(
+        partition_signature=PartitionSignature(
+            model_name="MODEL_NAME", serial_number="SERIAL_NUMBER", bytes_size=42, partition_index=43
+        )
     )
+
+
+@pytest.fixture(scope="class")
+def patched_drive_inspector(drive_inspector) -> Generator[DriveInspector, None, None]:
     drive_inspector._query = lambda: [  # type: ignore
         {
             "name": "",
@@ -29,12 +31,6 @@ def patched_drive_inspector() -> Generator[DriveInspector, None, None]:
         }
     ]
     yield drive_inspector
-
-
-@pytest.fixture(scope="class")
-def drive_inspector() -> Generator[DriveInspector, None, None]:
-    Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
-    yield DriveInspector()
 
 
 class TestDriveInspector:
