@@ -17,7 +17,7 @@ LOG = LoggerFactory.get_logger(__name__)
 class Hardware:
     def __init__(self, backup_browser: BackupBrowser) -> None:
         self._config: Config = BoundConfig("hardware.json")
-        self._mechanics: Mechanics = Mechanics()
+        self._mechanics: Mechanics = Mechanics(BoundConfig("mechanics.json"))
         self._power: Power = Power()
         self._hmi: HMI = HMI()
         self._sbu: SBU = SBU()
