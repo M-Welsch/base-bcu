@@ -4,7 +4,7 @@ from time import sleep
 from typing import Optional
 from typing.io import IO
 
-from base.common.config import BoundConfig
+from base.common.config import BoundConfig, Config
 from base.common.drive_inspector import PartitionInfo, PartitionSignature
 from base.common.exceptions import BackupPartitionError, MountError, UnmountError
 from base.common.file_system import FileSystemWatcher
@@ -16,9 +16,9 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Drive:
-    def __init__(self, backup_browser: BackupBrowser):
+    def __init__(self, config: Config, backup_browser: BackupBrowser):
         self._backup_browser: BackupBrowser = backup_browser
-        self._config: BoundConfig = BoundConfig("drive.json")
+        self._config: Config = config
         self._partition_info: Optional[PartitionInfo] = None
         self._available: HddState = HddState.unknown
 

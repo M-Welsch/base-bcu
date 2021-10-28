@@ -21,7 +21,7 @@ class Hardware:
         self._power: Power = Power()
         self._hmi: HMI = HMI()
         self._sbu: SBU = SBU()
-        self._drive: Drive = Drive(backup_browser)
+        self._drive: Drive = Drive(BoundConfig("drive.json"), backup_browser)
 
     def engage(self, **kwargs):  # type: ignore
         LOG.debug("engaging hardware")

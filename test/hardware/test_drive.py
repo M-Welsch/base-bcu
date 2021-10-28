@@ -1,14 +1,13 @@
 import logging
 import subprocess
 from pathlib import Path
-from shutil import copytree
 from typing import Generator
 
 import _pytest
 import pytest
 from _pytest.logging import LogCaptureFixture
 
-from base.common.config import Config, BoundConfig
+from base.common.config import Config
 from base.common.drive_inspector import PartitionInfo
 from base.common.exceptions import MountError, UnmountError
 from base.common.status import HddState
@@ -20,12 +19,13 @@ LOG.propagate = True
 
 class MockDrive(Drive):
     def __init__(
-        self, backup_browser: BackupBrowser, virtual_hard_drive_location: Path, virtual_hard_drive_mountpoint: Path
+            self,
+            config: Config,
+            backup_browser: BackupBrowser,
+            virtual_hard_drive_location: Path,
     ):
-        super().__init__(backup_browser)
+        super().__init__(config, backup_browser)
         self._virtual_hard_drive_location = virtual_hard_drive_location
-        self._config: Config = Config("drive.json", read_only=False)
-        self._config.backup_hdd_mount_point = str(virtual_hard_drive_mountpoint)
 
     def _get_partition_info_or_raise(self) -> PartitionInfo:
         return PartitionInfo(path=str(self._virtual_hard_drive_location), mount_point="", bytes_size=0)
@@ -38,13 +38,16 @@ def drive(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[MockDrive,
     virtual_hard_drive_mountpoint = (tmpdir / "VHD").resolve()
     virtual_hard_drive_mountpoint.mkdir()
     create_virtual_hard_drive(virtual_hard_drive_location)
-    config_test_path = (tmpdir / "config").resolve()
-    copytree("/home/base/python.base/base/config", config_test_path, dirs_exist_ok=True)
-    Config.set_config_base_path(config_test_path)
     yield MockDrive(
-        BackupBrowser(BoundConfig("sync.json")),
+        Config({
+            "backup_hdd_file_system": "ext4",
+            "backup_hdd_mount_point": str(virtual_hard_drive_mountpoint),
+            "backup_hdd_spinup_timeout": 20,
+            "backup_hdd_unmount_trials": 5,
+            "backup_hdd_unmount_waiting_secs": 1
+        }, read_only=False),
+        BackupBrowser(Config({"local_backup_target_location": "/media/BackupHDD"})),
         virtual_hard_drive_location=virtual_hard_drive_location,
-        virtual_hard_drive_mountpoint=virtual_hard_drive_mountpoint,
     )
     teardown_virtual_hard_drive(virtual_hard_drive_mountpoint)
 
@@ -77,7 +80,7 @@ def drive_mounted(drive: MockDrive) -> Generator[MockDrive, None, None]:
 
 
 def create_virtual_hard_drive(filename: Path) -> None:
-    subprocess.Popen(f"dd if=/dev/zero of={filename} bs=1M count=1".split())
+    subprocess.Popen(f"dd if=/dev/zero of={filename} bs=1M count=10".split())
     subprocess.Popen(f"mkfs -t ext4 {filename}".split())
 
 
@@ -117,6 +120,7 @@ class TestDrive:
         assert not Path(drive_mounted._partition_info.path).is_mount()
 
     @staticmethod
+    @pytest.mark.slow
     def test_unmount_invalid_mountpoint(drive_invalid_mountpoint: MockDrive, caplog: LogCaptureFixture) -> None:
         with caplog.at_level(logging.WARNING):
             drive_invalid_mountpoint.unmount()
