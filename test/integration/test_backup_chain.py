@@ -16,7 +16,7 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 from base.base_application import BaSeApplication, MaintenanceMode
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.hardware.hardware import Hardware
 from base.logic.backup.backup import Backup
 from base.logic.backup.backup_browser import BackupBrowser
@@ -33,10 +33,10 @@ def update_conf(file_path: Path, updates: Dict[str, Any]) -> None:
 
 def make_base_application() -> BaSeApplication:
     base_app: BaSeApplication = BaSeApplication.__new__(BaSeApplication)
-    base_app._config = Config("base.json")
+    base_app._config = BoundConfig("base.json")
     # base_app._setup_logger() # don't use it here! Otherwise everything will be logged twice.
     base_app._maintenance_mode = MaintenanceMode()
-    base_app._backup_browser = BackupBrowser()
+    base_app._backup_browser = BackupBrowser(BoundConfig("sync.json"))
     base_app._hardware = Hardware(base_app._backup_browser)
     base_app._backup = Backup(base_app._maintenance_mode.is_on, backup_browser=base_app._backup_browser)
     base_app._schedule = Schedule()
@@ -56,7 +56,7 @@ def app_smb(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[BaSeAppl
     # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(config_dir / "sync.json", {"remote_backup_source_location": "/mnt/HDD/testfiles", "protocol": "smb"})
     update_conf(config_dir / "backup.json", {"shutdown_between_backups": False})
-    Config.set_config_base_path(config_dir)
+    BoundConfig.set_config_base_path(config_dir)
     yield make_base_application()
 
 
@@ -68,7 +68,7 @@ def app_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[BaSeAppl
     # update_conf(config_dir / "base.json", {"logs_directory": configure_logger["tmpdir"]})
     update_conf(config_dir / "sync.json", {"remote_backup_source_location": "/mnt/HDD/testfiles", "protocol": "ssh"})
     update_conf(config_dir / "backup.json", {"shutdown_between_backups": False})
-    Config.set_config_base_path(config_dir)
+    BoundConfig.set_config_base_path(config_dir)
     yield make_base_application()
 
 

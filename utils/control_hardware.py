@@ -4,6 +4,8 @@ from pathlib import Path
 
 import click
 
+from base.common.config import BoundConfig
+
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
@@ -21,7 +23,7 @@ def control_hardware(dock: bool, undock: bool, power: bool, unpower: bool) -> No
     from base.hardware.hardware import Hardware
     from base.logic.backup.backup_browser import BackupBrowser
 
-    hardware = Hardware(backup_browser=BackupBrowser())
+    hardware = Hardware(backup_browser=BackupBrowser(BoundConfig("sync.json")))
 
     if dock:
         print("docking")

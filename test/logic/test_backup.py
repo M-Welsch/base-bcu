@@ -34,7 +34,7 @@ def backup(tmpdir: path.local) -> Generator[Backup, None, None]:
         nas_config_data = json.load(src)
         json.dump(nas_config_data, dst)
     BoundConfig.set_config_base_path(config_test_path)
-    yield Backup(lambda: False, BackupBrowser())
+    yield Backup(lambda: False, BackupBrowser(BoundConfig("sync.json")))
     print("source contents:", os.listdir(str(source)))
     print("target contents:", os.listdir(str(target)))
 

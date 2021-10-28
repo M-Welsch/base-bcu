@@ -8,7 +8,7 @@ import _pytest
 import pytest
 from _pytest.logging import LogCaptureFixture
 
-from base.common.config import Config
+from base.common.config import Config, BoundConfig
 from base.common.drive_inspector import PartitionInfo
 from base.common.exceptions import MountError, UnmountError
 from base.common.status import HddState
@@ -42,7 +42,7 @@ def drive(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[MockDrive,
     copytree("/home/base/python.base/base/config", config_test_path, dirs_exist_ok=True)
     Config.set_config_base_path(config_test_path)
     yield MockDrive(
-        BackupBrowser(),
+        BackupBrowser(BoundConfig("sync.json")),
         virtual_hard_drive_location=virtual_hard_drive_location,
         virtual_hard_drive_mountpoint=virtual_hard_drive_mountpoint,
     )

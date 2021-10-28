@@ -4,7 +4,7 @@ from typing import Generator
 
 import pytest
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.hardware.hardware import Hardware
 from base.hardware.pin_interface import PinInterface
 from base.logic.backup.backup_browser import BackupBrowser
@@ -12,8 +12,8 @@ from base.logic.backup.backup_browser import BackupBrowser
 
 @pytest.fixture(scope="class")
 def hardware() -> Generator[Hardware, None, None]:
-    Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
-    yield Hardware(BackupBrowser())
+    BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config/"))
+    yield Hardware(BackupBrowser(BoundConfig("sync.json")))
 
 
 class TestMechanics:

@@ -61,7 +61,7 @@ class BaSeApplication:
     def __init__(self) -> None:
         self._config: Config = BoundConfig("base.json")
         self._maintenance_mode = MaintenanceMode()
-        self._backup_browser = BackupBrowser()
+        self._backup_browser = BackupBrowser(BoundConfig("sync.json"))
         self._hardware = Hardware(self._backup_browser)
         self._backup = Backup(self._maintenance_mode.is_on, self._backup_browser)
         self._schedule = Schedule()
