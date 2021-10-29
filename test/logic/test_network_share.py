@@ -49,7 +49,7 @@ def virtual_network_share(
     update_conf(
         nas_config, {"smb_host": "127.0.0.1", "smb_user": "base", "smb_credentials_file": str(dirs["credentials_file"])}
     )
-    Config.set_config_base_path(config_dir)
+    BoundConfig.set_config_base_path(config_dir)
     yield {"nws": NetworkShare(), "nas_cfg": nas_config}
     teardown_smb_share(dirs)
 
@@ -115,7 +115,7 @@ class TestNetworkShare:
     def test_mount_unavailable_datasource(self, virtual_network_share: dict) -> None:
         network_share: NetworkShare = virtual_network_share["nws"]
         nas_cfg = virtual_network_share["nas_cfg"]
-        orig_smb_share_name = Config(nas_cfg).smb_share_name
+        orig_smb_share_name = BoundConfig(nas_cfg).smb_share_name
         update_conf(nas_cfg, {"smb_share_name": "invalid"})
         with pytest.raises(NetworkError):
             network_share.mount_datasource_via_smb()
@@ -124,7 +124,7 @@ class TestNetworkShare:
     def test_mount_corrupt_ip_address(self, virtual_network_share: dict) -> None:
         network_share: NetworkShare = virtual_network_share["nws"]
         nas_cfg = virtual_network_share["nas_cfg"]
-        orig_smb_host = Config(nas_cfg).smb_host
+        orig_smb_host = BoundConfig(nas_cfg).smb_host
         update_conf(nas_cfg, {"smb_host": "1922.1688.0.1000"})
         with pytest.raises(NetworkError):
             network_share.mount_datasource_via_smb()

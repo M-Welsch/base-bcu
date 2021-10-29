@@ -4,15 +4,15 @@ from typing import Generator
 
 import pytest
 
-from base.common.config import Config
+from base.common.config import BoundConfig, Config
 from base.common.debug_utils import copy_logfiles_to_nas
 from base.common.ssh_interface import SSHInterface
 
 
 @pytest.fixture(scope="class")
 def config() -> Generator[Config, None, None]:
-    Config.set_config_base_path(Path("/home/base/python.base/base/config"))
-    yield Config("base.json")
+    BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config"))
+    yield BoundConfig("base.json")
 
 
 class TestDebugUtils:
@@ -30,7 +30,7 @@ class TestDebugUtils:
     @staticmethod
     def file_transferred(file: str, content: str) -> bool:
         with SSHInterface() as sshi:
-            config = Config("debug.json")
+            config = BoundConfig("debug.json")
             sshi.connect(config.ssh_host, config.ssh_user)
             response = sshi.run_and_raise(f"cat {Path(config.logfile_target_path)/file}")
         return response == content

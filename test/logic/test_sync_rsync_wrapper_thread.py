@@ -1,39 +1,52 @@
 import logging
 from pathlib import Path
 from time import sleep
+from types import TracebackType
+from typing import Generator, Optional, Type
 
 import pytest
 from _pytest.logging import LogCaptureFixture
+from pytest_mock import MockFixture
 from signalslot import Signal
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.logic.backup.synchronisation.sync_thread import SyncThread
 
 
-class SshRsyncMock:
-    def __init__(self):
-        self.pid = 1234
+class SyncMock:
+    def __init__(self) -> None:
+        self.pid: int = 1234
 
-    def __enter__(self):
+    def __enter__(self) -> Generator[str, None, None]:
         generator = (i for i in ["first", "second"])
         yield from generator
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        exc_traceback: Optional[TracebackType],
+    ) -> None:
         pass
 
 
-class SshRsyncMockLoooongLoop:
-    def __init__(self):
+class SyncMockLoooongLoop:
+    def __init__(self) -> None:
         self.pid = 1234
         self._exit_flag = False
 
-    def __enter__(self):
+    def __enter__(self) -> Generator[int, None, None]:
         generator = (i for i in range(100000))  # long enough so the terminate can be called while busy
         while not self._exit_flag:
             yield next(generator)
             sleep(0.1)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        exc_traceback: Optional[TracebackType],
+    ) -> None:
         pass
 
     def terminate(self) -> None:
@@ -41,26 +54,26 @@ class SshRsyncMockLoooongLoop:
 
 
 @pytest.fixture
-def rsync_wrapper_thread(mocker):
-    Config.set_config_base_path(Path("python.base/base/config"))
+def rsync_wrapper_thread(mocker: MockFixture) -> Generator[SyncThread, None, None]:
+    BoundConfig.set_config_base_path(Path("python.base/base/config"))
     mocker.patch("signalslot.Signal.emit")
     rswt = SyncThread(local_target_location=Path(), source_location=Path())
     # monkeypatch.setattr(sync.RsyncWrapperThread, '_ssh_rsync', SshRsyncMock(["first", "second"]))
-    rswt._ssh_rsync = SshRsyncMock()
+    rswt._ssh_rsync = SyncMock()
     yield rswt
 
 
 @pytest.fixture
-def rsync_wrapper_thread_loooong_loop(mocker):
-    Config.set_config_base_path(Path("python.base/base/config"))
+def rsync_wrapper_thread_loooong_loop(mocker: MockFixture) -> Generator[SyncThread, None, None]:
+    BoundConfig.set_config_base_path(Path("python.base/base/config"))
     mocker.patch("signalslot.Signal.emit")
     rswt = SyncThread(local_target_location=Path(), source_location=Path())
-    rswt._ssh_rsync = SshRsyncMockLoooongLoop()
+    rswt._ssh_rsync = SyncMockLoooongLoop()
     yield rswt
 
 
 class TestRsyncWrapperThread:
-    def test_run_rsync_wrapper_thread(self, rsync_wrapper_thread: SyncThread, caplog: LogCaptureFixture):
+    def test_run_rsync_wrapper_thread(self, rsync_wrapper_thread: SyncThread, caplog: LogCaptureFixture) -> None:
         with caplog.at_level(logging.DEBUG):
             rsync_wrapper_thread.start()
             rsync_wrapper_thread.join()
@@ -69,12 +82,12 @@ class TestRsyncWrapperThread:
         assert "Backup finished!" in caplog.text
         Signal.emit.assert_called_once_with()
 
-    def test_terminate_rsync_wrapper_thread(self, rsync_wrapper_thread_loooong_loop: SyncThread):
+    def test_terminate_rsync_wrapper_thread(self, rsync_wrapper_thread_loooong_loop: SyncThread) -> None:
         rsync_wrapper_thread_loooong_loop.start()
         assert rsync_wrapper_thread_loooong_loop.running
         rsync_wrapper_thread_loooong_loop.terminate()
         rsync_wrapper_thread_loooong_loop.join()
         assert not rsync_wrapper_thread_loooong_loop.running
 
-    def test_get_pid(self):
+    def test_get_pid(self) -> None:
         ...  # pid cannot be read, since "isinstance(self._ssh_rsync, SshRsync)" will fail

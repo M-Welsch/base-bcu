@@ -3,13 +3,12 @@ from __future__ import annotations
 import os
 import re
 import signal
-import subprocess
 from pathlib import Path
 from subprocess import PIPE, STDOUT, Popen
 from types import TracebackType
 from typing import Generator, List, Optional, Type
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.logger import LoggerFactory
 from base.logic.backup.synchronisation.rsync_patterns import Patterns
 from base.logic.backup.synchronisation.sync_status import SyncStatus
@@ -19,11 +18,11 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Sync:
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
-        self._sync_config = Config("sync.json")
-        self._nas_config = Config("nas.json")
+        self._sync_config = BoundConfig("sync.json")
+        self._nas_config = BoundConfig("nas.json")
         self._local_target_location: Path = local_target_location
         self._command: List[str] = self._compose_rsync_command(local_target_location, source_location)
-        self._process: Optional[subprocess.Popen] = None
+        self._process: Optional[Popen] = None
         self._status: SyncStatus = SyncStatus()
 
     def __enter__(self) -> Generator[SyncStatus, None, None]:
@@ -44,7 +43,8 @@ class Sync:
         exc_value: Optional[BaseException],
         exc_traceback: Optional[TracebackType],
     ) -> None:
-        self._process.wait(1)
+        if isinstance(self._process, Popen):
+            self._process.wait(1)
         try:
             self.terminate()
         except ProcessLookupError:
@@ -67,7 +67,7 @@ class Sync:
         return command
 
     def _output_generator(self) -> Generator[SyncStatus, None, None]:
-        assert isinstance(self._process, subprocess.Popen)
+        assert isinstance(self._process, Popen)
         while self._process.stdout is not None:
             line = self._process.stdout.readline()
             # LOG.debug(f"line: {line}")
@@ -83,13 +83,13 @@ class Sync:
             yield self._status
 
     def terminate(self) -> None:
-        assert isinstance(self._process, subprocess.Popen)
+        assert isinstance(self._process, Popen)
         LOG.debug(f"terminating process ID {self._process.pid}")
         os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
 
     @property
     def pid(self) -> int:
-        assert isinstance(self._process, subprocess.Popen)
+        assert isinstance(self._process, Popen)
         return self._process.pid
 
 

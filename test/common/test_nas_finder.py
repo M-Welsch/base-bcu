@@ -3,20 +3,20 @@ from typing import Generator
 
 import pytest
 
-from base.common.config import Config
+from base.common.config import BoundConfig, Config
 from base.common.exceptions import NetworkError
 from base.common.nas_finder import NasFinder
 
 
 @pytest.fixture(scope="class")
 def nas_finder() -> Generator[NasFinder, None, None]:
-    Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
+    BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config/"))
     yield NasFinder()
 
 
 @pytest.fixture(scope="class")
 def nas_config() -> Generator[Config, None, None]:
-    yield Config("nas.json")
+    yield BoundConfig("nas.json")
 
 
 class TestNasFinder:

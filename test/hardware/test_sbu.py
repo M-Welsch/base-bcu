@@ -7,7 +7,7 @@ from typing import Generator
 import _pytest
 import pytest
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.hardware.sbu.sbu import SBU, WakeupReason
 from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
 
@@ -20,7 +20,7 @@ def sbu(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SBU, None, N
     with open(config_path / "sbu.json", "r") as src, open(config_test_path / "sbu.json", "w") as dst:
         drive_config_data = json.load(src)
         json.dump(drive_config_data, dst)
-    Config.set_config_base_path(config_test_path)
+    BoundConfig.set_config_base_path(config_test_path)
     yield SBU()
 
 

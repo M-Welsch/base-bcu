@@ -15,7 +15,7 @@ def drive_inspector() -> Generator[DriveInspector, None, None]:
 
 
 @pytest.fixture(scope="class")
-def patched_drive_inspector(drive_inspector) -> Generator[DriveInspector, None, None]:
+def patched_drive_inspector(drive_inspector: DriveInspector) -> Generator[DriveInspector, None, None]:
     drive_inspector._query = lambda: [  # type: ignore
         {
             "name": "",
