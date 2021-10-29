@@ -10,12 +10,17 @@ from pytest_mock import MockFixture
 from signalslot import Signal
 
 from base.common.config import BoundConfig
+from base.logic.backup.synchronisation.sync import Sync
 from base.logic.backup.synchronisation.sync_thread import SyncThread
 
 
-class SyncMock:
+class SyncMock(Sync):
     def __init__(self) -> None:
-        self.pid: int = 1234
+        self._pid: int = 1234
+
+    @property
+    def pid(self) -> int:
+        return self._pid
 
     def __enter__(self) -> Generator[str, None, None]:
         generator = (i for i in ["first", "second"])
@@ -30,10 +35,14 @@ class SyncMock:
         pass
 
 
-class SyncMockLoooongLoop:
+class SyncMockLoooongLoop(Sync):
     def __init__(self) -> None:
-        self.pid = 1234
+        self._pid = 1234
         self._exit_flag = False
+
+    @property
+    def pid(self) -> int:
+        return self._pid
 
     def __enter__(self) -> Generator[int, None, None]:
         generator = (i for i in range(100000))  # long enough so the terminate can be called while busy

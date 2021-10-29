@@ -16,15 +16,14 @@ class PinInterface:
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
             GPIO.setmode(GPIO.BOARD)
+            cls.__instance.step_interval = 0.0005
+            cls.__instance._initialize_pins()
         assert isinstance(cls.__instance, PinInterface)
-        # this kind of disables the ramp. It sounds best ...
-        cls.__instance.step_interval = 0.0005
-        cls.__instance._initialize_pins()
         return cls.__instance
 
     def __init__(self) -> None:
         self.step_interval: float = 0.0005
-        raise Exception("This class is a singleton. Use global_instance() instead!")
+        raise RuntimeError("This class is a singleton. Use global_instance() instead!")
 
     def _initialize_pins(self) -> None:
         GPIO.setup(Pins.sw_hdd_on, GPIO.OUT)
