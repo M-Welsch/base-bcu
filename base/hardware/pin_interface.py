@@ -41,8 +41,9 @@ class PinInterface:
         GPIO.setup(Pins.sbu_program_ncommunicate, GPIO.OUT)
         GPIO.setup(Pins.en_sbu_link, GPIO.OUT)
         GPIO.setup(Pins.heartbeat, GPIO.OUT)
-        self.set_sbu_serial_path_to_communication()
-        self.enable_receiving_messages_from_sbu()
+        # TODO: Can't we delete these two?
+        # self.set_sbu_serial_path_to_communication()
+        # self.enable_receiving_messages_from_sbu()
 
     @staticmethod
     def cleanup() -> None:

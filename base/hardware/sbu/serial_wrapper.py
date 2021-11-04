@@ -63,6 +63,7 @@ class SerialWrapper:
     def _connect_serial_communication_path(self) -> None:
         self._pin_interface.set_sbu_serial_path_to_communication()
         self._pin_interface.enable_receiving_messages_from_sbu()  # Fixme: this is not called when needed!
+        sleep(4e-8)  # t_on / t_off max of ADG734 (ensures signal switchover)
 
     def flush_sbu_channel(self) -> None:
         self.send_message_to_sbu("\0")
@@ -85,7 +86,7 @@ class SerialWrapper:
         return self.wait_for_response(f"ACK:{message_code}")
 
     def wait_for_sbu_ready(self) -> Tuple[float, str]:
-        return self.wait_for_response(f"Ready")
+        return self.wait_for_response("Ready")
 
     def wait_for_response(self, response: str) -> Tuple[float, str]:
         assert isinstance(self._config, Config)

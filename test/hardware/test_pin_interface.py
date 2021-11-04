@@ -1,16 +1,17 @@
+import sys
 from pathlib import Path
 
 import pytest
-import sys
 
 sys.path.append(str(Path(__file__).parent))
 sys.modules["RPi"] = __import__("RPi_mock")
 
-from base.hardware.pin_interface import PinInterface, GPIO
 from pytest_mock import MockFixture
 
+from base.hardware.pin_interface import GPIO, PinInterface
 
-def test_initialize_pins_and_check_pinout():
+
+def test_initialize_pins_and_check_pinout() -> None:
     pin_interface = PinInterface.global_instance()
     pinout_for_verification = {
         # first entry: Pin number
@@ -27,12 +28,12 @@ def test_initialize_pins_and_check_pinout():
         (16, 0, 0),
         (24, 0, 0),
         (21, 1, 1),
-        (22, 0, 0)
+        (22, 0, 0),
     }
     assert pinout_for_verification == GPIO.PIN_DIRECTIONS
 
 
-def test_pushbutton_logic_inversion():
+def test_pushbutton_logic_inversion() -> None:
     pin_interface = PinInterface.global_instance()
     # GPIO mockup returns HIGH (=True) the first times it's getting called. This emulates a Button in idle state
     # Therefore these methods will return False because all buttons are active low wired
@@ -44,9 +45,6 @@ def test_pushbutton_logic_inversion():
     assert not pin_interface.button_1_pin_high
 
 
-def test_singleton():
+def test_singleton() -> None:
     with pytest.raises(RuntimeError):
         PinInterface()
-
-
-
