@@ -1,12 +1,11 @@
 import sys
-from pathlib import Path
+from importlib import import_module
 from typing import Generator
 
 import pytest
 from pytest_mock import MockFixture
 
-sys.path.append(str(Path(__file__).parent))
-sys.modules["RPi"] = __import__("RPi_mock")
+sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 
 from base.common.config import Config
 from base.hardware.mechanics import Mechanics
