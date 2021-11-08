@@ -3,8 +3,8 @@ from re import findall
 from typing import Optional
 
 from base.common.logger import LoggerFactory
-from base.hardware.sbu.sbu_commands import SbuCommand, SbuCommands
-from base.hardware.sbu.sbu_communicator import SbuCommunicator
+from base.hardware.sbu.commands import SbuCommand, SbuCommands
+from base.hardware.sbu.communicator import SbuCommunicator
 
 LOG = LoggerFactory.get_logger(__name__)
 

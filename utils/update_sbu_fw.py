@@ -19,7 +19,7 @@ def setup_logger(config_path: Path) -> None:
 
 
 def main() -> None:
-    from base.hardware.sbu.sbu_updater import SbuUpdater
+    from base.hardware.sbu.updater import SbuUpdater
 
     usbu = SbuUpdater()
     usbu.update()

@@ -9,7 +9,7 @@ import pytest
 
 from base.common.config import BoundConfig
 from base.hardware.sbu.sbu import SBU, WakeupReason
-from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
+from base.hardware.sbu.uart_finder import SbuUartFinder
 
 
 @pytest.fixture(scope="session")

@@ -5,9 +5,9 @@ from typing import Optional
 
 from base.common.exceptions import ComponentOffError, SbuNotAvailableError
 from base.common.logger import LoggerFactory
-from base.hardware.sbu.sbu_commands import SbuCommand
-from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
+from base.hardware.sbu.commands import SbuCommand
 from base.hardware.sbu.serial_wrapper import SerialWrapper
+from base.hardware.sbu.uart_finder import SbuUartFinder
 
 LOG = LoggerFactory.get_logger(__name__)
 

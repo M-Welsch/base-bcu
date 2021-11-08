@@ -5,7 +5,7 @@ from typing import Optional
 
 from base.common.logger import LoggerFactory
 from base.hardware.pin_interface import PinInterface
-from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
+from base.hardware.sbu.uart_finder import SbuUartFinder
 
 LOG = LoggerFactory.get_logger(__name__)
 
