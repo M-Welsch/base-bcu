@@ -56,9 +56,21 @@ class SerialWrapper:
         if self._automatically_free_channel:
             SerialWrapper._channel_busy = False
 
-    @property
-    def serial_connection(self) -> serial.Serial:
-        return self._serial_connection
+    def reset_buffers(self) -> None:
+        if self._serial_connection is None:
+            raise RuntimeError(f"Use {self.__class__.__name__} as context manager only")
+        self._serial_connection.reset_input_buffer()
+        self._serial_connection.reset_output_buffer()
+
+    def write(self, message: bytes) -> None:
+        if self._serial_connection is None:
+            raise RuntimeError(f"Use {self.__class__.__name__} as context manager only")
+        self._serial_connection.write(message)
+
+    def read_until(self, mark: bytes) -> bytes:
+        if self._serial_connection is None:
+            raise RuntimeError(f"Use {self.__class__.__name__} as context manager only")
+        return bytes(self._serial_connection.read_until(mark))
 
     def _connect_serial_communication_path(self) -> None:
         self._pin_interface.set_sbu_serial_path_to_communication()
