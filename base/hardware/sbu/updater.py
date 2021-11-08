@@ -5,7 +5,7 @@ from typing import Optional
 
 from base.common.logger import LoggerFactory
 from base.hardware.pin_interface import PinInterface
-from base.hardware.sbu.uart_finder import SbuUartFinder
+from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -48,7 +48,7 @@ class SbuUpdater:
 
     @staticmethod
     def _get_sbu_uart_channel() -> Path:
-        sbu_uart_channel = SbuUartFinder().get_sbu_uart_interface()
+        sbu_uart_channel = get_sbu_uart_interface()
         if not sbu_uart_channel:
             sbu_uart_channel = Path("/dev/ttyS1")
         return sbu_uart_channel

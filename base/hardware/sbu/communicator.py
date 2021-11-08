@@ -7,7 +7,7 @@ from base.common.exceptions import ComponentOffError, SbuNotAvailableError
 from base.common.logger import LoggerFactory
 from base.hardware.sbu.commands import SbuCommand
 from base.hardware.sbu.serial_wrapper import SerialWrapper
-from base.hardware.sbu.uart_finder import SbuUartFinder
+from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -22,7 +22,7 @@ class SbuCommunicator:
     @staticmethod
     def _get_uart_interface() -> Path:
         try:
-            return SbuUartFinder().get_sbu_uart_interface()
+            return get_sbu_uart_interface()
         except SbuNotAvailableError as e:
             text = (
                 "WARNING! Serial port to SBC could not found!\n"
