@@ -1,12 +1,9 @@
 import sys
-from pathlib import Path
+from importlib import import_module
 
 import pytest
 
-sys.path.append(str(Path(__file__).parent))
-sys.modules["RPi"] = __import__("RPi_mock")
-
-from pytest_mock import MockFixture
+sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 
 from base.hardware.pin_interface import GPIO, PinInterface
 

@@ -29,12 +29,12 @@ class SerialWrapper:
         self._automatically_free_channel: bool = automatically_free_channel
         self._baud_rate: int = baud_rate
         self._serial_connection: Optional[serial.Serial] = None
+        self._pin_interface: PinInterface = PinInterface.global_instance()
 
     def __enter__(self) -> SerialWrapper:
         assert isinstance(self._config, Config)
         self._wait_for_channel_free()
         SerialWrapper._channel_busy = True
-        self._pin_interface: PinInterface = PinInterface.global_instance()
         self._connect_serial_communication_path()
         try:
             self._serial_connection = serial.Serial(
