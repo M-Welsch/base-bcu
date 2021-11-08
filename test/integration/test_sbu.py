@@ -9,7 +9,7 @@ import pytest
 
 from base.common.config import BoundConfig
 from base.hardware.sbu.sbu import SBU, WakeupReason
-from base.hardware.sbu.uart_finder import SbuUartFinder
+from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 
 
 @pytest.fixture(scope="session")
@@ -26,7 +26,7 @@ def sbu(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SBU, None, N
 
 @pytest.mark.slow
 def test_sbu_uart_finder(sbu: SBU) -> None:
-    assert str(SbuUartFinder().get_sbu_uart_interface()).startswith("/dev/ttyS")
+    assert str(get_sbu_uart_interface()).startswith("/dev/ttyS")
 
 
 def test_write_to_display(sbu: SBU) -> None:

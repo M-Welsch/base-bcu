@@ -24,9 +24,9 @@ def test_challenge_interface(mocker: MockFixture) -> None:
     SerialWrapper._config = Config({"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
     path = Path()
     _challenge_interface(path)
-    SerialWrapper.__enter__.assert_called_once_with()
+    SerialWrapper.__enter__.assert_called_once_with()  # type: ignore
     # SerialWrapper.__init__.assert_called_once_with(path, BAUD_RATE, FREE_CHANNEL)  # Check member variables instead
     # assert SerialWrapper.__enter__.call_count == 1
-    assert SerialWrapper.reset_buffers.call_count == 2
-    assert SerialWrapper.write.call_count == 2
-    SerialWrapper.read_until.assert_called_once_with(b"Echo")
+    assert SerialWrapper.reset_buffers.call_count == 2  # type: ignore
+    assert SerialWrapper.write.call_count == 2  # type: ignore
+    SerialWrapper.read_until.assert_called_once_with(b"Echo")  # type: ignore
