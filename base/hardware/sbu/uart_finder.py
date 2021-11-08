@@ -1,4 +1,5 @@
 from pathlib import Path
+from test.hardware.constants import BAUD_RATE, FREE_CHANNEL
 from typing import Generator
 
 from base.common.exceptions import SbuNotAvailableError, SerialWrapperError
@@ -32,7 +33,7 @@ def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
 
 
 def _challenge_interface(uart_interface: Path) -> bytes:
-    with SerialWrapper(port=uart_interface, baud_rate=9600, automatically_free_channel=True) as ser:
+    with SerialWrapper(port=uart_interface, baud_rate=BAUD_RATE, automatically_free_channel=FREE_CHANNEL) as ser:
         ser.reset_buffers()
         ser.write(b"\0")
         ser.write(b"Test\0")
