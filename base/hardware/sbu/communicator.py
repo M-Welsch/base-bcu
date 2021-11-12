@@ -41,7 +41,7 @@ class SbuCommunicator:
                 baud_rate=9600,
                 automatically_free_channel=command.automatically_free_channel,
             ) as ser:
-                ser.send_message_to_sbu(f"{command.message_code}:{payload}")
+                ser.send_message_to_sbu(f"{command.message_code}:{payload}".encode())
                 if command.await_acknowledge:
                     acknowledge_delay, _ = ser.await_acknowledge(command.message_code)
                     log_message = (

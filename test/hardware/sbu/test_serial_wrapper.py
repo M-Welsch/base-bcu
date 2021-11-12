@@ -2,7 +2,7 @@ import sys
 from importlib import import_module
 from pathlib import Path
 from test.fake_libs.serial_mock import Serial
-from typing import Generator
+from typing import Generator, Union
 
 import pytest
 from pytest_mock import MockFixture
@@ -39,14 +39,20 @@ def test_setup_teardown(serial_wrapper: SerialWrapper, mocker: MockFixture) -> N
     assert wrapper.flush_sbu_channel.call_count == 2  # type: ignore
 
 
-def test_send_message_to_sbu(serial_wrapper: SerialWrapper, mocker: MockFixture) -> None:
+@pytest.mark.parametrize(
+    "test_in, test_out",
+    [("Message in a bottle?", b"Message in a bottle?"), ("Message in a bottle?".encode(), b"Message in a bottle?")],
+)
+def test_send_message_to_sbu(
+    serial_wrapper: SerialWrapper, mocker: MockFixture, test_in: Union[str, bytes], test_out: bytes
+) -> None:
     mocker.patch("serial.Serial.write")
     with serial_wrapper as wrapper:
         assert isinstance(wrapper._serial_connection, Serial)
-        wrapper._serial_connection.write.assert_called_once_with(b"\x00\x00")
+        wrapper._serial_connection.write.assert_called_once_with(b"\x00")
         wrapper._serial_connection.write.reset_mock()
-        wrapper.send_message_to_sbu("Message in a bottle?")
-        wrapper._serial_connection.write.assert_called_once_with(b"Message in a bottle?\x00")
+        wrapper.send_message_to_sbu(test_in)
+        wrapper._serial_connection.write.assert_called_once_with(test_out)
 
 
 def test_wait_for_channel_free__n_busy_n_ready(serial_wrapper: SerialWrapper) -> None:
