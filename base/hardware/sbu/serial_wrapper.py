@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from time import sleep, time
 from types import TracebackType
-from typing import Optional, Tuple, Type
+from typing import Optional, Tuple, Type, Union
 
 import serial
 
@@ -36,12 +36,7 @@ class SerialWrapper:
         self._wait_for_channel_free()
         SerialWrapper._channel_busy = True
         self._connect_serial_communication_path()
-        try:
-            self._serial_connection = serial.Serial(
-                port=str(self._port), baudrate=self._baud_rate, timeout=self._config.serial_connection_timeout
-            )
-        except serial.SerialException as e:
-            raise SerialWrapperError("Failed to open serial connection") from e
+        self._establish_serial_connection_or_raise()
         # self._serial_connection.open() is called implicitly!
         self.flush_sbu_channel()
         return self
@@ -49,26 +44,40 @@ class SerialWrapper:
     def __exit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
     ) -> None:
-        if self._serial_connection is not None:
-            self.flush_sbu_channel()
-            self._serial_connection.close()
+        self.flush_sbu_channel()
+        self._close_connection()
         self._pin_interface.disable_receiving_messages_from_sbu()
         if self._automatically_free_channel:
             SerialWrapper._channel_busy = False
 
+    def _close_connection(self) -> None:
+        if isinstance(self._serial_connection, serial.Serial):
+            self._serial_connection.close()
+
+    def _establish_serial_connection_or_raise(self) -> None:
+        assert isinstance(self._config, Config)
+        try:
+            self._serial_connection = serial.Serial(
+                port=str(self._port), baudrate=self._baud_rate, timeout=self._config.serial_connection_timeout
+            )
+        except serial.SerialException as e:
+            raise SerialWrapperError("Failed to open serial connection") from e
+
     def reset_buffers(self) -> None:
-        if self._serial_connection is None:
+        if not isinstance(self._serial_connection, serial.Serial):
             raise RuntimeError(f"Use {self.__class__.__name__} as context manager only")
         self._serial_connection.reset_input_buffer()
         self._serial_connection.reset_output_buffer()
 
-    def write(self, message: bytes) -> None:
+    def send_message_to_sbu(self, message: Union[str, bytes]) -> None:
         if self._serial_connection is None:
             raise RuntimeError(f"Use {self.__class__.__name__} as context manager only")
+        if isinstance(message, str):
+            message = message.encode()
         self._serial_connection.write(message)
 
     def read_until(self, mark: bytes) -> bytes:
-        if self._serial_connection is None:
+        if not isinstance(self._serial_connection, serial.Serial):
             raise RuntimeError(f"Use {self.__class__.__name__} as context manager only")
         return bytes(self._serial_connection.read_until(mark))
 
@@ -78,12 +87,7 @@ class SerialWrapper:
         sleep(4e-8)  # t_on / t_off max of ADG734 (ensures signal switchover)
 
     def flush_sbu_channel(self) -> None:
-        self.send_message_to_sbu("\0")
-
-    def send_message_to_sbu(self, message: str) -> None:
-        assert isinstance(self._serial_connection, serial.Serial)
-        message = message + "\0"
-        self._serial_connection.write(message.encode())
+        self.send_message_to_sbu("\0".encode())
 
     def _wait_for_channel_free(self) -> None:
         assert isinstance(self._config, Config)

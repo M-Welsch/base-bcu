@@ -35,8 +35,8 @@ def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
 def _challenge_interface(uart_interface: Path) -> bytes:
     with SerialWrapper(port=uart_interface, baud_rate=BAUD_RATE, automatically_free_channel=FREE_CHANNEL) as ser:
         ser.reset_buffers()
-        ser.write(b"\0")
-        ser.write(b"Test\0")
+        ser.send_message_to_sbu(b"\0")
+        ser.send_message_to_sbu(b"Test\0")
         response: bytes = ser.read_until(b"Echo")
         LOG.debug(f"interface: {str(uart_interface)}, response: {str(response)}")
         ser.reset_buffers()
