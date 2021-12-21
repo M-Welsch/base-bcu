@@ -8,7 +8,7 @@ from typing import Optional, Tuple, Type, Union
 import serial
 
 from base.common.config import BoundConfig, Config
-from base.common.exceptions import SbuCommunicationTimeout, SerialWrapperError
+from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SerialWrapperError
 from base.common.logger import LoggerFactory
 from base.hardware.pin_interface import PinInterface
 
@@ -104,15 +104,14 @@ class SerialWrapper:
     def wait_for_sbu_ready(self) -> Tuple[float, str]:
         return self.wait_for_response("Ready")
 
-    def wait_for_response(self, response: str) -> Tuple[float, str]:
+    def wait_for_response(self, response_keyword: str) -> Tuple[float, str]:
         assert isinstance(self._config, Config)
         assert isinstance(self._serial_connection, serial.Serial)
         time_start = time()
-        while True:
-            time_diff = time() - time_start
-            tmp: str = self._serial_connection.read_until().decode()
-            if response in tmp:
-                break
-            if time_diff > self._config.sbu_response_timeout:
-                raise SbuCommunicationTimeout(f"waiting for {response} took {time_diff}")
-        return time_diff, tmp
+        duration: float = 0.0
+        while duration < self._config.sbu_response_timeout:
+            response: str = self._serial_connection.read_until().decode()
+            if response_keyword in response:
+                return duration, response.strip("\x00").strip()
+            duration = time() - time_start
+        raise SbuNoResponseError(f"waiting for {response_keyword} timed out. Took: {duration}")

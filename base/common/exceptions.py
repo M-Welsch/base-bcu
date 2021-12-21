@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 
@@ -99,4 +101,8 @@ class RemoteDirectoryException(Exception):
 
 
 class LocalDirectoryException(Exception):
+    pass
+
+
+class SbuNoResponseError(SbuCommunicationTimeout):
     pass
