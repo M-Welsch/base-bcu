@@ -12,11 +12,11 @@ from _pytest.python_api import RaisesContext
 from pytest_mock import MockFixture
 
 from base.common.config import Config
-from base.common.exceptions import SbuNotAvailableError, SerialWrapperError
+from base.common.exceptions import SbuNotAvailableError, SerialInterfaceError
 
 sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 
-from base.hardware.sbu.serial_wrapper import SerialWrapper
+from base.hardware.sbu.serial_interface import SerialInterface
 from base.hardware.sbu.uart_finder import (
     _challenge_interface,
     _test_uart_interface_for_echo,
@@ -27,7 +27,7 @@ from base.hardware.sbu.uart_finder import (
 
 def test_challenge_interface(mocker: MockFixture) -> None:
     path = Path()
-    SerialWrapper._config = Config({"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
+    SerialInterface._config = Config({"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
     mocker.patch("base.hardware.sbu.serial_wrapper.SerialWrapper._wait_for_channel_free")
     mocker.patch("base.hardware.sbu.serial_wrapper.SerialWrapper._connect_serial_communication_path")
     mocker.patch("base.hardware.sbu.serial_wrapper.SerialWrapper._establish_serial_connection_or_raise")
@@ -39,14 +39,14 @@ def test_challenge_interface(mocker: MockFixture) -> None:
 
     _challenge_interface(path)
 
-    SerialWrapper._wait_for_channel_free.assert_called_once_with()  # type: ignore
-    SerialWrapper._connect_serial_communication_path.assert_called_once_with()  # type: ignore
-    SerialWrapper._establish_serial_connection_or_raise.assert_called_once_with()  # type: ignore
-    assert SerialWrapper.reset_buffers.call_count == 2  # type: ignore
-    assert SerialWrapper.send_message_to_sbu.call_count == 2  # type: ignore
-    SerialWrapper.read_until.assert_called_once_with(b"Echo")  # type: ignore
-    assert SerialWrapper.flush_sbu_channel.call_count == 2  # type: ignore
-    SerialWrapper._close_connection.assert_called_once_with()  # type: ignore
+    SerialInterface._wait_for_channel_free.assert_called_once_with()  # type: ignore
+    SerialInterface._connect_serial_communication_path.assert_called_once_with()  # type: ignore
+    SerialInterface._establish_serial_connection_or_raise.assert_called_once_with()  # type: ignore
+    assert SerialInterface.reset_buffers.call_count == 2  # type: ignore
+    assert SerialInterface.send_message_to_sbu.call_count == 2  # type: ignore
+    SerialInterface.read_until.assert_called_once_with(b"Echo")  # type: ignore
+    assert SerialInterface.flush_sbu_channel.call_count == 2  # type: ignore
+    SerialInterface._close_connection.assert_called_once_with()  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -56,11 +56,11 @@ def test_challenge_interface(mocker: MockFixture) -> None:
         (b"ends with Echo", None, True),
         (b"ends with Echo... not", None, False),
         (b"Something", None, False),
-        (None, SerialWrapperError, False),
+        (None, SerialInterfaceError, False),
     ],
 )
 def test_test_uart_interface_for_echo(
-    mocker: MockFixture, response: bytes, error: Optional[Type[SerialWrapperError]], expected: bool
+    mocker: MockFixture, response: bytes, error: Optional[Type[SerialInterfaceError]], expected: bool
 ) -> None:
     mocker.patch("base.hardware.sbu.uart_finder._challenge_interface", return_value=response, side_effect=error)
     assert _test_uart_interface_for_echo(Path()) == expected

@@ -1,10 +1,12 @@
 from pathlib import Path
-from test.hardware.constants import BAUD_RATE, FREE_CHANNEL
 from typing import Generator
 
-from base.common.exceptions import SbuNotAvailableError, SerialWrapperError
+from base.common.exceptions import SbuNotAvailableError, SerialInterfaceError
 from base.common.logger import LoggerFactory
-from base.hardware.sbu.serial_wrapper import SerialWrapper
+from base.hardware.constants import BAUD_RATE
+from base.hardware.sbu.commands import SbuCommands
+from base.hardware.sbu.message import SbuMessage
+from base.hardware.sbu.serial_interface import SerialInterface
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -26,18 +28,18 @@ def _test_uart_interfaces_for_echo(uart_interfaces: Generator[Path, None, None])
 def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
     try:
         response = _challenge_interface(uart_interface)
-    except SerialWrapperError:
+    except SerialInterfaceError:
         return False
     else:
-        return response.endswith(b"Echo")
+        return response.endswith("Echo")
 
 
-def _challenge_interface(uart_interface: Path) -> bytes:
-    with SerialWrapper(port=uart_interface, baud_rate=BAUD_RATE, automatically_free_channel=FREE_CHANNEL) as ser:
+def _challenge_interface(uart_interface: Path) -> str:
+    with SerialInterface(port=uart_interface, baud_rate=BAUD_RATE) as ser:
         ser.reset_buffers()
-        ser.send_message_to_sbu(b"\0")
-        ser.send_message_to_sbu(b"Test\0")
-        response: bytes = ser.read_until(b"Echo")
+        message = SbuMessage(SbuCommands.test)
+        ser.flush_sbu_channel()
+        response = ser.query_from_sbu(message=message)
         LOG.debug(f"interface: {str(uart_interface)}, response: {str(response)}")
         ser.reset_buffers()
     return response
