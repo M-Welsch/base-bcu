@@ -4,8 +4,7 @@ from typing import Generator
 from base.common.exceptions import SbuNotAvailableError, SerialInterfaceError
 from base.common.logger import LoggerFactory
 from base.hardware.constants import BAUD_RATE
-from base.hardware.sbu.commands import SbuCommands
-from base.hardware.sbu.message import SbuMessage
+from base.hardware.sbu.message import PredefinedSbuMessages
 from base.hardware.sbu.serial_interface import SerialInterface
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -37,9 +36,8 @@ def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
 def _challenge_interface(uart_interface: Path) -> str:
     with SerialInterface(port=uart_interface, baud_rate=BAUD_RATE) as ser:
         ser.reset_buffers()
-        message = SbuMessage(SbuCommands.test)
         ser.flush_sbu_channel()
-        response = ser.query_from_sbu(message=message)
+        response = ser.query_from_sbu(message=PredefinedSbuMessages.test_for_echo)
         LOG.debug(f"interface: {str(uart_interface)}, response: {str(response)}")
         ser.reset_buffers()
     return response

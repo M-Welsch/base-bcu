@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from base.hardware.sbu.commands import SbuCommand
+from base.hardware.sbu.commands import SbuCommand, SbuCommands
 
 
 class SbuMessage:
@@ -21,3 +21,8 @@ class SbuMessage:
     @property
     def binary(self) -> bytes:
         return f"{self.code}:{self._payload}".encode()
+
+
+class PredefinedSbuMessages:
+    test_for_echo = SbuMessage(SbuCommands.test)
+    shutdown_request = SbuMessage(SbuCommands.request_shutdown)
