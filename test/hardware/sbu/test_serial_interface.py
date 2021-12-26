@@ -116,7 +116,7 @@ def test_write_to_sbu(serial_interface: SerialInterface, mocker: MockFixture) ->
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._await_acknowledge")
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
-    message = SbuMessage(command=SbuCommand(message_code="CODE", await_response=False), payload="Message in a bottle?")
+    message = SbuMessage(command=SbuCommand(message_code="CODE"), payload="Message in a bottle?")
     with serial_interface as interface:
         interface._send_message.reset_mock()  # type: ignore
         interface.write_to_sbu(message=message)
@@ -133,7 +133,28 @@ def test_query_from_sbu(serial_interface: SerialInterface, mocker: MockFixture) 
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, expected))
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
     message = SbuMessage(
-        command=SbuCommand(message_code="CODE", await_response=False, response_keyword="RKW"),
+        command=SbuCommand(message_code="CODE", response_keyword="RKW"),
+        payload="Message in a bottle?",
+    )
+    with serial_interface as interface:
+        interface._send_message.reset_mock()  # type: ignore
+        response = interface.query_from_sbu(message=message)
+        interface._send_message.assert_called_once_with(message=message.binary)  # type: ignore
+        interface._await_acknowledge.assert_called_once_with(message.code)  # type: ignore
+        interface._wait_for_response.assert_called_once_with(message.response_keyword)  # type: ignore
+        interface._wait_for_sbu_ready.assert_called_once_with()  # type: ignore
+        assert response == expected
+
+
+def test_query_from_sbu__no_response_keyword(serial_interface: SerialInterface, mocker: MockFixture) -> None:
+    expected = "response"
+    mocker.patch("serial.Serial.open")
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._await_acknowledge")
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, expected))
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
+    message = SbuMessage(
+        command=SbuCommand(message_code="CODE",  response_keyword=""),
         payload="Message in a bottle?",
     )
     with serial_interface as interface:

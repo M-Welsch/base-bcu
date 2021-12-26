@@ -17,7 +17,7 @@ LOG = LoggerFactory.get_logger(__name__)
 class SbuCommunicator:
     _sbu_uart_interface: Optional[Path] = None
 
-    def __init__(self) -> None:  # TODO: Move baud_rate to seperate constants file
+    def __init__(self) -> None:
         if self._sbu_uart_interface is None:
             self._sbu_uart_interface = self._get_uart_interface()
 
