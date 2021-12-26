@@ -78,7 +78,7 @@ class SbuNotAvailableError(Exception):
     """Raise if UART interface is not found."""
 
 
-class SerialWrapperError(Exception):
+class SerialInterfaceError(Exception):
     pass
 
 

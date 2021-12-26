@@ -1,0 +1,1 @@
+BAUD_RATE: int = 9600

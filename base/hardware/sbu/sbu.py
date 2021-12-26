@@ -25,19 +25,19 @@ class SBU:
 
     def request_wakeup_reason(self) -> WakeupReason:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
-        wakeup_reason_code = self._sbu_communicator.process_command(SbuCommands.request_wakeup_reason)
+        wakeup_reason_code = self._sbu_communicator.query(SbuCommands.request_wakeup_reason)
         return WakeupReason(wakeup_reason_code)
 
     def set_wakeup_reason(self, reason: str) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
-        self._sbu_communicator.process_command(SbuCommands.set_wakeup_reason, payload=reason)
+        self._sbu_communicator.write(SbuCommands.set_wakeup_reason, payload=reason)
 
     def write_to_display(self, line1: str, line2: str) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
         self.check_display_line_for_length(line1)
         self.check_display_line_for_length(line2)
-        self._sbu_communicator.process_command(SbuCommands.write_to_display_line1, line1[:16])
-        self._sbu_communicator.process_command(SbuCommands.write_to_display_line2, line2[:16])
+        self._sbu_communicator.write(SbuCommands.write_to_display_line1, line1[:16])
+        self._sbu_communicator.write(SbuCommands.write_to_display_line2, line2[:16])
 
     @staticmethod
     def check_display_line_for_length(line: str) -> None:
@@ -46,13 +46,13 @@ class SBU:
 
     def set_display_brightness_percent(self, display_brightness_in_percent: float) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
-        self._sbu_communicator.process_command(
+        self._sbu_communicator.write(
             SbuCommands.set_display_brightness, str(self._condition_brightness_value(display_brightness_in_percent))
         )
 
     def set_led_brightness_percent(self, led_brightness_in_percent: float) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
-        self._sbu_communicator.process_command(
+        self._sbu_communicator.write(
             SbuCommands.set_led_brightness, str(self._condition_brightness_value(led_brightness_in_percent))
         )
 
@@ -76,14 +76,14 @@ class SBU:
         command = SbuCommands.set_seconds_to_next_bu
         payload = str(int(seconds))
         LOG.info(f"Command: message_code = {command.message_code}, payload = {payload}")
-        assertion_message = self._sbu_communicator.process_command(command, payload)
+        assertion_message = self._sbu_communicator.query(command, payload)
         value_in_cmp_register = int(findall(r"\d+", assertion_message)[0])
         LOG.info(f"value_in_cmp_register: {value_in_cmp_register}, derived from {assertion_message}")
         assert value_in_cmp_register == int(seconds / 32)
 
     def send_readable_timestamp(self, timestamp: str) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
-        self._sbu_communicator.process_command(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
+        self._sbu_communicator.write(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
 
     def measure_base_input_current(self) -> Optional[float]:
         return self._measure(SbuCommands.measure_current)
@@ -96,7 +96,7 @@ class SBU:
 
     def _measure(self, command: SbuCommand) -> Optional[float]:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
-        response = self._sbu_communicator.process_command(command)
+        response = self._sbu_communicator.query(command)
         # LOG.debug(f"response is {response}")
         response_16bit_value = int(findall(r"[0-9]+", response[2:])[0])
         return self._convert_measurement_result(command, response_16bit_value)
@@ -117,11 +117,11 @@ class SBU:
 
     def request_shutdown(self) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
-        self._sbu_communicator.process_command(SbuCommands.request_shutdown)
+        self._sbu_communicator.write(SbuCommands.request_shutdown)
 
     def abort_shutdown(self) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
-        self._sbu_communicator.process_command(SbuCommands.abort_shutdown)
+        self._sbu_communicator.write(SbuCommands.abort_shutdown)
 
 
 """
