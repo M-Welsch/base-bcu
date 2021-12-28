@@ -13,18 +13,33 @@ sys.path.append(path_to_module)
 @click.option("--undock", "-u", help="undock backup hdd", is_flag=True, default=False)
 @click.option("--power", "-p", help="power backup hdd", is_flag=True, default=False)
 @click.option("--unpower", "-r", help="unpower backup hdd", is_flag=True, default=False)
-@click.option("--open_sbu_channel", "-c", help="set communication path to communication (not programming) and enable BCU to receive messages", is_flag=True, default=False)
-@click.option("--close_sbu_channel", "-v", help="set communication path to programming and disable BCU to receive messages", is_flag=True, default=False)
-def control_hardware(dock: bool, undock: bool, power: bool, unpower: bool, open_sbu_channel: bool, close_sbu_channel: bool) -> None:
+@click.option(
+    "--open_sbu_channel",
+    "-c",
+    help="set communication path to communication (not programming) and enable BCU to receive messages",
+    is_flag=True,
+    default=False,
+)
+@click.option(
+    "--close_sbu_channel",
+    "-v",
+    help="set communication path to programming and disable BCU to receive messages",
+    is_flag=True,
+    default=False,
+)
+def control_hardware(
+    dock: bool, undock: bool, power: bool, unpower: bool, open_sbu_channel: bool, close_sbu_channel: bool
+) -> None:
     cfg_path = Path("/home/base/python.base/base/config/")
     setup_logger(cfg_path)
     from base.common.config import BoundConfig
+
     setup_config(cfg_path)
 
     from base.hardware.mechanics import Mechanics
     from base.hardware.power import Power
 
-    power = Power()
+    power_unit = Power()
     mechanics = Mechanics(BoundConfig("mechanics.json"))
 
     if dock:
@@ -32,21 +47,21 @@ def control_hardware(dock: bool, undock: bool, power: bool, unpower: bool, open_
         mechanics.dock()
     if power:
         print("power")
-        power.hdd_power_on()
+        power_unit.hdd_power_on()
     if unpower:
         print("unpower")
-        power.hdd_power_off()
+        power_unit.hdd_power_off()
     if undock:
         print("undocking. Properly")
         mechanics.undock()
     if open_sbu_channel:
         print("Opening Channel")
-        power._pin_interface.set_sbu_serial_path_to_communication()
-        power._pin_interface.enable_receiving_messages_from_sbu()
+        power_unit._pin_interface.set_sbu_serial_path_to_communication()
+        power_unit._pin_interface.enable_receiving_messages_from_sbu()
     if close_sbu_channel:
         print("Closing Channel")
-        power._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
-        power._pin_interface.disable_receiving_messages_from_sbu()
+        power_unit._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
+        power_unit._pin_interface.disable_receiving_messages_from_sbu()
 
 
 def setup_config(config_path: Path) -> None:

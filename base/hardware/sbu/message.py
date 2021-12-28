@@ -20,7 +20,7 @@ class SbuMessage:
 
     @property
     def binary(self) -> bytes:
-        return f"{self.code}:{self._payload}".encode()
+        return f"{self.code}:{self._payload}\n".encode()
 
 
 class PredefinedSbuMessages:

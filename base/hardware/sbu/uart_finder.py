@@ -1,7 +1,12 @@
 from pathlib import Path
 from typing import Generator
 
-from base.common.exceptions import SbuNotAvailableError, SerialInterfaceError
+from base.common.exceptions import (
+    SbuCommunicationTimeout,
+    SbuNoResponseError,
+    SbuNotAvailableError,
+    SerialInterfaceError,
+)
 from base.common.logger import LoggerFactory
 from base.hardware.constants import BAUD_RATE
 from base.hardware.sbu.message import PredefinedSbuMessages
@@ -28,6 +33,10 @@ def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
     try:
         response = _challenge_interface(uart_interface)
     except SerialInterfaceError:
+        return False
+    except SbuNoResponseError:
+        return False
+    except SbuCommunicationTimeout:
         return False
     else:
         return response.endswith("Echo")
