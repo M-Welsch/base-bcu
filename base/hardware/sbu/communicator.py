@@ -27,7 +27,7 @@ class SbuCommunicator:
             return get_sbu_uart_interface()
         except SbuNotAvailableError as e:
             text = (
-                "WARNING! Serial port to SBC could not found!\n"
+                "WARNING! Serial port to SBU could not found!\n"
                 "Display and buttons will not work!\n"
                 "Shutdown will not work! System must be repowered manually!"
             )

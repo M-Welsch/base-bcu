@@ -122,4 +122,3 @@ class SerialInterface:
                 return duration, response.strip("\x00").strip()
             duration = time() - time_start
         raise SbuNoResponseError(f"waiting for {response_keyword} timed out. Took: {duration}")
-

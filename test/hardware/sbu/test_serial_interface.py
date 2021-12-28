@@ -154,7 +154,7 @@ def test_query_from_sbu__no_response_keyword(serial_interface: SerialInterface, 
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, expected))
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
     message = SbuMessage(
-        command=SbuCommand(message_code="CODE",  response_keyword=""),
+        command=SbuCommand(message_code="CODE", response_keyword=""),
         payload="Message in a bottle?",
     )
     with serial_interface as interface:
@@ -172,9 +172,11 @@ def test_send_message(serial_interface: SerialInterface, mocker: MockFixture) ->
     mocker.patch("serial.Serial.write")
     message = b"Dream Theater rocks!"
     with serial_interface as interface:
-        serial.Serial.write.reset_mock()  # type: ignore
+        # noinspection PyUnresolvedReferences
+        serial.Serial.write.reset_mock()
         interface._send_message(message)
-        serial.Serial.write.assert_called_once_with(message)  # type: ignore
+        # noinspection PyUnresolvedReferences
+        serial.Serial.write.assert_called_once_with(message)
 
 
 def test_send_message_error(serial_interface: SerialInterface) -> None:

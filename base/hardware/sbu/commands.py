@@ -20,5 +20,5 @@ class SbuCommands:
     measure_temperature = SbuCommand(message_code="TP", response_keyword="TP")
     request_shutdown = SbuCommand(message_code="SR")
     abort_shutdown = SbuCommand(message_code="SA")
-    request_wakeup_reason = SbuCommand(message_code="WR", )
+    request_wakeup_reason = SbuCommand(message_code="WR")
     set_wakeup_reason = SbuCommand(message_code="WD")

@@ -16,14 +16,14 @@ from base.common.exceptions import SbuNotAvailableError, SerialInterfaceError
 
 sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 
+from base.hardware.sbu.message import PredefinedSbuMessages
 from base.hardware.sbu.serial_interface import SerialInterface
 from base.hardware.sbu.uart_finder import (
     _challenge_interface,
     _test_uart_interface_for_echo,
     _test_uart_interfaces_for_echo,
-    get_sbu_uart_interface
+    get_sbu_uart_interface,
 )
-from base.hardware.sbu.message import PredefinedSbuMessages
 
 
 def test_challenge_interface(mocker: MockFixture) -> None:
