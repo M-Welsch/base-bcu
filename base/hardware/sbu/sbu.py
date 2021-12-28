@@ -63,7 +63,7 @@ class SBU:
         if brightness_16bit > maximum_brightness:
             LOG.warning(
                 f"brightness value too high. Maximum is {maximum_brightness}, "
-                f"however {brightness_16bit} was given. Clipping to maximum."
+                f"however {brightness_16bit} was given. Clipping to {maximum_brightness}."
             )
             brightness_16bit = maximum_brightness
         elif brightness_16bit < 0:
@@ -122,24 +122,3 @@ class SBU:
     def abort_shutdown(self) -> None:
         assert isinstance(self._sbu_communicator, SbuCommunicator)
         self._sbu_communicator.write(SbuCommands.abort_shutdown)
-
-
-"""
-Kommandoschicht
-- write to display
-- set display brightness
-- set led brightness
---------------------------
-- set next backup time
-- set readable backup timestamp
---------------------------
-- measure current
-- measure vcc3v
-- measure temperature
---------------------------
-- request shutdown
-- terminate serial connection
-
-
-Protokollschicht
-"""
