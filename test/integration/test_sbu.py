@@ -8,6 +8,7 @@ import _pytest
 import pytest
 
 from base.common.config import BoundConfig
+from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU, WakeupReason
 from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 
@@ -21,7 +22,7 @@ def sbu(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SBU, None, N
         drive_config_data = json.load(src)
         json.dump(drive_config_data, dst)
     BoundConfig.set_config_base_path(config_test_path)
-    yield SBU()
+    yield SBU(SbuCommunicator())
 
 
 @pytest.mark.slow

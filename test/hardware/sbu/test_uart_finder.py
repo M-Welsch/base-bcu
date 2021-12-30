@@ -43,8 +43,7 @@ def test_challenge_interface(mocker: MockFixture) -> None:
     SerialInterface._connect_serial_communication_path.assert_called_once_with()  # type: ignore
     SerialInterface._establish_serial_connection_or_raise.assert_called_once_with()  # type: ignore
     assert SerialInterface.reset_buffers.call_count == 2  # type: ignore
-    # assert SerialInterface.query_from_sbu.assert_called_once_with(message=PredefinedMessages.test_for_echo)  # type: ignore  # Fixme: why can I not assert, that the call is made with this specific message?
-    assert SerialInterface.query_from_sbu.call_count == 1  # type: ignore
+    SerialInterface.query_from_sbu.assert_called_once_with(message=PredefinedSbuMessages.test_for_echo)  # type: ignore
     assert SerialInterface.flush_sbu_channel.call_count == 3  # type: ignore
     SerialInterface._close_connection.assert_called_once_with()  # type: ignore
 
