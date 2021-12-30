@@ -7,6 +7,7 @@ sys.path.append(path_to_module)
 
 from base.common.config import BoundConfig, Config
 from base.common.time_calculations import TimeCalculator
+from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU
 
 
@@ -14,7 +15,7 @@ class ConfigSbu:
     def __init__(self) -> None:
         BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config/"))
         self._schedule: Config = BoundConfig("schedule_backup.json")
-        self._sbu: SBU = SBU()
+        self._sbu: SBU = SBU(SbuCommunicator())
 
     def set_timer_according_to_config_file(self) -> None:
         self._sbu.write_to_display("Test", "123")

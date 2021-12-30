@@ -8,6 +8,7 @@ from base.hardware.drive import Drive
 from base.hardware.hmi import HMI
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
+from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU
 from base.logic.backup.backup_browser import BackupBrowser
 
@@ -19,8 +20,8 @@ class Hardware:
         self._config: Config = BoundConfig("hardware.json")
         self._mechanics: Mechanics = Mechanics(BoundConfig("mechanics.json"))
         self._power: Power = Power()
-        self._hmi: HMI = HMI()
-        self._sbu: SBU = SBU()
+        self._sbu: SBU = SBU(SbuCommunicator())
+        self._hmi: HMI = HMI(self._sbu)
         self._drive: Drive = Drive(BoundConfig("drive.json"), backup_browser)
 
     def engage(self, **kwargs):  # type: ignore
