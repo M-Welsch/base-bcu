@@ -6,13 +6,12 @@ from signalslot import Signal
 
 from base.common.config import BoundConfig, Config
 from base.common.logger import LoggerFactory
-from base.common.time_calculations import TimeCalculator
+from base.common.time_calculations import BACKUP_FREQUENCIES, next_backup, next_backup_seconds, next_backup_timestring
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
 class Schedule:
-    valid_backup_frequencies = {"hours", "days", "weeks", "months"}
     # valid_days_of_week = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
     valid_days_of_week = {0, 1, 2, 3, 4, 5, 6}
     shutdown_request = Signal()
@@ -38,10 +37,8 @@ class Schedule:
         self._schedule.reload()
         backup_frequency = self._schedule.backup_frequency
         day_of_week = self._schedule.day_of_week
-        if backup_frequency not in Schedule.valid_backup_frequencies:
-            raise ValueError(
-                f"Invalid backup frequency '{backup_frequency}'. " f"Use one of {Schedule.valid_backup_frequencies}"
-            )
+        if backup_frequency not in BACKUP_FREQUENCIES:
+            raise ValueError(f"Invalid backup frequency '{backup_frequency}'. " f"Use one of {BACKUP_FREQUENCIES}")
         if day_of_week not in Schedule.valid_days_of_week:
             raise ValueError(f"{day_of_week} is no valid day!" f"Use one of {Schedule.valid_days_of_week}")
         if self._backup_job is not None:
@@ -55,9 +52,8 @@ class Schedule:
         self._reschedule_backup()
 
     def _reschedule_backup(self) -> None:
-        tc = TimeCalculator()
-        due = tc.next_backup(self._schedule).timestamp()
-        LOG.info(f"Scheduled next backup on {tc.next_backup_timestring(self._schedule)}")
+        due = next_backup(self._schedule).timestamp()
+        LOG.info(f"Scheduled next backup on {next_backup_timestring(self._schedule)}")
         self._backup_job = self._scheduler.enterabs(due, 2, self._invoke_backup)
 
     def on_postpone_backup(self, seconds, **kwargs):  # type: ignore
@@ -79,11 +75,11 @@ class Schedule:
 
     @property
     def next_backup_timestamp(self) -> str:
-        return TimeCalculator().next_backup_timestring(self._schedule)
+        return next_backup_timestring(self._schedule)
 
     @property
     def next_backup_seconds(self) -> int:
-        return TimeCalculator().next_backup_seconds(self._schedule)
+        return next_backup_seconds(self._schedule)
 
 
 # TODO: Rename backup frequency to backup interval!

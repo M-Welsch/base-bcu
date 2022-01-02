@@ -106,3 +106,7 @@ class LocalDirectoryException(Exception):
 
 class SbuNoResponseError(SbuCommunicationTimeout):
     pass
+
+
+class ConfigValidationError(Exception):
+    """Invalid config value exception."""
