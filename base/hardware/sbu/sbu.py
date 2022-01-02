@@ -12,7 +12,7 @@ LOG = LoggerFactory.get_logger(__name__)
 _sbu_measurement_data_conversion_map: Dict[str, Callable[[float], float]] = {
     "CC": lambda raw_value: raw_value * 0.00234,
     "3V": lambda raw_value: raw_value * 3.234 / 1008,
-    "TP": lambda raw_value: raw_value,  # Todo: implement this in sbu
+    "TP": lambda raw_value: float(raw_value),  # Todo: implement this in sbu
 }
 
 
@@ -99,8 +99,12 @@ class SBU:
 
     def _measure(self, command: SbuCommand) -> Optional[float]:
         response = self._sbu_communicator.query(command)
-        response_16bit_value = int(findall(r"[0-9]+", response[2:])[0])
+        response_16bit_value = self._extract_digits(response)
         return self._convert_measurement_result(command, response_16bit_value)
+
+    @staticmethod
+    def _extract_digits(response: str) -> int:
+        return int(findall(r"[0-9]+", response[2:])[0])
 
     @staticmethod
     def _convert_measurement_result(command: SbuCommand, raw_value: int) -> Optional[float]:
