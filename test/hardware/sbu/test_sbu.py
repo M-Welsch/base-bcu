@@ -1,7 +1,7 @@
 import logging
 import sys
 from importlib import import_module
-from typing import Generator
+from typing import Callable, Generator
 from unittest.mock import MagicMock
 
 import pytest
@@ -10,7 +10,7 @@ from pytest_mock import MockerFixture
 
 sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 
-from base.hardware.sbu.commands import SbuCommands
+from base.hardware.sbu.commands import SbuCommand, SbuCommands
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU, WakeupReason
 
@@ -76,15 +76,7 @@ def test_set_led_brightness_percent(sbu: SBU, mocker: MockerFixture) -> None:
     patched_write.assert_called_once_with(SbuCommands.set_led_brightness, brightness_value)
 
 
-@pytest.mark.parametrize(
-    "input_value, output_value",
-    [
-        (-1, 0),
-        (0, 0),
-        (50, 32767),
-        (101, 65535)
-    ]
-)
+@pytest.mark.parametrize("input_value, output_value", [(-1, 0), (0, 0), (50, 32767), (101, 65535)])
 def test_condition_brightness_value(input_value: float, output_value: int, caplog: LogCaptureFixture) -> None:
     with caplog.at_level(logging.WARNING):
         assert output_value == SBU._condition_brightness_value(input_value)
@@ -102,5 +94,88 @@ def test_send_seconds_to_next_bu(sbu: SBU, mocker: MockerFixture) -> None:
     patched_query.assert_called_once_with(SbuCommands.set_seconds_to_next_bu, str(input_seconds))
 
 
-def test_assert_correct_rtc_setting() -> None:
-    ...
+@pytest.mark.parametrize("rtc_register, secs, error_log", [("1", 32, False), ("2", 32, True)])
+def test_assert_correct_rtc_setting(rtc_register: str, secs: int, error_log: bool, caplog: LogCaptureFixture) -> None:
+    if error_log:
+        with caplog.at_level(logging.ERROR):
+            SBU._assert_correct_rtc_setting(rtc_register, secs)
+        assert "didn't calculate the time to next backup correctly" in caplog.text
+
+
+def test_send_readable_timestamp(sbu: SBU, mocker: MockerFixture) -> None:
+    timestamp = "SomeString"
+    patched_write = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.write")
+    sbu.send_readable_timestamp(timestamp)
+    patched_write.assert_called_once_with(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
+
+
+@pytest.mark.parametrize(
+    "meas_func, meas_cmd",
+    [
+        (SBU.measure_base_input_current, SbuCommands.measure_current),
+        (SBU.measure_vcc3v_voltage, SbuCommands.measure_vcc3v),
+        (SBU.measure_sbu_temperature, SbuCommands.measure_temperature),
+    ],
+)
+def test_measure_quantities(sbu: SBU, mocker: MockerFixture, meas_func: Callable, meas_cmd: SbuCommand) -> None:
+    patched_measure = mocker.patch("base.hardware.sbu.sbu.SBU._measure", return_value=10)
+    assert meas_func(sbu) == 10
+    patched_measure.assert_called_once_with(meas_cmd)
+
+
+@pytest.mark.parametrize(
+    "cmd", [SbuCommands.measure_current, SbuCommands.measure_temperature, SbuCommands.measure_vcc3v]
+)
+def test_measure(sbu: SBU, cmd: SbuCommand, mocker: MockerFixture) -> None:
+    response_val = "xx10xx"
+    patched_query = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.query", return_value=response_val)
+    patched_extract = mocker.patch("base.hardware.sbu.sbu.SBU._extract_digits", return_value=10)
+    patched_convert = mocker.patch("base.hardware.sbu.sbu.SBU._convert_measurement_result", return_value=10)
+    sbu._measure(cmd)
+    patched_query.assert_called_once_with(cmd)
+    patched_extract.assert_called_once_with(response_val)
+    patched_convert.assert_called_once_with(cmd, 10)
+
+
+@pytest.mark.parametrize(
+    "input_value, output_value",
+    [
+        ("Writing 1 to CMP Register", 1),
+        ("Writing 10 to CMP Register", 10),
+        ("Writing 100 to CMP Register", 100),
+        ("Writing 1000 to CMP Register", 1000),
+        ("Writing 10000 to CMP Register", 10000),
+    ],
+)
+def test_extract_digits(input_value: str, output_value: float) -> None:
+    assert SBU._extract_digits(input_value) == output_value
+
+
+@pytest.mark.parametrize(
+    "cmd, raw_val, log_msg",
+    [
+        (SbuCommands.measure_current, 10, ""),
+        (SbuCommands.measure_temperature, 10, ""),
+        (SbuCommands.measure_vcc3v, 10, ""),
+        (SbuCommands.abort_shutdown, None, "cannot convert"),
+    ],
+)
+def test_convert_measurement_result(cmd: SbuCommand, raw_val: int, log_msg: str, caplog: LogCaptureFixture) -> None:
+    if log_msg:
+        with caplog.at_level(logging.WARNING):
+            assert SBU._convert_measurement_result(cmd, raw_val) is None
+        assert log_msg in caplog.text
+    else:
+        assert isinstance(SBU._convert_measurement_result(cmd, raw_val), float)
+
+
+def test_request_shutdown(sbu: SBU, mocker: MockerFixture) -> None:
+    patched_write = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.write")
+    sbu.request_shutdown()
+    patched_write.assert_called_once_with(SbuCommands.request_shutdown)
+
+
+def test_abort_shutdown(sbu: SBU, mocker: MockerFixture) -> None:
+    patched_write = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.write")
+    sbu.abort_shutdown()
+    patched_write.assert_called_once_with(SbuCommands.abort_shutdown)
