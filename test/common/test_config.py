@@ -148,13 +148,11 @@ def test_bound_config_reload(config_path: Path) -> None:
 
 
 def test_bound_config_reload_all(config_path: Path, mocker: MockFixture) -> None:
-    mocker.patch("base.common.config.BoundConfig.reload")
+    patched_reload = mocker.patch("base.common.config.BoundConfig.reload")
     config_file_names = ["test_a.json", "test_b.json"]
     for file_name in config_file_names:
         write_test_file(content={}, file_path=config_path / file_name)
     configs = [BoundConfig(file_name) for file_name in config_file_names]
-    for config in configs:
-        assert config.reload.call_count == 2  # type: ignore
+    patched_reload.reset_mock()
     BoundConfig.reload_all()
-    for config in configs:
-        assert config.reload.call_count == 4  # type: ignore
+    assert patched_reload.call_count == len(configs)

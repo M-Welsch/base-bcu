@@ -53,10 +53,12 @@ def test_write(
     error: Optional[Union[Type[SbuNoResponseError], Type[SbuNoResponseError]]],
     expected: Optional[Union[Type[SbuNoResponseError], Type[SbuNoResponseError]]],
 ) -> None:
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.write_to_sbu", side_effect=error)
+    patched_write_to_sbu = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface.write_to_sbu", side_effect=error
+    )
     mocker.patch("base.hardware.sbu.communicator.SbuCommunicator._get_uart_interface", return_value=Path())
 
-    # the following mocks mock the SerialInterface context manager
+    # the following mocks the SerialInterface context manager
     SerialInterface._config = Config({"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free")
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._connect_serial_communication_path")
@@ -71,7 +73,7 @@ def test_write(
             SbuCommunicator().write(command, payload)
     else:
         SbuCommunicator().write(command, payload)
-    assert SerialInterface.write_to_sbu.call_count == 1  # type: ignore
+    assert patched_write_to_sbu.call_count == 1
 
 
 @pytest.mark.parametrize(
@@ -92,12 +94,12 @@ def test_query(
     expected: Optional[Union[Type[SbuNoResponseError], Type[SbuNoResponseError]]],
     response: str,
 ) -> None:
-    mocker.patch(
+    patched_query_from_sbu = mocker.patch(
         "base.hardware.sbu.serial_interface.SerialInterface.query_from_sbu", side_effect=error, return_value=response
     )
     mocker.patch("base.hardware.sbu.communicator.SbuCommunicator._get_uart_interface", return_value=Path())
 
-    # the following mocks mock the SerialInterface context manager
+    # the following mocks the SerialInterface context manager
     SerialInterface._config = Config({"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free")
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._connect_serial_communication_path")
@@ -108,8 +110,8 @@ def test_query(
     command = SbuCommands.test
     if error:
         with pytest.raises(error):
-            response_from_sbu = SbuCommunicator().query(command, payload)
+            SbuCommunicator().query(command, payload)
     else:
         response_from_sbu = SbuCommunicator().query(command, payload)
         assert response_from_sbu == response
-    assert SerialInterface.query_from_sbu.call_count == 1  # type: ignore
+    assert patched_query_from_sbu.call_count == 1

@@ -19,7 +19,7 @@ from base.hardware.sbu.serial_interface import SerialInterface
 
 
 @pytest.fixture()
-def serial_interface(mocker: MockFixture) -> Generator["SerialInterface", None, None]:
+def serial_interface() -> Generator["SerialInterface", None, None]:
 
     SerialInterface._config = Config(
         {"sbu_response_timeout": 0.001, "wait_for_channel_free_timeout": 0.001, "serial_connection_timeout": 1}
@@ -29,34 +29,46 @@ def serial_interface(mocker: MockFixture) -> Generator["SerialInterface", None, 
 
 def test_setup_teardown(serial_interface: SerialInterface, mocker: MockFixture) -> None:
     mocker.patch("serial.Serial.open")
-    mocker.patch("base.hardware.pin_interface.PinInterface.set_sbu_serial_path_to_communication")
-    mocker.patch("base.hardware.pin_interface.PinInterface.enable_receiving_messages_from_sbu")
-    mocker.patch("base.hardware.pin_interface.PinInterface.disable_receiving_messages_from_sbu")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
+    patched_set_sbu_serial_path_to_communication = mocker.patch(
+        "base.hardware.pin_interface.PinInterface.set_sbu_serial_path_to_communication"
+    )
+    patched_enable_receiving_messages_from_sbu = mocker.patch(
+        "base.hardware.pin_interface.PinInterface.enable_receiving_messages_from_sbu"
+    )
+    patched_disable_receiving_messages_from_sbu = mocker.patch(
+        "base.hardware.pin_interface.PinInterface.disable_receiving_messages_from_sbu"
+    )
+    patched_wait_for_channel_free = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free"
+    )
+    patched_flush_sbu_channel = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
     with serial_interface as interface:
         assert isinstance(interface._serial_connection, serial.Serial)
-        interface._wait_for_channel_free.assert_called_once_with()  # type: ignore
-        interface._pin_interface.set_sbu_serial_path_to_communication.assert_called_once_with()  # type: ignore
-        interface._pin_interface.enable_receiving_messages_from_sbu.assert_called_once_with()  # type: ignore
-        interface.flush_sbu_channel.assert_called_once_with()  # type: ignore
-    interface._pin_interface.disable_receiving_messages_from_sbu.assert_called_once_with()  # type: ignore
-    assert interface.flush_sbu_channel.call_count == 2  # type: ignore
+        assert patched_wait_for_channel_free.called_once_with()
+        assert patched_set_sbu_serial_path_to_communication.called_once_with()
+        assert patched_enable_receiving_messages_from_sbu.called_once_with()
+        assert patched_flush_sbu_channel.called_once_with()
+    assert patched_disable_receiving_messages_from_sbu.called_once_with()
+    assert patched_flush_sbu_channel.call_count == 2
 
 
 def test_connect_serial_communication_path(serial_interface: SerialInterface, mocker: MockFixture) -> None:
     mocker.patch("serial.Serial.open")
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
-    mocker.patch("base.hardware.pin_interface.PinInterface.set_sbu_serial_path_to_communication")
-    mocker.patch("base.hardware.pin_interface.PinInterface.enable_receiving_messages_from_sbu")
+    patched_set_sbu_serial_path_to_communication = mocker.patch(
+        "base.hardware.pin_interface.PinInterface.set_sbu_serial_path_to_communication"
+    )
+    patched_enable_receiving_messages_from_sbu = mocker.patch(
+        "base.hardware.pin_interface.PinInterface.enable_receiving_messages_from_sbu"
+    )
     with serial_interface as interface:
-        interface._pin_interface.set_sbu_serial_path_to_communication.reset_mock()  # type: ignore
-        interface._pin_interface.enable_receiving_messages_from_sbu.reset_mock()  # type: ignore
+        patched_set_sbu_serial_path_to_communication.reset_mock()
+        patched_enable_receiving_messages_from_sbu.reset_mock()
         start = time()
         interface._connect_serial_communication_path()
         duration = time() - start
-    interface._pin_interface.set_sbu_serial_path_to_communication.assert_called_once_with()  # type: ignore
-    interface._pin_interface.enable_receiving_messages_from_sbu.assert_called_once_with()  # type: ignore
+    assert patched_set_sbu_serial_path_to_communication.called_once_with()
+    assert patched_enable_receiving_messages_from_sbu.called_once_with()
     assert duration > 4e-8
 
 
@@ -72,11 +84,11 @@ def test_close_connection(serial_interface: SerialInterface, mocker: MockFixture
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free")
     mocker.patch("serial.Serial.open")
-    mocker.patch("serial.Serial.close")
+    patched_close = mocker.patch("serial.Serial.close")
     with serial_interface as interface:
-        interface._serial_connection.close.reset_mock()  # type: ignore
+        patched_close.reset_mock()
         interface._close_connection()
-        interface._serial_connection.close.assert_called_once_with()  # type: ignore
+        assert patched_close.called_once_with()
 
 
 def test_close_connection_no_error(serial_interface: SerialInterface) -> None:
@@ -87,14 +99,14 @@ def test_reset_buffers(serial_interface: SerialInterface, mocker: MockFixture) -
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free")
     mocker.patch("serial.Serial.open")
-    mocker.patch("serial.Serial.reset_input_buffer")
-    mocker.patch("serial.Serial.reset_output_buffer")
+    patched_reset_input_buffer = mocker.patch("serial.Serial.reset_input_buffer")
+    patched_reset_output_buffer = mocker.patch("serial.Serial.reset_output_buffer")
     with serial_interface as interface:
-        interface._serial_connection.reset_input_buffer.reset_mock()  # type: ignore
-        interface._serial_connection.reset_output_buffer.reset_mock()  # type: ignore
+        patched_reset_input_buffer.reset_mock()
+        patched_reset_output_buffer.reset_mock()
         interface.reset_buffers()
-        interface._serial_connection.reset_input_buffer.assert_called_once_with()  # type: ignore
-        interface._serial_connection.reset_output_buffer.assert_called_once_with()  # type: ignore
+        assert patched_reset_input_buffer.called_once_with()
+        assert patched_reset_output_buffer.called_once_with()
 
 
 def test_reset_buffers_error(serial_interface: SerialInterface) -> None:
@@ -104,66 +116,70 @@ def test_reset_buffers_error(serial_interface: SerialInterface) -> None:
 
 def test_flush_sbu_channel(serial_interface: SerialInterface, mocker: MockFixture) -> None:
     mocker.patch("serial.Serial.open")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
+    patched_send_message = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
     with serial_interface as interface:
-        interface._send_message.reset_mock()  # type: ignore
+        patched_send_message.reset_mock()
         interface.flush_sbu_channel()
-        interface._send_message.assert_called_once_with(b"\0")  # type: ignore
+        assert patched_send_message.called_once_with(b"\0")
 
 
 def test_write_to_sbu(serial_interface: SerialInterface, mocker: MockFixture) -> None:
     mocker.patch("serial.Serial.open")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._await_acknowledge")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
+    patched_send_message = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
+    patched_await_acknowledge = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._await_acknowledge")
+    patched_wait_for_sbu_ready = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
     message = SbuMessage(command=SbuCommand(message_code="CODE"), payload="Message in a bottle?")
     with serial_interface as interface:
-        interface._send_message.reset_mock()  # type: ignore
+        patched_send_message.reset_mock()
         interface.write_to_sbu(message=message)
-        interface._send_message.assert_called_once_with(message=message.binary)  # type: ignore
-        interface._await_acknowledge.assert_called_once_with(message.code)  # type: ignore
-        interface._wait_for_sbu_ready.assert_called_once_with()  # type: ignore
+        assert patched_send_message.called_once_with(message=message.binary)
+        assert patched_await_acknowledge.called_once_with(message.code)
+        assert patched_wait_for_sbu_ready.called_once_with()
 
 
 def test_query_from_sbu(serial_interface: SerialInterface, mocker: MockFixture) -> None:
     expected = "response"
     mocker.patch("serial.Serial.open")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._await_acknowledge")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, expected))
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
+    patched_send_message = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
+    patched_await_acknowledge = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._await_acknowledge")
+    patched_wait_for_response = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, expected)
+    )
+    patched_wait_for_sbu_ready = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
     message = SbuMessage(
         command=SbuCommand(message_code="CODE", response_keyword="RKW"),
         payload="Message in a bottle?",
     )
     with serial_interface as interface:
-        interface._send_message.reset_mock()  # type: ignore
+        patched_send_message.reset_mock()
         response = interface.query_from_sbu(message=message)
-        interface._send_message.assert_called_once_with(message=message.binary)  # type: ignore
-        interface._await_acknowledge.assert_called_once_with(message.code)  # type: ignore
-        interface._wait_for_response.assert_called_once_with(message.response_keyword)  # type: ignore
-        interface._wait_for_sbu_ready.assert_called_once_with()  # type: ignore
+        assert patched_send_message.called_once_with(message=message.binary)
+        assert patched_await_acknowledge.called_once_with(message.code)
+        assert patched_wait_for_response.called_once_with(message.response_keyword)
+        assert patched_wait_for_sbu_ready.called_once_with()
         assert response == expected
 
 
 def test_query_from_sbu__no_response_keyword(serial_interface: SerialInterface, mocker: MockFixture) -> None:
     expected = "response"
     mocker.patch("serial.Serial.open")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._await_acknowledge")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, expected))
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
+    patched_send_message = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._send_message")
+    patched_await_acknowledge = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._await_acknowledge")
+    patched_wait_for_response = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, expected)
+    )
+    patched_wait_for_sbu_ready = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_sbu_ready")
     message = SbuMessage(
         command=SbuCommand(message_code="CODE", response_keyword=""),
         payload="Message in a bottle?",
     )
     with serial_interface as interface:
-        interface._send_message.reset_mock()  # type: ignore
+        patched_send_message.reset_mock()
         response = interface.query_from_sbu(message=message)
-        interface._send_message.assert_called_once_with(message=message.binary)  # type: ignore
-        interface._await_acknowledge.assert_called_once_with(message.code)  # type: ignore
-        interface._wait_for_response.assert_called_once_with(message.response_keyword)  # type: ignore
-        interface._wait_for_sbu_ready.assert_called_once_with()  # type: ignore
+        assert patched_send_message.called_once_with(message=message.binary)
+        assert patched_await_acknowledge.called_once_with(message.code)
+        assert patched_wait_for_response.called_once_with(message.response_keyword)
+        assert patched_wait_for_sbu_ready.called_once_with()
         assert response == expected
 
 
@@ -176,7 +192,7 @@ def test_send_message(serial_interface: SerialInterface, mocker: MockFixture) ->
         serial.Serial.write.reset_mock()
         interface._send_message(message)
         # noinspection PyUnresolvedReferences
-        serial.Serial.write.assert_called_once_with(message)
+        assert serial.Serial.write.called_once_with(message)
 
 
 def test_send_message_error(serial_interface: SerialInterface) -> None:
@@ -231,20 +247,24 @@ def test_wait_for_response(serial_interface: SerialInterface, mocker: MockFixtur
 
 def test_await_acknowledge(serial_interface: SerialInterface, mocker: MockFixture) -> None:
     mocker.patch("serial.Serial.open")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, "response"))
+    patched_wait_for_response = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, "response")
+    )
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
     message_code = "message_code"
     with serial_interface as interface:
         interface._await_acknowledge(message_code)
-        interface._wait_for_response.assert_called_once_with(f"ACK:{message_code}")  # type: ignore
+        assert patched_wait_for_response.called_once_with(f"ACK:{message_code}")
 
 
 def test_wait_for_sbu_ready(serial_interface: SerialInterface, mocker: MockFixture) -> None:
     mocker.patch("serial.Serial.open")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, "response"))
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
+    patched_wait_for_response = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface._wait_for_response", return_value=(0, "response")
+    )
+    patched_flush_sbu_channel = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
     with serial_interface as interface:
-        interface.flush_sbu_channel.reset_mock()  # type: ignore
+        patched_flush_sbu_channel.reset_mock()
         interface._wait_for_sbu_ready()
-        interface._wait_for_response.assert_called_once_with("Ready")  # type: ignore
-        interface.flush_sbu_channel.assert_called_once_with()  # type: ignore
+        assert patched_wait_for_response.called_once_with("Ready")
+        assert patched_flush_sbu_channel.called_once_with()

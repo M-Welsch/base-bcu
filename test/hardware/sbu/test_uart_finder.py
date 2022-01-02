@@ -29,23 +29,29 @@ from base.hardware.sbu.uart_finder import (
 def test_challenge_interface(mocker: MockFixture) -> None:
     path = Path()
     SerialInterface._config = Config({"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._connect_serial_communication_path")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._establish_serial_connection_or_raise")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.reset_buffers")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.query_from_sbu")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
-    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._close_connection")
+    patched_wait_for_channel_free = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free"
+    )
+    patched_connect_serial_communication_path = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface._connect_serial_communication_path"
+    )
+    patched_establish_serial_connection_or_raise = mocker.patch(
+        "base.hardware.sbu.serial_interface.SerialInterface._establish_serial_connection_or_raise"
+    )
+    patched_reset_buffers = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.reset_buffers")
+    patched_query_from_sbu = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.query_from_sbu")
+    patched_flush_sbu_channel = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
+    patched_close_connection = mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._close_connection")
 
     _challenge_interface(path)
 
-    SerialInterface._wait_for_channel_free.assert_called_once_with()  # type: ignore
-    SerialInterface._connect_serial_communication_path.assert_called_once_with()  # type: ignore
-    SerialInterface._establish_serial_connection_or_raise.assert_called_once_with()  # type: ignore
-    assert SerialInterface.reset_buffers.call_count == 2  # type: ignore
-    SerialInterface.query_from_sbu.assert_called_once_with(message=PredefinedSbuMessages.test_for_echo)  # type: ignore
-    assert SerialInterface.flush_sbu_channel.call_count == 3  # type: ignore
-    SerialInterface._close_connection.assert_called_once_with()  # type: ignore
+    assert patched_wait_for_channel_free.called_once_with()
+    assert patched_connect_serial_communication_path.called_once_with()
+    assert patched_establish_serial_connection_or_raise.called_once_with()
+    assert patched_reset_buffers.call_count == 2
+    assert patched_query_from_sbu.called_once_with(message=PredefinedSbuMessages.test_for_echo)
+    assert patched_flush_sbu_channel.call_count == 3
+    assert patched_close_connection.called_once_with()
 
 
 @pytest.mark.parametrize(

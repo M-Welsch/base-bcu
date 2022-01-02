@@ -2,7 +2,6 @@ import logging
 import sys
 from importlib import import_module
 from typing import Generator
-from unittest.mock import MagicMock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -40,7 +39,7 @@ def test_request_wakeup_reason(sbu: SBU, mocker: MockerFixture, wr_code: str, re
 def test_set_wakeup_reason(sbu: SBU, mocker: MockerFixture, wr_code: str) -> None:
     patched_write = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.write")
     sbu.set_wakeup_reason(wr_code)
-    patched_write.assert_called_once_with(SbuCommands.set_wakeup_reason, payload=wr_code)
+    assert patched_write.called_once_with(SbuCommands.set_wakeup_reason, payload=wr_code)
 
 
 def test_write_to_display(sbu: SBU, mocker: MockerFixture) -> None:
@@ -65,7 +64,7 @@ def test_set_display_brightness_percent(sbu: SBU, mocker: MockerFixture) -> None
     patched_write = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.write")
     mocker.patch("base.hardware.sbu.sbu.SBU._condition_brightness_value", return_value=brightness_value)
     sbu.set_display_brightness_percent(1)
-    patched_write.assert_called_once_with(SbuCommands.set_display_brightness, brightness_value)
+    assert patched_write.called_once_with(SbuCommands.set_display_brightness, brightness_value)
 
 
 def test_set_led_brightness_percent(sbu: SBU, mocker: MockerFixture) -> None:
@@ -73,18 +72,10 @@ def test_set_led_brightness_percent(sbu: SBU, mocker: MockerFixture) -> None:
     patched_write = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.write")
     mocker.patch("base.hardware.sbu.sbu.SBU._condition_brightness_value", return_value=brightness_value)
     sbu.set_led_brightness_percent(1)
-    patched_write.assert_called_once_with(SbuCommands.set_led_brightness, brightness_value)
+    assert patched_write.called_once_with(SbuCommands.set_led_brightness, brightness_value)
 
 
-@pytest.mark.parametrize(
-    "input_value, output_value",
-    [
-        (-1, 0),
-        (0, 0),
-        (50, 32767),
-        (101, 65535)
-    ]
-)
+@pytest.mark.parametrize("input_value, output_value", [(-1, 0), (0, 0), (50, 32767), (101, 65535)])
 def test_condition_brightness_value(input_value: float, output_value: int, caplog: LogCaptureFixture) -> None:
     with caplog.at_level(logging.WARNING):
         assert output_value == SBU._condition_brightness_value(input_value)
@@ -99,7 +90,7 @@ def test_send_seconds_to_next_bu(sbu: SBU, mocker: MockerFixture) -> None:
     patched_query = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.query", return_value=10)
     mocker.patch("base.hardware.sbu.sbu.SBU._assert_correct_rtc_setting")
     sbu.send_seconds_to_next_bu(input_seconds)
-    patched_query.assert_called_once_with(SbuCommands.set_seconds_to_next_bu, str(input_seconds))
+    assert patched_query.called_once_with(SbuCommands.set_seconds_to_next_bu, str(input_seconds))
 
 
 def test_assert_correct_rtc_setting() -> None:

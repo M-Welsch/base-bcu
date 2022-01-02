@@ -50,7 +50,7 @@ class TestSshRsync:
     def test_start_stop_sync_process(self, sync_process_terminate_mocked: Sync) -> None:
         with sync_process_terminate_mocked:
             sleep(0.1)
-        sync_process_terminate_mocked.terminate.assert_called_once_with()  # type: ignore
+        assert sync_process_terminate_mocked.terminate.called_once_with()  # type: ignore
 
     def test_process_termination_by_end_of_context_manager(self, sync_process: Sync) -> None:
         with sync_process:

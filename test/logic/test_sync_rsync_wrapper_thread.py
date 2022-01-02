@@ -89,7 +89,7 @@ class TestRsyncWrapperThread:
         assert "first" in caplog.text
         assert "second" in caplog.text
         assert "Backup finished!" in caplog.text
-        Signal.emit.assert_called_once_with()
+        assert Signal.emit.called_once_with()
 
     def test_terminate_rsync_wrapper_thread(self, rsync_wrapper_thread_loooong_loop: SyncThread) -> None:
         rsync_wrapper_thread_loooong_loop.start()
