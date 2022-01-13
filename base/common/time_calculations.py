@@ -9,7 +9,7 @@ from base.common.exceptions import ConfigValidationError
 _Plan = namedtuple("_Plan", "freq bymonthday byweekday byhour byminute bysecond")
 
 
-BACKUP_FREQUENCIES = {"days": DAILY, "weeks": WEEKLY, "months": MONTHLY}
+BACKUP_INTERVALS = {"days": DAILY, "weeks": WEEKLY, "months": MONTHLY}
 
 
 def next_backup(config: Config) -> datetime:
@@ -30,11 +30,11 @@ def next_backup_seconds(config: Config) -> int:
 
 def _plan_from_config(config: Config) -> _Plan:
     _validate_config(config)
-    frequency = BACKUP_FREQUENCIES[config.backup_frequency]
+    interval = BACKUP_INTERVALS[config.backup_interval]
     return _Plan(
-        freq=frequency,
-        bymonthday=config.day_of_month if frequency == MONTHLY else None,
-        byweekday=config.day_of_week if frequency == WEEKLY else None,
+        freq=interval,
+        bymonthday=config.day_of_month if interval == MONTHLY else None,
+        byweekday=config.day_of_week if interval == WEEKLY else None,
         byhour=config.hour,
         byminute=config.minute,
         bysecond=config.second,
@@ -42,8 +42,8 @@ def _plan_from_config(config: Config) -> _Plan:
 
 
 def _validate_config(config: Config) -> None:
-    if config.backup_frequency not in BACKUP_FREQUENCIES.keys():
-        raise ConfigValidationError(f"Invalid frequency: '{config.backup_frequency}'")
+    if config.backup_interval not in BACKUP_INTERVALS.keys():
+        raise ConfigValidationError(f"Invalid interval: '{config.backup_interval}'")
     if not 1 <= config.day_of_month <= 31:
         raise ConfigValidationError(f"Invalid day of month: '{config.day_of_month}'")
     if not 0 <= config.day_of_week <= 6:

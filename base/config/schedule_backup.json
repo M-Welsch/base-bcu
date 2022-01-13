@@ -1,9 +1,8 @@
 {
-    "backup_frequency": "months",
+    "backup_interval": "months",
     "day_of_month": 12,
     "day_of_week": 6,
     "hour": 22,
     "minute": 13,
     "second": 0,
-    "backup_interval": "months"
 }

@@ -6,7 +6,7 @@ from signalslot import Signal
 
 from base.common.config import BoundConfig, Config
 from base.common.logger import LoggerFactory
-from base.common.time_calculations import BACKUP_FREQUENCIES, next_backup, next_backup_seconds, next_backup_timestring
+from base.common.time_calculations import BACKUP_INTERVALS, next_backup, next_backup_seconds, next_backup_timestring
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -22,7 +22,7 @@ class Schedule:
         self._config: Config = BoundConfig("schedule_config.json")
         self._config.assert_keys({"shutdown_delay_minutes"})
         self._schedule: Config = BoundConfig("schedule_backup.json")
-        self._schedule.assert_keys({"backup_frequency", "day_of_week"})
+        self._schedule.assert_keys({"backup_interval", "day_of_week"})
         self._backup_job: Optional[sched.Event] = None
         self._postponed_backup_job: Optional[sched.Event] = None
 
@@ -35,10 +35,10 @@ class Schedule:
 
     def on_schedule_changed(self, **kwargs):  # type: ignore
         self._schedule.reload()
-        backup_frequency = self._schedule.backup_frequency
+        backup_interval = self._schedule.backup_interval
         day_of_week = self._schedule.day_of_week
-        if backup_frequency not in BACKUP_FREQUENCIES:
-            raise ValueError(f"Invalid backup frequency '{backup_frequency}'. " f"Use one of {BACKUP_FREQUENCIES}")
+        if backup_interval not in BACKUP_INTERVALS:
+            raise ValueError(f"Invalid backup interval '{backup_interval}'. " f"Use one of {BACKUP_INTERVALS}")
         if day_of_week not in Schedule.valid_days_of_week:
             raise ValueError(f"{day_of_week} is no valid day!" f"Use one of {Schedule.valid_days_of_week}")
         if self._backup_job is not None:
@@ -80,6 +80,3 @@ class Schedule:
     @property
     def next_backup_seconds(self) -> int:
         return next_backup_seconds(self._schedule)
-
-
-# TODO: Rename backup frequency to backup interval!

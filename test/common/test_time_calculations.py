@@ -66,7 +66,7 @@ def test_plan_from_config_days(config_frequency: str, dateutil_weekly: int, date
         }
     )
     plan = tc._plan_from_config(config)
-    frequency = tc.BACKUP_FREQUENCIES[config.backup_frequency]
+    frequency = tc.BACKUP_INTERVALS[config.backup_frequency]
     assert plan.freq == frequency
     assert plan.bymonthday == dateutil_monthly
     assert plan.byweekday == dateutil_weekly
@@ -75,7 +75,7 @@ def test_plan_from_config_days(config_frequency: str, dateutil_weekly: int, date
     assert plan.bysecond == config.second
 
 
-@pytest.mark.parametrize("frequency", tc.BACKUP_FREQUENCIES)
+@pytest.mark.parametrize("frequency", tc.BACKUP_INTERVALS)
 def test_validate_config_frequencies(frequency: str) -> None:
     config = Config(
         {
