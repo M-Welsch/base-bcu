@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
+from pydoc import locate
 from typing import Any, Dict, Set
 from weakref import WeakValueDictionary
 
-from base.common.logger import LoggerFactory
-
-LOG = LoggerFactory.get_logger(__name__)
+# from base.common.logger import LoggerFactory
+#
+# LOG = LoggerFactory.get_logger(__name__)
 
 
 class ConfigValidationError(Exception):
@@ -68,6 +70,7 @@ class BoundConfig(Config):
         super(Config, self).__init__(*args, **kwargs)
         self._read_only: bool = read_only
         self._config_path: Path = self.base_path / config_file_name
+        self._template_path: Path = self.base_path / "templates" / config_file_name
         self._initialized: bool = True
         self.reload()
 
@@ -81,12 +84,12 @@ class BoundConfig(Config):
             config.reload()
 
     def reload(self, **kwargs):  # type: ignore
-        LOG.info(f"reloading config: {self._config_path}")
+        # LOG.info(f"reloading config: {self._config_path}")
         with open(self._config_path, "r") as jf:
             self.update(json.load(jf))
 
     def save(self) -> None:
-        LOG.info(f"saving config: {self._config_path}")
+        # LOG.info(f"saving config: {self._config_path}")
         if self._read_only:
             raise ConfigSaveError("This config is read-only and is therefore not savable")
         with open(self._config_path, "w") as jf:
@@ -96,3 +99,28 @@ class BoundConfig(Config):
         missing_keys = keys - set(self.keys())
         if missing_keys:
             raise ConfigValidationError(f"Keys {missing_keys} are missing in {self._config_path}.")
+
+    def validate(self):
+        with open(self._template_path, "r") as template_file:
+            template = json.load(template_file)
+
+        for key in template.keys():
+
+            if key not in self.keys():
+                raise Exception(f"Key '{key}' is missing in config file {self._config_path}")
+
+            valid_type = locate(template[key]["type"])
+
+            if valid_type == str:
+                if type(self[key]) is not valid_type:
+                    raise Exception(f"Value of key '{key}' has invalid type {type(self[key])} in config file {self._config_path}. Should be: {valid_type}")
+                if not re.fullmatch(pattern=template[key]["valid"], string=self[key]):
+                    raise Exception(f"Value {self[key]} of key {key} in config file {self._config_path} does not match the regex {template[key]['valid']}")
+            elif valid_type == Path:
+                if type(self[key]) is not str:
+                    raise Exception(f"Value of key '{key}' has invalid type {type(self[key])} in config file {self._config_path}. Should be: {valid_type}")
+                try:
+                    Path(self[key]).resolve()
+                except ValueError:
+                    raise Exception(f"Value {self[key]} of key {key} in config file {self._config_path} is not a valid path")
+
