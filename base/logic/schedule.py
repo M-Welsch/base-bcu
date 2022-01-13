@@ -12,8 +12,7 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Schedule:
-    # valid_days_of_week = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
-    valid_days_of_week = {0, 1, 2, 3, 4, 5, 6}
+    valid_days_of_week = set(range(7))
     shutdown_request = Signal()
     backup_request = Signal()
 
