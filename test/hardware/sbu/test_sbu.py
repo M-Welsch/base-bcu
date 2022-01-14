@@ -117,7 +117,7 @@ def test_send_readable_timestamp(sbu: SBU, mocker: MockerFixture) -> None:
     ],
 )
 def test_measure_quantities(
-        sbu: SBU, mocker: MockerFixture, measure_function: Callable, measure_command: SbuCommand
+    sbu: SBU, mocker: MockerFixture, measure_function: Callable, measure_command: SbuCommand
 ) -> None:
     patched_measure = mocker.patch("base.hardware.sbu.sbu.SBU._measure", return_value=10)
     assert measure_function(sbu) == 10

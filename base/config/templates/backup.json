@@ -50,24 +50,20 @@
         "valid": {"min": 0, "max": null}
     },
     "stop_services_on_nas": {
-        "type": "bool",
-        "optional": false
+        "type": "bool"
     },
     "shutdown_between_backups": {
-        "type": "bool",
-        "optional": false
+        "type": "bool"
     },
     "use_pre_backup_hook": {
-        "type": "bool",
-        "optional": false
+        "type": "bool"
     },
     "pre_backup_hook_path": {
         "type": "pathlib.Path",
         "optional": true
     },
     "use_post_backup_hook": {
-        "type": "bool",
-        "optional": false
+        "type": "bool"
     },
     "post_backup_hook_path": {
         "type": "pathlib.Path",
