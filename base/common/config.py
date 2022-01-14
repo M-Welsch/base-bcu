@@ -113,14 +113,43 @@ class BoundConfig(Config):
 
             if valid_type == str:
                 if type(self[key]) is not valid_type:
-                    raise Exception(f"Value of key '{key}' has invalid type {type(self[key])} in config file {self._config_path}. Should be: {valid_type}")
+                    raise Exception(
+                        f"Value of key '{key}' has invalid type {type(self[key])} "
+                        f"in config file {self._config_path}. Should be: {valid_type}"
+                    )
                 if not re.fullmatch(pattern=template[key]["valid"], string=self[key]):
-                    raise Exception(f"Value {self[key]} of key {key} in config file {self._config_path} does not match the regex {template[key]['valid']}")
+                    raise Exception(
+                        f"Value {self[key]} of key {key} in config file {self._config_path} "
+                        f"does not match the regex {template[key]['valid']}"
+                    )
             elif valid_type == Path:
                 if type(self[key]) is not str:
-                    raise Exception(f"Value of key '{key}' has invalid type {type(self[key])} in config file {self._config_path}. Should be: {valid_type}")
+                    raise Exception(
+                        f"Value of key '{key}' has invalid type {type(self[key])} "
+                        f"in config file {self._config_path}. Should be: {valid_type}"
+                    )
                 try:
                     Path(self[key]).resolve()
                 except ValueError:
-                    raise Exception(f"Value {self[key]} of key {key} in config file {self._config_path} is not a valid path")
+                    raise Exception(
+                        f"Value {self[key]} of key {key} in config file {self._config_path} "
+                        f"is not a valid path"
+                    )
+            elif valid_type == bool:
+                if type(self[key]) is not valid_type:
+                    raise Exception(
+                        f"Value of key '{key}' has invalid type {type(self[key])} "
+                        f"in config file {self._config_path}. Should be: {valid_type}"
+                    )
+            elif valid_type == int:
+                if type(self[key]) is not valid_type:
+                    raise Exception(
+                        f"Value of key '{key}' has invalid type {type(self[key])} "
+                        f"in config file {self._config_path}. Should be: {valid_type}"
+                    )
+                if not template[key]["valid"]["min"] <= self[key] <= template[key]["valid"]["max"]:
+                    raise Exception(
+                        f"Value of key '{key}' in config file {self._config_path} "
+                        f"is not within range ({template[key]['valid']['min']}, {template[key]['valid']['max']})"
+                    )
 
