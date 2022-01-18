@@ -7,7 +7,9 @@ from typing import Optional, Union
 import pytest
 from _pytest.tmpdir import tmp_path
 from py import path
+from pytest_mock import MockFixture
 
+import base.common.config_validator
 from base.common.config import BoundConfig, Config
 from base.common.config_validator import ConfigValidator
 
@@ -114,8 +116,78 @@ def test_get_template(tmp_path: path.local, test_dict: str, serializable: bool) 
         assert isinstance(template, dict)
 
 
-def test_validate_items() -> None:
-    ...
+def test_validate_items(mocker: MockFixture) -> None:
+    mocked_validate_item = mocker.patch("base.common.config_validator.ConfigValidator._validate_item")
+    template = {"a": 1, "b": 2}
+    ConfigValidator()._validate_items(template, config=Config({}))
+    assert mocked_validate_item.call_count == len(template)
+
+
+@pytest.mark.parametrize("datatype", ["str", "pathlib.Path", "int", "float", "bool"])
+def test_validate_item(mocker: MockFixture, datatype: str) -> None:
+    mocked_check_required = mocker.patch(
+        "base.common.config_validator.ConfigValidator._check_validation_required", return_value=True
+    )
+    mocked_check_type_validity = mocker.patch("base.common.config_validator.ConfigValidator._check_type_validity")
+    mocked_check_regex = mocker.patch("base.common.config_validator.ConfigValidator._check_regex")
+    mocked_check_range = mocker.patch("base.common.config_validator.ConfigValidator._check_range")
+    mocked_check_path_resolve = mocker.patch("base.common.config_validator.ConfigValidator._check_path_resolve")
+    config = Config({})
+    cv = ConfigValidator()
+    template_key = "any key"
+    template_data = {"type": datatype}
+    cv._validate_item(config=config, template_key=template_key, template_data=template_data)
+    assert mocked_check_required.called_once_with(config, template_key, template_data)
+    if "_check_type_validity" in cv.validation_pipeline_map[datatype]:
+        assert mocked_check_type_validity.called_once_with(template_key, template_data, config)
+    if "_check_regex" in cv.validation_pipeline_map[datatype]:
+        assert mocked_check_regex.called_once_with(template_key, template_data, config)
+    if "_check_range" in cv.validation_pipeline_map[datatype]:
+        assert mocked_check_range.called_once_with(template_key, template_data, config)
+    if "_check_path_resolve" in cv.validation_pipeline_map[datatype]:
+        assert mocked_check_path_resolve.called_once_with(template_key, template_data, config)
+
+
+@pytest.mark.parametrize(
+    "key_available, optional, validation_required, invalid_keys_entry",
+    [
+        (True, True, True, False),  # if available, but optional => check anyway, no entry in invalid_keys
+        (False, True, False, False),  # if UNavailable and optional => skip further checking, no entry in invalid_keys
+        (
+            False,
+            False,
+            False,
+            True,
+        ),  # if UNavailable, but NOT optional => skip further checking, but leave enty in invalid_keys
+    ],
+)
+def test_check_validation_required(
+    mocker: MockFixture, key_available: bool, optional: bool, validation_required: bool, invalid_keys_entry: bool
+) -> None:
+    mocked_check_optional = mocker.patch(
+        "base.common.config_validator.ConfigValidator._check_optional", return_value=optional
+    )
+    mocked_check_key_avaliable = mocker.patch(
+        "base.common.config_validator.ConfigValidator._check_key_available", return_value=key_available
+    )
+    config = Config({"unimportant_content": 0, "config_path": "Needed to Satisfy the invalid_keys error message"})
+    cv = ConfigValidator()
+    testkey = "any_testkey"
+    template_data = {"unimportant_testdata": 0}
+    assert (
+        cv._check_validation_required(config=config, template_key=testkey, template_data={"unimportant_testdata": 0})
+        == validation_required
+    )
+    assert mocked_check_optional.called_once_with(template_data)
+    assert mocked_check_key_avaliable.called_once_with(config, testkey)
+    assert bool(cv.invalid_keys) == invalid_keys_entry
+
+
+@pytest.mark.parametrize(
+    "template_data, optional", [({"optional": True}, True), ({"optional": False}, False), ({}, False)]
+)
+def test_check_optional(template_data: dict, optional: bool) -> None:
+    assert ConfigValidator._check_optional(template_data) == optional
 
 
 # def test_check_type_validity_int(tmp_path: tmp_path, testkey_value: Union[int, str, bool], testkey_datatype: str, valid: bool):

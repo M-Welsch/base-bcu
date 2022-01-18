@@ -71,15 +71,39 @@ class ConfigValidator:
         template = self.get_template(config.template_path)
         self._validate_items(template, config)
 
-    def _validate_items(self, template: dict, config: Config) -> None:
-        for template_key, template_data in template.items():
-            if config[template_key] or not template_data.get("optional", False):
-                for step_name in self.validation_pipeline_map[template_data["type"]]:
-                    step_func = getattr(self, step_name)
-                    step_func(template_key, template_data, config)
-
     @staticmethod
     def get_template(template_path: Path) -> dict:
         with open(template_path, "r") as template_file:
             result: dict = json.load(template_file)
             return result
+
+    def _validate_items(self, template: dict, config: Config) -> None:
+        for template_key, template_data in template.items():
+            self._validate_item(config, template_data, template_key)
+
+    def _validate_item(self, config, template_key: str, template_data: dict) -> None:
+        if self._check_validation_required(config, template_key, template_data):
+            for step_name in self.validation_pipeline_map[template_data["type"]]:
+                step_func = getattr(self, step_name)
+                step_func(template_key, template_data, config)
+
+    def _check_validation_required(self, config: Config, template_key: str, template_data: dict) -> bool:
+        optional = self._check_optional(template_data)
+        key_available = self._check_key_available(config, template_key)
+        if key_available:
+            return True
+        if not key_available and optional:
+            return False
+        if not key_available and not optional:
+            self.invalid_keys[template_key] = f"required key {template_key} is not in config file {config.config_path}"
+            return False
+        else:  # same branch as "if key_available". The else-statement is here to satisfy mypy.
+            return True
+
+    @staticmethod
+    def _check_key_available(config: Config, key: str) -> bool:
+        return key in config
+
+    @staticmethod
+    def _check_optional(template_data: dict) -> bool:
+        return template_data.get("optional", False)
