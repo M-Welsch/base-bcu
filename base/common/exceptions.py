@@ -110,3 +110,7 @@ class SbuNoResponseError(SbuCommunicationTimeout):
 
 class ConfigValidationError(Exception):
     """Invalid config value exception."""
+
+
+class ConfigSaveError(Exception):
+    pass

@@ -8,7 +8,7 @@ from subprocess import PIPE, STDOUT, Popen
 from types import TracebackType
 from typing import Generator, List, Optional, Type
 
-from base.common.config import BoundConfig
+from base.common.config import get_config
 from base.common.logger import LoggerFactory
 from base.logic.backup.synchronisation.rsync_patterns import Patterns
 from base.logic.backup.synchronisation.sync_status import SyncStatus
@@ -18,8 +18,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Sync:
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
-        self._sync_config = BoundConfig("sync.json")
-        self._nas_config = BoundConfig("nas.json")
+        self._sync_config = get_config("sync.json")
+        self._nas_config = get_config("nas.json")
         self._local_target_location: Path = local_target_location
         self._command: List[str] = self._compose_rsync_command(local_target_location, source_location)
         self._process: Optional[Popen] = None

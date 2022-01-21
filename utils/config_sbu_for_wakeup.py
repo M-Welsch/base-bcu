@@ -6,7 +6,7 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 import base.common.time_calculations as tc
-from base.common.config import BoundConfig, Config
+from base.common.config import BoundConfig, Config, get_config
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU
 
@@ -14,7 +14,7 @@ from base.hardware.sbu.sbu import SBU
 class ConfigSbu:
     def __init__(self) -> None:
         BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config/"))
-        self._schedule: Config = BoundConfig("schedule_backup.json")
+        self._schedule: Config = get_config("schedule_backup.json")
         self._sbu: SBU = SBU(SbuCommunicator())
 
     def set_timer_according_to_config_file(self) -> None:

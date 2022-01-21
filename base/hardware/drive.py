@@ -4,7 +4,7 @@ from time import sleep
 from typing import Optional
 from typing.io import IO
 
-from base.common.config import BoundConfig, Config
+from base.common.config import Config, get_config
 from base.common.drive_inspector import PartitionInfo, PartitionSignature
 from base.common.exceptions import BackupPartitionError, MountError, UnmountError
 from base.common.file_system import FileSystemWatcher
@@ -16,9 +16,9 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Drive:
-    def __init__(self, config: Config, backup_browser: BackupBrowser):
+    def __init__(self, backup_browser: BackupBrowser):
         self._backup_browser: BackupBrowser = backup_browser
-        self._config: Config = config
+        self._config: Config = get_config("drive.json")
         self._partition_info: Optional[PartitionInfo] = None
         self._available: HddState = HddState.unknown
 
@@ -55,7 +55,7 @@ class Drive:
     def _get_partition_info_or_raise(self) -> PartitionInfo:
         try:
             return FileSystemWatcher(
-                backup_hdd_device_signature=PartitionSignature(**BoundConfig("drive.json").backup_hdd_device_signature),
+                backup_hdd_device_signature=PartitionSignature(**self._config.backup_hdd_device_signature),
                 timeout_seconds=self._config.backup_hdd_spinup_timeout,
             ).backup_partition_info()
         except BackupPartitionError as e:

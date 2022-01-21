@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Type
 
 import serial
 
-from base.common.config import BoundConfig, Config
+from base.common.config import BoundConfig, Config, get_config
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SerialInterfaceError
 from base.common.logger import LoggerFactory
 from base.hardware.constants import BAUD_RATE
@@ -24,7 +24,7 @@ class SerialInterface:
 
     def __init__(self, port: Path, baud_rate: int = BAUD_RATE) -> None:
         if SerialInterface._config is None:
-            SerialInterface._config = BoundConfig("sbu.json")
+            SerialInterface._config = get_config("sbu.json")
         self._port: Path = port
         self._baud_rate: int = baud_rate
         self._serial_connection: Optional[serial.Serial] = None

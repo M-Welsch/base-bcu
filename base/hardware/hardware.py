@@ -1,7 +1,7 @@
 from time import sleep
 from typing import Optional
 
-from base.common.config import BoundConfig, Config
+from base.common.config import Config, get_config
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
@@ -17,12 +17,12 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Hardware:
     def __init__(self, backup_browser: BackupBrowser) -> None:
-        self._config: Config = BoundConfig("hardware.json")
-        self._mechanics: Mechanics = Mechanics(BoundConfig("mechanics.json"))
+        self._config: Config = get_config("hardware.json")
+        self._mechanics: Mechanics = Mechanics()
         self._power: Power = Power()
         self._sbu: SBU = SBU(SbuCommunicator())
         self._hmi: HMI = HMI(self._sbu)
-        self._drive: Drive = Drive(BoundConfig("drive.json"), backup_browser)
+        self._drive: Drive = Drive(backup_browser)
 
     def engage(self, **kwargs):  # type: ignore
         LOG.debug("engaging hardware")

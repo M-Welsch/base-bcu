@@ -5,17 +5,14 @@ from pathlib import Path
 from typing import Any, Dict, Set
 from weakref import WeakValueDictionary
 
+from base.common.exceptions import ConfigSaveError, ConfigValidationError
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
-class ConfigValidationError(Exception):
-    pass
-
-
-class ConfigSaveError(Exception):
-    pass
+def get_config(config_name: str) -> Config:
+    return BoundConfig(config_name)
 
 
 class Config(dict):

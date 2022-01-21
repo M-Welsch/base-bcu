@@ -6,7 +6,7 @@ from re import findall
 from subprocess import PIPE, Popen
 from typing import IO, Optional, Tuple
 
-from base.common.config import BoundConfig, Config
+from base.common.config import Config, get_config
 from base.common.exceptions import NewBuDirCreationError
 from base.common.logger import LoggerFactory
 from base.common.ssh_interface import SSHInterface
@@ -19,8 +19,8 @@ LOG = LoggerFactory.get_logger(__name__)
 class IncrementalBackupPreparator:
     def __init__(self, backup_browser: BackupBrowser) -> None:
         self._backup_browser: BackupBrowser = backup_browser
-        self._config_nas: Config = BoundConfig("nas.json")
-        self._config_sync: Config = BoundConfig("sync.json")
+        self._config_nas: Config = get_config("nas.json")
+        self._config_sync: Config = get_config("sync.json")
         self._new_backup_folder: Optional[Path] = None
 
     def prepare(self) -> Tuple[Path, Path]:

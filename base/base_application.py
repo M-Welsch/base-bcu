@@ -6,7 +6,7 @@ from typing import Callable, List, Tuple
 
 from signalslot import Signal
 
-from base.common.config import BoundConfig, Config
+from base.common.config import Config, get_config
 from base.common.debug_utils import copy_logfiles_to_nas
 from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
 from base.common.logger import LoggerFactory
@@ -59,9 +59,9 @@ class BaSeApplication:
     button_1_pressed = Signal()
 
     def __init__(self) -> None:
-        self._config: Config = BoundConfig("base.json")
+        self._config: Config = get_config("base.json")
         self._maintenance_mode = MaintenanceMode()
-        self._backup_browser = BackupBrowser(BoundConfig("sync.json"))
+        self._backup_browser = BackupBrowser()
         self._hardware = Hardware(self._backup_browser)
         self._backup = Backup(self._maintenance_mode.is_on, self._backup_browser)
         self._schedule = Schedule()

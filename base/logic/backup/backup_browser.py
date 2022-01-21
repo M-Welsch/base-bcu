@@ -6,7 +6,7 @@ from subprocess import PIPE, Popen
 from types import TracebackType
 from typing import List, Optional, Type
 
-from base.common.config import Config
+from base.common.config import Config, get_config
 from base.common.exceptions import BackupHddAccessError
 from base.common.logger import LoggerFactory
 
@@ -14,8 +14,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class BackupBrowser:
-    def __init__(self, config: Config) -> None:
-        self._config: Config = config
+    def __init__(self) -> None:
+        self._config: Config = get_config("sync.json")
         self._backup_index: List[Path] = []
 
     @property

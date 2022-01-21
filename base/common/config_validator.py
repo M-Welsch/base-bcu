@@ -7,7 +7,7 @@ from pydoc import locate
 from types import TracebackType
 from typing import Dict, Optional, Type
 
-from base.common.config import BoundConfig, Config, ConfigValidationError
+from base.common.config import Config, ConfigValidationError
 
 
 class ConfigValidator:

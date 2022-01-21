@@ -1,6 +1,6 @@
 from time import time
 
-from base.common.config import Config
+from base.common.config import Config, get_config
 from base.common.exceptions import DockingError
 from base.common.logger import LoggerFactory
 from base.hardware.pin_interface import PinInterface
@@ -9,8 +9,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Mechanics:
-    def __init__(self, config: Config) -> None:
-        self._config: Config = config
+    def __init__(self) -> None:
+        self._config: Config = get_config("mechanics.json")
         self._pin_interface: PinInterface = PinInterface.global_instance()
 
     def dock(self) -> None:
