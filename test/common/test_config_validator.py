@@ -188,30 +188,3 @@ def test_check_validation_required(
 )
 def test_check_optional(template_data: dict, optional: bool) -> None:
     assert ConfigValidator._check_optional(template_data) == optional
-
-
-# def test_check_type_validity_int(tmp_path: tmp_path, testkey_value: Union[int, str, bool], testkey_datatype: str, valid: bool):
-#     test_cfg_dir = tmp_path
-#     test_templates_dir = test_cfg_dir / "templates"
-#     test_templates_dir.mkdir()
-#
-#     cfg_filename = "test_type_validator.json"
-#     cfg_file = test_cfg_dir / cfg_filename
-#     cfg_template_file = test_templates_dir / cfg_filename
-#
-#     testkey_name = "test_key"
-#
-#     test_config = {
-#         testkey_name: testkey_value
-#     }
-#     with open(cfg_file, "w") as cf:
-#         json.dump(test_config, cf)
-#
-#     template = {
-#         testkey_name: {"type": testkey_datatype}
-#     }
-#     with open(cfg_template_file, "w") as ctf:
-#         json.dump(template, ctf)
-#
-#     BoundConfig.set_config_base_path(test_cfg_dir)
-#     bc = BoundConfig(cfg_filename)

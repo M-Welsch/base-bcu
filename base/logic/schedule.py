@@ -19,9 +19,7 @@ class Schedule:
     def __init__(self) -> None:
         self._scheduler: sched.scheduler = sched.scheduler(time, sleep)
         self._config: Config = BoundConfig("schedule_config.json")
-        self._config.assert_keys({"shutdown_delay_minutes"})
         self._schedule: Config = BoundConfig("schedule_backup.json")
-        self._schedule.assert_keys({"backup_interval", "day_of_week"})
         self._backup_job: Optional[sched.Event] = None
         self._postponed_backup_job: Optional[sched.Event] = None
 

@@ -25,11 +25,6 @@ class Config(dict):
         self._initialized: bool = True
         self.update(data)
 
-    def assert_keys(self, keys: Set[str]) -> None:
-        missing_keys = keys - set(self.keys())
-        if missing_keys:
-            raise ConfigValidationError(f"Keys {missing_keys} are missing.")
-
     @property
     def is_read_only(self) -> bool:
         return self._read_only

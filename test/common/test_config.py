@@ -21,17 +21,6 @@ def write_test_file(content: Dict[str, Any], file_path: Path) -> None:
         json.dump(content, jf, indent=4)
 
 
-def test_config_assert_keys(config_path: Path) -> None:
-    config = Config({"key": "value"})
-    config.assert_keys({"key"})
-
-
-def test_config_assert_keys_error(config_path: Path) -> None:
-    config = Config({"key": "value"})
-    with pytest.raises(ConfigValidationError):
-        config.assert_keys({"no_key"})
-
-
 def test_config_read_key(config_path: Path) -> None:
     config = Config({"key": "value"})
     assert config.key == "value"
