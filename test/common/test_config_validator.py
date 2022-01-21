@@ -1,16 +1,15 @@
 import json
+import test.common.test_config_validator
 from pathlib import Path
-from tempfile import SpooledTemporaryFile
-from time import sleep
-from typing import Optional, Union
+from typing import Union
+from unittest.mock import MagicMock
 
 import pytest
-from _pytest.tmpdir import tmp_path
 from py import path
 from pytest_mock import MockFixture
 
 import base.common.config_validator
-from base.common.config import BoundConfig, Config
+from base.common.config import Config
 from base.common.config_validator import ConfigValidator
 
 
@@ -72,7 +71,7 @@ def test_check_regex(pattern: str, test_value: str, valid: bool) -> None:
     cfg = Config(test_config)
 
     cv = ConfigValidator()
-    cv._check_regex(testkey_name, {"valid": pattern}, cfg)
+    cv._check_regex(testkey_name, {"regex": pattern}, cfg)
     assert not bool(cv.invalid_keys) == valid
 
 
@@ -99,7 +98,7 @@ def test_check_range(
     cfg = Config(test_config)
 
     cv = ConfigValidator()
-    cv._check_range(testkey_name, {"valid": {"min": minimum, "max": maximum}}, cfg)
+    cv._check_range(testkey_name, {"range": {"min": minimum, "max": maximum}}, cfg)
     assert not bool(cv.invalid_keys) == valid
 
 
@@ -123,29 +122,42 @@ def test_validate_items(mocker: MockFixture) -> None:
     assert mocked_validate_item.call_count == len(template)
 
 
-@pytest.mark.parametrize("datatype", ["str", "pathlib.Path", "int", "float", "bool"])
-def test_validate_item(mocker: MockFixture, datatype: str) -> None:
+def test_validate_item(mocker: MockFixture) -> None:
+    mocked_val_func0, mocked_val_func1 = MagicMock(), MagicMock()
     mocked_check_required = mocker.patch(
         "base.common.config_validator.ConfigValidator._check_validation_required", return_value=True
     )
-    mocked_check_type_validity = mocker.patch("base.common.config_validator.ConfigValidator._check_type_validity")
-    mocked_check_regex = mocker.patch("base.common.config_validator.ConfigValidator._check_regex")
-    mocked_check_range = mocker.patch("base.common.config_validator.ConfigValidator._check_range")
-    mocked_check_path_resolve = mocker.patch("base.common.config_validator.ConfigValidator._check_path_resolve")
+    mocked_infer_validation_steps = mocker.patch(
+        "base.common.config_validator.ConfigValidator.infer_validation_steps",
+        return_value=[mocked_val_func0, mocked_val_func1],
+    )
     config = Config({})
     cv = ConfigValidator()
     template_key = "any key"
-    template_data = {"type": datatype}
+    template_data = {}
     cv._validate_item(config=config, template_key=template_key, template_data=template_data)
     assert mocked_check_required.called_once_with(config, template_key, template_data)
-    if "_check_type_validity" in cv.validation_pipeline_map[datatype]:
-        assert mocked_check_type_validity.called_once_with(template_key, template_data, config)
-    if "_check_regex" in cv.validation_pipeline_map[datatype]:
-        assert mocked_check_regex.called_once_with(template_key, template_data, config)
-    if "_check_range" in cv.validation_pipeline_map[datatype]:
-        assert mocked_check_range.called_once_with(template_key, template_data, config)
-    if "_check_path_resolve" in cv.validation_pipeline_map[datatype]:
-        assert mocked_check_path_resolve.called_once_with(template_key, template_data, config)
+    assert mocked_infer_validation_steps.called_once_with(template_data)
+    assert mocked_val_func0.called_once()
+    assert mocked_val_func1.called_once()
+
+
+@pytest.mark.parametrize(
+    "template_data, expected_steps",
+    [
+        ({"type": ""}, ["_check_type_validity"]),
+        ({"type": "pathlib.Path"}, ["_check_type_validity", "_check_path_resolve"]),
+        ({"regex": ""}, ["_check_regex"]),
+        ({"range": ""}, ["_check_range"]),
+        ({"options": ""}, ["_check_options"]),
+        ({"type": "", "regex": ""}, ["_check_type_validity", "_check_regex"]),
+    ],
+)
+def test_infer_validation_steps(template_data: dict, expected_steps: list) -> None:
+    cv = ConfigValidator()
+    steps = cv.infer_validation_steps(template_data)
+    assert len(expected_steps) == len(steps)
+    assert all(step.__name__ == expected for step, expected in zip(steps, expected_steps))
 
 
 @pytest.mark.parametrize(

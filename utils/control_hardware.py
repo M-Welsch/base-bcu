@@ -40,7 +40,7 @@ def control_hardware(
     from base.hardware.power import Power
 
     power_unit = Power()
-    mechanics = Mechanics(BoundConfig("mechanics.json"))
+    mechanics = Mechanics()
 
     if dock:
         print("docking")

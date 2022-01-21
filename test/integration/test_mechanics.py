@@ -2,15 +2,18 @@ from time import sleep
 from typing import Generator
 
 import pytest
+from pytest_mock import MockFixture
 
-from base.common.config import Config
+import base.common.config as cfg
+
+cfg.get_config = lambda *args, **kwargs: cfg.Config({"maximum_docking_time": 1.5})
 from base.hardware.mechanics import Mechanics
 from base.hardware.pin_interface import PinInterface
 
 
 @pytest.fixture(scope="class")
 def mechanics() -> Generator[Mechanics, None, None]:
-    yield Mechanics(config=Config({"maximum_docking_time": 1.5}))
+    yield Mechanics()
 
 
 class TestMechanics:

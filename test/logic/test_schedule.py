@@ -31,6 +31,7 @@ def schedule(tmpdir: path.local) -> Generator[Schedule, None, None]:
         json.dump(schedule_data, dst)
     BoundConfig.set_config_base_path(config_test_path)
     yield Schedule()
+    BoundConfig._BoundConfig__instances.clear()
 
 
 def test_schedule_schedule_changed(schedule: Schedule) -> None:

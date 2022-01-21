@@ -20,11 +20,10 @@ LOG.propagate = True
 class MockDrive(Drive):
     def __init__(
         self,
-        config: Config,
         backup_browser: BackupBrowser,
         virtual_hard_drive_location: Path,
     ):
-        super().__init__(config, backup_browser)
+        super().__init__(backup_browser)
         self._virtual_hard_drive_location = virtual_hard_drive_location
 
     def _get_partition_info_or_raise(self) -> PartitionInfo:
@@ -49,7 +48,7 @@ def drive(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[MockDrive,
             },
             read_only=False,
         ),
-        BackupBrowser(Config({"local_backup_target_location": "/media/BackupHDD"})),
+        BackupBrowser(),
         virtual_hard_drive_location=virtual_hard_drive_location,
     )
     teardown_virtual_hard_drive(virtual_hard_drive_mountpoint)

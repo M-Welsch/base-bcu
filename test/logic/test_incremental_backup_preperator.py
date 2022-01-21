@@ -51,7 +51,7 @@ def incremental_backup_preparator(
         },
     )
     BoundConfig.set_config_base_path(config_dir)
-    yield IncrementalBackupPreparator(BackupBrowser(BoundConfig("sync.json")))
+    yield IncrementalBackupPreparator(BackupBrowser())
 
 
 class TestIncrementalBackupPreperator:
@@ -86,7 +86,7 @@ class TestIncrementalBackupPreperator:
             assert Path(recent_bu_path).is_dir()
             assert Path(new_bu_path).is_dir()
             assert dircmp(recent_bu_path, new_bu_path).diff_files == []
-            backup_browser = BackupBrowser(BoundConfig("sync.json"))
+            backup_browser = BackupBrowser()
             recent_bu_size = backup_browser.get_backup_size(recent_bu_path)
             new_bu_size = backup_browser.get_backup_size(new_bu_path)
             total_size = backup_browser.get_backup_size(BoundConfig("sync.json").local_backup_target_location)
@@ -97,7 +97,7 @@ class TestIncrementalBackupPreperator:
 
     @staticmethod
     def test_delete_oldest_backup(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
-        oldest_backup = BackupBrowser(BoundConfig("sync.json")).get_oldest_backup()
+        oldest_backup = BackupBrowser().get_oldest_backup()
         if oldest_backup:
             incremental_backup_preparator.delete_oldest_backup()
             assert not Path(oldest_backup).exists()

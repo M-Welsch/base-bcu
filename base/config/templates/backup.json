@@ -2,52 +2,52 @@
     "retrials_after_network_unreachable": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "seconds_between_network_reachout_retrials": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "retrials_after_nas_unreachable": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "seconds_between_nas_reachout_retrials": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "retrials_after_nas_hdd_unavailable": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "seconds_between_nas_hdd_mount_retrials": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "retrials_after_hardware_not_ready": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "seconds_between_hardware_ready_checks": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "retrials_after_hdd_not_ready": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "seconds_between_hdd_ready_checks": {
         "type": "int",
         "optional": false,
-        "valid": {"min": 0, "max": null}
+        "range": {"min": 0, "max": null}
     },
     "stop_services_on_nas": {
         "type": "bool"
