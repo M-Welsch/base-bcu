@@ -1,37 +1,28 @@
-import json
 import sched
 from datetime import datetime
-from pathlib import Path
+from test.utils import patch_multiple_configs
 from typing import Generator
 
 import pytest
-from py import path
 
-from base.common.config import BoundConfig
 from base.logic.schedule import Schedule
 
 
 @pytest.fixture()
-def schedule(tmpdir: path.local) -> Generator[Schedule, None, None]:
-    config_path = Path("/home/base/python.base/base/config/")
-    config_test_path = Path(tmpdir)
-    with open(config_path / "schedule_config.json", "r") as src, open(
-        config_test_path / "schedule_config.json", "w"
-    ) as dst:
-        json.dump(json.load(src), dst)
-    with open(config_path / "schedule_backup.json", "r") as src, open(
-        config_test_path / "schedule_backup.json", "w"
-    ) as dst:
-        schedule_data = json.load(src)
-        now = datetime.now()
-        schedule_data["backup_frequency"] = "days"
-        schedule_data["hour"] = now.hour
-        schedule_data["minute"] = now.minute
-        schedule_data["second"] = (now.second + 1) % 60
-        json.dump(schedule_data, dst)
-    BoundConfig.set_config_base_path(config_test_path)
+def schedule() -> Generator[Schedule, None, None]:
+    now = datetime.now()
+    patch_multiple_configs(
+        class_=Schedule,
+        config_content={
+            "schedule_config.json": {},
+            "schedule_backup.json": {
+                "backup_frequency": "days",
+                "hour": now.hour,
+                "minute": now.minute,
+            },
+        },
+    )
     yield Schedule()
-    BoundConfig._BoundConfig__instances.clear()
 
 
 def test_schedule_schedule_changed(schedule: Schedule) -> None:
