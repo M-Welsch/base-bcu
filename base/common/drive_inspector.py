@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from subprocess import PIPE, run
 from typing import Any, Dict, List, Optional
 
-from base.common.config import BoundConfig
 from base.common.exceptions import ExternalCommandError
 from base.common.logger import LoggerFactory
 

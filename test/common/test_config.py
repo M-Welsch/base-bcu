@@ -6,7 +6,8 @@ import pytest
 from py import path
 from pytest_mock import MockFixture
 
-from base.common.config import BoundConfig, Config, ConfigValidationError
+from base.common.config import BoundConfig, Config
+from base.common.exceptions import ConfigValidationError
 
 
 @pytest.fixture()

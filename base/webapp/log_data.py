@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import List
 
-from base.common.config import Config
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
