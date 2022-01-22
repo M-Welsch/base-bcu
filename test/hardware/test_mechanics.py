@@ -1,21 +1,22 @@
 import sys
 from importlib import import_module
-from typing import Generator
+from typing import Generator, Type
 
 import pytest
 from pytest_mock import MockFixture
 
+from base.common.config import Config
+
 sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
-
-import base.common.config as cfg
-
-cfg.get_config = lambda *args, **kwargs: cfg.Config({"maximum_docking_time": 1.5})
-from base.hardware.mechanics import Mechanics
 from base.hardware.pin_interface import PinInterface
+from base.hardware.mechanics import Mechanics
+
+from test.utils import patch_config
 
 
 @pytest.fixture(scope="class")
 def mechanics() -> Generator[Mechanics, None, None]:
+    patch_config(Mechanics, {"maximum_docking_time": 1.5})
     yield Mechanics()
 
 
