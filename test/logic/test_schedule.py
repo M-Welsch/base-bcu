@@ -4,6 +4,7 @@ from test.utils import patch_multiple_configs
 from typing import Generator
 
 import pytest
+from pytest_mock import MockFixture
 
 from base.logic.schedule import Schedule
 
@@ -23,6 +24,12 @@ def schedule() -> Generator[Schedule, None, None]:
         },
     )
     yield Schedule()
+
+
+def test_run_pending(schedule: Schedule, mocker: MockFixture) -> None:
+    mocked_run = mocker.patch("sched.scheduler.run")
+    schedule.run_pending()
+    assert mocked_run.called_once_with(blocking=False)
 
 
 def test_schedule_schedule_changed(schedule: Schedule) -> None:
@@ -58,13 +65,6 @@ def test_schedule_shutdown_request(schedule: Schedule) -> None:
     assert isinstance(event, sched.Event)
     assert event.priority == 1
     assert event.action == schedule.shutdown_request.emit
-
-
-def test_run_pending(schedule: Schedule) -> None:
-    success = []
-    schedule._scheduler.enter(1, 1, lambda: success.append(True))
-    schedule._scheduler.run(blocking=True)
-    assert any(success)
 
 
 # def test_schedule_shutdown_request(schedule: Schedule) -> None:

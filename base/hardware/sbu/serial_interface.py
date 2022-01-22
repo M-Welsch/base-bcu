@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Type
 
 import serial
 
-from base.common.config import BoundConfig, Config, get_config
+from base.common.config import Config, get_config
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SerialInterfaceError
 from base.common.logger import LoggerFactory
 from base.hardware.constants import BAUD_RATE

@@ -3,11 +3,12 @@ import os
 import sys
 from pathlib import Path
 
+from base.common.config import BoundConfig
+
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(path_to_module)
 
 
-from base.common.config import BoundConfig
 from base.common.drive_inspector import DriveInfo, DriveInspector, PartitionSignature
 
 

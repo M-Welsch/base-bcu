@@ -7,8 +7,7 @@ import pytest
 from py import path
 from pytest_mock import MockFixture
 
-from base.common.config import Config
-from base.common.config_validator import ConfigValidator
+from base.common.config import Config, ConfigValidator
 
 
 @pytest.mark.parametrize(
