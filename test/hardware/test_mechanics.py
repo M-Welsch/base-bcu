@@ -8,10 +8,10 @@ from pytest_mock import MockFixture
 from base.common.config import Config
 
 sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
-from base.hardware.pin_interface import PinInterface
-from base.hardware.mechanics import Mechanics
-
 from test.utils import patch_config
+
+from base.hardware.mechanics import Mechanics
+from base.hardware.pin_interface import PinInterface
 
 
 @pytest.fixture(scope="class")
