@@ -1,14 +1,10 @@
-import json
 import sched
 from datetime import datetime
-from pathlib import Path
 from test.utils import patch_multiple_configs
 from typing import Generator
 
 import pytest
-from py import path
 
-from base.common.config import BoundConfig
 from base.logic.schedule import Schedule
 
 
