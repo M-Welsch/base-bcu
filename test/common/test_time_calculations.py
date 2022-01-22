@@ -14,7 +14,7 @@ from base.common.exceptions import ConfigValidationError
 
 def test_next_backup(mocker: MockerFixture) -> None:
     nearly_now = datetime.now()
-    plan = tc._Plan(freq=WEEKLY, bymonthday=None, byweekday=0, byhour=11, byminute=22, bysecond=33)
+    plan = tc._Plan(freq=WEEKLY, bymonthday=None, byweekday=0, byhour=11, byminute=22)
     patched_plan_from_config = mocker.patch("base.common.time_calculations._plan_from_config", return_value=plan)
     config = Config({})
     next_backup_time = tc.next_backup(config)
@@ -72,59 +72,3 @@ def test_plan_from_config_days(config_frequency: str, dateutil_weekly: int, date
     assert plan.byweekday == dateutil_weekly
     assert plan.byhour == config.hour
     assert plan.byminute == config.minute
-    assert plan.bysecond == config.second
-
-
-@pytest.mark.parametrize("frequency", tc.BACKUP_INTERVALS)
-def test_validate_config_frequencies(frequency: str) -> None:
-    config = Config(
-        {
-            "backup_frequency": frequency,
-            "day_of_month": 1,
-            "day_of_week": 0,
-            "hour": 0,
-            "minute": 0,
-            "second": 0,
-        }
-    )
-
-    tc._validate_config(config)
-
-
-@pytest.mark.parametrize(
-    "day_of_month, day_of_week, hour, minute, second, error",
-    [
-        (1, 0, 0, 0, 0, None),
-        (32, 0, 0, 0, 0, ConfigValidationError),
-        (0, 0, 0, 0, 0, ConfigValidationError),
-        (-1, 0, 0, 0, 0, ConfigValidationError),
-        (1, 7, 0, 0, 0, ConfigValidationError),
-        (1, -1, 0, 0, 0, ConfigValidationError),
-        (1, 0, 24, 0, 0, ConfigValidationError),
-        (1, 0, -1, 0, 0, ConfigValidationError),
-        (1, 0, 0, 60, 0, ConfigValidationError),
-        (1, 0, 0, -1, 0, ConfigValidationError),
-        (1, 0, 0, 0, 60, ConfigValidationError),
-        (1, 0, 0, 0, -1, ConfigValidationError),
-        (randint(1, 31), randint(0, 6), randint(0, 23), randint(0, 59), randint(0, 59), None),
-    ],
-)
-def test_validate_config_timestamp(
-    day_of_month: int, day_of_week: int, hour: int, minute: int, second: int, error: Optional[Type[Exception]]
-) -> None:
-    config = Config(
-        {
-            "backup_frequency": "months",
-            "day_of_month": day_of_month,
-            "day_of_week": day_of_week,
-            "hour": hour,
-            "minute": minute,
-            "second": second,
-        }
-    )
-
-    if error is None:
-        tc._validate_config(config)
-    else:
-        with pytest.raises(error):
-            tc._validate_config(config)

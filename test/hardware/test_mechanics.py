@@ -1,11 +1,9 @@
 import sys
 from importlib import import_module
-from typing import Generator, Type
+from typing import Generator
 
 import pytest
 from pytest_mock import MockFixture
-
-from base.common.config import Config
 
 sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 from test.utils import patch_config
