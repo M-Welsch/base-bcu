@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Set
 from weakref import WeakValueDictionary
 
+from base.common.config_validator import ConfigValidator
 from base.common.exceptions import ConfigSaveError, ConfigValidationError
 from base.common.logger import LoggerFactory
 
@@ -78,8 +79,10 @@ class BoundConfig(Config):
 
     @classmethod
     def reload_all(cls) -> None:
-        for config in cls.__instances.values():
-            config.reload()
+        with ConfigValidator() as validator:
+            for config in cls.__instances.values():
+                config.reload()
+                validator.validate(config)
 
     def reload(self, **kwargs):  # type: ignore
         LOG.info(f"reloading config: {self._config_path}")

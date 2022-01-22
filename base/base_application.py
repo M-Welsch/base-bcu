@@ -81,7 +81,7 @@ class BaSeApplication:
         self._connect_signals()
 
     def start(self) -> None:
-        self._schedule.on_reschedule_requested()
+        self._schedule.on_reschedule_backup()
         while not self._shutting_down:
             try:
                 # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
@@ -106,14 +106,14 @@ class BaSeApplication:
         self._schedule.shutdown_request.connect(self._initiate_shutdown)
         self._schedule.backup_request.connect(self._backup.on_backup_request)
         self._backup.postpone_request.connect(self._schedule.on_postpone_backup)
-        self._backup.reschedule_request.connect(self._schedule.on_reschedule_requested)
+        self._backup.reschedule_request.connect(self._schedule.on_reschedule_backup)
         self._backup.delayed_shutdown_request.connect(self._schedule.on_shutdown_requested)
         self._backup.hardware_engage_request.connect(self._hardware.engage)
         self._backup.hardware_disengage_request.connect(self._hardware.disengage)
         self._webapp_server.webapp_event.connect(self.on_webapp_event)
         self._webapp_server.backup_now_request.connect(self._backup.on_backup_request)
         self._webapp_server.backup_abort.connect(self._backup.on_backup_abort)
-        self._webapp_server.reschedule_request.connect(self._schedule.on_reschedule_requested)
+        self._webapp_server.reschedule_request.connect(self._schedule.on_reschedule_backup)
         self._webapp_server.display_brightness_change.connect(self._hardware.set_display_brightness)
         self._webapp_server.display_text.connect(self._hardware.write_to_display)
 

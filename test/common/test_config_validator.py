@@ -1,5 +1,4 @@
 import json
-import test.common.test_config_validator
 from pathlib import Path
 from typing import Union
 from unittest.mock import MagicMock
@@ -8,7 +7,6 @@ import pytest
 from py import path
 from pytest_mock import MockFixture
 
-import base.common.config_validator
 from base.common.config import Config
 from base.common.config_validator import ConfigValidator
 
