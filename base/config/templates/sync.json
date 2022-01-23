@@ -1,0 +1,36 @@
+{
+  "nas_finder_maximum_connection_trials": {
+    "type": "int",
+    "range": {"min": 1, "max": 10}
+  },
+  "nas_finder_timeout": {
+    "type": "float",
+    "range": {"min": 0.01, "max": 60}
+  },
+  "nas_finder_wait_seconds_between_connection_trials": {
+    "type": "int",
+    "range": {"min": 1, "max": 10}
+  },
+  "remote_backup_source_location": {
+    "type": "pathlib.Path"
+  },
+  "local_backup_target_location": {
+    "type": "pathlib.Path"
+  },
+  "local_nas_hdd_mount_point": {
+    "type": "pathlib.Path"
+  },
+  "sample_interval": {
+      "type": "float"
+  },
+  "incremental": {
+      "type": "bool"
+  },
+  "protocol": {
+      "type": "str",
+      "options": ["ssh", "smb"]
+  },
+  "ssh_keyfile_path": {
+    "type": "pathlib.Path"
+  }
+}
