@@ -1,7 +1,5 @@
 import logging
 from datetime import datetime
-
-import base.common.time_calculations
 from test.utils import patch_multiple_configs
 from typing import Generator, Optional
 
@@ -9,6 +7,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
+import base.common.time_calculations
 from base.logic.schedule import Schedule
 
 
@@ -81,7 +80,7 @@ def test_on_shutdown_requested(schedule: Schedule, mocker: MockFixture) -> None:
     schedule._config["shutdown_delay_minutes"] = shutdown_delay_minutes = 1
     mocked_enter = mocker.patch("sched.scheduler.enter")
     schedule.on_shutdown_requested()
-    assert mocked_enter.assert_called_once#_with(shutdown_delay_minutes, 1, Schedule.shutdown_request.emit)
+    assert mocked_enter.assert_called_once  # _with(shutdown_delay_minutes, 1, Schedule.shutdown_request.emit)
 
 
 def test_next_backup_timestamp(schedule: Schedule, mocker: MockFixture) -> None:
@@ -95,6 +94,8 @@ def test_next_backup_timestamp(schedule: Schedule, mocker: MockFixture) -> None:
 
 def test_backup_seconds(schedule: Schedule, mocker: MockFixture) -> None:
     seconds_to_return = 1
-    mocked_next_backup = mocker.patch("base.common.time_calculations.next_backup_seconds", return_value=seconds_to_return)
+    mocked_next_backup = mocker.patch(
+        "base.common.time_calculations.next_backup_seconds", return_value=seconds_to_return
+    )
     assert schedule.next_backup_seconds == seconds_to_return
     assert mocked_next_backup.called_once_with(schedule._config)

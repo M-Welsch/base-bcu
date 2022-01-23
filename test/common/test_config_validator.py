@@ -1,12 +1,14 @@
 import json
 from pathlib import Path
-from typing import Union
+from test.utils import derive_mock_string
+from typing import Callable, Union
 from unittest.mock import MagicMock
 
 import pytest
 from py import path
 from pytest_mock import MockFixture
 
+import base.common.config
 from base.common.config import Config, ConfigValidator
 
 
@@ -30,6 +32,8 @@ from base.common.config import Config, ConfigValidator
         (1, "float", False),
         ("1.5", "float", False),
         (True, "float", False),
+        ({}, "dict", True),
+        (1, "dict", False),
     ],
 )
 def test_check_type_validity(testkey_value: Union[int, str, float, bool], testkey_datatype: str, valid: bool) -> None:
@@ -99,6 +103,54 @@ def test_check_range(
     assert not bool(cv.invalid_keys) == valid
 
 
+def test_check_dict(mocker: MockFixture) -> None:
+    testkey_name = "test_key"
+    inner_test_key = "inner_test_key"
+    test_config = {testkey_name: {inner_test_key: "inner_test_value"}, "config_path": "needed ..."}
+    test_template = {testkey_name: {inner_test_key: {"innermost_test_key": "innermost_test_value"}}}
+
+    cfg = Config(test_config)
+    cv = ConfigValidator()
+
+    mocked_validate_items = mocker.patch(derive_mock_string(base.common.config.ConfigValidator._validate_items))
+    cv._check_dict(testkey_name, test_template, cfg)
+    assert mocked_validate_items.called_once_with(testkey_name, test_template[testkey_name], test_config[testkey_name])
+
+
+def test_check_dict_in_the_same_way_as_config(mocker: MockFixture) -> None:
+    testkey_name = "test_key"
+    inner_test_key = "inner_test_key"
+
+    inner_test_config = {
+        inner_test_key: "inner_test_value",
+        "template_path": "normally not needed. Just for this test",
+        "config_path": "needed ...",
+    }
+
+    test_config = inner_test_config.copy()
+    test_config[testkey_name] = inner_test_config.copy()
+
+    inner_template = {"dict_containing_verifications": "values"}
+    test_template = inner_template.copy()
+    test_template[testkey_name] = test_template.copy()
+
+    cfg = Config(test_config)
+    cv = ConfigValidator()
+
+    mocked_get_template = mocker.patch(
+        derive_mock_string(base.common.config.ConfigValidator.get_template), return_value=inner_template
+    )
+    mocked_validate_items = mocker.patch(derive_mock_string(base.common.config.ConfigValidator._validate_items))
+
+    cv._check_dict(testkey_name, test_template, cfg)
+    assert mocked_validate_items.called_once_with(testkey_name, inner_template, inner_test_config)
+    mocked_validate_items.reset_mock()
+
+    cv.validate(Config(inner_test_config))
+    assert mocked_get_template.called_once_with()
+    assert mocked_validate_items.called_once_with(testkey_name, inner_template, inner_test_config)
+
+
 @pytest.mark.parametrize("test_dict, serializable", [("{}", True), ("df=df", False)])
 def test_get_template(tmp_path: path.local, test_dict: str, serializable: bool) -> None:
     test_cfg = tmp_path / "test_template.json"
@@ -113,7 +165,7 @@ def test_get_template(tmp_path: path.local, test_dict: str, serializable: bool) 
 
 
 def test_validate_items(mocker: MockFixture) -> None:
-    mocked_validate_item = mocker.patch("base.common.config_validator.ConfigValidator._validate_item")
+    mocked_validate_item = mocker.patch("base.common.config.config_validator.ConfigValidator._validate_item")
     template = {"a": 1, "b": 2}
     ConfigValidator()._validate_items(template, config=Config({}))
     assert mocked_validate_item.call_count == len(template)
@@ -122,10 +174,10 @@ def test_validate_items(mocker: MockFixture) -> None:
 def test_validate_item(mocker: MockFixture) -> None:
     mocked_val_func0, mocked_val_func1 = MagicMock(), MagicMock()
     mocked_check_required = mocker.patch(
-        "base.common.config_validator.ConfigValidator._check_validation_required", return_value=True
+        derive_mock_string(base.common.config.ConfigValidator._check_validation_required), return_value=True
     )
     mocked_infer_validation_steps = mocker.patch(
-        "base.common.config_validator.ConfigValidator.infer_validation_steps",
+        derive_mock_string(base.common.config.ConfigValidator.infer_validation_steps),
         return_value=[mocked_val_func0, mocked_val_func1],
     )
     config = Config({})
@@ -144,6 +196,7 @@ def test_validate_item(mocker: MockFixture) -> None:
     [
         ({"type": ""}, ["_check_type_validity"]),
         ({"type": "pathlib.Path"}, ["_check_type_validity", "_check_path_resolve"]),
+        ({"type": "dict"}, ["_check_type_validity", "_check_dict"]),
         ({"regex": ""}, ["_check_regex"]),
         ({"range": ""}, ["_check_range"]),
         ({"options": ""}, ["_check_options"]),
@@ -174,10 +227,10 @@ def test_check_validation_required(
     mocker: MockFixture, key_available: bool, optional: bool, validation_required: bool, invalid_keys_entry: bool
 ) -> None:
     mocked_check_optional = mocker.patch(
-        "base.common.config_validator.ConfigValidator._check_optional", return_value=optional
+        derive_mock_string(base.common.config.ConfigValidator._check_optional), return_value=optional
     )
     mocked_check_key_avaliable = mocker.patch(
-        "base.common.config_validator.ConfigValidator._check_key_available", return_value=key_available
+        derive_mock_string(base.common.config.ConfigValidator._check_key_available), return_value=key_available
     )
     config = Config({"unimportant_content": 0, "config_path": "Needed to Satisfy the invalid_keys error message"})
     cv = ConfigValidator()
@@ -197,6 +250,3 @@ def test_check_validation_required(
 )
 def test_check_optional(template_data: dict, optional: bool) -> None:
     assert ConfigValidator._check_optional(template_data) == optional
-
-def test_check_dict():
-    ...

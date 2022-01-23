@@ -12,7 +12,7 @@ from base.common.exceptions import ConfigValidationError
 
 
 class ConfigValidator:
-    type_to_check = {"str": str, "pathlib.Path": str, "int": int, "float": float, "bool": bool}
+    type_to_check = {"str": str, "pathlib.Path": str, "int": int, "float": float, "bool": bool, "dict": dict}
 
     def __init__(self) -> None:
         self.invalid_keys: Dict[str, str] = {}
@@ -69,7 +69,10 @@ class ConfigValidator:
             ] = f"Value {config[key]} of key {key} in config file {config.config_path} is not one of {options}"
 
     def _check_dict(self, key: str, template_data: dict, config: Config) -> None:
-        self._validate_items(template=template_data, config=Config(config[key]))
+        """create a new config object from the dict and run the validation process"""
+        sub_config = Config(config[key])
+        sub_template = template_data[key]
+        self._validate_items(template=sub_template, config=sub_config)
 
     def validate(self, config: Config) -> None:
         template = self.get_template(config.template_path)
