@@ -68,6 +68,9 @@ class ConfigValidator:
                 key
             ] = f"Value {config[key]} of key {key} in config file {config.config_path} is not one of {options}"
 
+    def _check_dict(self, key: str, template_data: dict, config: Config) -> None:
+        self._validate_items(template=template_data, config=Config(config[key]))
+
     def validate(self, config: Config) -> None:
         template = self.get_template(config.template_path)
         self._validate_items(template, config)
@@ -94,6 +97,8 @@ class ConfigValidator:
             steps.append(self._check_type_validity)
             if template_data["type"] == "pathlib.Path":
                 steps.append(self._check_path_resolve)
+            if template_data["type"] == "dict":
+                steps.append(self._check_dict)
         if "regex" in template_data:
             steps.append(self._check_regex)
         if "range" in template_data:

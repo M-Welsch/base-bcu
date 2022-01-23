@@ -197,3 +197,6 @@ def test_check_validation_required(
 )
 def test_check_optional(template_data: dict, optional: bool) -> None:
     assert ConfigValidator._check_optional(template_data) == optional
+
+def test_check_dict():
+    ...
