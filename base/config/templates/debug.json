@@ -2,11 +2,12 @@
     "ssh_host": {
         "type": "str",
         "optional": true,
-        "regex": "(\\b25[0-5]|\\b2[0-4][0-9]|\\b[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"},
+        "characteristic": "ip"
+    },
     "ssh_user": {
         "type": "str",
         "optional": true,
-        "regex": "^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\\$)$"
+        "characteristic": "linux_user"
     },
     "logfile_target_path": {
         "type": "pathlib.Path"

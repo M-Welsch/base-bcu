@@ -66,14 +66,40 @@ def test_check_path_resolve(path: str, valid: bool) -> None:
 @pytest.mark.parametrize("pattern, test_value, valid", [("a", "a", True), ("a", "b", False)])
 def test_check_regex(pattern: str, test_value: str, valid: bool) -> None:
     testkey_name = "test_key"
-
     test_config = {testkey_name: test_value, "config_path": "Needed to Satisfy the invalid_keys error message"}
 
     cfg = Config(test_config)
-
     cv = ConfigValidator()
     cv._check_regex(testkey_name, {"regex": pattern}, cfg)
     assert not bool(cv.invalid_keys) == valid
+
+
+def test_check_ip(mocker: MockFixture) -> None:
+    mocked_check_regex = mocker.patch(derive_mock_string(base.common.config.ConfigValidator._check_regex))
+    testkey_name = "ip"
+    test_config = {testkey_name: "test_value", "config_path": "Needed to Satisfy the invalid_keys error message"}
+
+    cfg = Config(test_config)
+    cv = ConfigValidator()
+    cv._check_ip(testkey_name, {}, cfg)
+    assert mocked_check_regex.called_once_with(
+        testkey_name,
+        {"regex": "(\\b25[0-5]|\\b2[0-4][0-9]|\\b[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"},
+        cfg,
+    )
+
+
+def test_check_linux_user(mocker: MockFixture) -> None:
+    mocked_check_regex = mocker.patch(derive_mock_string(base.common.config.ConfigValidator._check_regex))
+    testkey_name = "ip"
+    test_config = {testkey_name: "test_value", "config_path": "Needed to Satisfy the invalid_keys error message"}
+
+    cfg = Config(test_config)
+    cv = ConfigValidator()
+    cv._check_ip(testkey_name, {}, cfg)
+    assert mocked_check_regex.called_once_with(
+        testkey_name, {"regex": "^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\\$)$"}, cfg
+    )
 
 
 @pytest.mark.parametrize(
@@ -201,6 +227,8 @@ def test_validate_item(mocker: MockFixture) -> None:
         ({"range": ""}, ["_check_range"]),
         ({"options": ""}, ["_check_options"]),
         ({"type": "", "regex": ""}, ["_check_type_validity", "_check_regex"]),
+        ({"characteristic": "ip"}, ["_check_ip"]),
+        ({"characteristic": "linux_user"}, ["_check_linux_user"]),
     ],
 )
 def test_infer_validation_steps(template_data: dict, expected_steps: list) -> None:

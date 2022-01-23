@@ -12,7 +12,15 @@ from base.common.exceptions import ConfigValidationError
 
 
 class ConfigValidator:
-    type_to_check = {"str": str, "pathlib.Path": str, "int": int, "float": float, "bool": bool, "dict": dict, "list": list}
+    type_to_check = {
+        "str": str,
+        "pathlib.Path": str,
+        "int": int,
+        "float": float,
+        "bool": bool,
+        "dict": dict,
+        "list": list,
+    }
 
     def __init__(self) -> None:
         self.invalid_keys: Dict[str, str] = {}
@@ -75,8 +83,9 @@ class ConfigValidator:
         self._validate_items(template=sub_template, config=sub_config)
 
     def _check_ip(self, key: str, template_data: dict, config: Config) -> None:
-        template_data["regex"] = \
-            r"(\\b25[0-5]|\\b2[0-4][0-9]|\\b[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
+        template_data[
+            "regex"
+        ] = r"(\\b25[0-5]|\\b2[0-4][0-9]|\\b[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
         self._check_regex(key, template_data, config)
 
     def _check_linux_user(self, key: str, template_data: dict, config: Config) -> None:
