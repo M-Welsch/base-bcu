@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from test.utils import derive_mock_string
-from typing import Callable, Union
+from typing import Any, Dict, Union
 from unittest.mock import MagicMock
 
 import pytest
@@ -153,11 +153,11 @@ def test_check_dict_in_the_same_way_as_config(mocker: MockFixture) -> None:
         "config_path": "needed ...",
     }
 
-    test_config = inner_test_config.copy()
+    test_config: Dict[str, Any] = inner_test_config.copy()
     test_config[testkey_name] = inner_test_config.copy()
 
     inner_template = {"dict_containing_verifications": "values"}
-    test_template = inner_template.copy()
+    test_template: Dict[str, Any] = inner_template.copy()
     test_template[testkey_name] = test_template.copy()
 
     cfg = Config(test_config)
@@ -209,7 +209,7 @@ def test_validate_item(mocker: MockFixture) -> None:
     config = Config({})
     cv = ConfigValidator()
     template_key = "any key"
-    template_data = {}
+    template_data: Dict[str, Dict[str, Any]] = {}
     cv._validate_item(config=config, template_key=template_key, template_data=template_data)
     assert mocked_check_required.called_once_with(config, template_key, template_data)
     assert mocked_infer_validation_steps.called_once_with(template_data)

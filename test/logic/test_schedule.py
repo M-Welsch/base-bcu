@@ -1,13 +1,13 @@
 import logging
 from datetime import datetime
-from test.utils import patch_multiple_configs
+from test.utils import derive_mock_string, patch_multiple_configs
 from typing import Generator, Optional
 
 import pytest
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
-import base.common.time_calculations
+import base.logic.schedule
 from base.logic.schedule import Schedule
 
 
@@ -34,6 +34,41 @@ def test_run_pending(schedule: Schedule, mocker: MockFixture) -> None:
     assert mocked_run.called_once_with(blocking=False)
 
 
+@pytest.mark.parametrize("backup_job, schedule_cancelled", [("not None", True), (None, False)])
+def test_on_schedule_changed(
+    schedule: Schedule, mocker: MockFixture, backup_job: Optional[str], schedule_cancelled: bool
+) -> None:
+    schedule._backup_job = backup_job  # type: ignore
+
+    mocked_schedule_reload = mocker.patch("base.common.config.bound.BoundConfig.reload")
+    mocked_schedule_cancel = mocker.patch("sched.scheduler.cancel")
+    mocked_on_reschedule_backup = mocker.patch(derive_mock_string(base.logic.schedule.Schedule.on_reschedule_backup))
+    schedule.on_schedule_changed()
+    assert mocked_schedule_reload.called_once()
+    assert mocked_on_reschedule_backup.called_once()
+    assert bool(mocked_schedule_cancel.call_count) == schedule_cancelled
+
+
+def test_invoke_backup(schedule: Schedule, mocker: MockFixture) -> None:
+    mocked_emit = mocker.patch("signalslot.Signal.emit")
+    schedule._invoke_backup()
+    assert mocked_emit.called_once()
+
+
+def test_on_reschedule_backup(schedule: Schedule, mocker: MockFixture) -> None:
+    datetime_ = datetime(year=1984, month=1, day=1)
+    timestamp = datetime_.timestamp()
+    job = "job"
+
+    mocked_next_backup = mocker.patch("base.common.time_calculations.next_backup", return_value=datetime_)
+    mocked_enterabs = mocker.patch("sched.scheduler.enterabs", return_value=job)
+    schedule.on_reschedule_backup()
+    assert mocked_next_backup.called_with(schedule._schedule)
+    assert mocked_next_backup.call_count == 2
+    assert mocked_enterabs.called_once_with(timestamp, 2, schedule._invoke_backup)
+    assert schedule._backup_job == job
+
+
 @pytest.mark.parametrize(
     "postponed_backup_job, queue, entered",
     [
@@ -57,13 +92,14 @@ def test_on_postpone_backup(
     with caplog.at_level(logging.INFO):
         schedule.on_postpone_backup(seconds)
     assert f"postponed by {seconds} seconds" in caplog.text
-    assert mocked_enter.called_once() == entered
-    assert mocked_enter.called_once_with(seconds, 2, schedule._invoke_backup)
+    if entered:
+        assert mocked_enter.called_once()
+        assert mocked_enter.called_once_with(seconds, 2, schedule._invoke_backup)
 
 
 def test_on_reconfig(schedule: Schedule, mocker: MockFixture) -> None:
     mocked_enter = mocker.patch("sched.scheduler.enter")
-    mocked_reconfig = mocker.patch("base.logic.schedule.Schedule._reconfig")
+    mocker.patch("base.logic.schedule.Schedule._reconfig")
     new_config = "new_config"
     schedule.on_reconfig(new_config)
     assert mocked_enter.called_once()
@@ -88,7 +124,7 @@ def test_next_backup_timestamp(schedule: Schedule, mocker: MockFixture) -> None:
     mocked_next_backup_timestamp = mocker.patch(
         "base.common.time_calculations.next_backup_timestring", return_value=timestamp_to_return
     )
-    assert schedule.next_backup_seconds == timestamp_to_return
+    assert schedule.next_backup_timestamp == timestamp_to_return
     assert mocked_next_backup_timestamp.called_once_with(schedule._scheduler)
 
 

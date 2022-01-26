@@ -4,9 +4,9 @@ from typing import Any, List, Optional
 
 from signalslot import Signal
 
+import base.common.time_calculations as tc
 from base.common.config import Config, get_config
 from base.common.logger import LoggerFactory
-from base.common.time_calculations import next_backup, next_backup_seconds, next_backup_timestring
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -40,8 +40,8 @@ class Schedule:
         self.backup_request.emit()
 
     def on_reschedule_backup(self, **kwargs):  # type: ignore
-        due = next_backup(self._schedule).timestamp()
-        LOG.info(f"Scheduled next backup on {next_backup_timestring(self._schedule)}")
+        due = tc.next_backup(self._schedule).timestamp()
+        LOG.info(f"Scheduled next backup on {tc.next_backup_timestring(self._schedule)}")
         self._backup_job = self._scheduler.enterabs(due, 2, self._invoke_backup)
 
     def on_postpone_backup(self, seconds, **kwargs):  # type: ignore
@@ -63,8 +63,8 @@ class Schedule:
 
     @property
     def next_backup_timestamp(self) -> str:
-        return next_backup_timestring(self._schedule)
+        return tc.next_backup_timestring(self._schedule)
 
     @property
     def next_backup_seconds(self) -> int:
-        return next_backup_seconds(self._schedule)
+        return tc.next_backup_seconds(self._schedule)

@@ -2,10 +2,6 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from base.common.logger import LoggerFactory
-
-LOG = LoggerFactory.get_logger(__name__)
-
 
 class Config(dict):
     def __init__(self, data: Dict[str, Any], read_only: bool = True, *args: Any, **kwargs: Any) -> None:

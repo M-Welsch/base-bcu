@@ -1,13 +1,13 @@
 import logging
 import subprocess
 from pathlib import Path
+from test.utils import patch_config
 from typing import Generator
 
 import _pytest
 import pytest
 from _pytest.logging import LogCaptureFixture
 
-from base.common.config import Config
 from base.common.drive_inspector import PartitionInfo
 from base.common.exceptions import MountError, UnmountError
 from base.common.status import HddState
@@ -37,17 +37,19 @@ def drive(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[MockDrive,
     virtual_hard_drive_mountpoint = (tmpdir / "VHD").resolve()
     virtual_hard_drive_mountpoint.mkdir()
     create_virtual_hard_drive(virtual_hard_drive_location)
+    patch_config(
+        class_=Drive,
+        config_content={
+            "backup_hdd_file_system": "ext4",
+            "backup_hdd_mount_point": str(virtual_hard_drive_mountpoint),
+            "backup_hdd_spinup_timeout": 20,
+            "backup_hdd_unmount_trials": 5,
+            "backup_hdd_unmount_waiting_secs": 1,
+        },
+        read_only=False,
+    )
+    patch_config(class_=BackupBrowser, config_content={})
     yield MockDrive(
-        Config(
-            {
-                "backup_hdd_file_system": "ext4",
-                "backup_hdd_mount_point": str(virtual_hard_drive_mountpoint),
-                "backup_hdd_spinup_timeout": 20,
-                "backup_hdd_unmount_trials": 5,
-                "backup_hdd_unmount_waiting_secs": 1,
-            },
-            read_only=False,
-        ),
         BackupBrowser(),
         virtual_hard_drive_location=virtual_hard_drive_location,
     )
@@ -82,7 +84,7 @@ def drive_mounted(drive: MockDrive) -> Generator[MockDrive, None, None]:
 
 
 def create_virtual_hard_drive(filename: Path) -> None:
-    subprocess.Popen(f"dd if=/dev/zero of={filename} bs=1M count=10".split())
+    subprocess.Popen(f"dd if=/dev/zero of={filename} bs=2M count=10".split())
     subprocess.Popen(f"mkfs -t ext4 {filename}".split())
 
 
