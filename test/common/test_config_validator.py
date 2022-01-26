@@ -233,7 +233,7 @@ def test_validate_item(mocker: MockFixture) -> None:
 )
 def test_infer_validation_steps(template_data: dict, expected_steps: list) -> None:
     cv = ConfigValidator()
-    steps = cv.infer_validation_steps(template_data)
+    steps = cv.infer_validation_steps("", template_data)
     assert len(expected_steps) == len(steps)
     assert all(step.__name__ == expected for step, expected in zip(steps, expected_steps))
 

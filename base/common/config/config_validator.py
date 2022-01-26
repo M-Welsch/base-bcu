@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import json
 import re
+from collections import namedtuple
 from pathlib import Path
 from pydoc import locate
 from types import TracebackType
-from typing import Callable, Dict, List, Optional, Type
+from typing import Callable, List, Optional, Type
 
 from base.common.config.unbound import Config
 from base.common.exceptions import ConfigValidationError
+
+ConfigError = namedtuple("ConfigError", "key message")
 
 
 class ConfigValidator:
@@ -23,7 +26,7 @@ class ConfigValidator:
     }
 
     def __init__(self) -> None:
-        self.invalid_keys: Dict[str, str] = {}
+        self.invalid_keys: List[ConfigError] = []
 
     def __enter__(self) -> ConfigValidator:
         return self
@@ -37,44 +40,72 @@ class ConfigValidator:
     def _check_type_validity(self, key: str, template_data: dict, config: Config) -> None:
         valid_type = locate(template_data["type"])
         if type(config[key]) is not self.type_to_check[template_data["type"]]:
-            self.invalid_keys[key] = (
-                f"Value of key '{key}' has invalid type {type(config[key])} "
-                f"in config file {config.config_path}. Should be: {valid_type}"
+            self.invalid_keys.append(
+                ConfigError(
+                    key=key,
+                    message=(
+                        f"Value of key '{key}' has invalid type {type(config[key])} "
+                        f"in config file {config.config_path}. Should be: {valid_type}"
+                    ),
+                )
             )
 
     def _check_regex(self, key: str, template_data: dict, config: Config) -> None:
         if not re.fullmatch(pattern=template_data["regex"], string=config[key]):
-            self.invalid_keys[key] = (
-                f"Value {config[key]} of key {key} in config file {config.config_path} "
-                f"does not match the regex {template_data['regex']}"
+            self.invalid_keys.append(
+                ConfigError(
+                    key=key,
+                    message=(
+                        f"Value {config[key]} of key {key} in config file {config.config_path} "
+                        f"does not match the regex {template_data['regex']}"
+                    ),
+                )
             )
 
     def _check_range(self, key: str, template_data: dict, config: Config) -> None:
         minimum = template_data["range"]["min"]
         maximum = template_data["range"]["max"]
         if minimum is not None and config[key] < minimum:
-            self.invalid_keys[
-                key
-            ] = f"Value of key '{key}' in config file {config.config_path} must be greater than {minimum}"
+            self.invalid_keys.append(
+                ConfigError(
+                    key=key,
+                    message=(
+                        f"Value of key '{key}' in config file {config.config_path} must be greater than {minimum}"
+                    ),
+                )
+            )
         if maximum is not None and config[key] > maximum:
-            self.invalid_keys[
-                key
-            ] = f"Value of key '{key}' in config file {config.config_path} must be less than {maximum}"
+            self.invalid_keys.append(
+                ConfigError(
+                    key=key,
+                    message=f"Value of key '{key}' in config file {config.config_path} must be less than {maximum}",
+                )
+            )
 
     def _check_path_resolve(self, key: str, template_data: dict, config: Config) -> None:
         try:
             Path(config[key]).resolve()
         except ValueError:
-            self.invalid_keys[
-                key
-            ] = f"Value {config[key]} of key {key} in config file {config.config_path} is not a valid path"
+            self.invalid_keys.append(
+                ConfigError(
+                    key=key,
+                    message=(
+                        f"Value {config[key]} of key {key} in config file {config.config_path} is not a valid path"
+                    ),
+                )
+            )
 
     def _check_options(self, key: str, template_data: dict, config: Config) -> None:
         options = template_data["options"]
         if not config[key] in options:
-            self.invalid_keys[
-                key
-            ] = f"Value {config[key]} of key {key} in config file {config.config_path} is not one of {options}"
+            self.invalid_keys.append(
+                ConfigError(
+                    key=key,
+                    message=(
+                        f"Value {config[key]} of key {key} in config file {config.config_path} is not one of {options}"
+                    ),
+                )
+            )
 
     def _check_dict(self, key: str, template_data: dict, config: Config) -> None:
         """create a new config object from the dict and run the validation process"""
@@ -108,11 +139,11 @@ class ConfigValidator:
 
     def _validate_item(self, config: Config, template_key: str, template_data: dict) -> None:
         if self._check_validation_required(config, template_key, template_data):
-            pipeline = self.infer_validation_steps(template_data)
+            pipeline = self.infer_validation_steps(template_key, template_data)
             for step_func in pipeline:
                 step_func(template_key, template_data, config)
 
-    def infer_validation_steps(self, template_data: dict) -> List[Callable]:
+    def infer_validation_steps(self, template_key: str, template_data: dict) -> List[Callable]:
         steps = []
         if "type" in template_data:
             steps.append(self._check_type_validity)
@@ -123,8 +154,14 @@ class ConfigValidator:
         if "characteristic" in template_data:
             if template_data["characteristic"] == "ip":
                 steps.append(self._check_ip)
-            if template_data["characteristic"] == "linux_user":
+            elif template_data["characteristic"] == "linux_user":
                 steps.append(self._check_linux_user)
+            else:
+                self.invalid_keys.append(
+                    ConfigError(
+                        key=template_key, message=f"no such characteristic as {template_data['characteristic']}"
+                    )
+                )
         if "regex" in template_data:
             steps.append(self._check_regex)
         if "range" in template_data:
@@ -141,7 +178,11 @@ class ConfigValidator:
         if not key_available and optional:
             return False
         if not key_available and not optional:
-            self.invalid_keys[template_key] = f"required key {template_key} is not in config file {config.config_path}"
+            self.invalid_keys.append(
+                ConfigError(
+                    key=template_key, message=f"required key {template_key} is not in config file {config.config_path}"
+                )
+            )
             return False
         else:  # same branch as "if key_available". The else-statement is here to satisfy mypy.
             return True
