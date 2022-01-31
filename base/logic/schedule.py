@@ -22,6 +22,7 @@ class Schedule:
         self._schedule: Config = get_config("schedule_backup.json")
         self._backup_job: Optional[sched.Event] = None
         self._postponed_backup_job: Optional[sched.Event] = None
+        self._shutdown_job: Optional[sched.Event] = None
 
     @property
     def queue(self) -> List:
@@ -57,9 +58,14 @@ class Schedule:
         LOG.info(f"Reconfiguring according to {new_config}...")  # TODO: actually do something with new_config
 
     def on_shutdown_requested(self, **kwargs):  # type: ignore
-        delay = self._config.shutdown_delay_minutes
-        self._scheduler.enter(delay, 1, self.shutdown_request.emit)
+        delay = self._config.shutdown_delay_minutes * 60
+        self._shutdown_job = self._scheduler.enter(delay, 1, self.shutdown_request.emit)
         # TODO: delay shutdown for 5 minutes or so on every event from webapp
+
+    def on_stop_shutdown_timer_request(self, **kwargs):  # type: ignore
+        if self._shutdown_job is not None and self._shutdown_job in self._scheduler.queue:
+            LOG.info("Stopping shutdown timer")
+            self._scheduler.queue.remove(self._shutdown_job)
 
     @property
     def next_backup_timestamp(self) -> str:

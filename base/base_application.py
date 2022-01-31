@@ -11,6 +11,7 @@ from base.common.debug_utils import copy_logfiles_to_nas
 from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
 from base.common.logger import LoggerFactory
 from base.hardware.hardware import Hardware
+from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.backup import Backup
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.schedule import Schedule
@@ -81,7 +82,7 @@ class BaSeApplication:
         self._connect_signals()
 
     def start(self) -> None:
-        self._schedule.on_reschedule_backup()
+        self.prepare_service()
         while not self._shutting_down:
             try:
                 # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
@@ -95,10 +96,44 @@ class BaSeApplication:
             except Button1Interrupt:
                 self.button_1_pressed.emit()
         LOG.info("Exiting Mainloop, initiating Shutdown")
+        self.finalize_service()
+
+    def prepare_service(self) -> None:
+        self._hardware.disengage()  # TODO: What if the planned backup is only 5 min away?
+        self._process_wakeup_reason()
+        self._on_go_to_idle_state()
+
+    def _process_wakeup_reason(self) -> None:
+        wakeup_reason = self._hardware.get_wakeup_reason()
+        if wakeup_reason == WakeupReason.BACKUP_NOW:
+            LOG.info("Woke up for manual backup")
+            self._backup.on_backup_request()
+        elif wakeup_reason == WakeupReason.CONFIGURATION:
+            LOG.info("Woke up for configuration")
+        elif wakeup_reason == WakeupReason.HEARTBEAT_TIMEOUT:
+            LOG.warning("BCU heartbeat timeout occurred")
+        elif wakeup_reason == WakeupReason.NO_REASON:
+            LOG.info("Woke up for no specific reason")
+        else:
+            LOG.warning("Invalid wakeup reason. Did I fall from the shelf or what?")
+
+    def _on_go_to_idle_state(self, **kwargs):  # type: ignore
+        self._schedule.on_reschedule_requested()
+        if self._config.shutdown_between_backups:
+            LOG.info("Now starting sleep timer")
+            self.schedule_shutdown_timer()
+        else:
+            LOG.info("Now staying awake")
+
+    def schedule_shutdown_timer(self) -> None:
+        if not self._backup.backup_running:
+            self._schedule.on_shutdown_requested()
+
+    def finalize_service(self) -> None:
+        self._hardware.disengage()
         self._hardware.prepare_sbu_for_shutdown(
             self._schedule.next_backup_timestamp, self._schedule.next_backup_seconds  # Todo: wake BCU a little earlier?
         )
-
         self._execute_shutdown()
         sleep(1)
 
@@ -107,9 +142,10 @@ class BaSeApplication:
         self._schedule.backup_request.connect(self._backup.on_backup_request)
         self._backup.postpone_request.connect(self._schedule.on_postpone_backup)
         self._backup.reschedule_request.connect(self._schedule.on_reschedule_backup)
-        self._backup.delayed_shutdown_request.connect(self._schedule.on_shutdown_requested)
         self._backup.hardware_engage_request.connect(self._hardware.engage)
         self._backup.hardware_disengage_request.connect(self._hardware.disengage)
+        self._backup.stop_shutdown_timer_request.connect(self._schedule.on_stop_shutdown_timer_request)
+        self._backup.backup_finished_notification.connect(self._on_go_to_idle_state)
         self._webapp_server.webapp_event.connect(self.on_webapp_event)
         self._webapp_server.backup_now_request.connect(self._backup.on_backup_request)
         self._webapp_server.backup_abort.connect(self._backup.on_backup_abort)
