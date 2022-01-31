@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from subprocess import PIPE, run
 from typing import Any, Dict, List, Optional
 
-from base.common.config import Config
 from base.common.exceptions import ExternalCommandError
 from base.common.logger import LoggerFactory
 
@@ -66,21 +65,10 @@ class PartitionSignature:
     bytes_size: int
     partition_index: int
 
-    @classmethod
-    def from_json(cls, json_info: Dict[str, Any]) -> PartitionSignature:
-        return cls(
-            model_name=json_info["model_name"],
-            serial_number=json_info["serial_number"],
-            bytes_size=json_info["bytes_size"],
-            partition_index=json_info["partition_index"],
-        )
-
 
 class DriveInspector:
-    command = ["lsblk", "-o", "NAME,PATH,MODEL,SERIAL,SIZE,MOUNTPOINT,ROTA,TYPE,STATE", "-b", "-J"]
-
-    def __init__(self) -> None:
-        self._partition_signature = PartitionSignature.from_json(Config("drive.json").backup_hdd_device_signature)
+    def __init__(self, partition_signature: PartitionSignature) -> None:
+        self._partition_signature: PartitionSignature = partition_signature
         self._devices: List[DriveInfo] = []
 
     @property
@@ -89,7 +77,7 @@ class DriveInspector:
         return self._devices
 
     def refresh(self) -> None:
-        json_info = self._query(DriveInspector.command)
+        json_info = self._query()
         self._devices = [DriveInfo.from_json(drive_json_info) for drive_json_info in json_info]
 
     @property
@@ -112,7 +100,8 @@ class DriveInspector:
         return partitions[0]
 
     @staticmethod
-    def _query(command: List[str]) -> List[Dict[str, Any]]:
+    def _query() -> List[Dict[str, Any]]:
+        command = ["lsblk", "-o", "NAME,PATH,MODEL,SERIAL,SIZE,MOUNTPOINT,ROTA,TYPE,STATE", "-b", "-J"]
         cp = run(command, stdout=PIPE, stderr=PIPE)
         if cp.stderr:
             raise ExternalCommandError(cp.stderr)

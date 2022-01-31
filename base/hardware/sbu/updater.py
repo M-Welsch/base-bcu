@@ -5,7 +5,7 @@ from typing import Optional
 
 from base.common.logger import LoggerFactory
 from base.hardware.pin_interface import PinInterface
-from base.hardware.sbu.sbu_uart_finder import SbuUartFinder
+from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -28,6 +28,7 @@ class SbuUpdater:
         self._pin_interface.set_sbu_serial_path_to_sbu_fw_update()
         if sbu_fw_filename is None:
             sbu_fw_filename = self._get_filename_of_newest_hex_file()
+            LOG.info(f"updating sbu with file: {sbu_fw_filename}")
         self._execute_sbu_update(sbu_fw_filename, sbu_uart_channel)
 
     def _execute_sbu_update(self, sbu_fw_filename: Path, sbu_uart_channel: Path) -> None:
@@ -47,7 +48,7 @@ class SbuUpdater:
 
     @staticmethod
     def _get_sbu_uart_channel() -> Path:
-        sbu_uart_channel = SbuUartFinder().get_sbu_uart_interface()
+        sbu_uart_channel = get_sbu_uart_interface()
         if not sbu_uart_channel:
             sbu_uart_channel = Path("/dev/ttyS1")
         return sbu_uart_channel

@@ -3,12 +3,12 @@ from typing import Optional
 
 from signalslot import Signal
 
-from base.common.config import Config
-from base.common.exceptions import DockingError, MountingError, NetworkError
+from base.common.config import get_config
+from base.common.exceptions import DockingError, MountError, NetworkError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
-from base.logic.backup.sync import RsyncWrapperThread
+from base.logic.backup.synchronisation.sync_thread import SyncThread
 from base.logic.nas import Nas
 from base.logic.network_share import NetworkShare
 
@@ -32,8 +32,8 @@ class Backup:
     def __init__(self, is_maintenance_mode_on: Callable, backup_browser: BackupBrowser) -> None:
         self._is_maintenance_mode_on = is_maintenance_mode_on
         self._backup_browser = backup_browser
-        self._sync: Optional[RsyncWrapperThread] = None
-        self._config = Config("backup.json")
+        self._sync: Optional[SyncThread] = None
+        self._config = get_config("backup.json")
         self._postpone_count = 0
         self._nas = Nas()
         self._network_share = NetworkShare()
@@ -64,7 +64,7 @@ class Backup:
             LOG.error(e)
         except DockingError as e:
             LOG.error(e)
-        except MountingError as e:
+        except MountError as e:
             LOG.error(e)
         # TODO: Postpone backup
 
@@ -87,7 +87,7 @@ class Backup:
 
     def _run_backup_sequence(self) -> None:
         LOG.debug("Running backup sequence")
-        if Config("sync.json").protocol == "smb":
+        if get_config("sync.json").protocol == "smb":
             LOG.debug("Mounting data source via smb")
             if self._config.stop_services_on_nas:  # Fixme: is there a way to ask this only once?
                 self._nas.smb_backup_mode()
@@ -100,7 +100,7 @@ class Backup:
         # Todo: put IncrementalBackupPrepararor into sync-thread to be interruptable
         backup_source_directory, backup_target_directory = IncrementalBackupPreparator(self._backup_browser).prepare()
         LOG.info(f"Backing up into: {backup_target_directory}")
-        self._sync = RsyncWrapperThread(backup_target_directory, backup_source_directory)
+        self._sync = SyncThread(backup_target_directory, backup_source_directory)
         self._sync.terminated.connect(self.on_backup_finished)
         self._sync.start()
 
@@ -108,6 +108,6 @@ class Backup:
         self.hardware_disengage_request.emit()
         if self._config.stop_services_on_nas:
             self._nas.resume_services()
-        if Config("sync.json").protocol == "smb":
+        if get_config("sync.json").protocol == "smb":
             self._network_share.unmount_datasource_via_smb()
             self._nas.smb_normal_mode()

@@ -3,7 +3,8 @@ from typing import Callable, List, Optional
 
 import pyinotify
 
-from base.common.drive_inspector import DriveInspector, PartitionInfo
+from base.common.drive_inspector import DriveInspector, PartitionInfo, PartitionSignature
+from base.common.exceptions import BackupPartitionError
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -40,14 +41,15 @@ class EventHandler(pyinotify.ProcessEvent):
 class FileSystemWatcher:
     dir_events = pyinotify.IN_DELETE | pyinotify.IN_CREATE
 
-    def __init__(self, timeout_seconds: float = 10.0) -> None:
-        self._drive_inspector: DriveInspector = DriveInspector()
+    def __init__(self, backup_hdd_device_signature: PartitionSignature, timeout_seconds: float = 10.0) -> None:
+        self._drive_inspector: DriveInspector = DriveInspector(partition_signature=backup_hdd_device_signature)
         self._watch_manager: pyinotify.WatchManager = pyinotify.WatchManager()
         self._event_handler: EventHandler = EventHandler(self._set_partition_info, self._drive_inspector)
         timeout_milliseconds = timeout_seconds * 1000
         self._notifier: MyNotifier = MyNotifier(self._watch_manager, self._event_handler, timeout=timeout_milliseconds)
         self._event_handler.set_notifier_callback(self._notifier.cancel)
         self._partition_info: Optional[PartitionInfo] = None
+        self.add_watches(["/dev"])
 
     def _set_partition_info(self, info: PartitionInfo) -> None:
         self._partition_info = info
@@ -57,7 +59,7 @@ class FileSystemWatcher:
         for directory in dirs_to_watch:
             self._watch_manager.add_watch(directory, FileSystemWatcher.dir_events)
 
-    def backup_partition_info(self) -> Optional[PartitionInfo]:
+    def backup_partition_info(self) -> PartitionInfo:
         LOG.info("Try to find partition for the first time...")
         partition_info = self._drive_inspector.backup_partition_info
         if partition_info is not None:
@@ -66,6 +68,8 @@ class FileSystemWatcher:
         if self._partition_info is None:
             LOG.info("Try to find partition for the last time...")
             self._partition_info = self._drive_inspector.backup_partition_info
+        if self._partition_info is None:
+            raise BackupPartitionError("The right partition could not be found")
         return self._partition_info
 
     def _watch_until_timeout(self) -> None:
@@ -74,12 +78,6 @@ class FileSystemWatcher:
         while self._notifier.check_events():
             self._notifier.read_events()
             self._notifier.process_events()
-
-
-if __name__ == "__main__":
-    watcher = FileSystemWatcher(timeout_seconds=10)
-    watcher.add_watches(dirs_to_watch=["/dev", "/home/base"])
-    watcher.backup_partition_info()
 
 
 # # bug 1

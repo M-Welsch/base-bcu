@@ -1,7 +1,7 @@
 from pathlib import Path
 from subprocess import PIPE, Popen
 
-from base.common.config import Config
+from base.common.config import Config, get_config
 from base.common.exceptions import NetworkError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
@@ -11,7 +11,7 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class NetworkShare:
     def __init__(self) -> None:
-        self._config: Config = Config("sync.json")
+        self._config: Config = get_config("sync.json")
         self._available: HddState = HddState.unknown
 
     @property
@@ -26,10 +26,11 @@ class NetworkShare:
             pass  # exist_ok=True was intended to supress this error, howe it works in a different way
         except OSError as e:
             LOG.warning(f"strange OS-Error occured on trying to create the NAS-HDD Mountpoint: {e}")
+        nas_config = get_config("nas.json")
         command = (
             f"mount -t cifs "
-            f"-o credentials=/etc/win-credentials "
-            f"//{Config('nas.json').ssh_host}/hdd "
+            f"-o credentials={nas_config.smb_credentials_file} "
+            f"//{nas_config.smb_host}/{nas_config.smb_share_name} "
             f"{self._config.local_nas_hdd_mount_point}".split()
         )
         LOG.info(f"mount datasource with command: {command}")
@@ -55,5 +56,7 @@ class NetworkShare:
                     # No such file or directory
                     self._available = HddState.not_available
                     raise NetworkError(f"Network share not available: {line}")
+                elif "could not resolve address" in line:
+                    raise NetworkError(f"Errant IP address: {line}")
                 else:
                     LOG.debug("stderr: " + line)

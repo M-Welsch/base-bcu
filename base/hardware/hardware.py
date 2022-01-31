@@ -1,13 +1,14 @@
 from time import sleep
 from typing import Optional
 
-from base.common.config import Config
+from base.common.config import Config, get_config
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
 from base.hardware.hmi import HMI
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
+from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU, WakeupReason
 from base.logic.backup.backup_browser import BackupBrowser
 
@@ -16,11 +17,11 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Hardware:
     def __init__(self, backup_browser: BackupBrowser) -> None:
-        self._config: Config = Config("hardware.json")
+        self._config: Config = get_config("hardware.json")
         self._mechanics: Mechanics = Mechanics()
         self._power: Power = Power()
-        self._hmi: HMI = HMI()
-        self._sbu: SBU = SBU()
+        self._sbu: SBU = SBU(SbuCommunicator())
+        self._hmi: HMI = HMI(self._sbu)
         self._drive: Drive = Drive(backup_browser)
 
     def get_wakeup_reason(self) -> WakeupReason:

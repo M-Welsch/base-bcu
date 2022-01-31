@@ -1,0 +1,5 @@
+{
+    "logs_directory": {
+        "type": "pathlib.Path"
+    }
+}

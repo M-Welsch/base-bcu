@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List
 
-from base.common.config import Config
+from base.common.config import get_config
 from base.common.logger import LoggerFactory
 from base.common.ssh_interface import SSHInterface
 
@@ -10,9 +10,9 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Nas:
     def __init__(self) -> None:
-        self._config = Config("nas.json")
+        self._config = get_config("nas.json")
         self._login_data = [self._config.ssh_host, self._config.ssh_user]
-        self._protocol = Config("sync.json").protocol
+        self._protocol = get_config("sync.json").protocol
         self._services_stopped: List[str] = []
 
     def stop_services(self) -> None:

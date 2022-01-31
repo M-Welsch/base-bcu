@@ -7,8 +7,8 @@ from typing import Optional, Set
 import websockets
 from signalslot import Signal
 
-from base.common.config import Config
-from base.common.exceptions import MountingError
+from base.common.config import BoundConfig
+from base.common.exceptions import MountError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup_browser import BackupBrowser
 from base.webapp.config_data import get_config_data, update_config_data
@@ -31,10 +31,7 @@ class WebappServer(Thread):
         self._backup_browser: BackupBrowser = backup_browser
         self._start_server = websockets.serve(self.echo, "0.0.0.0", 8453)
         self._event_loop = asyncio.get_event_loop()
-        self.current_status = Optional[str]
-
-    def on_status(self, status, **kwargs):  # type: ignore
-        print(status)
+        self.current_status: Optional[str] = None
 
     async def echo(self, websocket: websockets.WebSocketServer, path: Path) -> None:
         try:
@@ -45,8 +42,6 @@ class WebappServer(Thread):
             elif message == "heartbeat?":
                 if self.current_status is not None:
                     await websocket.send(self.current_status)
-                else:
-                    pass  # send nothing
             elif message == "backup_now":
                 LOG.info("Backup requested by user")
                 # Todo: log some information about the requester
@@ -60,7 +55,7 @@ class WebappServer(Thread):
                 await websocket.send(get_config_data())
             elif message.startswith("new config: "):
                 update_config_data(message[len("new config: ") :])
-                Config.config_changed.emit()
+                BoundConfig.reload_all()
                 self.reschedule_request.emit()
             elif message.startswith("display brightness: "):
                 payload = message[len("display brightness: ") :]
@@ -92,7 +87,7 @@ class WebappServer(Thread):
             LOG.debug(f"Connection died X-P : {e}")
         except websockets.exceptions.ConnectionClosed as e:
             LOG.debug(f"Connection died :-( : {e}")
-        except MountingError as e:
+        except MountError as e:
             LOG.error(f"Mounting error occurred: {e}")  # TODO: Display error message in webapp
 
     def run(self) -> None:
