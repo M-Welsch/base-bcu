@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -63,10 +62,10 @@ class LoggerFactory:
     __file_handler: Optional[CachingFileHandler] = None
     __warning_file_handler: Optional[WarningFileHandler] = None
 
-    def __init__(self, config_path: Path, parent_logger_name: str, development_mode: bool = False) -> None:
+    def __init__(self, log_path: Path, parent_logger_name: str, development_mode: bool = False) -> None:
         """Virtually private constructor."""
         if LoggerFactory.__instance is None:
-            self._logs_directory = self.get_logs_directory(config_path)
+            self._logs_directory = log_path
             self.__class__.__parent_logger_name = parent_logger_name
             self._development_mode: bool = development_mode
             self._current_log_name: Path = Path()
@@ -78,12 +77,6 @@ class LoggerFactory:
             LoggerFactory.__instance = self
         else:
             raise RuntimeError(f"{self.__class__.__name__} is a singleton and was already instantiated!")
-
-    @staticmethod
-    def get_logs_directory(config_path: Path) -> Path:
-        with open(config_path / "base.json", "r") as cfg_file:
-            logs_directory = json.load(cfg_file)["logs_directory"]
-        return Path.cwd() / Path(logs_directory)
 
     @classmethod
     def get_last_lines(cls) -> Tuple[str, ...]:

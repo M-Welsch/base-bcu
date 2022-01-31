@@ -7,8 +7,7 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 def list_logfiles(newest_first: bool) -> List[str]:
-    cfg_path = Path("/home/base/python.base/base/config/")
-    logs_dir = LoggerFactory.get_logs_directory(cfg_path)
+    logs_dir = Path("/home/base/python.base/base/log/")
     logfiles = [file.stem for file in logs_dir.glob("**/*") if file.is_file() and not file.stem == "warnings"]
     if newest_first:
         logfiles.sort(reverse=True)
@@ -18,8 +17,7 @@ def list_logfiles(newest_first: bool) -> List[str]:
 
 
 def logfile_content(logfile_name: str, recent_line_first: bool) -> List[str]:
-    cfg_path = Path("/home/base/python.base/base/config/")
-    logs_dir = LoggerFactory.get_logs_directory(cfg_path)
+    logs_dir = Path("/home/base/python.base/base/log/")
     logfile = logs_dir / f"{logfile_name}.log"
     with open(logfile, "r") as f:
         content = f.readlines()
