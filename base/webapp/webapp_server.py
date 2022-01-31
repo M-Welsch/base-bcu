@@ -8,7 +8,7 @@ import websockets
 from signalslot import Signal
 
 from base.common.config import BoundConfig
-from base.common.exceptions import MountingError
+from base.common.exceptions import MountError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup_browser import BackupBrowser
 from base.webapp.config_data import get_config_data, update_config_data
@@ -87,7 +87,7 @@ class WebappServer(Thread):
             LOG.debug(f"Connection died X-P : {e}")
         except websockets.exceptions.ConnectionClosed as e:
             LOG.debug(f"Connection died :-( : {e}")
-        except MountingError as e:
+        except MountError as e:
             LOG.error(f"Mounting error occurred: {e}")  # TODO: Display error message in webapp
 
     def run(self) -> None:

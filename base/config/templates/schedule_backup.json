@@ -1,0 +1,22 @@
+{
+    "backup_interval": {
+        "type": "str",
+        "options": ["days", "weeks", "months"]
+    },
+    "day_of_month": {
+        "type": "int",
+        "range": {"min": 1, "max": 31}
+    },
+    "day_of_week": {
+        "type": "int",
+        "range": {"min": 0, "max": 6}
+    },
+    "hour": {
+        "type": "int",
+        "range": {"min": 0, "max": 23}
+    },
+    "minute": {
+        "type": "int",
+        "range": {"min": 0, "max": 59}
+    }
+}

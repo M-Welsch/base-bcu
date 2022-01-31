@@ -1,0 +1,15 @@
+{
+    "ssh_host": {
+        "type": "str",
+        "optional": true,
+        "characteristic": "ip"
+    },
+    "ssh_user": {
+        "type": "str",
+        "optional": true,
+        "characteristic": "linux_user"
+    },
+    "logfile_target_path": {
+        "type": "pathlib.Path"
+    }
+}

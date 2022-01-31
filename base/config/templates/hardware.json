@@ -1,0 +1,14 @@
+{
+  "hdd_spindown_time": {
+    "type": "float",
+    "range": {"min": 0, "max": 60}
+  },
+  "display_brightness": {
+    "type": "float",
+    "range": {"min": 0, "max": 100}
+  },
+  "hmi_led_brightness": {
+    "type": "float",
+    "range": {"min": 0, "max": 100}
+  }
+}

@@ -1,32 +1,50 @@
-from pathlib import Path
-from time import sleep
+import sys
+from importlib import import_module
+from typing import Generator
 
 import pytest
+from pytest_mock import MockFixture
 
-from base.common.config import Config
+sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
+from test.utils import patch_config
+
 from base.hardware.mechanics import Mechanics
 from base.hardware.pin_interface import PinInterface
 
 
 @pytest.fixture(scope="class")
-def mechanics():
-    Config.set_config_base_path(Path("/home/base/python.base/base/config/"))
+def mechanics() -> Generator[Mechanics, None, None]:
+    patch_config(Mechanics, {"maximum_docking_time": 1.5})
     yield Mechanics()
 
 
 class TestMechanics:
     @staticmethod
-    # @pytest.mark.skip(reason="Mechanics need some grease!")
-    @pytest.mark.slow
-    def test_dock(mechanics):
+    def test_dock(mechanics: Mechanics, mocker: MockFixture) -> None:
+        patched_stepper_driver_on = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_on")
+        patched_stepper_direction_docking = mocker.patch(
+            "base.hardware.pin_interface.PinInterface.stepper_direction_docking"
+        )
+        patched_stepper_step = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_step")
+        patched_stepper_driver_off = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_off")
         mechanics.dock()
-        sleep(1)
+        assert patched_stepper_driver_on.called_once_with()
+        assert patched_stepper_direction_docking.called_once_with()
+        assert patched_stepper_step.call_count == 1
+        assert patched_stepper_driver_off.called_once_with()
         assert not PinInterface.global_instance().docked_sensor_pin_high
 
     @staticmethod
-    # @pytest.mark.skip(reason="Mechanics need some grease!")
-    @pytest.mark.slow
-    def test_undock(mechanics):
+    def test_undock(mechanics: Mechanics, mocker: MockFixture) -> None:
+        patched_stepper_driver_on = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_on")
+        patched_stepper_direction_undocking = mocker.patch(
+            "base.hardware.pin_interface.PinInterface.stepper_direction_undocking"
+        )
+        patched_stepper_step = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_step")
+        patched_stepper_driver_off = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_off")
         mechanics.undock()
-        sleep(1)
+        assert patched_stepper_driver_on.called_once_with()
+        assert patched_stepper_direction_undocking.called_once_with()
+        assert patched_stepper_step.call_count == 1
+        assert patched_stepper_driver_off.called_once_with()
         assert not PinInterface.global_instance().undocked_sensor_pin_high

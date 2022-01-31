@@ -5,6 +5,8 @@
     "smb_host": "192.168.178.64",
     "smb_port": 22,
     "smb_user": "root",
+    "smb_credentials_file": "/etc/win-credentials",
+    "smb_share_name": "hdd",
     "services": [
         "smbd"
     ]

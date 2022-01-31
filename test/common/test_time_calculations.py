@@ -1,43 +1,74 @@
-from dataclasses import dataclass
+from datetime import datetime, timedelta
+from random import randint
+from typing import Optional, Type
 
 import pytest
+from dateutil.rrule import MONTHLY, WEEKLY
+from freezegun import freeze_time
+from pytest_mock import MockerFixture
 
-from base.common.time_calculations import TimeCalculator
+import base.common.time_calculations as tc
+from base.common.config import Config
+from base.common.exceptions import ConfigValidationError
 
 
-def test_validate_config():
-    @dataclass
-    class Config:
-        backup_frequency = "months"
-        day_of_month = 12
-        day_of_week = 6
-        hour = 22
-        minute = 13
-        second = 12
+def test_next_backup(mocker: MockerFixture) -> None:
+    nearly_now = datetime.now()
+    plan = tc._Plan(freq=WEEKLY, bymonthday=None, byweekday=0, byhour=11, byminute=22)
+    patched_plan_from_config = mocker.patch("base.common.time_calculations._plan_from_config", return_value=plan)
+    config = Config({})
+    next_backup_time = tc.next_backup(config)
+    assert patched_plan_from_config.called_once_with(config)
+    assert next_backup_time > nearly_now
 
-    config = Config()
-    time_calculator = TimeCalculator()
 
-    for frequency in time_calculator._frequencies:
-        config.backup_frequency = frequency
-        time_calculator._validate_config(config)
+def test_next_backup_timestring(mocker: MockerFixture) -> None:
+    patched_next_backup = mocker.patch("base.common.time_calculations.next_backup", return_value=datetime.now())
+    config = Config({})
+    timestring = tc.next_backup_timestring(config)
+    assert patched_next_backup.called_once_with(config)
+    assert len(timestring) == 16
 
-    with pytest.raises(AssertionError):
-        config.day_of_month = 32
-        time_calculator._validate_config(config)
 
-    with pytest.raises(AssertionError):
-        config.day_of_week = 7
-        time_calculator._validate_config(config)
+@freeze_time("2021-01-03")
+def test_next_backup_seconds(mocker: MockerFixture) -> None:
+    patched_next_backup = mocker.patch(
+        "base.common.time_calculations.next_backup", return_value=datetime.now() + timedelta(hours=1)
+    )
+    config = Config(
+        {
+            "backup_frequency": "days",
+            "day_of_month": 1,
+            "day_of_week": 2,
+            "hour": 3,
+            "minute": 4,
+            "second": 5,
+        }
+    )
+    seconds = tc.next_backup_seconds(config)
+    assert patched_next_backup.called_once_with(config)
+    assert seconds == 3600
 
-    with pytest.raises(AssertionError):
-        config.hour = 24
-        time_calculator._validate_config(config)
 
-    with pytest.raises(AssertionError):
-        config.minute = 60
-        time_calculator._validate_config(config)
-
-    with pytest.raises(AssertionError):
-        config.second = 60
-        time_calculator._validate_config(config)
+@pytest.mark.parametrize(
+    "config_frequency, dateutil_weekly, dateutil_monthly",
+    [("days", None, None), ("weeks", WEEKLY, None), ("months", None, MONTHLY)],
+)
+def test_plan_from_config_days(config_frequency: str, dateutil_weekly: int, dateutil_monthly: int) -> None:
+    config = Config(
+        {
+            "backup_frequency": config_frequency,
+            "day_of_month": 1,
+            "day_of_week": 2,
+            "hour": 3,
+            "minute": 4,
+            "second": 5,
+        }
+    )
+    plan = tc._plan_from_config(config)
+    frequency = tc.BACKUP_INTERVALS[config.backup_frequency]
+    assert plan.freq == frequency
+    assert plan.bymonthday == dateutil_monthly
+    assert plan.byweekday == dateutil_weekly
+    assert plan.byhour == config.hour
+    assert plan.byminute == config.minute

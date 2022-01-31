@@ -86,9 +86,10 @@ class TestIncrementalBackupPreperator:
             assert Path(recent_bu_path).is_dir()
             assert Path(new_bu_path).is_dir()
             assert dircmp(recent_bu_path, new_bu_path).diff_files == []
-            recent_bu_size = BackupBrowser().get_backup_size(recent_bu_path)
-            new_bu_size = BackupBrowser().get_backup_size(new_bu_path)
-            total_size = BackupBrowser().get_backup_size(BoundConfig("sync.json").local_backup_target_location)
+            backup_browser = BackupBrowser()
+            recent_bu_size = backup_browser.get_backup_size(recent_bu_path)
+            new_bu_size = backup_browser.get_backup_size(new_bu_path)
+            total_size = backup_browser.get_backup_size(BoundConfig("sync.json").local_backup_target_location)
             size_difference = abs(recent_bu_size - new_bu_size)
             print(f"size of recent backup: {recent_bu_size}, new backup: {new_bu_size}. Diff = {size_difference}")
             assert recent_bu_size == new_bu_size

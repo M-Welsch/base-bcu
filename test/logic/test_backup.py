@@ -33,7 +33,7 @@ def backup(tmpdir: path.local) -> Generator[Backup, None, None]:
     with open(config_path / "drive.json", "r") as src, open(config_test_path / "drive.json", "w") as dst:
         nas_config_data = json.load(src)
         json.dump(nas_config_data, dst)
-    BoundConfig.set_config_base_path(config_test_path)
+    BoundConfig.set_config_base_path(config_test_path)  # Fixme
     yield Backup(lambda: False, BackupBrowser())
     print("source contents:", os.listdir(str(source)))
     print("target contents:", os.listdir(str(target)))

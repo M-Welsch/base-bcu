@@ -1,0 +1,6 @@
+{
+    "shutdown_delay_minutes": {
+    "type": "float",
+    "range": {"min": 1, "max": 240}
+  }
+}

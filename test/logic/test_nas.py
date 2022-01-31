@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Generator
 
+import _pytest
 import pytest
 
 from base.common.config import BoundConfig
@@ -9,7 +10,7 @@ from base.logic.nas import Nas
 
 
 @pytest.fixture(scope="class")
-def nas(tmpdir_factory: pytest.TempdirFactory) -> Generator[Nas, None, None]:
+def nas(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[Nas, None, None]:
     tmpdir = tmpdir_factory.mktemp("nas_test_config_dir")
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))

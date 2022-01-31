@@ -1,0 +1,35 @@
+{
+    "ssh_host": {
+        "type": "str",
+        "characteristic": "ip"
+    },
+    "ssh_port": {
+        "type": "int",
+        "range": {"min": 0, "max": 65535}
+    },
+    "ssh_user": {
+        "type": "str",
+        "characteristic": "linux_user"
+    },
+    "smb_host": {
+        "type": "str",
+        "characteristic": "ip"
+    },
+    "smb_port": {
+        "type": "int",
+        "range": {"min": 0, "max": 65535}
+    },
+    "smb_user": {
+        "type": "str",
+        "characteristic": "linux_user"
+    },
+    "smb_credentials_file": {
+        "type": "pathlib.Path"
+    },
+    "smb_share_name": {
+        "type": "str"
+    },
+    "services": {
+        "type": "list"
+    }
+}

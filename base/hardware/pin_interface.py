@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from enum import IntEnum
 from time import sleep
 from typing import Optional, cast
 
 import RPi.GPIO as GPIO
+
+from base.hardware.pins import Pins
 
 
 class PinInterface:
@@ -15,15 +16,14 @@ class PinInterface:
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
             GPIO.setmode(GPIO.BOARD)
+            cls.__instance.step_interval = 0.0005
+            cls.__instance._initialize_pins()
         assert isinstance(cls.__instance, PinInterface)
-        # this kind of disables the ramp. It sounds best ...
-        cls.__instance.step_interval = 0.0005
-        cls.__instance._initialize_pins()
         return cls.__instance
 
     def __init__(self) -> None:
         self.step_interval: float = 0.0005
-        raise Exception("This class is a singleton. Use global_instance() instead!")
+        raise RuntimeError("This class is a singleton. Use global_instance() instead!")
 
     def _initialize_pins(self) -> None:
         GPIO.setup(Pins.sw_hdd_on, GPIO.OUT)
@@ -41,8 +41,9 @@ class PinInterface:
         GPIO.setup(Pins.sbu_program_ncommunicate, GPIO.OUT)
         GPIO.setup(Pins.en_sbu_link, GPIO.OUT)
         GPIO.setup(Pins.heartbeat, GPIO.OUT)
-        self.set_sbu_serial_path_to_communication()
-        self.enable_receiving_messages_from_sbu()
+        # TODO: Can't we delete these two?
+        # self.set_sbu_serial_path_to_communication()
+        # self.enable_receiving_messages_from_sbu()
 
     @staticmethod
     def cleanup() -> None:
@@ -153,19 +154,3 @@ class PinInterface:
     @staticmethod
     def set_heartbeat_low() -> None:
         GPIO.output(Pins.heartbeat, GPIO.LOW)
-
-
-class Pins(IntEnum):
-    sw_hdd_on = 7
-    sw_hdd_off = 18
-    nsensor_docked = 13
-    nsensor_undocked = 11
-    stepper_step = 15
-    stepper_dir = 19
-    stepper_nreset = 12
-    button_0 = 21
-    button_1 = 23
-    hw_rev2_nrev3 = 26
-    sbu_program_ncommunicate = 16
-    en_sbu_link = 22
-    heartbeat = 24

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 
@@ -13,7 +15,7 @@ class UndockingError(BackupserverException):
     pass
 
 
-class MountingError(BackupserverException):
+class MountError(BackupserverException):
     pass
 
 
@@ -76,7 +78,7 @@ class SbuNotAvailableError(Exception):
     """Raise if UART interface is not found."""
 
 
-class SerialWrapperError(Exception):
+class SerialInterfaceError(Exception):
     pass
 
 
@@ -88,3 +90,27 @@ class ComponentOffError(Exception):
         self.component: str = component
         self.avoids_backup: bool = avoids_backup
         self.avoids_shutdown: bool = avoids_shutdown
+
+
+class BackupPartitionError(Exception):
+    pass
+
+
+class RemoteDirectoryException(Exception):
+    pass
+
+
+class LocalDirectoryException(Exception):
+    pass
+
+
+class SbuNoResponseError(SbuCommunicationTimeout):
+    pass
+
+
+class ConfigValidationError(Exception):
+    """Invalid config value exception."""
+
+
+class ConfigSaveError(Exception):
+    pass

@@ -3,7 +3,7 @@ import re
 import socket
 from time import sleep
 
-from base.common.config import BoundConfig, Config
+from base.common.config import Config, get_config
 from base.common.debug_utils import dump_ifconfig
 from base.common.exceptions import NasNotCorrectError, NasNotMountedError, NetworkError
 from base.common.logger import LoggerFactory
@@ -14,8 +14,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class NasFinder:
     def __init__(self) -> None:
-        self._config: Config = BoundConfig("sync.json")
-        self._nas_config: Config = BoundConfig("nas.json")
+        self._config: Config = get_config("sync.json")
+        self._nas_config: Config = get_config("nas.json")
 
     def assert_nas_available(self) -> None:
         target_ip = self._nas_config.ssh_host

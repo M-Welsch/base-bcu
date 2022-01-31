@@ -1,0 +1,35 @@
+{
+    "backup_hdd_file_system": {
+        "type": "str",
+        "options": ["ext2", "ext3", "ext4", "ntfs-3g"]
+    },
+    "backup_hdd_mount_point": {
+        "type": "pathlib.Path"
+    },
+    "backup_hdd_spinup_timeout": {
+        "type": "float",
+        "range": {"min": 5, "max": 60}
+    },
+    "backup_hdd_unmount_trials": {
+        "type": "int",
+        "range": {"min": 0, "max": 10}
+    },
+    "backup_hdd_unmount_waiting_secs": {
+        "type": "float",
+        "range": {"min": 0, "max": 60}
+    },
+    "backup_hdd_device_signature": {
+        "model_name": {
+            "type": "str"
+        },
+        "serial_number": {
+            "type": "str"
+        },
+        "bytes_size": {
+            "type": "int"
+        },
+        "partition_index": {
+            "type": "int"
+        }
+    }
+}
