@@ -7,7 +7,7 @@ from typing import Generator
 import pytest
 from py import path
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.logic.schedule import Schedule
 
 
@@ -29,7 +29,7 @@ def schedule(tmpdir: path.local) -> Generator[Schedule, None, None]:
         schedule_data["minute"] = now.minute
         schedule_data["second"] = (now.second + 1) % 60
         json.dump(schedule_data, dst)
-    Config.set_config_base_path(config_test_path)
+    BoundConfig.set_config_base_path(config_test_path)
     yield Schedule()
 
 

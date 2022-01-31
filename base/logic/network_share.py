@@ -1,7 +1,7 @@
 from pathlib import Path
 from subprocess import PIPE, Popen
 
-from base.common.config import Config
+from base.common.config import BoundConfig, Config
 from base.common.exceptions import NetworkError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
@@ -11,7 +11,7 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class NetworkShare:
     def __init__(self) -> None:
-        self._config: Config = Config("sync.json")
+        self._config: Config = BoundConfig("sync.json")
         self._available: HddState = HddState.unknown
 
     @property
@@ -29,7 +29,7 @@ class NetworkShare:
         command = (
             f"mount -t cifs "
             f"-o credentials=/etc/win-credentials "
-            f"//{Config('nas.json').ssh_host}/hdd "
+            f"//{BoundConfig('nas.json').ssh_host}/hdd "
             f"{self._config.local_nas_hdd_mount_point}".split()
         )
         LOG.info(f"mount datasource with command: {command}")

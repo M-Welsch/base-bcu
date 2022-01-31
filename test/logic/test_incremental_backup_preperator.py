@@ -17,7 +17,7 @@ path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # print('\n'.join(sys.path))
 sys.path.append(path_to_module)
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
 
@@ -50,7 +50,7 @@ def incremental_backup_preparator(
             "remote_backup_source_location": "/mnt/HDD/testfiles",
         },
     )
-    Config.set_config_base_path(config_dir)
+    BoundConfig.set_config_base_path(config_dir)
     yield IncrementalBackupPreparator(BackupBrowser())
 
 
@@ -88,7 +88,7 @@ class TestIncrementalBackupPreperator:
             assert dircmp(recent_bu_path, new_bu_path).diff_files == []
             recent_bu_size = BackupBrowser().get_backup_size(recent_bu_path)
             new_bu_size = BackupBrowser().get_backup_size(new_bu_path)
-            total_size = BackupBrowser().get_backup_size(Config("sync.json").local_backup_target_location)
+            total_size = BackupBrowser().get_backup_size(BoundConfig("sync.json").local_backup_target_location)
             size_difference = abs(recent_bu_size - new_bu_size)
             print(f"size of recent backup: {recent_bu_size}, new backup: {new_bu_size}. Diff = {size_difference}")
             assert recent_bu_size == new_bu_size

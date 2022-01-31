@@ -1,7 +1,7 @@
 from time import sleep
 from typing import Optional
 
-from base.common.config import Config
+from base.common.config import BoundConfig, Config
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
@@ -16,7 +16,7 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Hardware:
     def __init__(self, backup_browser: BackupBrowser) -> None:
-        self._config: Config = Config("hardware.json")
+        self._config: Config = BoundConfig("hardware.json")
         self._mechanics: Mechanics = Mechanics()
         self._power: Power = Power()
         self._hmi: HMI = HMI()

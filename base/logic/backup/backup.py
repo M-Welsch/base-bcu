@@ -3,7 +3,7 @@ from typing import Optional
 
 from signalslot import Signal
 
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.common.exceptions import DockingError, MountingError, NetworkError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup_browser import BackupBrowser
@@ -32,7 +32,7 @@ class Backup:
         self._is_maintenance_mode_on = is_maintenance_mode_on
         self._backup_browser = backup_browser
         self._sync: Optional[RsyncWrapperThread] = None
-        self._config = Config("backup.json")
+        self._config = BoundConfig("backup.json")
         self._postpone_count = 0
         self._nas = Nas()
         self._network_share = NetworkShare()
@@ -86,7 +86,7 @@ class Backup:
 
     def _run_backup_sequence(self) -> None:
         LOG.debug("Running backup sequence")
-        if Config("sync.json").protocol == "smb":
+        if BoundConfig("sync.json").protocol == "smb":
             LOG.debug("Mounting data source via smb")
             if self._config.stop_services_on_nas:  # Fixme: is there a way to ask this only once?
                 self._nas.smb_backup_mode()
@@ -107,6 +107,6 @@ class Backup:
         self.hardware_disengage_request.emit()
         if self._config.stop_services_on_nas:
             self._nas.resume_services()
-        if Config("sync.json").protocol == "smb":
+        if BoundConfig("sync.json").protocol == "smb":
             self._network_share.unmount_datasource_via_smb()
             self._nas.smb_normal_mode()
