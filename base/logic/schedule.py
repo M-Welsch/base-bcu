@@ -57,11 +57,10 @@ class Schedule:
     def _reconfig(new_config: Any) -> None:
         LOG.info(f"Reconfiguring according to {new_config}...")  # TODO: actually do something with new_config
 
-    def set_shutdown_timer(self, i_know_what_i_am_doing: bool = False) -> None:
-        if i_know_what_i_am_doing:
-            delay = self._config.shutdown_delay_minutes * 60
-            self._shutdown_job = self._scheduler.enter(delay, 1, self.shutdown_request.emit)
-            # TODO: delay shutdown for 5 minutes or so on every event from webapp
+    def on_shutdown_requested(self, **kwargs):  # type: ignore
+        delay = self._config.shutdown_delay_minutes * 60
+        self._shutdown_job = self._scheduler.enter(delay, 1, self.shutdown_request.emit)
+        # TODO: delay shutdown for 5 minutes or so on every event from webapp
 
     def on_stop_shutdown_timer_request(self, **kwargs):  # type: ignore
         if self._shutdown_job is not None and self._shutdown_job in self._scheduler.queue:

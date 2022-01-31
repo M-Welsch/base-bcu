@@ -127,7 +127,7 @@ class BaSeApplication:
 
     def schedule_shutdown_timer(self) -> None:
         if not self._backup.backup_running:
-            self._schedule.set_shutdown_timer(i_know_what_i_am_doing=True)
+            self._schedule.on_shutdown_requested()
 
     def finalize_service(self) -> None:
         self._hardware.disengage()
