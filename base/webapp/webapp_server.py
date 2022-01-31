@@ -31,10 +31,7 @@ class WebappServer(Thread):
         self._backup_browser: BackupBrowser = backup_browser
         self._start_server = websockets.serve(self.echo, "0.0.0.0", 8453)
         self._event_loop = asyncio.get_event_loop()
-        self.current_status = Optional[str]
-
-    def on_status(self, status, **kwargs):  # type: ignore
-        print(status)
+        self.current_status: Optional[str] = None
 
     async def echo(self, websocket: websockets.WebSocketServer, path: Path) -> None:
         try:
@@ -45,8 +42,6 @@ class WebappServer(Thread):
             elif message == "heartbeat?":
                 if self.current_status is not None:
                     await websocket.send(self.current_status)
-                else:
-                    pass  # send nothing
             elif message == "backup_now":
                 LOG.info("Backup requested by user")
                 # Todo: log some information about the requester
