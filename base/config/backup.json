@@ -1,19 +1,8 @@
 {
-    "retrials_after_network_unreachable": 3,
-    "seconds_between_network_reachout_retrials": 2,
-    "retrials_after_nas_unreachable": 3,
-    "seconds_between_nas_reachout_retrials": 2,
-    "retrials_after_nas_hdd_unavailable": 3,
-    "seconds_between_nas_hdd_mount_retrials": 2,
-    "retrials_after_hardware_not_ready": 3,
-    "seconds_between_hardware_ready_checks": 2,
-    "retrials_after_hdd_not_ready": 3,
-    "seconds_between_hdd_ready_checks": 2,
-    "stop_services_on_nas": false,
     "use_pre_backup_hook": false,
-    "pre_backup_hook": null,
     "use_post_backup_hook": false,
-    "post_backup_hook": null,
     "pre_backup_hook_path": "undefined this should be none",
-    "post_backup_hook_path": "undefined this too"
+    "post_backup_hook_path": "undefined this too",
+    "low_disk_space_threshold_bytes": 1e8,
+    "enough_disk_space_threshold_bytes":
 }
