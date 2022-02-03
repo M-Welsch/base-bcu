@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from re import findall
 from subprocess import PIPE, Popen
-from typing import IO, Optional, Tuple
+from typing import IO, List, Optional, Tuple
 
 from base.common.config import Config, get_config
 from base.common.exceptions import NewBuDirCreationError
@@ -14,6 +14,10 @@ from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.nas import Nas
 
 LOG = LoggerFactory.get_logger(__name__)
+
+
+class BackupSizeRetrivalError(Exception):
+    pass
 
 
 class IncrementalBackupPreparator:
@@ -33,12 +37,21 @@ class IncrementalBackupPreparator:
         return backup_source, backup_target
 
     def _free_space_on_backup_hdd_if_necessary(self) -> None:
-        while not self.enough_space_for_full_backup():
+        space_needed = self._obtain_size_of_next_backup_increment()
+        while not self.enough_space_for_full_backup(space_needed):
             self.delete_oldest_backup()
 
-    def enough_space_for_full_backup(self) -> bool:
+    def _obtain_size_of_next_backup_increment(self) -> int:
+        p = Popen("rsync -r --dry-run --stats ...", stdout=PIPE)  # Todo: finish command with configurability and stuff
+        try:
+            lines: List[str] = [l.decode() for l in p.stdout.readlines() if l.startswith(b"Total transferred file size")]  # type: ignore
+            line = lines[0]
+            return int("".join(c for c in line if c.isdigit()))
+        except (IndexError, ValueError, AttributeError) as e:
+            raise BackupSizeRetrivalError from e
+
+    def enough_space_for_full_backup(self, space_needed_for_full_bu: int) -> bool:
         free_space_on_bu_hdd = self._obtain_free_space_on_backup_hdd()
-        space_needed_for_full_bu = self.space_occupied_by_backup_source_data()
         LOG.info(f"Space free on BU HDD: {free_space_on_bu_hdd}, Space needed: {space_needed_for_full_bu}")
         return free_space_on_bu_hdd > space_needed_for_full_bu
 

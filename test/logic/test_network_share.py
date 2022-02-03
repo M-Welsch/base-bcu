@@ -129,19 +129,3 @@ class TestNetworkShare:
         with pytest.raises(NetworkError):
             network_share.mount_datasource_via_smb()
         update_conf(nas_cfg, {"smb_host": orig_smb_host})
-
-    @staticmethod
-    @pytest.mark.skip
-    def test_mount_datasource_via_smb(network_share: NetworkShare) -> None:
-        nas = Nas()
-        nas.smb_backup_mode()
-        network_share.mount_datasource_via_smb()
-        assert nas.correct_smb_conf("backupmode")
-
-    @staticmethod
-    @pytest.mark.skip
-    def test_unmount_datasource_via_smb(network_share: NetworkShare) -> None:
-        nas = Nas()
-        nas.smb_normal_mode()
-        network_share.unmount_datasource_via_smb()
-        assert nas.correct_smb_conf("normalmode")

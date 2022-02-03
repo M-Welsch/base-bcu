@@ -27,22 +27,4 @@ def nas(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[Nas, None, N
 
 
 class TestNas:
-    @staticmethod
-    def test_smb_backup_mode(nas: Nas) -> None:
-        nas.smb_backup_mode()
-
-    @staticmethod
-    def test_smb_normal_mode(nas: Nas) -> None:
-        nas.smb_normal_mode()
-
-    @staticmethod
-    def test_stopping_services(nas: Nas) -> None:
-        nas.stop_services()
-
-    @staticmethod
-    def test_resume_services(nas: Nas) -> None:
-        nas.resume_services()
-
-    @staticmethod
-    def test_correct_smb_conf(nas: Nas) -> None:
-        assert nas.correct_smb_conf()
+    pass
