@@ -11,6 +11,7 @@ from base.common.exceptions import NewBuDirCreationError
 from base.common.logger import LoggerFactory
 from base.common.ssh_interface import SSHInterface
 from base.logic.backup.backup_browser import BackupBrowser
+from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 from base.logic.nas import Nas
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -28,21 +29,23 @@ class IncrementalBackupPreparator:
         self._new_backup_folder: Optional[Path] = None
 
     def prepare(self) -> Tuple[Path, Path]:
-        self._free_space_on_backup_hdd_if_necessary()
         backup_source = self._backup_source_directory()
         most_recent_backup = self._newest_backup_dir_path()
         backup_target = self._create_folder_for_backup()
+        self._free_space_on_backup_hdd_if_necessary(backup_target, backup_source)
         if most_recent_backup:
             self._copy_newest_backup_with_hardlinks(most_recent_backup, backup_target)
         return backup_source, backup_target
 
-    def _free_space_on_backup_hdd_if_necessary(self) -> None:
-        space_needed = self._obtain_size_of_next_backup_increment()
+    def _free_space_on_backup_hdd_if_necessary(self, local_target_location: Path, source_location: Path) -> None:
+        space_needed = self._obtain_size_of_next_backup_increment(local_target_location, source_location)
         while not self.enough_space_for_full_backup(space_needed):
             self.delete_oldest_backup()
 
-    def _obtain_size_of_next_backup_increment(self) -> int:
-        p = Popen("rsync -r --dry-run --stats ...", stdout=PIPE)  # Todo: finish command with configurability and stuff
+    @staticmethod
+    def _obtain_size_of_next_backup_increment(local_target_location: Path, source_location: Path) -> int:
+        cmd = RsyncCommand().compose_rsync_command(local_target_location, source_location, dry=True)
+        p = Popen(cmd, stdout=PIPE)
         try:
             lines: List[str] = [l.decode() for l in p.stdout.readlines() if l.startswith(b"Total transferred file size")]  # type: ignore
             line = lines[0]

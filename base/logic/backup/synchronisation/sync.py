@@ -10,6 +10,7 @@ from typing import Generator, List, Optional, Type
 
 from base.common.config import get_config
 from base.common.logger import LoggerFactory
+from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 from base.logic.backup.synchronisation.rsync_patterns import Patterns
 from base.logic.backup.synchronisation.sync_status import SyncStatus
 
@@ -21,7 +22,7 @@ class Sync:
         self._sync_config = get_config("sync.json")
         self._nas_config = get_config("nas.json")
         self._local_target_location: Path = local_target_location
-        self._command: List[str] = self._compose_rsync_command(local_target_location, source_location)
+        self._command: List[str] = RsyncCommand().compose_rsync_command(local_target_location, source_location)
         self._process: Optional[Popen] = None
         self._status: SyncStatus = SyncStatus()
 
@@ -49,22 +50,6 @@ class Sync:
             self.terminate()
         except ProcessLookupError:
             pass
-
-    def _compose_rsync_command(self, local_target_location: Path, source_location: Path) -> List[str]:
-        host = self._nas_config.ssh_host
-        user = self._nas_config.ssh_user
-        protocol = self._sync_config.protocol
-        ssh_keyfile_path = self._sync_config.ssh_keyfile_path
-        command = "sudo rsync -avH".split()
-        if protocol == "smb":
-            command.extend(f"{source_location}/ {local_target_location}".split())
-        else:
-            command.append("-e")
-            command.append(f"ssh -i {ssh_keyfile_path}")
-            command.extend(f"{user}@{host}:{source_location}/ {local_target_location}".split())
-        command.extend("--outbuf=N --info=progress2".split())
-        LOG.info(f"About to sync with: {command}")
-        return command
 
     def _output_generator(self) -> Generator[SyncStatus, None, None]:
         assert isinstance(self._process, Popen)
