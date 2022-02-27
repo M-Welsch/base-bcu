@@ -16,13 +16,13 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Hardware:
-    def __init__(self, backup_browser: BackupBrowser) -> None:
+    def __init__(self) -> None:
         self._config: Config = get_config("hardware.json")
         self._mechanics: Mechanics = Mechanics()
         self._power: Power = Power()
         self._sbu: SBU = SBU(SbuCommunicator())
         self._hmi: HMI = HMI(self._sbu)
-        self._drive: Drive = Drive(backup_browser)
+        self._drive: Drive = Drive()
 
     def get_wakeup_reason(self) -> WakeupReason:
         return self._sbu.request_wakeup_reason()

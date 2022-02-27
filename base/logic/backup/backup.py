@@ -6,7 +6,6 @@ from signalslot import Signal
 from base.common.config import get_config
 from base.common.exceptions import DockingError, MountError, NetworkError
 from base.common.logger import LoggerFactory
-from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
 from base.logic.backup.synchronisation.sync_thread import SyncThread
 from base.logic.nas import Nas
@@ -29,9 +28,8 @@ class Backup:
     stop_shutdown_timer_request = Signal()
     backup_finished_notification = Signal()
 
-    def __init__(self, is_maintenance_mode_on: Callable, backup_browser: BackupBrowser) -> None:
+    def __init__(self, is_maintenance_mode_on: Callable) -> None:
         self._is_maintenance_mode_on = is_maintenance_mode_on
-        self._backup_browser = backup_browser
         self._sync: Optional[SyncThread] = None
         self._config = get_config("backup.json")
         self._postpone_count = 0
@@ -94,7 +92,7 @@ class Backup:
             LOG.debug("Don't do backup via smb")
         self.hardware_engage_request.emit()
         # Todo: put IncrementalBackupPrepararor into sync-thread to be interruptable
-        backup_source_directory, backup_target_directory = IncrementalBackupPreparator(self._backup_browser).prepare()
+        backup_source_directory, backup_target_directory = IncrementalBackupPreparator().prepare()
         LOG.info(f"Backing up into: {backup_target_directory}")
         self._sync = SyncThread(backup_target_directory, backup_source_directory)
         self._sync.terminated.connect(self.on_backup_finished)

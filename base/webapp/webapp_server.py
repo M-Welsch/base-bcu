@@ -25,10 +25,9 @@ class WebappServer(Thread):
     display_brightness_change = Signal(args=["brightness"])
     display_text = Signal(args=["text"])
 
-    def __init__(self, codebook: Set[str], backup_browser: BackupBrowser) -> None:
+    def __init__(self, codebook: Set[str]) -> None:
         super().__init__()
         self._codebook = codebook
-        self._backup_browser: BackupBrowser = backup_browser
         self._start_server = websockets.serve(self.echo, "0.0.0.0", 8453)
         self._event_loop = asyncio.get_event_loop()
         self.current_status: Optional[str] = None
@@ -68,7 +67,7 @@ class WebappServer(Thread):
                 # Todo: äöü etc are displayed strangely
                 self.display_text.emit(text=payload)
             elif message.startswith("backup_index"):
-                await websocket.send(json.dumps(self._backup_browser.index))
+                await websocket.send(json.dumps(BackupBrowser().index))
             elif message.startswith("logfile_index"):
                 await websocket.send(json.dumps(list_logfiles(newest_first=True)))
             elif message.startswith("request_logfile"):

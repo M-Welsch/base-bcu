@@ -23,7 +23,7 @@ class MockDrive(Drive):
         backup_browser: BackupBrowser,
         virtual_hard_drive_location: Path,
     ):
-        super().__init__(backup_browser)
+        super().__init__()
         self._virtual_hard_drive_location = virtual_hard_drive_location
 
     def _get_partition_info_or_raise(self) -> PartitionInfo:

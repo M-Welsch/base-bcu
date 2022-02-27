@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from base.common.config import get_config
 from base.common.logger import LoggerFactory
@@ -12,7 +12,7 @@ class RsyncCommand:
         self._sync_config = get_config("sync.json")
         self._nas_config = get_config("nas.json")
 
-    def compose_rsync_command(self, local_target_location: Path, source_location: Path, dry: bool = False) -> List[str]:
+    def compose(self, local_target_location: Path, source_location: Path, dry: bool = False) -> List[str]:
         cmd = "sudo rsync -avH --outbuf=N --info=progress2".split()
         cmd.extend(self._protocol_specific(local_target_location, source_location))
         cmd.extend(self._dry_run(dry))

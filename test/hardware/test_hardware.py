@@ -13,7 +13,7 @@ from base.logic.backup.backup_browser import BackupBrowser
 @pytest.fixture(scope="class")
 def hardware() -> Generator[Hardware, None, None]:
     BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config/"))
-    yield Hardware(BackupBrowser())
+    yield Hardware()
 
 
 class TestMechanics:

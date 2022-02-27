@@ -33,9 +33,9 @@ def test_compose_rsync_command(mocker: MockFixture, dry: Optional[bool], dry_com
     source = Path()
     target = Path()
     if dry:
-        cmd = rc.compose_rsync_command(source, target, dry)
+        cmd = rc.compose(source, target, dry)
     else:
-        cmd = rc.compose_rsync_command(source, target)
+        cmd = rc.compose(source, target)
     assert cmd == [*"sudo rsync -avH --outbuf=N --info=progress2".split(), *prot_specific, *dry_run]
     assert mocked_protocol_specific.called_once_with(source, target)
     assert mocked_dry_run.called_once_with(dry_command)

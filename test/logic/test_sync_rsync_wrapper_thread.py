@@ -22,7 +22,7 @@ class SyncMock(Sync):
     def pid(self) -> int:
         return self._pid
 
-    def __enter__(self) -> Generator[str, None, None]:
+    def __enter__(self) -> Generator[str, None, None]:  # type: ignore  # TODO: fix SyncMock
         generator = (i for i in ["first", "second"])
         yield from generator
 
@@ -44,7 +44,7 @@ class SyncMockLoooongLoop(Sync):
     def pid(self) -> int:
         return self._pid
 
-    def __enter__(self) -> Generator[int, None, None]:
+    def __enter__(self) -> Generator[int, None, None]:  # type: ignore  # TODO: fix SyncMock
         generator = (i for i in range(100000))  # long enough so the terminate can be called while busy
         while not self._exit_flag:
             yield next(generator)

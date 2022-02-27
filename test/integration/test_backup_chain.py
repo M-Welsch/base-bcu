@@ -36,9 +36,8 @@ def make_base_application() -> BaSeApplication:
     base_app._config = BoundConfig("base.json")
     # base_app._setup_logger() # don't use it here! Otherwise everything will be logged twice.
     base_app._maintenance_mode = MaintenanceMode()
-    base_app._backup_browser = BackupBrowser()
-    base_app._hardware = Hardware(base_app._backup_browser)
-    base_app._backup = Backup(base_app._maintenance_mode.is_on, backup_browser=base_app._backup_browser)
+    base_app._hardware = Hardware()
+    base_app._backup = Backup(base_app._maintenance_mode.is_on)
     base_app._schedule = Schedule()
     base_app._maintenance_mode.set_connections(
         [(base_app._schedule.backup_request, base_app._backup.on_backup_request)]

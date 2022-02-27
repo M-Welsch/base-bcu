@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 from filecmp import dircmp
 from pathlib import Path
+from subprocess import PIPE, Popen
 from time import sleep
 from typing import Any, Generator
 
@@ -19,7 +20,7 @@ sys.path.append(path_to_module)
 
 from base.common.config import BoundConfig
 from base.logic.backup.backup_browser import BackupBrowser
-from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
+from base.logic.backup.incremental_backup_preparator import BackupTarget, IncrementalBackupPreparator
 
 
 def update_conf(file_path: Path, updates: Any) -> None:
@@ -51,24 +52,10 @@ def incremental_backup_preparator(
         },
     )
     BoundConfig.set_config_base_path(config_dir)
-    yield IncrementalBackupPreparator(BackupBrowser())
+    yield IncrementalBackupPreparator()
 
 
 class TestIncrementalBackupPreperator:
-    @staticmethod
-    def test_space_occupied_on_nas_hdd(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
-        used_space_on_nas = incremental_backup_preparator.space_occupied_on_nas_hdd()
-        print(f"used_space_on_nas: {used_space_on_nas}")
-        assert type(used_space_on_nas) == int
-        assert used_space_on_nas > 0
-
-    @staticmethod
-    def test_space_occupied_by_backup_source_data(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
-        space_occupied = incremental_backup_preparator.space_occupied_by_backup_source_data()
-        print(f"space_occupied={space_occupied}")
-        assert type(space_occupied) == int
-        assert space_occupied > 0
-
     @staticmethod
     def test_space_available_on_bu_hdd(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
         free_space_on_bu_hdd = incremental_backup_preparator._obtain_free_space_on_backup_hdd()
@@ -79,17 +66,16 @@ class TestIncrementalBackupPreperator:
     @staticmethod
     def test_copy_newest_backup_with_hardlinks(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
         sleep(1)  # important!
-        recent_bu_path = incremental_backup_preparator._newest_backup_dir_path()
-        new_bu_path = incremental_backup_preparator._create_folder_for_backup()
+        recent_bu_path = BackupBrowser().newest_backup
+        new_bu_path = BackupTarget.create_in(incremental_backup_preparator._config_sync.local_backup_target_locationy)
         if recent_bu_path and new_bu_path:
             incremental_backup_preparator._copy_newest_backup_with_hardlinks(recent_bu_path, new_bu_path)
             assert Path(recent_bu_path).is_dir()
             assert Path(new_bu_path).is_dir()
             assert dircmp(recent_bu_path, new_bu_path).diff_files == []
-            backup_browser = BackupBrowser()
-            recent_bu_size = backup_browser.get_backup_size(recent_bu_path)
-            new_bu_size = backup_browser.get_backup_size(new_bu_path)
-            total_size = backup_browser.get_backup_size(BoundConfig("sync.json").local_backup_target_location)
+            recent_bu_size = get_backup_size(recent_bu_path)
+            new_bu_size = get_backup_size(new_bu_path)
+            total_size = get_backup_size(BoundConfig("sync.json").local_backup_target_location)
             size_difference = abs(recent_bu_size - new_bu_size)
             print(f"size of recent backup: {recent_bu_size}, new backup: {new_bu_size}. Diff = {size_difference}")
             assert recent_bu_size == new_bu_size
@@ -97,7 +83,20 @@ class TestIncrementalBackupPreperator:
 
     @staticmethod
     def test_delete_oldest_backup(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
-        oldest_backup = BackupBrowser().get_oldest_backup()
+        oldest_backup = BackupBrowser().oldest_backup
         if oldest_backup:
-            incremental_backup_preparator.delete_oldest_backup()
+            incremental_backup_preparator._delete_oldest_backup()
             assert not Path(oldest_backup).exists()
+
+
+def get_backup_size(path: Path) -> int:
+    command = f"du -s {path}"
+    p = Popen(command.split(), stdout=PIPE, stderr=PIPE)
+    try:
+        assert p.stdout is not None
+        size = int(p.stdout.readlines()[0].decode().split()[0])
+        # LOG.info(f"obtaining free space on bu hdd with command: {command}. Received {size}")
+    except ValueError as e:
+        # LOG.error(f"cannot check size of directory: {path}. Python says: {e}")
+        size = 0
+    return size

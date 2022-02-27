@@ -13,7 +13,6 @@ from base.common.logger import LoggerFactory
 from base.hardware.hardware import Hardware
 from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.backup import Backup
-from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.schedule import Schedule
 from base.webapp.webapp_server import WebappServer
 
@@ -62,9 +61,8 @@ class BaSeApplication:
     def __init__(self) -> None:
         self._config: Config = get_config("base.json")
         self._maintenance_mode = MaintenanceMode()
-        self._backup_browser = BackupBrowser()
-        self._hardware = Hardware(self._backup_browser)
-        self._backup = Backup(self._maintenance_mode.is_on, self._backup_browser)
+        self._hardware = Hardware()
+        self._backup = Backup(self._maintenance_mode.is_on)
         self._schedule = Schedule()
         self._maintenance_mode.set_connections([(self._schedule.backup_request, self._backup.on_backup_request)])
         self._codebook = {
@@ -76,7 +74,7 @@ class BaSeApplication:
             "unmount": self._hardware.unmount,
             "shutdown": lambda: True,
         }
-        self._webapp_server = WebappServer(set(self._codebook.keys()), self._backup_browser)
+        self._webapp_server = WebappServer(set(self._codebook.keys()))
         self._webapp_server.start()
         self._shutting_down = False
         self._connect_signals()
