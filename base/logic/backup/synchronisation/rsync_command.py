@@ -13,10 +13,10 @@ class RsyncCommand:
         self._nas_config = get_config("nas.json")
 
     def compose(self, local_target_location: Path, source_location: Path, dry: bool = False) -> List[str]:
-        cmd = "sudo rsync -avH --outbuf=N --info=progress2".split()
+        cmd = "rsync -avH --outbuf=N --info=progress2 --stats".split()  # stats are important for the bu increment size
         cmd.extend(self._protocol_specific(local_target_location, source_location))
         cmd.extend(self._dry_run(dry))
-        LOG.info(f"About to sync with: {cmd}")
+        LOG.info(f"About to sync with: {' '.join(cmd)}")
         return cmd
 
     def _protocol_specific(self, local_target_location: Path, source_location: Path) -> List[str]:

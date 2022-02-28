@@ -9,4 +9,4 @@ def pytest_configure() -> None:
     """
     from base.common.logger import LoggerFactory
 
-    LoggerFactory(Path.cwd() / "base-bcu/base/config", "BaSe_test", development_mode=True)
+    LoggerFactory(Path.cwd() / "base/config", "BaSe_test", development_mode=True)
