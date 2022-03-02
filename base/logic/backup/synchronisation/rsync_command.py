@@ -25,7 +25,7 @@ class RsyncCommand:
         else:
             return [
                 "-e",
-                f"ssh -i {self._sync_config.ssh_keyfile_path}",
+                f'"ssh -i {self._sync_config.ssh_keyfile_path}"',
                 f"{self._nas_config.ssh_user}@{self._nas_config.ssh_host}:{source_location}/",
                 f"{local_target_location}",
             ]

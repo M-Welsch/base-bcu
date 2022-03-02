@@ -120,7 +120,7 @@ class IncrementalBackupPreparator:
             return int("".join(c for c in line if c.isdigit()))
         except (IndexError, ValueError, AttributeError) as e:
             if p.stderr:
-                LOG.error(p.stderr.read())
+                LOG.error("\n".join([str(l) for l in p.stderr.read()]))
             raise BackupSizeRetrievalError from e
 
     @staticmethod
