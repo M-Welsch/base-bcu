@@ -57,30 +57,27 @@ class IncrementalBackupPreparator:
         return backup_source, backup_target
 
     def _backup_source_directory(self) -> Path:
+        source_dir_creation_map = {
+            "smb": self._backup_source_directory_for_smb,
+            "ssh": self._backup_source_directory_for_ssh
+        }
         protocol = self._config_sync.protocol
-        remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
-        local_nas_hdd_mount_path = Path(self._config_sync.local_nas_hdd_mount_point)
-        if protocol == "smb":
-            source_directory = self._derive_backup_source_directory_smb(
-                local_nas_hdd_mount_path, remote_backup_source_location
-            )
-        elif protocol == "ssh":
-            source_directory = remote_backup_source_location
-        else:
-            LOG.error(f"{protocol} is not a valid protocol! Defaulting to smb")
-            source_directory = self._derive_backup_source_directory_smb(
-                local_nas_hdd_mount_path, remote_backup_source_location
-            )
-        return Path(source_directory)
+        if protocol not in source_dir_creation_map.keys():
+            default_protocol = "smb"
+            LOG.error(f"{protocol} is not a valid protocol! Defaulting to {default_protocol}")
+            protocol = default_protocol
+        return source_dir_creation_map[protocol]
 
-    @staticmethod
-    def _derive_backup_source_directory_smb(
-        local_nas_hdd_mount_path: Path, remote_backup_source_location: Path
-    ) -> Path:
+    def _backup_source_directory_for_smb(self) -> Path:
+        local_nas_hdd_mount_path = Path(self._config_sync.local_nas_hdd_mount_point)
+        remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
         source_mountpoint = Nas().mount_point(remote_backup_source_location)
         subfolder_on_mountpoint = remote_backup_source_location.relative_to(source_mountpoint)
         source_directory = local_nas_hdd_mount_path / subfolder_on_mountpoint
         return source_directory
+
+    def _backup_source_directory_for_ssh(self) -> Path:
+        return Path(self._config_sync.remote_backup_source_location)
 
     def _free_space_on_backup_hdd_if_necessary(self, local_target_location: Path, source_location: Path) -> None:
         while not self._enough_space_for_next_backup(local_target_location, source_location):
