@@ -4,6 +4,7 @@ from test.integration.logic.backup.utils import prepare_source_sink_dirs, temp_s
 from test.utils import patch_multiple_configs
 from typing import Tuple
 
+from base.common.system import System
 from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 
@@ -15,7 +16,7 @@ def test_obtain_size_of_next_backup_increment_smb(temp_source_sink_dirs: Tuple[P
     amount_files_in_src = 2
     amount_preexisting_files_in_sink = 1
     prepare_source_sink_dirs(src, sink, amount_files_in_src, bytesize_of_each_file, amount_preexisting_files_in_sink)
-    size_of_next_increment = IncrementalBackupPreparator._obtain_size_of_next_backup_increment(
+    size_of_next_increment = System.size_of_next_backup_increment(
         source_location=Path(src), local_target_location=Path(sink)
     )
     assert size_of_next_increment == bytesize_of_each_file * (amount_files_in_src - amount_preexisting_files_in_sink)
@@ -35,7 +36,7 @@ def test_obtain_size_of_next_backup_increment_ssh(temp_source_sink_dirs: Tuple[P
     amount_files_in_src = 2
     amount_preexisting_files_in_sink = 1
     prepare_source_sink_dirs(src, sink, amount_files_in_src, bytesize_of_each_file, amount_preexisting_files_in_sink)
-    size_of_next_increment = IncrementalBackupPreparator._obtain_size_of_next_backup_increment(
+    size_of_next_increment = System.size_of_next_backup_increment(
         source_location=Path(src), local_target_location=Path(sink)
     )
     try:

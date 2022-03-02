@@ -29,6 +29,7 @@ def prepare_source_sink_dirs(
     filename_prefix: str = "testfile",
 ) -> None:
     testfiles_src = [src_path / f"{filename_prefix}{cnt}" for cnt in range(amount_files_in_src)]
-    [create_file_with_random_data(testfile, size_bytes=bytesize_of_each_file) for testfile in testfiles_src]
+    for testfile in testfiles_src:
+        create_file_with_random_data(testfile, size_bytes=bytesize_of_each_file)
     for testfile_to_copy in testfiles_src[:amount_preexisting_files_in_sink]:
         shutil.copy(testfile_to_copy, sink_path)
