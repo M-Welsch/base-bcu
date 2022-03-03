@@ -1,6 +1,6 @@
-def test_size_of_next_backup_increment():
+def test_size_of_next_backup_increment() -> None:
     ...
 
 
-def test_copy_newest_backup_with_hardlinks():
+def test_copy_newest_backup_with_hardlinks() -> None:
     ...

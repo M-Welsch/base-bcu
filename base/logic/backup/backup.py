@@ -16,8 +16,10 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class WeatherFrog:
     def allright(self) -> bool:
-        LOG.debug("WeatherFrog agrees ... since it cannot do anything else yet. "
-                  "You might want to take a look outside if you're a basement dweller.")
+        LOG.debug(
+            "WeatherFrog agrees ... since it cannot do anything else yet. "
+            "You might want to take a look outside if you're a basement dweller."
+        )
         return True
 
 
