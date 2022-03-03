@@ -20,7 +20,7 @@ sys.path.append(path_to_module)
 
 from base.common.config import BoundConfig
 from base.logic.backup.backup_browser import BackupBrowser
-from base.logic.backup.incremental_backup_preparator import BackupTarget, IncrementalBackupPreparator
+from base.logic.backup.backup_preparator import BackupPreparator, BackupTarget
 
 
 def update_conf(file_path: Path, updates: Any) -> None:
@@ -34,7 +34,7 @@ def update_conf(file_path: Path, updates: Any) -> None:
 @pytest.fixture(scope="class")
 def incremental_backup_preparator(
     tmpdir_factory: pytest.TempdirFactory,
-) -> Generator[IncrementalBackupPreparator, None, None]:
+) -> Generator[BackupPreparator, None, None]:
     tmpdir = tmpdir_factory.mktemp("test_dir")
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     general_backup_target_location = tmpdir_factory.mktemp(f"backup_target_location")
@@ -52,21 +52,21 @@ def incremental_backup_preparator(
         },
     )
     BoundConfig.set_config_base_path(config_dir)
-    yield IncrementalBackupPreparator()
+    yield BackupPreparator()
 
 
 class TestIncrementalBackupPreperator:
     @staticmethod
-    def test_space_available_on_bu_hdd(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
+    def test_space_available_on_bu_hdd(incremental_backup_preparator: BackupPreparator) -> None:
         free_space_on_bu_hdd = incremental_backup_preparator._obtain_free_space_on_backup_hdd()
         print(f"free_space_on_bu_hdd: {free_space_on_bu_hdd}")
         assert type(free_space_on_bu_hdd) == int
         assert free_space_on_bu_hdd > 0
 
     @staticmethod
-    def test_copy_newest_backup_with_hardlinks(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
+    def test_copy_newest_backup_with_hardlinks(incremental_backup_preparator: BackupPreparator) -> None:
         sleep(1)  # important!
-        recent_bu_path = BackupBrowser().newest_backup
+        recent_bu_path = BackupBrowser().newest_valid_backup
         new_bu_path = BackupTarget.create_in(incremental_backup_preparator._config_sync.local_backup_target_locationy)
         if recent_bu_path and new_bu_path:
             incremental_backup_preparator._copy_newest_backup_with_hardlinks(recent_bu_path, new_bu_path)
@@ -82,7 +82,7 @@ class TestIncrementalBackupPreperator:
             assert total_size < 2 * recent_bu_size
 
     @staticmethod
-    def test_delete_oldest_backup(incremental_backup_preparator: IncrementalBackupPreparator) -> None:
+    def test_delete_oldest_backup(incremental_backup_preparator: BackupPreparator) -> None:
         oldest_backup = BackupBrowser().oldest_backup
         if oldest_backup:
             incremental_backup_preparator._delete_oldest_backup()

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from test.utils import patch_config
 from typing import Generator, Optional
 from unittest.mock import MagicMock
 
@@ -9,7 +10,6 @@ from pytest_mock import MockFixture
 import base.logic.backup.source
 from base.logic.backup.protocol import Protocol
 from base.logic.backup.source import BackupSource
-from test.utils import patch_config
 
 
 @dataclass
@@ -26,45 +26,16 @@ def bu_source(mocker: MockFixture) -> Generator[BuSourceStruct, None, None]:
         {
             "protocol": "ssh",
             "local_nas_hdd_mount_point": "/local/mount/point",
-            "remote_backup_source_location": "/remote/source/location"
-        }
+            "remote_backup_source_location": "/remote/source/location",
+        },
     )
     bu_source_dir = Path()
     mocked_backup_source_directory = mocker.patch(
-        "base.logic.backup.source.BackupSource._backup_source_directory",
-        return_value=bu_source_dir
+        "base.logic.backup.source.BackupSource._backup_source_directory", return_value=bu_source_dir
     )
     yield BuSourceStruct(
-        bs=BackupSource(),
-        mocked_backup_source_directory=mocked_backup_source_directory,
-        bu_source_dir=bu_source_dir
+        bs=BackupSource(), mocked_backup_source_directory=mocked_backup_source_directory, bu_source_dir=bu_source_dir
     )
-
-
-class BuSourceFactory:
-    def __init__(self, mocker, nas_config: Optional[dict] = None, bu_source_dir: Optional[Path] = None) -> None:
-        if nas_config is None:
-            nas_config = {
-                "protocol": "ssh",
-                "local_nas_hdd_mount_point": "/local/mount/point",
-                "remote_backup_source_location": "/remote/source/location"
-            }
-        patch_config(BackupSource, nas_config)
-        if bu_source_dir is None:
-            bu_source_dir = Path()
-        self._mocked_backup_source_directory = mocker.patch(
-            "base.logic.backup.source.BackupSource._backup_source_directory",
-            return_value=bu_source_dir
-        )
-        self._backup_source = BackupSource()
-
-    @property
-    def backup_source(self):
-        return self._backup_source
-
-    @property
-    def mocked_backup_source_directory(self):
-        return self._mocked_backup_source_directory
 
 
 def test_path(bu_source: BuSourceStruct) -> None:
@@ -80,13 +51,13 @@ def test_backup_source_directory(mocker: MockFixture, protocol: Protocol) -> Non
         {
             "protocol": protocol.value,
             "local_nas_hdd_mount_point": "/local/mount/point",
-            "remote_backup_source_location": "/remote/source/location"
-        }
+            "remote_backup_source_location": "/remote/source/location",
+        },
     )
     protocol_independent_source_dir = Path()
     mocked_backup_source_directory_for_current_protocol = mocker.patch(
         f"base.logic.backup.source.BackupSource._backup_source_directory_for_{protocol.value}",
-        return_value=protocol_independent_source_dir
+        return_value=protocol_independent_source_dir,
     )
     bu_source_dir = BackupSource()._backup_source_directory()
     assert bu_source_dir == protocol_independent_source_dir
@@ -100,8 +71,8 @@ def test_backup_source_directory_for_smb() -> None:
         {
             "protocol": "ssh",
             "local_nas_hdd_mount_point": "/local/mount/point",
-            "remote_backup_source_location": "/remote/source/location"
-        }
+            "remote_backup_source_location": "/remote/source/location",
+        },
     )
 
 

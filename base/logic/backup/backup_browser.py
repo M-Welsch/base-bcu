@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import fields
 from pathlib import Path
 from typing import List, Optional
 
 from base.common.config import Config, get_config
+from base.common.constants import BackupDirectorySuffix
 from base.common.exceptions import BackupHddAccessError
 from base.common.logger import LoggerFactory
 
@@ -38,5 +40,9 @@ class BackupBrowser:
         return self._backup_index[0] if self._backup_index else None
 
     @property
-    def newest_backup(self) -> Optional[Path]:
-        return self._backup_index[-1] if self._backup_index else None
+    def newest_valid_backup(self) -> Optional[Path]:
+        latest_valid_backup = None
+        for backup in reversed(self._backup_index):
+            if backup.suffix not in BackupDirectorySuffix.not_valid_for_continuation():
+                latest_valid_backup = backup
+        return latest_valid_backup

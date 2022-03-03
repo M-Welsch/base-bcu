@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
+from base.common.constants import BAUD_RATE
 from base.common.exceptions import ComponentOffError, SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
 from base.common.logger import LoggerFactory
-from base.hardware.constants import BAUD_RATE
 from base.hardware.sbu.commands import SbuCommand
 from base.hardware.sbu.message import SbuMessage
 from base.hardware.sbu.serial_interface import SerialInterface

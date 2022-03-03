@@ -12,7 +12,7 @@ from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownI
 from base.common.logger import LoggerFactory
 from base.hardware.hardware import Hardware
 from base.hardware.sbu.sbu import WakeupReason
-from base.logic.backup.backup import Backup
+from base.logic.backup.backup_conductor import BackupConductor
 from base.logic.schedule import Schedule
 from base.webapp.webapp_server import WebappServer
 
@@ -62,7 +62,7 @@ class BaSeApplication:
         self._config: Config = get_config("base.json")
         self._maintenance_mode = MaintenanceMode()
         self._hardware = Hardware()
-        self._backup = Backup(self._maintenance_mode.is_on)
+        self._backup = BackupConductor(self._maintenance_mode.is_on)
         self._schedule = Schedule()
         self._maintenance_mode.set_connections([(self._schedule.backup_request, self._backup.on_backup_request)])
         self._codebook = {
@@ -124,7 +124,7 @@ class BaSeApplication:
             LOG.info("Now staying awake")
 
     def schedule_shutdown_timer(self) -> None:
-        if not self._backup.backup_running:
+        if not self._backup.is_running:
             self._schedule.on_shutdown_requested()
 
     def finalize_service(self) -> None:
@@ -182,7 +182,7 @@ class BaSeApplication:
                 "docked": self._hardware.docked,
                 "powered": self._hardware.powered,
                 "mounted": self._hardware.mounted,
-                "backup_running": self._backup.backup_running,
+                "backup_running": self._backup.is_running,
                 "backup_hdd_usage": self._hardware.drive_space_used,
                 "recent_warnings_count": LoggerFactory.get_warning_count(),
                 "log_tail": LoggerFactory.get_last_lines(),

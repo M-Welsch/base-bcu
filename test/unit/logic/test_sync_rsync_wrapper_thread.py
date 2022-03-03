@@ -10,8 +10,8 @@ from pytest_mock import MockFixture
 from signalslot import Signal
 
 from base.common.config import BoundConfig
+from base.logic.backup.backup import Backup
 from base.logic.backup.synchronisation.sync import Sync
-from base.logic.backup.synchronisation.sync_thread import SyncThread
 
 
 class SyncMock(Sync):
@@ -63,26 +63,26 @@ class SyncMockLoooongLoop(Sync):
 
 
 @pytest.fixture
-def rsync_wrapper_thread(mocker: MockFixture) -> Generator[SyncThread, None, None]:
+def rsync_wrapper_thread(mocker: MockFixture) -> Generator[Backup, None, None]:
     BoundConfig.set_config_base_path(Path("python.base/base/config"))
     mocker.patch("signalslot.Signal.emit")
-    rswt = SyncThread(local_target_location=Path(), source_location=Path())
+    rswt = Backup(local_target_location=Path(), source_location=Path())
     # monkeypatch.setattr(sync.RsyncWrapperThread, '_ssh_rsync', SshRsyncMock(["first", "second"]))
     rswt._ssh_rsync = SyncMock()
     yield rswt
 
 
 @pytest.fixture
-def rsync_wrapper_thread_loooong_loop(mocker: MockFixture) -> Generator[SyncThread, None, None]:
+def rsync_wrapper_thread_loooong_loop(mocker: MockFixture) -> Generator[Backup, None, None]:
     BoundConfig.set_config_base_path(Path("python.base/base/config"))
     mocker.patch("signalslot.Signal.emit")
-    rswt = SyncThread(local_target_location=Path(), source_location=Path())
+    rswt = Backup(local_target_location=Path(), source_location=Path())
     rswt._ssh_rsync = SyncMockLoooongLoop()
     yield rswt
 
 
 class TestRsyncWrapperThread:
-    def test_run_rsync_wrapper_thread(self, rsync_wrapper_thread: SyncThread, caplog: LogCaptureFixture) -> None:
+    def test_run_rsync_wrapper_thread(self, rsync_wrapper_thread: Backup, caplog: LogCaptureFixture) -> None:
         with caplog.at_level(logging.DEBUG):
             rsync_wrapper_thread.start()
             rsync_wrapper_thread.join()
@@ -91,7 +91,7 @@ class TestRsyncWrapperThread:
         assert "Backup finished!" in caplog.text
         assert Signal.emit.called_once_with()
 
-    def test_terminate_rsync_wrapper_thread(self, rsync_wrapper_thread_loooong_loop: SyncThread) -> None:
+    def test_terminate_rsync_wrapper_thread(self, rsync_wrapper_thread_loooong_loop: Backup) -> None:
         rsync_wrapper_thread_loooong_loop.start()
         assert rsync_wrapper_thread_loooong_loop.running
         rsync_wrapper_thread_loooong_loop.terminate()

@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Generator
 
+from base.common.constants import BAUD_RATE
 from base.common.exceptions import (
     SbuCommunicationTimeout,
     SbuNoResponseError,
@@ -8,7 +9,6 @@ from base.common.exceptions import (
     SerialInterfaceError,
 )
 from base.common.logger import LoggerFactory
-from base.hardware.constants import BAUD_RATE
 from base.hardware.sbu.message import PredefinedSbuMessages
 from base.hardware.sbu.serial_interface import SerialInterface
 

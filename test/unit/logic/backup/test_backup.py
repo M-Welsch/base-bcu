@@ -7,11 +7,11 @@ import pytest
 from py import path
 
 from base.common.config import BoundConfig
-from base.logic.backup.backup import Backup
+from base.logic.backup.backup_conductor import BackupConductor
 
 
 @pytest.fixture()
-def backup(tmpdir: path.local) -> Generator[Backup, None, None]:
+def backup(tmpdir: path.local) -> Generator[BackupConductor, None, None]:
     config_path = Path("/home/base/python.base/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))
     source = tmpdir.mkdir("source")
@@ -33,11 +33,11 @@ def backup(tmpdir: path.local) -> Generator[Backup, None, None]:
         nas_config_data = json.load(src)
         json.dump(nas_config_data, dst)
     BoundConfig.set_config_base_path(config_test_path)  # Fixme
-    yield Backup(lambda: False)
+    yield BackupConductor(lambda: False)
     print("source contents:", os.listdir(str(source)))
     print("target contents:", os.listdir(str(target)))
 
 
 @pytest.mark.skip("not functional if source location is on local machine")
-def test_backup(backup: Backup) -> None:
+def test_backup(backup: BackupConductor) -> None:
     backup.on_backup_request()

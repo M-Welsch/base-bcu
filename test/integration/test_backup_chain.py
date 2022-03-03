@@ -18,8 +18,8 @@ sys.path.append(path_to_module)
 from base.base_application import BaSeApplication, MaintenanceMode
 from base.common.config import BoundConfig
 from base.hardware.hardware import Hardware
-from base.logic.backup.backup import Backup
 from base.logic.backup.backup_browser import BackupBrowser
+from base.logic.backup.backup_conductor import BackupConductor
 from base.logic.schedule import Schedule
 
 
@@ -37,7 +37,7 @@ def make_base_application() -> BaSeApplication:
     # base_app._setup_logger() # don't use it here! Otherwise everything will be logged twice.
     base_app._maintenance_mode = MaintenanceMode()
     base_app._hardware = Hardware()
-    base_app._backup = Backup(base_app._maintenance_mode.is_on)
+    base_app._backup = BackupConductor(base_app._maintenance_mode.is_on)
     base_app._schedule = Schedule()
     base_app._maintenance_mode.set_connections(
         [(base_app._schedule.backup_request, base_app._backup.on_backup_request)]

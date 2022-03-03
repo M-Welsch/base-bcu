@@ -1,10 +1,9 @@
 from os import getlogin
 from pathlib import Path
-from subprocess import Popen, PIPE
-
+from subprocess import PIPE, Popen
 from test.integration.logic.backup.utils import prepare_source_sink_dirs, temp_source_sink_dirs  # fixture, don't remove
 from test.utils import patch_multiple_configs
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 import pytest
 
@@ -19,9 +18,7 @@ def test_obtain_size_of_next_backup_increment_smb(temp_source_sink_dirs: Tuple[P
     amount_files_in_src = 2
     amount_preexisting_files_in_sink = 1
     prepare_source_sink_dirs(src, sink, amount_files_in_src, bytesize_of_each_file, amount_preexisting_files_in_sink)
-    size_of_next_increment = System.size_of_next_backup_increment(
-        source_location=Path(src), local_target_location=Path(sink)
-    )
+    size_of_next_increment = System.size_of_next_backup(source_location=Path(src), local_target_location=Path(sink))
     assert size_of_next_increment == bytesize_of_each_file * (amount_files_in_src - amount_preexisting_files_in_sink)
 
 
@@ -39,9 +36,7 @@ def test_obtain_size_of_next_backup_increment_ssh(temp_source_sink_dirs: Tuple[P
     amount_files_in_src = 2
     amount_preexisting_files_in_sink = 1
     prepare_source_sink_dirs(src, sink, amount_files_in_src, bytesize_of_each_file, amount_preexisting_files_in_sink)
-    size_of_next_increment = System.size_of_next_backup_increment(
-        source_location=Path(src), local_target_location=Path(sink)
-    )
+    size_of_next_increment = System.size_of_next_backup(source_location=Path(src), local_target_location=Path(sink))
     try:
         assert size_of_next_increment == bytesize_of_each_file * (
             amount_files_in_src - amount_preexisting_files_in_sink
