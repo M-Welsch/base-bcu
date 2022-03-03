@@ -5,10 +5,9 @@ from subprocess import PIPE, Popen
 from typing import IO, List, Optional
 
 from base.common.config import Config, get_config
-from base.common.exceptions import NewBuDirCreationError
+from base.common.exceptions import NewBuDirCreationError, BackupSizeRetrievalError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup_browser import BackupBrowser
-from base.logic.backup.incremental_backup_preparator import BackupSizeRetrievalError
 
 LOG = LoggerFactory.get_logger(__name__)
 

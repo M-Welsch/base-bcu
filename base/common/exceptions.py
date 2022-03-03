@@ -114,3 +114,7 @@ class ConfigValidationError(Exception):
 
 class ConfigSaveError(Exception):
     pass
+
+
+class BackupSizeRetrievalError(Exception):
+    pass

@@ -11,7 +11,8 @@ from py import path
 def temp_source_sink_dirs(tmp_path: path.local) -> Generator[Tuple[Path, Path], None, None]:
     src = tmp_path / "src"
     sink = tmp_path / "sink"
-    [pt.mkdir() for pt in [src, sink]]
+    for pt in [src, sink]:
+        pt.mkdir()
     yield Path(src), Path(sink)
 
 

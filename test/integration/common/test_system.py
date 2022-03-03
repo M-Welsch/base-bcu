@@ -5,7 +5,6 @@ from test.utils import patch_multiple_configs
 from typing import Tuple
 
 from base.common.system import System
-from base.logic.backup.incremental_backup_preparator import IncrementalBackupPreparator
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 
 

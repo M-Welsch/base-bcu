@@ -3,7 +3,7 @@ from subprocess import PIPE, Popen
 from typing import List
 
 from base.common.logger import LoggerFactory
-from base.logic.backup.incremental_backup_preparator import BackupSizeRetrievalError
+from base.common.exceptions import BackupSizeRetrievalError
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 
 LOG = LoggerFactory.get_logger(__name__)

@@ -10,10 +10,6 @@ from base.logic.backup.target import BackupTarget
 LOG = LoggerFactory.get_logger(__name__)
 
 
-class BackupSizeRetrievalError(Exception):
-    pass
-
-
 class IncrementalBackupPreparator:
     def __init__(self) -> None:
         self._backup_source = BackupSource()
