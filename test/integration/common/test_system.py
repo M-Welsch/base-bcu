@@ -1,8 +1,10 @@
 from os import getlogin
 from pathlib import Path
+from subprocess import Popen, PIPE
+
 from test.integration.logic.backup.utils import prepare_source_sink_dirs, temp_source_sink_dirs  # fixture, don't remove
 from test.utils import patch_multiple_configs
-from typing import Tuple
+from typing import Tuple, Dict
 
 import pytest
 
@@ -61,7 +63,7 @@ def test_get_bytesize_of_directories(temp_source_sink_dirs: Tuple[Path, Path]) -
     bytesize_of_each_file = 1024
     amount_files_in_src = 2
     prepare_source_sink_dirs(src, sink, amount_files_in_src, bytesize_of_each_file)
-    sizes = System.get_bytesize_of_directories(src.parent)
+    sizes = get_bytesize_of_directories(src.parent)
     size_overhead_by_directory_structure = 4096
     assert all([isinstance(key, Path) and isinstance(value, int) for key, value in sizes.items()])
     assert sizes[src] == size_overhead_by_directory_structure + bytesize_of_each_file * amount_files_in_src
@@ -75,6 +77,20 @@ def test_cp_newst_bu_hardlinks(temp_source_sink_dirs: Tuple[Path, Path], amount_
     prepare_source_sink_dirs(src, sink, amount_files_in_src, bytesize_of_each_file, amount_preexisting_files_in_sink)
     System.copy_newest_backup_with_hardlinks(recent_backup=src, new_backup=sink)
     size_overhead_by_directory_struct = 4096
-    sizes = System.get_bytesize_of_directories(src.parent)
+    sizes = get_bytesize_of_directories(src.parent)
     assert sizes[src] == size_overhead_by_directory_struct + amount_files_in_src * bytesize_of_each_file
     assert sizes[sink] == size_overhead_by_directory_struct + amount_preexisting_files_in_sink * bytesize_of_each_file
+
+
+def get_bytesize_of_directories(directory: Path) -> Dict[Path, int]:
+    # this function is not used in the production code, but necessary for testing.
+    # It has some complexity and therefore has to be tested like any function production code.
+    command = f"du -b {directory.absolute()}"
+    print(f"size obtain command: {command}")
+    p = Popen(command.split(), stdout=PIPE, stderr=PIPE)
+    sizes = {}
+    if p.stdout is not None:
+        for line in p.stdout.readlines():
+            size_of_current_dir, current_dir = line.decode().strip().split("\t")
+            sizes[Path(current_dir)] = int(size_of_current_dir)
+    return sizes

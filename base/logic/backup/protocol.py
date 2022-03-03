@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from enum import Enum
 
-from base.logic.backup.source import LOG
+from base.common.logger import LoggerFactory
+
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class Protocol(Enum):
