@@ -19,8 +19,7 @@ class SSHInterface:
     def connect(self, host: str, user: str) -> str:
         try:
             self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            k = paramiko.RSAKey.from_private_key_file("/home/base/.ssh/id_rsa")
-            self._client.connect(host, username=user, pkey=k, timeout=10)
+            self._client.connect(host, username=user, timeout=10)
         except paramiko.AuthenticationException as e:
             LOG.error(f"Authentication failed, please verify your credentials. Error = {e}")
             raise RemoteCommandError(e)
@@ -37,7 +36,7 @@ class SSHInterface:
             LOG.error(f"connection timed out. Error = {e}")
             response = str(e)
         except Exception as e:
-            LOG.error("Exception in connecting to the server. PYTHON SAYS:", e)
+            LOG.error(f"Exception in connecting to the server. PYTHON SAYS: {e}")
             response = str(e)
         else:
             response = "Established"
