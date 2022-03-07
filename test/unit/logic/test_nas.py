@@ -1,30 +1,38 @@
-import json
 from pathlib import Path
+from test.utils import patch_config
 from typing import Generator
 
-import _pytest
+import paramiko
 import pytest
+from pytest_mock import MockFixture
 
-from base.common.config import BoundConfig
+from base.common.ssh_interface import SSHInterface
 from base.logic.nas import Nas
 
 
-@pytest.fixture(scope="class")
-def nas(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[Nas, None, None]:
-    tmpdir = tmpdir_factory.mktemp("nas_test_config_dir")
-    config_path = Path("/home/base/python.base/base/config/")
-    config_test_path = Path(tmpdir.mkdir("config"))
-    with open(config_path / "nas.json", "r") as src, open(config_test_path / "nas.json", "w") as dst:
-        sync_config_data = json.load(src)
-        sync_config_data["services"].append("nonexistent_test_service")
-        json.dump(sync_config_data, dst)
-    with open(config_path / "sync.json", "r") as src, open(config_test_path / "sync.json", "w") as dst:
-        sync_config_data = json.load(src)
-        sync_config_data["protocol"] = "sftp"
-        json.dump(sync_config_data, dst)
-    BoundConfig.set_config_base_path(config_test_path)
+@pytest.fixture
+def nas() -> Generator[Nas, None, None]:
+    patch_config(Nas, {"ssh_host": "host", "ssh_user": "user"})
     yield Nas()
 
 
-class TestNas:
-    pass
+def test_root_of_share(nas: Nas, mocker: MockFixture) -> None:
+    mocked_close = mocker.patch("paramiko.SSHClient.close")
+    mocked_sshi_connect = mocker.patch("base.common.ssh_interface.SSHInterface.connect")
+    mocked_nas_obtain = mocker.patch("base.logic.nas.Nas._obtain_root_of_share")
+    myfile = Path()
+    nas.root_of_share(myfile)
+    assert mocked_close.assert_called_once
+    assert mocked_sshi_connect.called_once_with(nas._config["ssh_host"], nas._config["ssh_user"])
+    assert mocked_nas_obtain.called_once_with(myfile)
+
+
+def test_obtain_root_of_share(mocker: MockFixture) -> None:
+    findmnt_str = "somestring\n"
+    mocked_sshi_run_and_raise = mocker.patch(
+        "base.common.ssh_interface.SSHInterface.run_and_raise", return_value=findmnt_str
+    )
+    file = Path("some/path")
+    root_of_share = Nas._obtain_root_of_share(file, SSHInterface())
+    assert mocked_sshi_run_and_raise.called_once_with(f'findmnt -T {file} --output="TARGET" -nf')
+    assert root_of_share == Path(findmnt_str.strip())
