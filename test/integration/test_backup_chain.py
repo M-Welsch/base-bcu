@@ -74,8 +74,8 @@ def app_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[BaSeAppl
 # @pytest.mark.skip
 def test_backup_chain_via_smb(app_smb: BaSeApplication) -> None:
     app_smb._backup.on_backup_request()
-    if app_smb._backup._sync is not None:
-        app_smb._backup._sync.join()
+    if app_smb._backup._backup is not None:
+        app_smb._backup._backup.join()
 
 
 # Todo: find a way to wait for last test to complete! Use backup_running request or so ...

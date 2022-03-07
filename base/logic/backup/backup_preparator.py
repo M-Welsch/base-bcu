@@ -4,7 +4,8 @@ import signal
 import subprocess
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import IO, List, Optional, Tuple
+from time import sleep
+from typing import IO, List, Optional
 
 from base.common.constants import BackupDirectorySuffix
 from base.common.exceptions import BackupSizeRetrievalError
@@ -12,8 +13,6 @@ from base.common.logger import LoggerFactory
 from base.common.system import System
 from base.logic.backup.backup import Backup
 from base.logic.backup.backup_browser import BackupBrowser
-from base.logic.backup.source import BackupSource
-from base.logic.backup.target import BackupTarget
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -33,7 +32,9 @@ class BackupPreparator:
 
     def terminate(self) -> None:
         if self.running:
-            os.killpg(self._copy_process.pid, signal.SIGTERM)  # type: ignore
+            os.kill(self._copy_process.pid, signal.SIGTERM)  # type: ignore
+            self._copy_process.wait()  # type: ignore
+            self._copy_process.poll()  # type: ignore
 
     def prepare(self) -> None:
         self._backup.target.mkdir(exist_ok=True)
@@ -42,7 +43,7 @@ class BackupPreparator:
         if newest_backup is not None:
             self._copy_process = System.copy_newest_backup_with_hardlinks(newest_backup, self._backup.target)
             self._copy_process.wait()
-            self._finish_preparation()
+        self._finish_preparation()
 
     def _finish_preparation(self) -> None:
         new_name = self._backup.target.with_suffix(BackupDirectorySuffix.while_backing_up.suffix)

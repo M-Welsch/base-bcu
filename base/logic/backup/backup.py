@@ -6,7 +6,6 @@ from typing import Optional
 from signalslot import Signal
 
 from base.common.logger import LoggerFactory
-from base.logic.backup.backup_preparator import BackupPreparator
 from base.logic.backup.source import BackupSource
 from base.logic.backup.synchronisation.sync import Sync
 from base.logic.backup.target import BackupTarget
@@ -21,7 +20,6 @@ class Backup(Thread):
         super().__init__()
         self._source = BackupSource().path
         self._target = BackupTarget().path
-        self._backup_preparator = BackupPreparator(self)
         self._estimated_backup_size: Optional[int] = None
         self._actual_backup_size: Optional[int] = None
         self._sync = Sync(self._target, self._source)
@@ -53,13 +51,6 @@ class Backup(Thread):
         return self._sync.pid
 
     def run(self) -> None:
-        self.prepare()
-        self.conduct()
-
-    def prepare(self) -> None:
-        self._backup_preparator.prepare()
-
-    def conduct(self) -> None:
         with self._sync as output_generator:
             for status in output_generator:
                 LOG.debug(str(status))
@@ -67,6 +58,5 @@ class Backup(Thread):
             self.terminated.emit()
 
     def terminate(self) -> None:
-        self._backup_preparator.terminate()
         if self._sync is not None:
             self._sync.terminate()

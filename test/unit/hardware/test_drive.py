@@ -1,12 +1,12 @@
 import logging
 import subprocess
 from pathlib import Path
-from test.utils import patch_config
+from test.utils import create_virtual_hard_drive, patch_config, teardown_virtual_hard_drive
 from typing import Generator
 
-import _pytest
 import pytest
 from _pytest.logging import LogCaptureFixture
+from py import path
 
 from base.common.drive_inspector import PartitionInfo
 from base.common.exceptions import MountError, UnmountError
@@ -31,10 +31,9 @@ class MockDrive(Drive):
 
 
 @pytest.fixture
-def drive(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[MockDrive, None, None]:
-    tmpdir = Path(tmpdir_factory.mktemp("drive_test_config_dir"))
-    virtual_hard_drive_location = tmpdir / "VHD.img"
-    virtual_hard_drive_mountpoint = (tmpdir / "VHD").resolve()
+def drive(tmp_path: path.local) -> Generator[MockDrive, None, None]:
+    virtual_hard_drive_location = Path(tmp_path / "VHD.img")
+    virtual_hard_drive_mountpoint = Path(tmp_path / "VHD").resolve()
     virtual_hard_drive_mountpoint.mkdir()
     create_virtual_hard_drive(virtual_hard_drive_location)
     patch_config(
@@ -48,7 +47,7 @@ def drive(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[MockDrive,
         },
         read_only=False,
     )
-    patch_config(class_=BackupBrowser, config_content={})
+    patch_config(class_=BackupBrowser, config_content={"local_backup_target_location": virtual_hard_drive_mountpoint})
     yield MockDrive(
         BackupBrowser(),
         virtual_hard_drive_location=virtual_hard_drive_location,
@@ -81,16 +80,6 @@ def drive_mounted(drive: MockDrive) -> Generator[MockDrive, None, None]:
     assert drive.is_mounted
     drive._partition_info = drive._get_partition_info_or_raise()
     yield drive
-
-
-def create_virtual_hard_drive(filename: Path) -> None:
-    subprocess.Popen(f"dd if=/dev/zero of={filename} bs=2M count=10".split())
-    subprocess.Popen(f"mkfs -t ext4 {filename}".split())
-
-
-def teardown_virtual_hard_drive(virtual_hard_drive_mountpoint: Path) -> None:
-    if virtual_hard_drive_mountpoint.is_mount():
-        subprocess.Popen(f"sudo umount {virtual_hard_drive_mountpoint}".split())
 
 
 class TestDrive:

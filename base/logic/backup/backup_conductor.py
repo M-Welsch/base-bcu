@@ -8,6 +8,7 @@ from base.common.constants import BackupDirectorySuffix
 from base.common.exceptions import DockingError, MountError, NetworkError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup import Backup
+from base.logic.backup.backup_preparator import BackupPreparator
 from base.logic.nas import Nas
 from base.logic.network_share import NetworkShare
 
@@ -38,6 +39,7 @@ class BackupConductor:
         self._postpone_count = 0
         self._nas = Nas()
         self._network_share = NetworkShare()
+        self._backup_preparator = Optional[BackupPreparator]
 
     @property
     def network_share(self) -> NetworkShare:
@@ -62,6 +64,8 @@ class BackupConductor:
                 self._backup = Backup()
                 LOG.info(f"Backing up into: {self._backup.target}")
                 self._backup.terminated.connect(self.on_backup_finished)
+                self._backup_preparator = BackupPreparator(self._backup)
+                self._backup_preparator.prepare()
                 self._backup.start()
             else:
                 LOG.debug("...but backup conditions are not met.")
@@ -81,6 +85,8 @@ class BackupConductor:
             LOG.debug("Skipping mounting of datasource since we're backing up via ssh")
 
     def on_backup_abort(self, **kwargs):  # type: ignore
+        if self._backup_preparator is not None:
+            self._backup_preparator.terminate()
         if self._backup is not None:
             self._backup.terminate()
 
