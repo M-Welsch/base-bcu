@@ -21,7 +21,6 @@ class Sync:
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
         self._sync_config = get_config("sync.json")
         self._nas_config = get_config("nas.json")
-        self._local_target_location: Path = local_target_location
         self._command: List[str] = RsyncCommand().compose(local_target_location, source_location)
         self._process: Optional[Popen] = None
         self._status: SyncStatus = SyncStatus()

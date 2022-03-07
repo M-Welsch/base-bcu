@@ -31,11 +31,11 @@ def sync_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[Backup,
     backup_source_location = Path(tmpdir_factory.mktemp("backup_source_location"))
     backup_target_location = Path(tmpdir_factory.mktemp("backup_target_location"))
     rsync_wrapper_thread = Backup(backup_target_location, backup_source_location)
-    raise ZeroDivisionError(f"y<<<<<<< {dir(rsync_wrapper_thread._ssh_rsync)}")
-    rsync_wrapper_thread._ssh_rsync._nas_config["ssh_host"] = "localhost"
-    rsync_wrapper_thread._ssh_rsync._nas_config["ssh_user"] = "base"
-    rsync_wrapper_thread._ssh_rsync._sync_config["protocol"] = "ssh"
-    rsync_wrapper_thread._ssh_rsync._sync_config["ssh_keyfile_path"] = "/home/base/.ssh/id_rsa"
+    raise ZeroDivisionError(f"y<<<<<<< {dir(rsync_wrapper_thread._sync)}")
+    rsync_wrapper_thread._sync._nas_config["ssh_host"] = "localhost"
+    rsync_wrapper_thread._sync._nas_config["ssh_user"] = "base"
+    rsync_wrapper_thread._sync._sync_config["protocol"] = "ssh"
+    rsync_wrapper_thread._sync._sync_config["ssh_keyfile_path"] = "/home/base/.ssh/id_rsa"
     yield rsync_wrapper_thread
     # Fixme: AttributeError: 'SshRsync' object has no attribute '_nas_config'
 

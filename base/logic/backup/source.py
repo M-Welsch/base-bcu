@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from base.common.config import Config, get_config
+from base.common.exceptions import InvalidBackupSource
 from base.common.logger import LoggerFactory
 from base.logic.backup.protocol import Protocol
 from base.logic.nas import Nas
@@ -30,10 +31,12 @@ class BackupSource:
     def _backup_source_directory_for_smb(self) -> Path:
         local_nas_hdd_mount_path = Path(self._config_sync.local_nas_hdd_mount_point)
         remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
-        source_mountpoint = Nas().mount_point(remote_backup_source_location)
-        subfolder_on_mountpoint = remote_backup_source_location.relative_to(source_mountpoint)
-        source_directory = local_nas_hdd_mount_path / subfolder_on_mountpoint
-        return source_directory
+        smb_share_root = Nas().root_of_share(remote_backup_source_location)
+        try:
+            subfolder_on_mountpoint = remote_backup_source_location.relative_to(smb_share_root)
+        except ValueError as e:
+            raise InvalidBackupSource(f"Backup source location on NAS is not within smb share point: {e}")
+        return local_nas_hdd_mount_path / subfolder_on_mountpoint
 
     def _backup_source_directory_for_ssh(self) -> Path:
         return Path(self._config_sync.remote_backup_source_location)

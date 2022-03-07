@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 from test.utils import patch_config
-from typing import Generator, Optional
+from typing import Generator, Optional, Type
 from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockFixture
 
-import base.logic.backup.source
+from base.common.exceptions import InvalidBackupSource
 from base.logic.backup.protocol import Protocol
 from base.logic.backup.source import BackupSource
 
@@ -65,15 +65,36 @@ def test_backup_source_directory(mocker: MockFixture, protocol: Protocol) -> Non
     assert mocked_backup_source_directory_for_current_protocol.called_once()
 
 
-def test_backup_source_directory_for_smb() -> None:
+@pytest.mark.parametrize(
+    "remote_share_point, error",
+    [(Path("/remote/share_point/"), None), (Path("remote/other_share_point/"), InvalidBackupSource)],
+)
+def test_backup_source_directory_for_smb(
+    mocker: MockFixture, remote_share_point: Path, error: Optional[Type[InvalidBackupSource]]
+) -> None:
     patch_config(
         BackupSource,
         {
             "protocol": "ssh",
             "local_nas_hdd_mount_point": "/local/mount/point",
-            "remote_backup_source_location": "/remote/source/location",
+            "remote_backup_source_location": "/remote/share_point/source/location",
         },
     )
+    mocker.patch("base.logic.backup.source.BackupSource._backup_source_directory", return_value=Path())
+    bs = BackupSource()
+    mocked_root_of_share = mocker.patch("base.logic.nas.Nas.root_of_share", return_value=remote_share_point)
+
+    def func_under_test() -> Path:
+        return bs._backup_source_directory_for_smb()
+
+    if error:
+        with pytest.raises(error):
+            func_under_test()
+    else:
+        bu_source_smb = func_under_test()
+        assert isinstance(bu_source_smb, Path)
+        assert bu_source_smb == Path(bs._config_sync["local_nas_hdd_mount_point"]) / "source/location"
+    assert mocked_root_of_share.called_once_with(bs._config_sync["remote_backup_source_location"])
 
 
 def test_backup_source_directory_for_ssh(bu_source: BuSourceStruct) -> None:

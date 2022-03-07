@@ -118,3 +118,7 @@ class ConfigSaveError(Exception):
 
 class BackupSizeRetrievalError(Exception):
     pass
+
+
+class InvalidBackupSource(Exception):
+    pass

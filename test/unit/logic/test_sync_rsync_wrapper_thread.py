@@ -68,7 +68,7 @@ def rsync_wrapper_thread(mocker: MockFixture) -> Generator[Backup, None, None]:
     mocker.patch("signalslot.Signal.emit")
     rswt = Backup(local_target_location=Path(), source_location=Path())
     # monkeypatch.setattr(sync.RsyncWrapperThread, '_ssh_rsync', SshRsyncMock(["first", "second"]))
-    rswt._ssh_rsync = SyncMock()
+    rswt._sync = SyncMock()
     yield rswt
 
 
@@ -77,7 +77,7 @@ def rsync_wrapper_thread_loooong_loop(mocker: MockFixture) -> Generator[Backup, 
     BoundConfig.set_config_base_path(Path("python.base/base/config"))
     mocker.patch("signalslot.Signal.emit")
     rswt = Backup(local_target_location=Path(), source_location=Path())
-    rswt._ssh_rsync = SyncMockLoooongLoop()
+    rswt._sync = SyncMockLoooongLoop()
     yield rswt
 
 

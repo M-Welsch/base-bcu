@@ -24,7 +24,7 @@ class Backup(Thread):
         self._backup_preparator = BackupPreparator(self)
         self._estimated_backup_size: Optional[int] = None
         self._actual_backup_size: Optional[int] = None
-        self._ssh_rsync = Sync(self._target, self._source)
+        self._sync = Sync(self._target, self._source)
 
     @property
     def estimated_backup_size(self) -> Optional[int]:
@@ -42,9 +42,6 @@ class Backup(Thread):
     def target(self) -> Path:
         return self._target
 
-    def prepare(self) -> None:
-        self._backup_preparator.prepare()
-
     @property
     def running(self) -> bool:
         LOG.debug(f"Backup is {'running' if self.is_alive() else 'not running'} yet")
@@ -52,15 +49,18 @@ class Backup(Thread):
 
     @property
     def pid(self) -> int:
-        assert isinstance(self._ssh_rsync, Sync)
-        return self._ssh_rsync.pid
+        assert isinstance(self._sync, Sync)
+        return self._sync.pid
 
     def run(self) -> None:
         self.prepare()
         self.conduct()
 
+    def prepare(self) -> None:
+        self._backup_preparator.prepare()
+
     def conduct(self) -> None:
-        with self._ssh_rsync as output_generator:
+        with self._sync as output_generator:
             for status in output_generator:
                 LOG.debug(str(status))
             LOG.info("Backup finished!")
@@ -68,5 +68,5 @@ class Backup(Thread):
 
     def terminate(self) -> None:
         self._backup_preparator.terminate()
-        if self._ssh_rsync is not None:
-            self._ssh_rsync.terminate()
+        if self._sync is not None:
+            self._sync.terminate()
