@@ -37,11 +37,9 @@ def make_base_application() -> BaSeApplication:
     # base_app._setup_logger() # don't use it here! Otherwise everything will be logged twice.
     base_app._maintenance_mode = MaintenanceMode()
     base_app._hardware = Hardware()
-    base_app._backup = BackupConductor(base_app._maintenance_mode.is_on)
+    base_app._backup_conductor = BackupConductor(base_app._maintenance_mode.is_on)
     base_app._schedule = Schedule()
-    base_app._maintenance_mode.set_connections(
-        [(base_app._schedule.backup_request, base_app._backup.on_backup_request)]
-    )
+    base_app._maintenance_mode.set_connections([(base_app._schedule.backup_request, base_app._backup_conductor.run)])
     base_app._shutting_down = False
     base_app._connect_signals()
     return base_app
@@ -73,12 +71,12 @@ def app_ssh(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[BaSeAppl
 
 # @pytest.mark.skip
 def test_backup_chain_via_smb(app_smb: BaSeApplication) -> None:
-    app_smb._backup.on_backup_request()
-    if app_smb._backup._backup is not None:
-        app_smb._backup._backup.join()
+    app_smb._backup_conductor.run()
+    if app_smb._backup_conductor._backup_conductor is not None:
+        app_smb._backup_conductor._backup_conductor.join()
 
 
 # Todo: find a way to wait for last test to complete! Use backup_running request or so ...
 # @pytest.mark.skip("find a way to wait for last test to complete! Use backup_running request or so ...")
 def test_backup_chain_via_ssh(app_ssh: BaSeApplication) -> None:
-    app_ssh._backup.on_backup_request()
+    app_ssh._backup_conductor.run()

@@ -24,7 +24,7 @@ class BackupPreparator:
 
     @property
     def running(self) -> bool:
-        if self._copy_process:
+        if self._copy_process is not None:
             not_finished = self._copy_process.returncode is None
         else:
             not_finished = False

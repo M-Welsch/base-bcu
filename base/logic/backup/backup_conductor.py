@@ -53,36 +53,30 @@ class BackupConductor:
     def is_running(self) -> bool:
         return self._backup is not None and self._backup.running
 
-    def on_backup_request(self, **kwargs):  # type: ignore
+    def run(self) -> None:
         LOG.debug("Received backup request...")
-        try:
-            if self.conditions_met:
-                LOG.debug("...and backup conditions are met!")
-                self.stop_shutdown_timer_request.emit()
-                self.mount_datasource_if_necessary()
-                self.hardware_engage_request.emit()
-                self._backup = Backup()
-                LOG.info(f"Backing up into: {self._backup.target}")
-                self._backup.terminated.connect(self.on_backup_finished)
-                self._backup_preparator = BackupPreparator(self._backup)
-                self._backup_preparator.prepare()
-                self._backup.start()
-            else:
-                LOG.debug("...but backup conditions are not met.")
-        except NetworkError as e:
-            LOG.error(e)
-        except DockingError as e:
-            LOG.error(e)
-        except MountError as e:
-            LOG.error(e)
-        # TODO: Postpone backup
+        if self.conditions_met:
+            LOG.debug("...and backup conditions are met!")
+            self.stop_shutdown_timer_request.emit()
+            self._attach_backup_datasource()
+            self._attach_backup_target()
+            self._backup = Backup(self.on_backup_finished)
+            LOG.info(f"Backing up into: {self._backup.target}")
+            self._backup_preparator = BackupPreparator(self._backup)
+            self._backup_preparator.prepare()
+            self._backup.start()
+        else:
+            LOG.debug("...but backup conditions are not met.")
 
-    def mount_datasource_if_necessary(self) -> None:
+    def _attach_backup_datasource(self) -> None:
         if get_config("sync.json").protocol == "smb":
             LOG.debug("Mounting data source via smb")
             self._network_share.mount_datasource_via_smb()
         else:
             LOG.debug("Skipping mounting of datasource since we're backing up via ssh")
+
+    def _attach_backup_target(self) -> None:
+        self.hardware_engage_request.emit()
 
     def on_backup_abort(self, **kwargs):  # type: ignore
         if self._backup_preparator is not None:
@@ -91,7 +85,6 @@ class BackupConductor:
             self._backup.terminate()
 
     def on_backup_finished(self, **kwargs):  # type: ignore
-        self._backup.terminated.disconnect(self.on_backup_finished)
         LOG.info("Backup terminated")
         self._mark_backup_target_as_finished()
         try:
@@ -104,7 +97,7 @@ class BackupConductor:
             self.backup_finished_notification.emit()
 
     def _mark_backup_target_as_finished(self) -> None:
-        if self._backup:
+        if self._backup is not None:
             new_name = self._backup.target.with_suffix(BackupDirectorySuffix.finished.suffix)
             self._backup.target.rename(new_name)
 

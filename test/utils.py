@@ -1,4 +1,3 @@
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +17,9 @@ def patch_multiple_configs(class_: Type, config_content: Dict[str, Dict[str, Any
         return config
 
     sys.modules[class_.__module__].get_config = lambda file_name: make_substitute_config(file_name)  # type: ignore
+
+
+# Todo: implement as context-manager
 
 
 def derive_mock_string(func: Callable) -> str:

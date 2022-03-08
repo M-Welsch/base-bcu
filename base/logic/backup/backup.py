@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 from threading import Thread
-from typing import Optional
+from typing import Callable, Optional
 
 from signalslot import Signal
 
@@ -16,13 +16,15 @@ LOG = LoggerFactory.get_logger(__name__)
 class Backup(Thread):
     terminated = Signal()
 
-    def __init__(self) -> None:
+    def __init__(self, on_backup_finished: Callable) -> None:
         super().__init__()
         self._source = BackupSource().path
         self._target = BackupTarget().path
         self._estimated_backup_size: Optional[int] = None
         self._actual_backup_size: Optional[int] = None
         self._sync = Sync(self._target, self._source)
+        self._on_backup_finished = on_backup_finished
+        self.terminated.connect(self._on_backup_finished)
 
     @property
     def estimated_backup_size(self) -> Optional[int]:
@@ -55,7 +57,8 @@ class Backup(Thread):
             for status in output_generator:
                 LOG.debug(str(status))
             LOG.info("Backup finished!")
-            self.terminated.emit()
+        self.terminated.emit()
+        self.terminated.disconnect(self._on_backup_finished)
 
     def terminate(self) -> None:
         if self._sync is not None:

@@ -40,4 +40,4 @@ def backup(tmpdir: path.local) -> Generator[BackupConductor, None, None]:
 
 @pytest.mark.skip("not functional if source location is on local machine")
 def test_backup(backup: BackupConductor) -> None:
-    backup.on_backup_request()
+    backup.run()

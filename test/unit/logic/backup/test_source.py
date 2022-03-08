@@ -81,20 +81,20 @@ def test_backup_source_directory_for_smb(
         },
     )
     mocker.patch("base.logic.backup.source.BackupSource._backup_source_directory", return_value=Path())
-    bs = BackupSource()
+    backup_source = BackupSource()
     mocked_root_of_share = mocker.patch("base.logic.nas.Nas.root_of_share", return_value=remote_share_point)
 
     def func_under_test() -> Path:
-        return bs._backup_source_directory_for_smb()
+        return backup_source._backup_source_directory_for_smb()
 
     if error:
         with pytest.raises(error):
             func_under_test()
     else:
-        bu_source_smb = func_under_test()
-        assert isinstance(bu_source_smb, Path)
-        assert bu_source_smb == Path(bs._config_sync["local_nas_hdd_mount_point"]) / "source/location"
-    assert mocked_root_of_share.called_once_with(bs._config_sync["remote_backup_source_location"])
+        backup_source_smb = func_under_test()
+        assert isinstance(backup_source_smb, Path)
+        assert backup_source_smb == Path(backup_source._config_sync["local_nas_hdd_mount_point"]) / "source/location"
+    assert mocked_root_of_share.called_once_with(backup_source._config_sync["remote_backup_source_location"])
 
 
 def test_backup_source_directory_for_ssh(bu_source: BuSourceStruct) -> None:
