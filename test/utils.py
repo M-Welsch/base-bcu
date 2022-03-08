@@ -24,8 +24,8 @@ def derive_mock_string(func: Callable) -> str:
     return f"{func.__module__}.{func.__qualname__}"
 
 
-def create_virtual_hard_drive(filename: Path) -> None:
-    subprocess.Popen(f"dd if=/dev/urandom of={filename} bs=1M count=40".split())
+def create_virtual_hard_drive(filename: Path, blocksize: str = "1M", block_count: int = 40) -> None:
+    subprocess.Popen(f"dd if=/dev/urandom of={filename} bs={blocksize} count={block_count}".split())
     subprocess.Popen(f"mkfs -t ext4 {filename}".split())
 
 
