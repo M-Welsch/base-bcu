@@ -3,8 +3,10 @@ from typing import Generator, Tuple
 
 import pytest
 from py import path
+from pytest_mock import MockFixture
 
 from base.logic.backup.backup_preparator import BackupPreparator
+from test.integration.logic.backup.utils import prepare_source_sink_dirs, BackupTestEvironmentCreator
 
 
 class Backup:
@@ -19,9 +21,7 @@ def backup_preparator(temp_source_sink_dirs: Tuple[Path, Path]) -> Generator[Bac
     yield BackupPreparator(b)  # type: ignore
 
 
-@pytest.mark.parametrize()
-def test_preparation(tmp_path: path.local) -> None:
-    old_backups = [tmp_path / f"old_bu{index}" for index in range(10)]
-    new_bu_location = tmp_path / "new_bu"
-    for old_bu in old_backups:
-        old_bu.mkdir()
+def test_backup_preparator(backup_preparator: BackupPreparator) -> None:
+    BackupTestEvironmentCreator(
+        src=backup_preparator._backup.source,
+        sink=backup_preparator._backup.target)
