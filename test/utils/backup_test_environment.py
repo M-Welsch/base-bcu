@@ -20,6 +20,33 @@ def temp_source_sink_dirs(tmp_path: path.local) -> Generator[Tuple[Path, Path], 
     yield Path(src), Path(sink)
 
 
+def create_old_backups(base_path: Path, amount: int) -> List[Path]:
+    old_backups = [base_path / f"old_bu{index}" for index in range(amount)]
+    for old_bu in old_backups:
+        old_bu.mkdir()
+    return old_backups
+
+
+def create_file_with_random_data(path: Path, size_bytes: int) -> None:
+    with open(path, "wb") as fout:
+        fout.write(os.urandom(size_bytes))
+
+
+def prepare_source_sink_dirs(
+    src_path: Path,
+    sink_path: Path,
+    amount_files_in_src: int,
+    bytesize_of_each_file: int = 1024,
+    amount_preexisting_files_in_sink: int = 0,
+    filename_prefix: str = "testfile",
+) -> None:
+    testfiles_src = [src_path / f"{filename_prefix}{cnt}" for cnt in range(amount_files_in_src)]
+    for testfile in testfiles_src:
+        create_file_with_random_data(testfile, size_bytes=bytesize_of_each_file)
+    for testfile_to_copy in testfiles_src[:amount_preexisting_files_in_sink]:
+        copy(testfile_to_copy, sink_path)
+
+
 BackupTestEnvironment = namedtuple("backup_test_environment", "sync_config backup_config nas_config")
 
 TEST_BACKUP_SMB_SHARE_ROOT = Path("/tmp/base_tmpshare")
@@ -101,30 +128,3 @@ class BackupTestEnvironmentCreator:
             backup_config={},
             nas_config=nas_config
         )
-
-
-def create_old_backups(base_path: Path, amount: int) -> List[Path]:
-    old_backups = [base_path / f"old_bu{index}" for index in range(amount)]
-    for old_bu in old_backups:
-        old_bu.mkdir()
-    return old_backups
-
-
-def create_file_with_random_data(path: Path, size_bytes: int) -> None:
-    with open(path, "wb") as fout:
-        fout.write(os.urandom(size_bytes))
-
-
-def prepare_source_sink_dirs(
-    src_path: Path,
-    sink_path: Path,
-    amount_files_in_src: int,
-    bytesize_of_each_file: int = 1024,
-    amount_preexisting_files_in_sink: int = 0,
-    filename_prefix: str = "testfile",
-) -> None:
-    testfiles_src = [src_path / f"{filename_prefix}{cnt}" for cnt in range(amount_files_in_src)]
-    for testfile in testfiles_src:
-        create_file_with_random_data(testfile, size_bytes=bytesize_of_each_file)
-    for testfile_to_copy in testfiles_src[:amount_preexisting_files_in_sink]:
-        copy(testfile_to_copy, sink_path)

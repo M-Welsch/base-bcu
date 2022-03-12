@@ -1,8 +1,8 @@
 from os import getlogin
 from pathlib import Path
 from subprocess import PIPE, Popen
-from test.integration.logic.backup.utils import prepare_source_sink_dirs, temp_source_sink_dirs  # fixture, don't remove
-from test.utils import patch_multiple_configs
+from test.utils.backup_test_environment import prepare_source_sink_dirs  # fixture, don't remove
+from test.utils.patch_config import patch_multiple_configs
 from typing import Dict, Tuple
 
 import pytest

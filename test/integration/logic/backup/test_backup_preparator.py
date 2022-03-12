@@ -2,12 +2,9 @@ from pathlib import Path
 from typing import Generator, Tuple
 
 import pytest
-from py import path
-from pytest_mock import MockFixture
 
 from base.logic.backup.backup_preparator import BackupPreparator
-from test.integration.logic.backup.utils import prepare_source_sink_dirs, BackupTestEvironmentCreator
-
+from test.utils.backup_test_environment import BackupTestEnvironmentCreator
 
 class Backup:
     source: Path = Path()
@@ -21,7 +18,8 @@ def backup_preparator(temp_source_sink_dirs: Tuple[Path, Path]) -> Generator[Bac
     yield BackupPreparator(b)  # type: ignore
 
 
+# Todo: Finish
 def test_backup_preparator(backup_preparator: BackupPreparator) -> None:
-    BackupTestEvironmentCreator(
+    BackupTestEnvironmentCreator(
         src=backup_preparator._backup.source,
         sink=backup_preparator._backup.target)

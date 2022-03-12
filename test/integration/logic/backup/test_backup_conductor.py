@@ -5,8 +5,8 @@ import pytest
 
 from base.logic.backup.backup_conductor import BackupConductor
 from base.logic.network_share import NetworkShare
-from test.integration.logic.backup.utils import prepare_source_sink_dirs, temp_source_sink_dirs
-from test.utils import patch_multiple_configs, patch_config
+from test.utils.backup_test_environment import prepare_source_sink_dirs
+from test.utils.patch_config import patch_multiple_configs, patch_config
 
 
 def maintainance_mode_is_on() -> bool:

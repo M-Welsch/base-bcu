@@ -6,8 +6,8 @@ import pytest
 import base.logic.backup.source
 from base.logic.backup.backup import Backup
 from base.logic.backup.protocol import Protocol
-from test.utils import patch_config, patch_multiple_configs
-from test.integration.logic.backup.utils import BackupTestEnvironmentCreator, temp_source_sink_dirs, BackupTestEnvironment
+from test.utils.patch_config import patch_config, patch_multiple_configs
+from test.utils.backup_test_environment import BackupTestEnvironmentCreator, BackupTestEnvironment, temp_source_sink_dirs
 
 
 def finished(*args, **kwargs):  # type: ignore
