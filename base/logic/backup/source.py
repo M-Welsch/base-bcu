@@ -35,6 +35,7 @@ class BackupSource:
         smb_share_root = Nas().root_of_share(remote_backup_source_location)
         try:
             subfolder_on_mountpoint = remote_backup_source_location.relative_to(smb_share_root)
+            # Fixme: the wrong subdir comes out here in the test. probably a setup issue, let's see
         except ValueError as e:
             raise InvalidBackupSource("Backup source location on NAS is not within smb share point") from e
         return local_nas_hdd_mount_path / subfolder_on_mountpoint

@@ -20,7 +20,8 @@ def backup_environment(temp_source_sink_dirs: Tuple[Path, Path]) -> Generator[Ba
     yield BackupTestEnvironmentCreator(src=src, sink=sink, protocol=Protocol.SMB, amount_files=10).create()
 
 
-def test_backup(backup_environment: BackupTestEnvironment):
+@pytest.fixture
+def backup(backup_environment: BackupTestEnvironment) -> Generator[Backup, None, None]:
     patch_config(
         base.logic.backup.source.BackupSource,
         backup_environment.sync_config
@@ -40,4 +41,11 @@ def test_backup(backup_environment: BackupTestEnvironment):
             "nas.json": backup_environment.nas_config
         }
     )
-    b = Backup(on_backup_finished=finished)
+    yield Backup(on_backup_finished=finished)
+
+
+def test_backup(backup: Backup) -> None:
+    assert isinstance(backup.source, Path)
+    assert isinstance(backup.target, Path)
+    assert backup.source.exists()
+    assert backup.target.exists()
