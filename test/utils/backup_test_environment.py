@@ -3,6 +3,7 @@ from collections import namedtuple
 from getpass import getuser
 from pathlib import Path
 from shutil import copy
+from subprocess import PIPE, Popen
 from typing import Generator, List, Tuple
 
 import pytest
@@ -109,6 +110,14 @@ class BackupTestEnvironmentCreator:
             "smb_credentials_file": "/etc/base-credentials",
             "smb_share_name": "Backup",
         }
+        p = Popen("mount /tmp/base_tmpshare_mntdir/".split(), stderr=PIPE)
+        p.wait()
+        if p.stderr:
+            lines = [l.decode() for l in p.stderr.readlines()]
+            if any(["No such file or directory" in line for line in lines]):
+                raise Exception(
+                    "Error in the Test Environment: please make sure /etc/samba/smb.conf is set up to have a share named 'Backup' on path '/tmp/base_tmpshare'"
+                )
         return BackupTestEnvironment(sync_config=sync_config, backup_config={}, nas_config=nas_config)
 
     def prepare_for_ssh(self) -> BackupTestEnvironment:
