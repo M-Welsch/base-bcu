@@ -4,7 +4,7 @@ from getpass import getuser
 from pathlib import Path
 from shutil import copy
 from subprocess import PIPE, Popen
-from typing import Generator, List, Tuple
+from typing import Generator, List, Optional, Tuple
 
 import pytest
 from py import path
@@ -21,10 +21,12 @@ def temp_source_sink_dirs(tmp_path: path.local) -> Generator[Tuple[Path, Path], 
     yield Path(src), Path(sink)
 
 
-def create_old_backups(base_path: Path, amount: int) -> List[Path]:
+def create_old_backups(base_path: Path, amount: int, respective_file_size_bytes: Optional[int] = None) -> List[Path]:
     old_backups = [base_path / f"old_bu{index}" for index in range(amount)]
     for old_bu in old_backups:
         old_bu.mkdir()
+        if respective_file_size_bytes is not None:
+            create_file_with_random_data(old_bu / "bulk", respective_file_size_bytes)
     return old_backups
 
 
@@ -77,11 +79,21 @@ class BackupTestEnvironmentCreator:
         └── base_tmpshare_mntdir                sync.json["local_nas_hdd_mount_point"]
     """
 
-    def __init__(self, src: Path, sink: Path, protocol: Protocol, amount_files: int = 10):
+    def __init__(
+        self,
+        src: Path,
+        sink: Path,
+        protocol: Protocol,
+        amount_files: int = 10,
+        virtual_filesystem_for_sink: bool = False,
+    ):
         self._src = src
-        self._sink = sink
         self._protocol = protocol
         self._amount_files = amount_files
+        if virtual_filesystem_for_sink:
+            raise NotImplementedError
+        else:
+            self._sink = sink
 
     def create(self) -> BackupTestEnvironment:
         if self._protocol == Protocol.SSH:
