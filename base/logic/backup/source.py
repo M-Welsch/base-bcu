@@ -29,13 +29,30 @@ class BackupSource:
         return directory
 
     def _backup_source_directory_for_smb(self) -> Path:
-        """ """  # Todo: explain
+        """returns the backup source directory on the BaSe. Take the following example for explanation:
+
+        directory Structure on NAS:
+        ===========================
+        └── samba_share                             (this is the shared directory on the NAS that BaSe will mount)
+            └── files_to_backup    >----+           (directory within the share that contains the files to be backed up)
+                ├── files               │
+                └── more files ...      │
+                                        │
+        directory Structure on BaSe:    │
+        ============================    │
+        /media                          │
+        └── NASHDD                 <----+           (mountpoint on BaSe for the "samba_share" above)
+            └── files_to_backup                     (directory within the share that contains the files to be backed up)
+                ├── files
+                └── more files ...
+
+        this method would in this case return Path("/media/NASHDD/files_to_backup")
+        """
         local_nas_hdd_mount_path = Path(self._config_sync.local_nas_hdd_mount_point)
         remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
-        smb_share_root = Nas().root_of_share(remote_backup_source_location)
+        smb_share_root = Nas().root_of_share()
         try:
             subfolder_on_mountpoint = remote_backup_source_location.relative_to(smb_share_root)
-            # Fixme: the wrong subdir comes out here in the test. probably a setup issue, let's see
         except ValueError as e:
             raise InvalidBackupSource("Backup source location on NAS is not within smb share point") from e
         return local_nas_hdd_mount_path / subfolder_on_mountpoint

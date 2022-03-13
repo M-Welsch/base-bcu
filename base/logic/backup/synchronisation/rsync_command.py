@@ -2,9 +2,6 @@ from pathlib import Path
 from typing import List
 
 from base.common.config import get_config
-from base.common.logger import LoggerFactory
-
-LOG = LoggerFactory.get_logger(__name__)
 
 
 class RsyncCommand:
@@ -16,7 +13,6 @@ class RsyncCommand:
         cmd = "rsync -avH --outbuf=N --info=progress2 --stats".split()  # stats are important for the bu increment size
         cmd.extend(self._protocol_specific(local_target_location, source_location))
         cmd.extend(self._dry_run(dry))
-        LOG.info(f"About to sync with: {' '.join(cmd)}")
         return cmd
 
     def _protocol_specific(self, local_target_location: Path, source_location: Path) -> List[str]:

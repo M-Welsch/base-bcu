@@ -1,5 +1,5 @@
 from pathlib import Path
-from test.utils import patch_multiple_configs
+from test.utils.patch_config import patch_multiple_configs
 from typing import List, Optional
 
 import pytest

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from test.utils import patch_config
+from test.utils.patch_config import patch_config
 from typing import Generator, Optional, Type
 from unittest.mock import MagicMock
 

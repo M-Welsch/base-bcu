@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
-from test.utils import derive_mock_string, patch_multiple_configs
+from test.utils.patch_config import patch_multiple_configs
+from test.utils.utils import derive_mock_string
 from typing import Generator, Optional
 
 import pytest

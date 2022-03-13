@@ -1,5 +1,5 @@
 import sys
-from typing import Type, Dict, Any
+from typing import Any, Dict, Type
 
 from base.common.config import Config
 

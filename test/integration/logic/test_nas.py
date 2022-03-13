@@ -5,18 +5,26 @@
 from getpass import getuser
 from pathlib import Path
 from subprocess import PIPE, Popen
-from test.utils import patch_config
+from test.utils.patch_config import patch_config
+from typing import Optional, Type
 
+import pytest
+
+from base.common.exceptions import NasSmbConfError
 from base.logic.nas import Nas
 
 
-def test_root_of_share() -> None:
-    def mount_target_of_homedir(user: str) -> Path:
-        p = Popen(f'findmnt -T /home/{user} --output="TARGET" -nf', shell=True, stdout=PIPE)
-        return Path(p.stdout.readlines()[-1].decode().strip())  # type: ignore
+@pytest.mark.parametrize("share_name, error", [("Backup", None), ("InvalidOne", NasSmbConfError)])
+def test_root_of_share(share_name: str, error: Optional[Type[NasSmbConfError]]) -> None:
+    def function_under_test() -> Path:
+        return Nas().root_of_share(share_name)
 
     user = getuser()
     patch_config(Nas, {"ssh_host": "127.0.0.1", "ssh_user": user})
-    mount_target = Nas().root_of_share(Path(f"/home/{user}"))
-    assert mount_target == mount_target_of_homedir(user)
-    assert isinstance(mount_target, Path)
+    if error is not None:
+        with pytest.raises(error):
+            function_under_test()
+    else:
+        mount_target = function_under_test()
+        assert mount_target == Path("/tmp/base_tmpshare")
+        assert isinstance(mount_target, Path)

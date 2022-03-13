@@ -1,9 +1,9 @@
 import os
-from shutil import copy
 from collections import namedtuple
-from pathlib import Path
-from typing import Generator, Tuple, List
 from getpass import getuser
+from pathlib import Path
+from shutil import copy
+from typing import Generator, List, Tuple
 
 import pytest
 from py import path
@@ -47,19 +47,24 @@ def prepare_source_sink_dirs(
         copy(testfile_to_copy, sink_path)
 
 
-BackupTestEnvironment = namedtuple("backup_test_environment", "sync_config backup_config nas_config")
+BackupTestEnvironment = namedtuple("BackupTestEnvironment", "sync_config backup_config nas_config")
 
 TEST_BACKUP_SMB_SHARE_ROOT = Path("/tmp/base_tmpshare")
 TEST_BACKUP_SMB_MOUNTPOINT = Path("/tmp/base_tmpshare_mntdir")
 
 
+def create_directories_for_smb_testing() -> None:
+    for directory in [TEST_BACKUP_SMB_SHARE_ROOT, TEST_BACKUP_SMB_MOUNTPOINT]:
+        directory.mkdir(exist_ok=True)
+
+
 class BackupTestEnvironmentCreator:
-    """ creates a temporary structure like below and returns config files to interface with it
+    """creates a temporary structure like below and returns config files to interface with it
     └── tmp_path (created by pytest's tmp_path-fixture)
         ├── sink                                sync.json["local_backup_target_location"]
-        │   ├── backup_2022_01_15-12_00_00      (directory)
-        │   ├── backup_2022_01_16-12_00_00      (directory)
-        │   └── backup_2022_01_17-12_00_00      (directory)
+        │   ├── backup_2022_01_15-12_00_00      (directory that mimics preexisting backup)
+        │   ├── backup_2022_01_16-12_00_00      (directory that mimics preexisting backup)
+        │   └── backup_2022_01_17-12_00_00      (directory that mimics preexisting backup)
         └── src                                 sync.json["remote_backup_source_location"] (in case of ssh)
             └── random files ...
 
@@ -70,6 +75,7 @@ class BackupTestEnvironmentCreator:
         │       └── random files ...
         └── base_tmpshare_mntdir                sync.json["local_nas_hdd_mount_point"]
     """
+
     def __init__(self, src: Path, sink: Path, protocol: Protocol, amount_files: int = 10):
         self._src = src
         self._sink = sink
@@ -83,21 +89,19 @@ class BackupTestEnvironmentCreator:
             backup_environment = self.prepare_for_smb()
         else:
             raise NotImplementedError
-        backup_environment.nas_config.update({
-            "ssh_host": "127.0.0.1",
-            "ssh_user": getuser()
-        })
+        backup_environment.nas_config.update({"ssh_host": "127.0.0.1", "ssh_user": getuser()})
         return backup_environment
 
     def prepare_for_smb(self) -> BackupTestEnvironment:
-        src = TEST_BACKUP_SMB_SHARE_ROOT/"files_to_backup"
+        create_directories_for_smb_testing()
+        src = TEST_BACKUP_SMB_SHARE_ROOT / "files_to_backup"
         src.mkdir(exist_ok=True)
         prepare_source_sink_dirs(src_path=src, sink_path=self._sink, amount_files_in_src=self._amount_files)
         sync_config = {
             "remote_backup_source_location": src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
             "local_nas_hdd_mount_point": TEST_BACKUP_SMB_MOUNTPOINT,
-            "protocol": "smb"
+            "protocol": "smb",
         }
         nas_config = {
             "smb_host": "127.0.0.1",
@@ -105,26 +109,19 @@ class BackupTestEnvironmentCreator:
             "smb_credentials_file": "/etc/base-credentials",
             "smb_share_name": "Backup",
         }
-        return BackupTestEnvironment(
-            sync_config=sync_config,
-            backup_config={},
-            nas_config=nas_config
-        )
+        return BackupTestEnvironment(sync_config=sync_config, backup_config={}, nas_config=nas_config)
 
     def prepare_for_ssh(self) -> BackupTestEnvironment:
-        prepare_source_sink_dirs(src_path=self._src, sink_path=self._sink, amount_files_in_src=self._amount_files)
+        src = TEST_BACKUP_SMB_SHARE_ROOT / "files_to_backup"  # using this for consistency with smb tests
+        prepare_source_sink_dirs(src_path=src, sink_path=self._sink, amount_files_in_src=self._amount_files)
         sync_config = {
-            "remote_backup_source_location": self._src.as_posix(),
+            "remote_backup_source_location": src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
-            "protocol": "ssh"
+            "protocol": "ssh",
         }
         nas_config = {
             "ssh_host": "127.0.0.1",
             "ssh_port": 22,
             "ssh_user": getuser(),
         }
-        return BackupTestEnvironment(
-            sync_config=sync_config,
-            backup_config={},
-            nas_config=nas_config
-        )
+        return BackupTestEnvironment(sync_config=sync_config, backup_config={}, nas_config=nas_config)
