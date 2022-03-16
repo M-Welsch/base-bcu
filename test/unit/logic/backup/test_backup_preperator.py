@@ -1,6 +1,6 @@
 from pathlib import Path
 from subprocess import Popen
-from test.utils.backup_test_environment import prepare_source_sink_dirs
+from test.utils.backup_environment.virtual_backup_environment import prepare_source_sink_dirs
 from typing import Generator, Optional, Tuple
 
 import pytest

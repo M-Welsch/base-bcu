@@ -2,19 +2,17 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from shutil import rmtree
 from types import TracebackType
 from typing import Optional, Type
 
-TEST_BACKUP_VIRTUAL_FILESYSTEM_IMAGE_LOCATION = Path("/tmp/base_tmpfs")
-TEST_BACKUP_VIRTUAL_FILESYSTEM_MOUNT_LOCATION = Path("/tmp/base_tmpfs_mntdir")
+import test.utils.backup_environment.directories as virtual_environment_directories
 
 
 class VirtualHardDrive:
-    def __init__(
-        self, override_image_file_with: Optional[Path] = None, override_mount_point_with: Optional[Path] = None
-    ):
-        self._image_file = override_image_file_with or TEST_BACKUP_VIRTUAL_FILESYSTEM_IMAGE_LOCATION
-        self._mount_point = override_mount_point_with or TEST_BACKUP_VIRTUAL_FILESYSTEM_MOUNT_LOCATION
+    def __init__(self, override_img_file_with: Optional[Path] = None, override_mount_point_with: Optional[Path] = None):
+        self._image_file = override_img_file_with or virtual_environment_directories.VIRTUAL_FILESYSTEM_IMAGE
+        self._mount_point = override_mount_point_with or virtual_environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT
         self._create_virtual_drive_mount_point()
 
     @property
@@ -36,13 +34,17 @@ class VirtualHardDrive:
         self.teardown()
 
     def create(self, blocksize: str = "1M", block_count: int = 40) -> None:
-        self._image_file.unlink(missing_ok=True)
         subprocess.Popen(f"dd if=/dev/urandom of={self._image_file} bs={blocksize} count={block_count}".split()).wait()
         subprocess.Popen(f"mkfs -t ext4 {self._image_file}".split()).wait()
 
     def mount(self) -> None:
         subprocess.Popen(f"mount {self._image_file}".split()).wait()
 
-    def teardown(self) -> None:
+    def unmount(self) -> None:
         subprocess.Popen(f"umount {self._image_file}".split()).wait()
-        self._image_file.unlink(missing_ok=True)
+
+    def teardown(self, delete_files: bool = False) -> None:
+        self.unmount()
+        if delete_files:
+            self._image_file.unlink(missing_ok=True)
+            rmtree(VIRTUAL_FILESYSTEM_MOUNTPOINT)

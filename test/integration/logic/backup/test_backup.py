@@ -1,11 +1,10 @@
 from pathlib import Path
-from test.utils.backup_test_environment import (
-    BackupTestEnvironment,
-    BackupTestEnvironmentCreator,
-    temp_source_sink_dirs,
-)
 from test.utils.patch_config import patch_config, patch_multiple_configs
-from typing import Generator, Tuple
+from test.utils.backup_environment.virtual_backup_environment import (
+    BackupTestEnvironment,
+    VirtualBackupEnvironmentCreator,
+)
+from typing import Generator
 
 import pytest
 
@@ -19,9 +18,8 @@ def finished(*args, **kwargs):  # type: ignore
 
 
 @pytest.fixture
-def backup_environment(temp_source_sink_dirs: Tuple[Path, Path]) -> Generator[BackupTestEnvironment, None, None]:
-    src, sink = temp_source_sink_dirs
-    yield BackupTestEnvironmentCreator(src=src, sink=sink, protocol=Protocol.SMB, amount_files=10).create()
+def backup_environment() -> Generator[BackupTestEnvironment, None, None]:
+    yield VirtualBackupEnvironmentCreator(protocol=Protocol.SMB, amount_files=10).create()
 
 
 @pytest.fixture

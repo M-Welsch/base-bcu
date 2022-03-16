@@ -1,6 +1,8 @@
 from pathlib import Path
-from test.utils.backup_test_environment import prepare_source_sink_dirs
+
+from base.logic.backup.backup import Backup
 from test.utils.patch_config import patch_config, patch_multiple_configs
+from test.utils.backup_environment.virtual_backup_environment import prepare_source_sink_dirs
 from typing import Generator, Tuple
 
 import pytest
