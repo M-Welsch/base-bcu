@@ -2,7 +2,7 @@ from pathlib import Path
 from test.utils.patch_config import patch_config, patch_multiple_configs
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
-    VirtualBackupEnvironmentCreator,
+    VirtualBackupEnvironment,
 )
 from typing import Generator
 
@@ -19,7 +19,7 @@ def finished(*args, **kwargs):  # type: ignore
 
 @pytest.fixture
 def backup_environment() -> Generator[BackupTestEnvironment, None, None]:
-    yield VirtualBackupEnvironmentCreator(protocol=Protocol.SMB, amount_files=10).create()
+    yield VirtualBackupEnvironment(protocol=Protocol.SMB, amount_files=10).create()
 
 
 @pytest.fixture

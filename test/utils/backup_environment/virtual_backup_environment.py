@@ -1,4 +1,5 @@
 import os
+import subprocess
 from collections import namedtuple
 from getpass import getuser
 from pathlib import Path
@@ -25,9 +26,9 @@ def temp_source_sink_dirs(tmp_path: path.local) -> Generator[Tuple[Path, Path], 
 
 
 def create_old_backups(base_path: Path, amount: int, respective_file_size_bytes: Optional[int] = None) -> List[Path]:
-    old_backups = [base_path / f"old_bu{index}" for index in range(amount)]
+    old_backups = [base_path / f"backup_old_{index}" for index in range(amount)]
     for old_bu in old_backups:
-        old_bu.mkdir()
+        old_bu.mkdir(exist_ok=True)
         if respective_file_size_bytes is not None:
             create_file_with_random_data(old_bu / "bulk", respective_file_size_bytes)
     return old_backups
@@ -61,21 +62,28 @@ def create_directories_for_smb_testing() -> None:
         directory.mkdir(exist_ok=True)
 
 
-class VirtualBackupEnvironmentCreator:
+def list_mounts() -> List[str]:
+    p = Popen('mount', stdout=PIPE)
+    return [line.decode().strip() for line in p.stdout.readlines()]
+
+
+class VirtualBackupEnvironment:
     """creates a temporary structure like below and returns config files to interface with it
-    /tmp
+    base/test/utils/backup_environment/virtual_hard_drive >╌╌╌╮
+                                    ╭╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
+    /tmp                            │mount (ext4)
+    ├── base_tmpfs_mntdir       <╌╌╌╯               sync.json["local_backup_target_location"]
+    │   └── backup_target
+    │       ├── backup_2022_01_15-12_00_00          (directory that mimics preexisting backup)
+    │       ├── backup_2022_01_16-12_00_00          (directory that mimics preexisting backup)
+    │       └── backup_2022_01_17-12_00_00          (directory that mimics preexisting backup)
+    │
     ├── base_tmpshare           >╌╌╌╮
-    │   └── files_to_backup         │           sync.json["remote_backup_source_location"] (in case of smb)
+    │   └── backup_source           │           sync.json["remote_backup_source_location"] (in case of smb)
     │       └── random files ...    │mount (smb)
     │                               │
-    ├── base_tmpshare_mntdir    <╌╌╌╯           sync.json["local_nas_hdd_mount_point"]
-    │
-    ├── base_tmpfs              >╌╌╌╮
-    │                               │mount (ext4)
-    └── base_tmpfs_mntdir       <╌╌╌╯           sync.json["local_backup_target_location"]
-        ├── backup_2022_01_15-12_00_00          (directory that mimics preexisting backup)
-        ├── backup_2022_01_16-12_00_00          (directory that mimics preexisting backup)
-        └── backup_2022_01_17-12_00_00          (directory that mimics preexisting backup)
+    └── base_tmpshare_mntdir    <╌╌╌╯           sync.json["local_nas_hdd_mount_point"]
+
     """
 
     def __init__(self, protocol: Protocol, amount_files: int = 10, vhd_for_sink: bool = False) -> None:
@@ -85,18 +93,32 @@ class VirtualBackupEnvironmentCreator:
         self._protocol = protocol
         self._amount_files = amount_files
 
+    @property
+    def source(self) -> Path:
+        return self._src
+
+    @property
+    def sink(self) -> Path:
+        return self._sink
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.teardown()
+
     @staticmethod
     def _get_source() -> Path:
         create_directories_for_smb_testing()
-        src = SMB_SHARE_ROOT / "files_to_backup"
+        src = SMB_SHARE_ROOT / "backup_source"
         src.mkdir(exist_ok=True)
         return src
 
     def _get_sink(self, vhd_for_sink: bool) -> Path:
         if vhd_for_sink:
-            self._virtual_hard_drive.create()
             self._virtual_hard_drive.mount()
-        sink = self._virtual_hard_drive.mount_point
+        sink = self._virtual_hard_drive.mount_point/"backup_target"
+        sink.mkdir(exist_ok=True)
         return sink
 
     def create(self) -> BackupTestEnvironment:
