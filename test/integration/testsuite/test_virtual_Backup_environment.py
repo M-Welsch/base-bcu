@@ -1,5 +1,5 @@
 from test.utils.backup_environment.virtual_backup_environment import (
-    VirtualBackupEnvironment,
+    BackupTestEnvironment,
     create_file_with_random_data, list_mounts,
 )
 import test.utils.backup_environment.directories as environment_directories
@@ -14,7 +14,7 @@ from base.logic.backup.protocol import Protocol
     "protocol, use_vhd", [(Protocol.SMB, False), (Protocol.SMB, True), (Protocol.SSH, False), (Protocol.SSH, True)]
 )
 def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) -> None:
-    vbec = VirtualBackupEnvironment(protocol=protocol, vhd_for_sink=use_vhd)
+    vbec = BackupTestEnvironment(protocol=protocol, vhd_for_sink=use_vhd)
     vbec.create()
     if use_vhd:
         assert environment_directories.VIRTUAL_FILESYSTEM_IMAGE.exists()
@@ -30,7 +30,7 @@ def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) 
 
 
 def test_virtual_backup_environment_teardown() -> None:
-    vbec = VirtualBackupEnvironment(protocol=Protocol.SMB, vhd_for_sink=True)
+    vbec = BackupTestEnvironment(protocol=Protocol.SMB, vhd_for_sink=True)
     vbec.teardown()
     active_mounts = list_mounts()
     for mount_point in [environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT, environment_directories.SMB_MOUNTPOINT]:

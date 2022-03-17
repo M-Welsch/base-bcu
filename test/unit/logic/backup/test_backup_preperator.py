@@ -43,7 +43,7 @@ def test_terminate_sleep_func(backup_preparator_naked: BackupPreparator) -> None
 @pytest.mark.parametrize("newest_valid_bu", [Path(), None])
 def test_prepare(backup_preparator: BackupPreparator, mocker: MockFixture, newest_valid_bu: Optional[Path]) -> None:
     prepare_source_sink_dirs(
-        src_path=backup_preparator._backup.source, sink_path=backup_preparator._backup.target, amount_files_in_src=1
+        src=backup_preparator._backup.source, sink=backup_preparator._backup.target, amount_files_in_src=1
     )
     mocked_mkdir = mocker.patch("pathlib.Path.mkdir")
     mocked_free_space_if_necessary = mocker.patch(

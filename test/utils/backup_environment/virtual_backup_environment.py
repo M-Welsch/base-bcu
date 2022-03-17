@@ -1,6 +1,7 @@
 import os
 import subprocess
 from collections import namedtuple
+from dataclasses import dataclass
 from getpass import getuser
 from pathlib import Path
 from shutil import copy, rmtree
@@ -40,21 +41,18 @@ def create_file_with_random_data(path: Path, size_bytes: int) -> None:
 
 
 def prepare_source_sink_dirs(
-    src_path: Path,
-    sink_path: Path,
+    src: Path,
+    sink: Path,
     amount_files_in_src: int,
     bytesize_of_each_file: int = 1024,
     amount_preexisting_files_in_sink: int = 0,
     filename_prefix: str = "testfile",
 ) -> None:
-    testfiles_src = [src_path / f"{filename_prefix}{cnt}" for cnt in range(amount_files_in_src)]
+    testfiles_src = [src / f"{filename_prefix}{cnt}" for cnt in range(amount_files_in_src)]
     for testfile in testfiles_src:
         create_file_with_random_data(testfile, size_bytes=bytesize_of_each_file)
     for testfile_to_copy in testfiles_src[:amount_preexisting_files_in_sink]:
-        copy(testfile_to_copy, sink_path)
-
-
-BackupTestEnvironment = namedtuple("BackupTestEnvironment", "sync_config backup_config nas_config")
+        copy(testfile_to_copy, sink)
 
 
 def create_directories_for_smb_testing() -> None:
@@ -67,8 +65,25 @@ def list_mounts() -> List[str]:
     return [line.decode().strip() for line in p.stdout.readlines()]
 
 
-class VirtualBackupEnvironment:
+@dataclass
+class BackupTestEnvironmentInput:
+    protocol: Protocol
+    amount_files_in_source: int
+    bytesize_of_each_sourcefile: int
+    use_virtual_drive_for_sink: bool
+    amount_old_backups: int
+    bytesize_of_each_old_backup: int
+    amount_preexisting_source_files_in_latest_backup: int = 0
+
+
+BackupTestEnvironmentOutput = namedtuple("BackupTestEnvironmentOutput", "sync_config backup_config nas_config")
+
+
+class BackupTestEnvironment:
     """creates a temporary structure like below and returns config files to interface with it
+    Note: it's important that the virtual_hard_drive from backup_environment is used. This makes sure that we get write
+    permissions on the drive!
+
     base/test/utils/backup_environment/virtual_hard_drive >╌╌╌╮
                                     ╭╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
     /tmp                            │mount (ext4)
@@ -83,15 +98,15 @@ class VirtualBackupEnvironment:
     │       └── random files ...    │mount (smb)
     │                               │
     └── base_tmpshare_mntdir    <╌╌╌╯           sync.json["local_nas_hdd_mount_point"]
-
     """
 
-    def __init__(self, protocol: Protocol, amount_files: int = 10, vhd_for_sink: bool = False) -> None:
+    def __init__(self, protocol: Protocol, amount_files: int = 10, bytesize_of_each_sourcefile: int = 1024, vhd_for_sink: bool = True) -> None:
         self._virtual_hard_drive = VirtualHardDrive()
         self._src = self._get_source()
         self._sink = self._get_sink(vhd_for_sink)
         self._protocol = protocol
         self._amount_files = amount_files
+        self._bytesize_of_each_sourcefile = bytesize_of_each_sourcefile
 
     @property
     def source(self) -> Path:
@@ -121,7 +136,8 @@ class VirtualBackupEnvironment:
         sink.mkdir(exist_ok=True)
         return sink
 
-    def create(self) -> BackupTestEnvironment:
+    def create(self) -> BackupTestEnvironmentOutput:
+        prepare_source_sink_dirs(src=self._src, sink=self._sink, bytesize_of_each_file=self._bytesize_of_each_sourcefile, amount_files_in_src=self._amount_files)
         if self._protocol == Protocol.SSH:
             backup_environment = self.prepare_for_ssh()
         elif self._protocol == Protocol.SMB:
@@ -129,6 +145,7 @@ class VirtualBackupEnvironment:
         else:
             raise NotImplementedError
         backup_environment.nas_config.update({"ssh_host": "127.0.0.1", "ssh_user": getuser()})
+        backup_environment.sync_config.update({"ssh_keyfile_path": f"/home/{getuser()}/.ssh/id_rsa"})
         return backup_environment
 
     @staticmethod
@@ -136,18 +153,18 @@ class VirtualBackupEnvironment:
         Popen(f"umount {SMB_MOUNTPOINT}".split())
 
     def teardown(self, delete_files: bool = False) -> None:
-        self.unmount_smb()
+        if self._protocol == Protocol.SMB:
+            self.unmount_smb()
         self._virtual_hard_drive.teardown()
         if delete_files:
             for directory in [SMB_SHARE_ROOT, SMB_MOUNTPOINT]:
                 rmtree(directory, onerror=lambda *args, **kwargs: print(f"{directory} cannot be deleted"))
 
-    def prepare_for_smb(self) -> BackupTestEnvironment:
-        prepare_source_sink_dirs(src_path=self._src, sink_path=self._sink, amount_files_in_src=self._amount_files)
+    def prepare_for_smb(self) -> BackupTestEnvironmentOutput:
         sync_config = {
             "remote_backup_source_location": self._src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
-            "local_nas_hdd_mount_point": SMB_MOUNTPOINT,
+            "local_nas_hdd_mount_point": SMB_MOUNTPOINT.as_posix(),
             "protocol": "smb",
         }
         nas_config = {
@@ -164,10 +181,9 @@ class VirtualBackupEnvironment:
                 raise Exception(
                     "Error in the Test Environment: please make sure /etc/samba/smb.conf is set up to have a share named 'Backup' on path '/tmp/base_tmpshare'"
                 )
-        return BackupTestEnvironment(sync_config=sync_config, backup_config={}, nas_config=nas_config)
+        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config)
 
-    def prepare_for_ssh(self) -> BackupTestEnvironment:
-        prepare_source_sink_dirs(src_path=self._src, sink_path=self._sink, amount_files_in_src=self._amount_files)
+    def prepare_for_ssh(self) -> BackupTestEnvironmentOutput:
         sync_config = {
             "remote_backup_source_location": self._src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
@@ -178,4 +194,4 @@ class VirtualBackupEnvironment:
             "ssh_port": 22,
             "ssh_user": getuser(),
         }
-        return BackupTestEnvironment(sync_config=sync_config, backup_config={}, nas_config=nas_config)
+        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config)

@@ -5,6 +5,7 @@ from typing import Callable, Optional
 
 from signalslot import Signal
 
+from base.common.constants import BackupProcessStep, BackupDirectorySuffix
 from base.common.logger import LoggerFactory
 from base.logic.backup.source import BackupSource
 from base.logic.backup.synchronisation.sync import Sync
@@ -41,6 +42,10 @@ class Backup(Thread):
     @property
     def target(self) -> Path:
         return self._target
+
+    def set_process_step(self, process_step: BackupProcessStep) -> None:
+        new_name = self._target.with_suffix(process_step.suffix)
+        self._target = self._target.rename(new_name)
 
     @property
     def running(self) -> bool:

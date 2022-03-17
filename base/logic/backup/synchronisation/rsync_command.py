@@ -17,12 +17,12 @@ class RsyncCommand:
 
     def _protocol_specific(self, local_target_location: Path, source_location: Path) -> List[str]:
         if self._sync_config.protocol == "smb":
-            return f"{source_location}/ {local_target_location}".split()
+            return f"{source_location.as_posix()}/ {local_target_location}".split()
         else:
             return [
                 "-e",
                 f'"ssh -i {self._sync_config.ssh_keyfile_path}"',
-                f"{self._nas_config.ssh_user}@{self._nas_config.ssh_host}:{source_location}/",
+                f"{self._nas_config.ssh_user}@{self._nas_config.ssh_host}:{source_location.as_posix()}/",
                 f"{local_target_location}",
             ]
 

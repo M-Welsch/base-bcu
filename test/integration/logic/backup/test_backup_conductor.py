@@ -23,6 +23,6 @@ def backup() -> Generator[Backup, None, None]:
 
 def test_backup_conductor(backup_conductor: BackupConductor, temp_source_sink_dirs: Tuple[Path, Path]) -> None:
     src, sink = temp_source_sink_dirs
-    prepare_source_sink_dirs(src_path=src, sink_path=sink, amount_files_in_src=2)
+    prepare_source_sink_dirs(src=src, sink=sink, amount_files_in_src=2)
     patch_config(NetworkShare, {"local_nas_hdd_mount_point": ""})
     backup_conductor.run()

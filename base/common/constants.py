@@ -5,14 +5,15 @@ from typing import List
 BAUD_RATE: int = 9600
 
 
-backup_process_step = namedtuple("backup_process_step", "suffix description may_be_continued")
+BackupProcessStep = namedtuple("BackupProcessStep", "suffix description may_be_continued")
 
 
 @dataclass
 class BackupDirectorySuffix:
-    while_copying: backup_process_step = backup_process_step(".in_preparation", "copying ", False)
-    while_backing_up: backup_process_step = backup_process_step(".unfinished", "synchronisation in progress", True)
-    finished: backup_process_step = backup_process_step("", "completed backup", True)
+    empty: BackupProcessStep = BackupProcessStep(".empty", "just created", True)
+    while_copying: BackupProcessStep = BackupProcessStep(".in_preparation", "copying ", False)
+    while_backing_up: BackupProcessStep = BackupProcessStep(".unfinished", "synchronisation in progress", True)
+    finished: BackupProcessStep = BackupProcessStep("", "completed backup", True)
 
     @classmethod
     def not_valid_for_continuation(cls) -> List[str]:
