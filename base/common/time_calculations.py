@@ -4,6 +4,7 @@ from datetime import datetime
 from dateutil.rrule import DAILY, MONTHLY, WEEKLY, rrule
 
 from base.common.config import Config
+from base.common.constants import next_backup_timestring_format_for_sbu
 
 _Plan = namedtuple("_Plan", "freq bymonthday byweekday byhour byminute")
 
@@ -19,7 +20,7 @@ def next_backup(config: Config) -> datetime:
 
 def next_backup_timestring(config: Config) -> str:
     dt = next_backup(config)
-    return dt.strftime("%d.%m.%Y %H:%M")
+    return dt.strftime(next_backup_timestring_format_for_sbu)
 
 
 def next_backup_seconds(config: Config) -> int:

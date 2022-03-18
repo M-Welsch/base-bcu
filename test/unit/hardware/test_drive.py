@@ -1,8 +1,6 @@
 import logging
-from subprocess import run, PIPE, Popen
 from pathlib import Path
-
-import base.hardware.drive
+from subprocess import PIPE, Popen, run
 from test.utils.backup_environment.virtual_hard_drive import VirtualHardDrive
 from test.utils.patch_config import patch_config
 from typing import Generator
@@ -11,6 +9,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from py import path
 
+import base.hardware.drive
 from base.common.drive_inspector import PartitionInfo
 from base.common.exceptions import MountError, UnmountError
 from base.common.status import HddState
@@ -37,12 +36,12 @@ class MockDrive(Drive):
         return PartitionInfo(path=str(self._virtual_hard_drive_location), mount_point="", bytes_size=0)
 
 
-def call_mount_command(*args, **kwargs) -> None:
+def call_mount_command(*args, **kwargs) -> None:  # type: ignore
     command = f"mount /tmp/base_tmpfs_mntdir".split()
     run(command, stdout=PIPE, stderr=PIPE)
 
 
-def call_unmount_command(*args, **kwargs) -> None:
+def call_unmount_command(*args, **kwargs) -> None:  # type: ignore
     command = f"umount /tmp/base_tmpfs_mntdir".split()
     run(command, stdout=PIPE, stderr=PIPE)
 

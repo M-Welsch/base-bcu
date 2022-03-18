@@ -21,18 +21,19 @@ class Sync:
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
         self._sync_config = get_config("sync.json")
         self._nas_config = get_config("nas.json")
-        self._command: List[str] = RsyncCommand().compose(local_target_location, source_location)
+        self._command: str = RsyncCommand().compose(local_target_location, source_location)
         self._process: Optional[Popen] = None
         self._status: SyncStatus = SyncStatus()
 
     def __enter__(self) -> Generator[SyncStatus, None, None]:
+        LOG.debug(f"syncing with command: {self._command}")
         self._process = Popen(
             self._command,
             bufsize=0,
             universal_newlines=True,
             stdout=PIPE,
             stderr=STDOUT,
-            shell=False,
+            shell=True,
             preexec_fn=os.setsid,
         )
         return self._output_generator()
@@ -44,7 +45,7 @@ class Sync:
         exc_traceback: Optional[TracebackType],
     ) -> None:
         if isinstance(self._process, Popen):
-            self._process.wait(1)
+            self._process.wait()  # Fixme: put timeout of "1" back in?
         try:
             self.terminate()
         except ProcessLookupError:

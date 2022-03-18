@@ -34,14 +34,14 @@ class BackupSource:
         directory Structure on NAS:
         ===========================
         └── samba_share                             (this is the shared directory on the NAS that BaSe will mount)
-            └── files_to_backup    >----+           (directory within the share that contains the files to be backed up)
+            └── files_to_backup    >╌╌╌╌╮           (directory within the share that contains the files to be backed up)
                 ├── files               │
                 └── more files ...      │
-                                        │
+                                        │mount (cifs/smb)
         directory Structure on BaSe:    │
         ============================    │
         /media                          │
-        └── NASHDD                 <----+           (mountpoint on BaSe for the "samba_share" above)
+        └── NASHDD                 <╌╌╌-╯           (mountpoint on BaSe for the "samba_share" above)
             └── files_to_backup                     (directory within the share that contains the files to be backed up)
                 ├── files
                 └── more files ...

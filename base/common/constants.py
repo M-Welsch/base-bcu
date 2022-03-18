@@ -5,6 +5,12 @@ from typing import List
 BAUD_RATE: int = 9600
 
 
+current_backup_timestring_format_for_directory = "%Y_%m_%d-%H_%M_%S"
+
+
+next_backup_timestring_format_for_sbu = "%d.%m.%Y %H:%M"
+
+
 BackupProcessStep = namedtuple("BackupProcessStep", "suffix description may_be_continued")
 
 

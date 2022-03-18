@@ -74,7 +74,7 @@ class BackupPreparator:
                     f"Cannot obtain free space on backup hdd: {[stderr_line.decode().strip() for stderr_line in stderr_lines]}"
                 )
         free_space_on_bu_hdd = _remove_heading_from_df_output(out.stdout)
-        LOG.info(f"obtaining free space on bu hdd with command: {command}. Received {free_space_on_bu_hdd}")
+        LOG.info(f"obtaining free space on bu hdd with command: {' '.join(command)}. Received {free_space_on_bu_hdd}")
         return free_space_on_bu_hdd
 
     @staticmethod

@@ -13,7 +13,7 @@ class Backup:
     source: Path = Path()
     target: Path = Path()
 
-    def set_process_step(*args, **kwargs):
+    def set_process_step(*args, **kwargs) -> None:
         pass
 
 

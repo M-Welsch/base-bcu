@@ -17,7 +17,7 @@ from base.logic.backup.backup_preparator import BackupPreparator
 from base.logic.backup.protocol import Protocol
 
 
-class Backup:
+class Backup():
     source: Path = Path()
     target: Path = Path()
 

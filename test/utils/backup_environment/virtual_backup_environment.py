@@ -4,6 +4,7 @@ import os
 import shutil
 from collections import namedtuple
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from getpass import getuser
 from pathlib import Path
 from shutil import copy, rmtree
@@ -16,6 +17,7 @@ from typing import Generator, List, Optional, Tuple, Type
 import pytest
 from py import path
 
+from base.common.constants import current_backup_timestring_format_for_directory
 from base.logic.backup.protocol import Protocol
 
 
@@ -29,11 +31,17 @@ def temp_source_sink_dirs(tmp_path: path.local) -> Generator[Tuple[Path, Path], 
 
 
 def create_old_backups(base_path: Path, amount: int, respective_file_size_bytes: Optional[int] = None) -> List[Path]:
-    old_backups = [base_path / f"backup_old_{index}" for index in range(amount)]
-    for old_bu in old_backups:
-        old_bu.mkdir(exist_ok=True)
+    old_backups = []
+    base_age_difference = timedelta(days=1)
+    for i in range(amount):
+        timestamp = (datetime.now() - (base_age_difference * i)).strftime(
+            current_backup_timestring_format_for_directory
+        )
+        old_backup = base_path / f"backup_{timestamp}"
+        old_backup.mkdir(exist_ok=True)
         if respective_file_size_bytes is not None:
-            create_file_with_random_data(old_bu / "bulk", respective_file_size_bytes)
+            create_file_with_random_data(old_backup / "bulk", respective_file_size_bytes)
+        old_backups.append(old_backup)
     return old_backups
 
 
@@ -146,7 +154,7 @@ class BackupTestEnvironment:
             src=self._src,
             sink=self._sink,
             bytesize_of_each_file=self._configuration.bytesize_of_each_sourcefile,
-            amount_files_in_src=self._configuration.amount_files_in_source
+            amount_files_in_src=self._configuration.amount_files_in_source,
         )
         self._prepare_sink()
         if self._configuration.protocol == Protocol.SSH:
@@ -163,7 +171,7 @@ class BackupTestEnvironment:
         create_old_backups(
             base_path=self._sink,
             amount=self._configuration.amount_old_backups,
-            respective_file_size_bytes=self._configuration.bytesize_of_each_old_backup
+            respective_file_size_bytes=self._configuration.bytesize_of_each_old_backup,
         )
 
     @staticmethod

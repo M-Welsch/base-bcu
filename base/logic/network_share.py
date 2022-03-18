@@ -29,7 +29,7 @@ class NetworkShare:
         nas_config = get_config("nas.json")
         command = (
             f"mount -t cifs "
-            f"-o credentials={nas_config.smb_credentials_file} "
+            f"-o credentials={nas_config.smb_credentials_file}"
             f"//{nas_config.smb_host}/{nas_config.smb_share_name} "
             f"{self._config.local_nas_hdd_mount_point}".split()
         )

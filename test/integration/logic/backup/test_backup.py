@@ -1,5 +1,9 @@
 from pathlib import Path
-from test.utils.backup_environment.virtual_backup_environment import BackupTestEnvironment, BackupTestEnvironmentOutput
+from test.utils.backup_environment.virtual_backup_environment import (
+    BackupTestEnvironment,
+    BackupTestEnvironmentInput,
+    BackupTestEnvironmentOutput,
+)
 from test.utils.patch_config import patch_config, patch_multiple_configs
 from typing import Generator
 
@@ -16,7 +20,16 @@ def finished(*args, **kwargs):  # type: ignore
 
 @pytest.fixture
 def backup_environment() -> Generator[BackupTestEnvironmentOutput, None, None]:
-    yield BackupTestEnvironment(protocol=Protocol.SMB, amount_files=10).create()
+    backup_environment_configuration = BackupTestEnvironmentInput(
+        protocol=Protocol.SMB,
+        amount_files_in_source=10,
+        bytesize_of_each_sourcefile=1024,
+        use_virtual_drive_for_sink=True,
+        amount_old_backups=0,
+        bytesize_of_each_old_backup=0,
+        amount_preexisting_source_files_in_latest_backup=0,
+    )
+    yield BackupTestEnvironment(backup_environment_configuration).create()
 
 
 @pytest.fixture
