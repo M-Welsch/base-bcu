@@ -85,4 +85,5 @@ class BackupPreparator:
             shutil.rmtree(oldest_backup.absolute())
             LOG.info("deleting {} to free space for new backup".format(oldest_backup))
         else:
+            # Todo: better raise something?!
             LOG.error(f"no backup found to delete. Available backups: {backup_browser.index}")

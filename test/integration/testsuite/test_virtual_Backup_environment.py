@@ -42,14 +42,20 @@ def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) 
 def test_virtual_backup_environment_teardown() -> None:
     backup_environment_configuration = BackupTestEnvironmentInput(
         protocol=Protocol.SMB,  # never mind
-        amount_files_in_source=0,
-        bytesize_of_each_sourcefile=0,
+        amount_files_in_source=1,
+        bytesize_of_each_sourcefile=1024,
         use_virtual_drive_for_sink=True,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=0,
+        amount_old_backups=1,
+        bytesize_of_each_old_backup=1024,
         amount_preexisting_source_files_in_latest_backup=0,
     )
     vbec = BackupTestEnvironment(configuration=backup_environment_configuration)
+    vbec.create()
+    assert len(list(vbec.source.iterdir())) == 1
+    assert len(list(vbec.sink.iterdir())) == 1
+    vbec._delete_files()
+    assert not any(vbec.source.iterdir())
+    assert not any(vbec.sink.iterdir())
     vbec.teardown()
     active_mounts = list_mounts()
     for mount_point in [environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT, environment_directories.SMB_MOUNTPOINT]:

@@ -1,7 +1,9 @@
 import logging
-import subprocess
+from subprocess import run, PIPE, Popen
 from pathlib import Path
-from test.utils.backup_environment.virtual_hard_drive import create_virtual_hard_drive, teardown_virtual_hard_drive
+
+import base.hardware.drive
+from test.utils.backup_environment.virtual_hard_drive import VirtualHardDrive
 from test.utils.patch_config import patch_config
 from typing import Generator
 
@@ -27,33 +29,44 @@ class MockDrive(Drive):
         super().__init__()
         self._virtual_hard_drive_location = virtual_hard_drive_location
 
+    @property
+    def virtual_hard_drive_location(self) -> Path:
+        return self._virtual_hard_drive_location
+
     def _get_partition_info_or_raise(self) -> PartitionInfo:
         return PartitionInfo(path=str(self._virtual_hard_drive_location), mount_point="", bytes_size=0)
 
 
+def call_mount_command(*args, **kwargs) -> None:
+    command = f"mount /tmp/base_tmpfs_mntdir".split()
+    run(command, stdout=PIPE, stderr=PIPE)
+
+
+def call_unmount_command(*args, **kwargs) -> None:
+    command = f"umount /tmp/base_tmpfs_mntdir".split()
+    run(command, stdout=PIPE, stderr=PIPE)
+
+
 @pytest.fixture
 def drive(tmp_path: path.local) -> Generator[MockDrive, None, None]:
-    virtual_hard_drive_location = Path(tmp_path / "VHD.img")
-    virtual_hard_drive_mountpoint = Path(tmp_path / "VHD").resolve()
-    virtual_hard_drive_mountpoint.mkdir()
-    create_virtual_hard_drive(virtual_hard_drive_location)
+    virtual_hard_drive = VirtualHardDrive()
     patch_config(
         class_=Drive,
         config_content={
             "backup_hdd_file_system": "ext4",
-            "backup_hdd_mount_point": str(virtual_hard_drive_mountpoint),
+            "backup_hdd_mount_point": str(virtual_hard_drive.mount_point),
             "backup_hdd_spinup_timeout": 20,
             "backup_hdd_unmount_trials": 5,
             "backup_hdd_unmount_waiting_secs": 1,
         },
         read_only=False,
     )
-    patch_config(class_=BackupBrowser, config_content={"local_backup_target_location": virtual_hard_drive_mountpoint})
+    patch_config(class_=BackupBrowser, config_content={"local_backup_target_location": virtual_hard_drive.mount_point})
     yield MockDrive(
         BackupBrowser(),
-        virtual_hard_drive_location=virtual_hard_drive_location,
+        virtual_hard_drive_location=virtual_hard_drive._image_file,
     )
-    teardown_virtual_hard_drive(virtual_hard_drive_mountpoint)
+    virtual_hard_drive.teardown()
 
 
 @pytest.fixture
@@ -75,70 +88,68 @@ def drive_mounted(drive: MockDrive) -> Generator[MockDrive, None, None]:
 
     Waits for mount command to complete before yield.
     """
-    subprocess.run(
-        f"sudo mount -t ext4 {drive._virtual_hard_drive_location} {drive._config.backup_hdd_mount_point}".split()
-    )
+    call_mount_command()
     assert drive.is_mounted
     drive._partition_info = drive._get_partition_info_or_raise()
     yield drive
 
 
-class TestDrive:
-    @staticmethod
-    def test_is_mounted(drive: MockDrive) -> None:
-        print(f"drive._is_mounted: {drive.is_mounted}")
+def test_is_mounted(drive: MockDrive) -> None:
+    print(f"drive._is_mounted: {drive.is_mounted}")
 
-    @staticmethod
-    def test_mount(drive: MockDrive) -> None:
-        drive.mount()
-        assert drive.is_mounted
-        assert drive.is_available == HddState.available
 
-    @staticmethod
-    def test_mount_invalid_device(drive_invalid_device: MockDrive) -> None:
-        with pytest.raises(MountError):
-            drive_invalid_device.mount()
-        assert drive_invalid_device.is_available == HddState.not_available
+def test_mount_invalid_device(drive_invalid_device: MockDrive) -> None:
+    with pytest.raises(MountError):
+        drive_invalid_device.mount()
+    assert drive_invalid_device.is_available == HddState.not_available
 
-    @staticmethod
-    def test_mount_invalid_mountpoint(drive_invalid_mountpoint: MockDrive) -> None:
-        with pytest.raises(MountError):
-            drive_invalid_mountpoint.mount()
-        assert drive_invalid_mountpoint.is_available == HddState.not_available
 
-    @staticmethod
-    def test_unmount(drive_mounted: MockDrive) -> None:
-        drive_mounted.unmount()
-        assert not drive_mounted.is_mounted
-        assert drive_mounted._partition_info is not None
-        assert not Path(drive_mounted._partition_info.path).is_mount()
+@pytest.mark.slow
+def test_unmount_invalid_mountpoint(drive_invalid_mountpoint: MockDrive, caplog: LogCaptureFixture) -> None:
+    with caplog.at_level(logging.WARNING):
+        drive_invalid_mountpoint.unmount()
+    assert "Unmounting didn't work:" in caplog.text
+    with pytest.raises(UnmountError):
+        drive_invalid_mountpoint._unmount_backup_hdd_or_raise()
 
-    @staticmethod
-    @pytest.mark.slow
-    def test_unmount_invalid_mountpoint(drive_invalid_mountpoint: MockDrive, caplog: LogCaptureFixture) -> None:
-        with caplog.at_level(logging.WARNING):
-            drive_invalid_mountpoint.unmount()
-        assert "Unmounting didn't work:" in caplog.text
-        with pytest.raises(UnmountError):
-            drive_invalid_mountpoint._unmount_backup_hdd_or_raise()
 
-    @staticmethod
-    def test_space_used_percent(drive: MockDrive) -> None:
-        print(drive.space_used_percent())
+def test_space_used_percent(drive: MockDrive) -> None:
+    print(drive.space_used_percent())
 
-    @staticmethod
-    def test_space_used_percent_invalid_mountpoint(drive_invalid_mountpoint: MockDrive) -> None:
-        drive_invalid_mountpoint._partition_info = PartitionInfo(path="", mount_point="", bytes_size=0)
-        assert drive_invalid_mountpoint.space_used_percent() == 0
 
-    @staticmethod
-    def test_get_string_from_df_output(drive: MockDrive) -> None:
-        string_to_verify = "somestring"
-        p = subprocess.Popen(["echo", string_to_verify], stdout=subprocess.PIPE)
-        result = drive._get_string_from_df_output(p.stdout)
-        assert result.strip() == string_to_verify
+def test_space_used_percent_invalid_mountpoint(drive_invalid_mountpoint: MockDrive) -> None:
+    drive_invalid_mountpoint._partition_info = PartitionInfo(path="", mount_point="", bytes_size=0)
+    assert drive_invalid_mountpoint.space_used_percent() == 0
 
-    @staticmethod
-    @pytest.mark.parametrize("test_in, test_out", [("Use%\n3%\n", 3), ("SomeInvalidStuff", 0), ("", 0)])
-    def test_remove_heading_from_df_output(drive: MockDrive, test_in: str, test_out: str) -> None:
-        assert drive._remove_heading_from_df_output(test_in) == test_out
+
+def test_get_string_from_df_output(drive: MockDrive) -> None:
+    string_to_verify = "somestring"
+    p = Popen(["echo", string_to_verify], stdout=PIPE)
+    result = drive._get_string_from_df_output(p.stdout)
+    assert result.strip() == string_to_verify
+
+
+@pytest.mark.parametrize("test_in, test_out", [("Use%\n3%\n", 3), ("SomeInvalidStuff", 0), ("", 0)])
+def test_remove_heading_from_df_output(drive: MockDrive, test_in: str, test_out: str) -> None:
+    assert drive._remove_heading_from_df_output(test_in) == test_out
+
+
+def test_mount_invalid_mountpoint(drive_invalid_mountpoint: MockDrive) -> None:
+    with pytest.raises(MountError):
+        drive_invalid_mountpoint.mount()
+    assert drive_invalid_mountpoint.is_available == HddState.not_available
+
+
+def test_mount(drive: MockDrive) -> None:
+    base.hardware.drive.call_mount_command = call_mount_command
+    drive.mount()
+    assert drive.is_mounted
+    assert drive.is_available == HddState.available
+
+
+def test_unmount(drive_mounted: MockDrive) -> None:
+    base.hardware.drive.call_unmount_command = call_unmount_command
+    drive_mounted.unmount()
+    assert not drive_mounted.is_mounted
+    assert drive_mounted._partition_info is not None
+    assert not Path(drive_mounted._partition_info.path).is_mount()

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+mkdir log
+
 sudo apt-get update
 sudo apt-get install python3-pip nginx gunicorn python3-flask python3-paramiko python3-pytest -y
 

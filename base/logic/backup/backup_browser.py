@@ -24,7 +24,7 @@ class BackupBrowser:
                 [
                     path
                     for path in Path(self._config.local_backup_target_location).iterdir()
-                    if path.as_posix().startswith("backup")
+                    if path.stem.startswith("backup")
                 ]
             )
         except OSError as e:

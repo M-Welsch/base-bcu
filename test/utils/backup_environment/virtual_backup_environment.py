@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from collections import namedtuple
 from dataclasses import dataclass
 from getpass import getuser
@@ -145,8 +146,9 @@ class BackupTestEnvironment:
             src=self._src,
             sink=self._sink,
             bytesize_of_each_file=self._configuration.bytesize_of_each_sourcefile,
-            amount_files_in_src=self._configuration.amount_files_in_source,
+            amount_files_in_src=self._configuration.amount_files_in_source
         )
+        self._prepare_sink()
         if self._configuration.protocol == Protocol.SSH:
             backup_environment = self.prepare_for_ssh()
         elif self._configuration.protocol == Protocol.SMB:
@@ -157,17 +159,36 @@ class BackupTestEnvironment:
         backup_environment.sync_config.update({"ssh_keyfile_path": f"/home/{getuser()}/.ssh/id_rsa"})
         return backup_environment
 
+    def _prepare_sink(self) -> None:
+        create_old_backups(
+            base_path=self._sink,
+            amount=self._configuration.amount_old_backups,
+            respective_file_size_bytes=self._configuration.bytesize_of_each_old_backup
+        )
+
     @staticmethod
     def unmount_smb() -> None:
         Popen(f"umount {SMB_MOUNTPOINT}".split())
 
-    def teardown(self, delete_files: bool = False) -> None:
+    def teardown(self, delete_files: bool = True) -> None:
+        if delete_files:
+            self._delete_files()
         if self._configuration.protocol == Protocol.SMB:
             self.unmount_smb()
         self._virtual_hard_drive.teardown()
-        if delete_files:
-            for directory in [SMB_SHARE_ROOT, SMB_MOUNTPOINT]:
-                rmtree(directory, onerror=lambda *args, **kwargs: print(f"{directory} cannot be deleted"))
+
+    def _delete_files(self) -> None:
+        self._delete_content_of(self.source)
+        self._delete_content_of(self.sink)
+
+    @staticmethod
+    def _delete_content_of(directory: Path) -> None:
+        files = [item for item in directory.iterdir() if item.is_file()]
+        directories = [item for item in directory.iterdir() if item.is_dir()]
+        for file in files:
+            file.unlink()
+        for directory in directories:
+            shutil.rmtree(directory)
 
     def prepare_for_smb(self) -> BackupTestEnvironmentOutput:
         sync_config = {

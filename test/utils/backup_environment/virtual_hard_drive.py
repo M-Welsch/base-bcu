@@ -10,6 +10,7 @@ from typing import Optional, Type
 
 class VirtualHardDrive:
     def __init__(self, override_img_file_with: Optional[Path] = None, override_mount_point_with: Optional[Path] = None):
+        self._new_image = bool(override_img_file_with)
         self._image_file = override_img_file_with or virtual_environment_directories.VIRTUAL_FILESYSTEM_IMAGE
         self._mount_point = override_mount_point_with or virtual_environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT
         self._create_virtual_drive_mount_point()
@@ -31,6 +32,12 @@ class VirtualHardDrive:
         exc_traceback: Optional[TracebackType],
     ) -> None:
         self.teardown()
+
+    def create(self, blocksize: str = "1M", block_count: int = 40) -> None:
+        if self._new_image:
+            create_ext4_filesystem(destination=self._image_file, blocksize=blocksize, block_count=block_count)
+        else:
+            print("overwriting the global virtual test drive will crash other tests! Aborting.")
 
     def mount(self) -> None:
         subprocess.Popen(f"mount {self._image_file}".split()).wait()

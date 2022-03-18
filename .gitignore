@@ -3,5 +3,8 @@ __pycache__
 log
 *.idea
 *.log
-.pytest_cache
+.mypy_cache/
+.pytest_cache/
 /test/utils/backup_environment/virtual_hard_drive
+venv/
+base/log/
