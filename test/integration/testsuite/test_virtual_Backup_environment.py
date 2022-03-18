@@ -1,9 +1,10 @@
+import test.utils.backup_environment.directories as environment_directories
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
-    create_file_with_random_data, list_mounts,
+    BackupTestEnvironmentInput,
+    create_file_with_random_data,
+    list_mounts,
 )
-import test.utils.backup_environment.directories as environment_directories
-
 
 import pytest
 
@@ -14,7 +15,16 @@ from base.logic.backup.protocol import Protocol
     "protocol, use_vhd", [(Protocol.SMB, False), (Protocol.SMB, True), (Protocol.SSH, False), (Protocol.SSH, True)]
 )
 def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) -> None:
-    vbec = BackupTestEnvironment(protocol=protocol, vhd_for_sink=use_vhd)
+    backup_environment_configuration = BackupTestEnvironmentInput(
+        protocol=protocol,
+        amount_files_in_source=0,
+        bytesize_of_each_sourcefile=0,
+        use_virtual_drive_for_sink=True,
+        amount_old_backups=0,
+        bytesize_of_each_old_backup=0,
+        amount_preexisting_source_files_in_latest_backup=0,
+    )
+    vbec = BackupTestEnvironment(configuration=backup_environment_configuration)
     vbec.create()
     if use_vhd:
         assert environment_directories.VIRTUAL_FILESYSTEM_IMAGE.exists()
@@ -30,7 +40,16 @@ def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) 
 
 
 def test_virtual_backup_environment_teardown() -> None:
-    vbec = BackupTestEnvironment(protocol=Protocol.SMB, vhd_for_sink=True)
+    backup_environment_configuration = BackupTestEnvironmentInput(
+        protocol=Protocol.SMB,  # never mind
+        amount_files_in_source=0,
+        bytesize_of_each_sourcefile=0,
+        use_virtual_drive_for_sink=True,
+        amount_old_backups=0,
+        bytesize_of_each_old_backup=0,
+        amount_preexisting_source_files_in_latest_backup=0,
+    )
+    vbec = BackupTestEnvironment(configuration=backup_environment_configuration)
     vbec.teardown()
     active_mounts = list_mounts()
     for mount_point in [environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT, environment_directories.SMB_MOUNTPOINT]:

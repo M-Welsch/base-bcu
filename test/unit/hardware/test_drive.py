@@ -1,8 +1,8 @@
 import logging
 import subprocess
 from pathlib import Path
-from test.utils.patch_config import patch_config
 from test.utils.backup_environment.virtual_hard_drive import create_virtual_hard_drive, teardown_virtual_hard_drive
+from test.utils.patch_config import patch_config
 from typing import Generator
 
 import pytest

@@ -1,12 +1,11 @@
 from pathlib import Path
-
-from base.logic.backup.backup import Backup
-from test.utils.patch_config import patch_config, patch_multiple_configs
 from test.utils.backup_environment.virtual_backup_environment import prepare_source_sink_dirs
+from test.utils.patch_config import patch_config, patch_multiple_configs
 from typing import Generator, Tuple
 
 import pytest
 
+from base.logic.backup.backup import Backup
 from base.logic.backup.backup_conductor import BackupConductor
 from base.logic.network_share import NetworkShare
 

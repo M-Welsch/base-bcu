@@ -1,15 +1,16 @@
+from __future__ import annotations
+
 import os
-import subprocess
 from collections import namedtuple
 from dataclasses import dataclass
 from getpass import getuser
 from pathlib import Path
 from shutil import copy, rmtree
 from subprocess import PIPE, Popen
-
-from test.utils.backup_environment.directories import SMB_SHARE_ROOT, SMB_MOUNTPOINT
+from test.utils.backup_environment.directories import SMB_MOUNTPOINT, SMB_SHARE_ROOT
 from test.utils.backup_environment.virtual_hard_drive import VirtualHardDrive
-from typing import Generator, List, Optional, Tuple
+from types import TracebackType
+from typing import Generator, List, Optional, Tuple, Type
 
 import pytest
 from py import path
@@ -61,8 +62,11 @@ def create_directories_for_smb_testing() -> None:
 
 
 def list_mounts() -> List[str]:
-    p = Popen('mount', stdout=PIPE)
-    return [line.decode().strip() for line in p.stdout.readlines()]
+    p = Popen("mount", stdout=PIPE)
+    if p.stdout:
+        return [line.decode().strip() for line in p.stdout.readlines()]
+    else:
+        raise RuntimeError("cannot list mounts")
 
 
 @dataclass
@@ -100,13 +104,11 @@ class BackupTestEnvironment:
     └── base_tmpshare_mntdir    <╌╌╌╯           sync.json["local_nas_hdd_mount_point"]
     """
 
-    def __init__(self, protocol: Protocol, amount_files: int = 10, bytesize_of_each_sourcefile: int = 1024, vhd_for_sink: bool = True) -> None:
+    def __init__(self, configuration: BackupTestEnvironmentInput) -> None:
         self._virtual_hard_drive = VirtualHardDrive()
         self._src = self._get_source()
-        self._sink = self._get_sink(vhd_for_sink)
-        self._protocol = protocol
-        self._amount_files = amount_files
-        self._bytesize_of_each_sourcefile = bytesize_of_each_sourcefile
+        self._sink = self._get_sink(configuration.use_virtual_drive_for_sink)
+        self._configuration = configuration
 
     @property
     def source(self) -> Path:
@@ -116,10 +118,12 @@ class BackupTestEnvironment:
     def sink(self) -> Path:
         return self._sink
 
-    def __enter__(self):
+    def __enter__(self) -> BackupTestEnvironment:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
         self.teardown()
 
     @staticmethod
@@ -132,15 +136,20 @@ class BackupTestEnvironment:
     def _get_sink(self, vhd_for_sink: bool) -> Path:
         if vhd_for_sink:
             self._virtual_hard_drive.mount()
-        sink = self._virtual_hard_drive.mount_point/"backup_target"
+        sink = self._virtual_hard_drive.mount_point / "backup_target"
         sink.mkdir(exist_ok=True)
         return sink
 
     def create(self) -> BackupTestEnvironmentOutput:
-        prepare_source_sink_dirs(src=self._src, sink=self._sink, bytesize_of_each_file=self._bytesize_of_each_sourcefile, amount_files_in_src=self._amount_files)
-        if self._protocol == Protocol.SSH:
+        prepare_source_sink_dirs(
+            src=self._src,
+            sink=self._sink,
+            bytesize_of_each_file=self._configuration.bytesize_of_each_sourcefile,
+            amount_files_in_src=self._configuration.amount_files_in_source,
+        )
+        if self._configuration.protocol == Protocol.SSH:
             backup_environment = self.prepare_for_ssh()
-        elif self._protocol == Protocol.SMB:
+        elif self._configuration.protocol == Protocol.SMB:
             backup_environment = self.prepare_for_smb()
         else:
             raise NotImplementedError
@@ -153,7 +162,7 @@ class BackupTestEnvironment:
         Popen(f"umount {SMB_MOUNTPOINT}".split())
 
     def teardown(self, delete_files: bool = False) -> None:
-        if self._protocol == Protocol.SMB:
+        if self._configuration.protocol == Protocol.SMB:
             self.unmount_smb()
         self._virtual_hard_drive.teardown()
         if delete_files:

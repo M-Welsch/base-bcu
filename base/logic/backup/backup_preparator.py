@@ -60,16 +60,19 @@ class BackupPreparator:
         return free_space_on_bu_hdd > self._backup.estimated_backup_size
 
     def _free_space(self) -> int:
-        """ returns free space on backup hdd in bytes """
+        """returns free space on backup hdd in bytes"""
+
         def _remove_heading_from_df_output(df_output: IO[bytes]) -> int:
             return int(list(df_output)[-1].decode().strip())
 
         command: List[str] = ["df", "--output=avail", self._backup.target.as_posix()]
         out = Popen(command, stdout=PIPE, stderr=PIPE)
-        if out.stderr or out.stdout is None:
+        if out.stderr is not None or out.stdout is None:
             stderr_lines = out.stderr.readlines()
             if stderr_lines:
-                raise BackupSizeRetrievalError(f"Cannot obtain free space on backup hdd: {[stderr_line.decode().strip() for stderr_line in stderr_lines]}")
+                raise BackupSizeRetrievalError(
+                    f"Cannot obtain free space on backup hdd: {[stderr_line.decode().strip() for stderr_line in stderr_lines]}"
+                )
         free_space_on_bu_hdd = _remove_heading_from_df_output(out.stdout)
         LOG.info(f"obtaining free space on bu hdd with command: {command}. Received {free_space_on_bu_hdd}")
         return free_space_on_bu_hdd

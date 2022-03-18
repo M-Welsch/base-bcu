@@ -5,7 +5,7 @@ from typing import Callable, Optional
 
 from signalslot import Signal
 
-from base.common.constants import BackupProcessStep, BackupDirectorySuffix
+from base.common.constants import BackupDirectorySuffix, BackupProcessStep
 from base.common.logger import LoggerFactory
 from base.logic.backup.source import BackupSource
 from base.logic.backup.synchronisation.sync import Sync

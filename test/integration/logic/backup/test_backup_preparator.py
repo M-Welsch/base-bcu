@@ -1,20 +1,20 @@
 import telnetlib
 from pathlib import Path
-
-import base.logic.backup.synchronisation.rsync_command
-from base.common.constants import BackupDirectorySuffix, BackupProcessStep
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
+    BackupTestEnvironmentInput,
     create_old_backups,
-    temp_source_sink_dirs
+    temp_source_sink_dirs,
 )
+from test.utils.patch_config import patch_config, patch_multiple_configs
 from typing import Generator, Tuple
 
 import pytest
 
+import base.logic.backup.synchronisation.rsync_command
+from base.common.constants import BackupDirectorySuffix, BackupProcessStep
 from base.logic.backup.backup_preparator import BackupPreparator
 from base.logic.backup.protocol import Protocol
-from test.utils.patch_config import patch_config, patch_multiple_configs
 
 
 class Backup:
@@ -51,23 +51,28 @@ def test_backup_preparator(protocol: Protocol) -> None:
 
     => no deletion of old backups is necessary!
     """
-    with BackupTestEnvironment(protocol=protocol, bytesize_of_each_sourcefile=1024, vhd_for_sink=True) as virtual_backup_env:
+    backup_environment_configuration = BackupTestEnvironmentInput(
+        protocol=protocol,
+        amount_files_in_source=10,
+        bytesize_of_each_sourcefile=1024,
+        use_virtual_drive_for_sink=True,
+        amount_old_backups=10,
+        bytesize_of_each_old_backup=100000,
+        amount_preexisting_source_files_in_latest_backup=0,
+    )
+    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
         backup_env = virtual_backup_env.create()
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,
-            {
-                "nas.json": backup_env.nas_config,
-                "sync.json": backup_env.sync_config
-            }
+            {"nas.json": backup_env.nas_config, "sync.json": backup_env.sync_config},
         )
-        patch_config(
-            base.logic.backup.backup_browser.BackupBrowser,
-            backup_env.sync_config
-        )
+        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env.sync_config)
         backup = Backup()
         backup.source = virtual_backup_env.source
-        backup.target = (Path(backup_env.sync_config["local_backup_target_location"])/"new_backup")
-        create_old_backups(Path(backup_env.sync_config["local_backup_target_location"]), 10, respective_file_size_bytes=1000000)
+        backup.target = Path(backup_env.sync_config["local_backup_target_location"]) / "new_backup"
+        create_old_backups(
+            Path(backup_env.sync_config["local_backup_target_location"]), 10, respective_file_size_bytes=1000000
+        )
         backup_preparator = BackupPreparator(backup=backup)
         backup_preparator.prepare()
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix

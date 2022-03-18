@@ -1,9 +1,6 @@
 from pathlib import Path
+from test.utils.backup_environment.virtual_backup_environment import BackupTestEnvironment, BackupTestEnvironmentOutput
 from test.utils.patch_config import patch_config, patch_multiple_configs
-from test.utils.backup_environment.virtual_backup_environment import (
-    BackupTestEnvironmentOutput,
-    BackupTestEnvironment,
-)
 from typing import Generator
 
 import pytest

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import subprocess
+import test.utils.backup_environment.directories as virtual_environment_directories
 from pathlib import Path
 from shutil import rmtree
 from types import TracebackType
 from typing import Optional, Type
-
-import test.utils.backup_environment.directories as virtual_environment_directories
 
 
 class VirtualHardDrive:
