@@ -58,6 +58,7 @@ class Backup(Thread):
         return self._sync.pid
 
     def run(self) -> None:
+        self._sync.update_target(self._target)
         with self._sync as output_generator:
             for status in output_generator:
                 LOG.debug(str(status))

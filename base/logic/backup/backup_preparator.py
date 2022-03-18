@@ -38,7 +38,6 @@ class BackupPreparator:
 
     def prepare(self) -> None:
         self._backup.target.mkdir(exist_ok=True)
-        self._backup.set_process_step(BackupDirectorySuffix.while_copying)
         self._free_space_if_necessary()
         newest_backup = BackupBrowser().newest_valid_backup
         if newest_backup is not None:

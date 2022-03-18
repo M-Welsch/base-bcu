@@ -13,7 +13,7 @@ class BackupTarget:
         config_sync: Config = get_config("sync.json")
         self._parent: Path = Path(config_sync.local_backup_target_location)
         timestamp = datetime.now().strftime(current_backup_timestring_format_for_directory)
-        self._path = (self._parent / f"backup_{timestamp}").with_suffix(BackupDirectorySuffix.empty.suffix)
+        self._path = (self._parent / f"backup_{timestamp}").with_suffix(BackupDirectorySuffix.while_copying.suffix)
 
     @property
     def path(self) -> Path:

@@ -33,7 +33,7 @@ def temp_source_sink_dirs(tmp_path: path.local) -> Generator[Tuple[Path, Path], 
 def create_old_backups(base_path: Path, amount: int, respective_file_size_bytes: Optional[int] = None) -> List[Path]:
     old_backups = []
     base_age_difference = timedelta(days=1)
-    for i in range(amount):
+    for i in range(1, amount + 1):
         timestamp = (datetime.now() - (base_age_difference * i)).strftime(
             current_backup_timestring_format_for_directory
         )
@@ -87,6 +87,7 @@ class BackupTestEnvironmentInput:
     amount_old_backups: int
     bytesize_of_each_old_backup: int
     amount_preexisting_source_files_in_latest_backup: int = 0
+    no_teardown: bool = False
 
 
 BackupTestEnvironmentOutput = namedtuple("BackupTestEnvironmentOutput", "sync_config backup_config nas_config")
@@ -133,7 +134,8 @@ class BackupTestEnvironment:
     def __exit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
     ) -> None:
-        self.teardown()
+        if not self._configuration.no_teardown:
+            self.teardown()
 
     @staticmethod
     def _get_source() -> Path:

@@ -21,14 +21,20 @@ class Sync:
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
         self._sync_config = get_config("sync.json")
         self._nas_config = get_config("nas.json")
-        self._command: str = RsyncCommand().compose(local_target_location, source_location)
         self._process: Optional[Popen] = None
         self._status: SyncStatus = SyncStatus()
+        self._source = source_location
+        self._target = local_target_location
+
+    def update_target(self, new_target: Path) -> None:
+        self._target = new_target
 
     def __enter__(self) -> Generator[SyncStatus, None, None]:
-        LOG.debug(f"syncing with command: {self._command}")
+        rsync_command: str = RsyncCommand().compose(self._target, self._source)
+        LOG.debug(f"syncing with command: {rsync_command}")
+        # Fixme: we're having an outdated version of "target" here ...
         self._process = Popen(
-            self._command,
+            rsync_command,
             bufsize=0,
             universal_newlines=True,
             stdout=PIPE,

@@ -16,7 +16,6 @@ BackupProcessStep = namedtuple("BackupProcessStep", "suffix description may_be_c
 
 @dataclass
 class BackupDirectorySuffix:
-    empty: BackupProcessStep = BackupProcessStep(".empty", "just created", True)
     while_copying: BackupProcessStep = BackupProcessStep(".in_preparation", "copying ", False)
     while_backing_up: BackupProcessStep = BackupProcessStep(".unfinished", "synchronisation in progress", True)
     finished: BackupProcessStep = BackupProcessStep("", "completed backup", True)

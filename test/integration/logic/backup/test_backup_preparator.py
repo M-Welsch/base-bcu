@@ -17,7 +17,7 @@ from base.logic.backup.backup_preparator import BackupPreparator
 from base.logic.backup.protocol import Protocol
 
 
-class Backup():
+class Backup:
     source: Path = Path()
     target: Path = Path()
 
@@ -71,7 +71,7 @@ def test_backup_preparator(protocol: Protocol) -> None:
         backup = Backup()
         backup.source = virtual_backup_env.source
         backup.target = Path(backup_env.sync_config["local_backup_target_location"]) / "new_backup"
-        backup_preparator = BackupPreparator(backup=backup)
+        backup_preparator = BackupPreparator(backup=backup)  # type: ignore
         backup_preparator.prepare()
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix
 
@@ -99,6 +99,6 @@ def test_backup_preparator_with_deletion_of_old_bu(protocol: Protocol) -> None:
         backup = Backup()
         backup.source = virtual_backup_env.source
         backup.target = Path(backup_env.sync_config["local_backup_target_location"]) / "new_backup"
-        backup_preparator = BackupPreparator(backup=backup)
+        backup_preparator = BackupPreparator(backup=backup)  # type: ignore
         backup_preparator.prepare()
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix
