@@ -5,6 +5,7 @@ from typing import Callable, Optional
 
 from signalslot import Signal
 
+from base.common.constants import BackupDirectorySuffix, BackupProcessStep
 from base.common.logger import LoggerFactory
 from base.logic.backup.source import BackupSource
 from base.logic.backup.synchronisation.sync import Sync
@@ -42,6 +43,10 @@ class Backup(Thread):
     def target(self) -> Path:
         return self._target
 
+    def set_process_step(self, process_step: BackupProcessStep) -> None:
+        new_name = self._target.with_suffix(process_step.suffix)
+        self._target = self._target.rename(new_name)
+
     @property
     def running(self) -> bool:
         LOG.debug(f"Backup is {'running' if self.is_alive() else 'not running'} yet")
@@ -53,6 +58,7 @@ class Backup(Thread):
         return self._sync.pid
 
     def run(self) -> None:
+        self._sync.update_target(self._target)
         with self._sync as output_generator:
             for status in output_generator:
                 LOG.debug(str(status))

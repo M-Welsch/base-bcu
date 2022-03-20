@@ -46,8 +46,7 @@ class BackupPreparator:
         self._finish_preparation()
 
     def _finish_preparation(self) -> None:
-        new_name = self._backup.target.with_suffix(BackupDirectorySuffix.while_backing_up.suffix)
-        self._backup.target.rename(new_name)
+        self._backup.set_process_step(BackupDirectorySuffix.while_backing_up)
 
     def _free_space_if_necessary(self) -> None:
         while not self._enough_space_for_next_backup():
@@ -60,15 +59,21 @@ class BackupPreparator:
         return free_space_on_bu_hdd > self._backup.estimated_backup_size
 
     def _free_space(self) -> int:
+        """returns free space on backup hdd in bytes"""
+
         def _remove_heading_from_df_output(df_output: IO[bytes]) -> int:
             return int(list(df_output)[-1].decode().strip())
 
         command: List[str] = ["df", "--output=avail", self._backup.target.as_posix()]
         out = Popen(command, stdout=PIPE, stderr=PIPE)
-        if out.stderr or out.stdout is None:
-            raise BackupSizeRetrievalError(f"Cannot obtain free space on backup hdd: {out.stderr}")
+        if out.stderr is not None or out.stdout is None:
+            stderr_lines = out.stderr.readlines()
+            if stderr_lines:
+                raise BackupSizeRetrievalError(
+                    f"Cannot obtain free space on backup hdd: {[stderr_line.decode().strip() for stderr_line in stderr_lines]}"
+                )
         free_space_on_bu_hdd = _remove_heading_from_df_output(out.stdout)
-        LOG.info(f"obtaining free space on bu hdd with command: {command}. Received {free_space_on_bu_hdd}")
+        LOG.info(f"obtaining free space on bu hdd with command: {' '.join(command)}. Received {free_space_on_bu_hdd}")
         return free_space_on_bu_hdd
 
     @staticmethod
@@ -79,4 +84,5 @@ class BackupPreparator:
             shutil.rmtree(oldest_backup.absolute())
             LOG.info("deleting {} to free space for new backup".format(oldest_backup))
         else:
+            # Todo: better raise something?!
             LOG.error(f"no backup found to delete. Available backups: {backup_browser.index}")

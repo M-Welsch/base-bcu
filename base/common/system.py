@@ -18,7 +18,8 @@ class System:
         cmd = RsyncCommand().compose(local_target_location, source_location, dry=True)
         # the command HAS to run in the shell because of the /* behind the source directory
         # moreover the command must be a string, not a list
-        p = Popen(" ".join(cmd), stdout=PIPE, stderr=PIPE, shell=True)
+        LOG.info(f"estimating size of new backup with: {cmd}")
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
         try:
             lines: List[str] = [
                 l.decode() for l in p.stdout.readlines() if l.startswith(b"Total transferred file size")  # type: ignore
@@ -32,6 +33,6 @@ class System:
 
     @staticmethod
     def copy_newest_backup_with_hardlinks(recent_backup: Path, new_backup: Path) -> subprocess.Popen:
-        copy_command = f"cp -al {recent_backup}/* {new_backup}{BackupDirectorySuffix.while_copying.suffix}"
+        copy_command = f"cp -al {recent_backup}/* {new_backup}"
         LOG.info(f"copy command: {copy_command}")
         return Popen(copy_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE)

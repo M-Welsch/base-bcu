@@ -1,6 +1,6 @@
 from pathlib import Path
 from subprocess import Popen
-from test.integration.logic.backup.utils import prepare_source_sink_dirs, temp_source_sink_dirs
+from test.utils.backup_environment.virtual_backup_environment import prepare_source_sink_dirs, temp_source_sink_dirs
 from typing import Generator, Optional, Tuple
 
 import pytest
@@ -12,6 +12,9 @@ from base.logic.backup.backup_preparator import BackupPreparator
 class Backup:
     source: Path = Path()
     target: Path = Path()
+
+    def set_process_step(*args, **kwargs) -> None:  # type: ignore
+        pass
 
 
 @pytest.fixture
@@ -43,7 +46,7 @@ def test_terminate_sleep_func(backup_preparator_naked: BackupPreparator) -> None
 @pytest.mark.parametrize("newest_valid_bu", [Path(), None])
 def test_prepare(backup_preparator: BackupPreparator, mocker: MockFixture, newest_valid_bu: Optional[Path]) -> None:
     prepare_source_sink_dirs(
-        src_path=backup_preparator._backup.source, sink_path=backup_preparator._backup.target, amount_files_in_src=1
+        src=backup_preparator._backup.source, sink=backup_preparator._backup.target, amount_files_in_src=1
     )
     mocked_mkdir = mocker.patch("pathlib.Path.mkdir")
     mocked_free_space_if_necessary = mocker.patch(
@@ -56,6 +59,7 @@ def test_prepare(backup_preparator: BackupPreparator, mocker: MockFixture, newes
     mocked_copy = mocker.patch("base.common.system.System.copy_newest_backup_with_hardlinks")
     mocked_wait = mocker.patch("subprocess.Popen.wait")
     mocked_finish_prep = mocker.patch("base.logic.backup.backup_preparator.BackupPreparator._finish_preparation")
+
     backup_preparator.prepare()
     assert mocked_mkdir.called_once_with(exist_ok=True)
     assert mocked_free_space_if_necessary.called_once_with()

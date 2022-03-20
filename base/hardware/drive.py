@@ -133,7 +133,7 @@ class Drive:
 
 
 def call_mount_command(partition: str, mount_point: Path, file_system: str) -> None:
-    command = [f"mount", "-t", str(file_system), str(partition), str(mount_point)]
+    command = ["sudo", "mount", "-t", str(file_system), str(partition), str(mount_point)]
     LOG.debug(" ".join(command))
     cp = run(command, stdout=PIPE, stderr=PIPE)
     if cp.stderr:

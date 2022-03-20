@@ -18,14 +18,17 @@ class BackupBrowser:
         self._backup_index: List[Path] = self._read_backups()
 
     def _read_backups(self) -> List[Path]:
-        # lowest index is the oldest
+        """
+        :return:    present backups. Lowest index is the oldest.
+        """
         try:
             return sorted(
                 [
                     path
                     for path in Path(self._config.local_backup_target_location).iterdir()
-                    if path.as_posix().startswith("backup")
-                ]
+                    if path.stem.startswith("backup")
+                ],
+                reverse=True,
             )
         except OSError as e:
             LOG.error(f"BackupHDD cannot be accessed! {e}")

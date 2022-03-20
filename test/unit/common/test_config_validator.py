@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from test.utils import derive_mock_string
+from test.utils.utils import derive_mock_string
 from typing import Any, Dict, Union
 from unittest.mock import MagicMock
 
