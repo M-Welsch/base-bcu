@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 from base.common.config import get_config
 

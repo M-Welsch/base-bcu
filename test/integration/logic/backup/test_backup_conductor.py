@@ -41,27 +41,27 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
         no_teardown=False,
     )
     with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
+        backup_env_configs: BackupTestEnvironmentOutput = virtual_backup_env.create()
         patch_multiple_configs(
             base.logic.backup.backup_conductor.BackupConductor,
-            {"backup.json": backup_env.backup_config, "sync.json": backup_env.sync_config},
+            {"backup.json": backup_env_configs.backup_config, "sync.json": backup_env_configs.sync_config},
         )
-        patch_config(base.logic.backup.source.BackupSource, backup_env.sync_config)
-        patch_config(base.logic.backup.target.BackupTarget, backup_env.sync_config)
+        patch_config(base.logic.backup.source.BackupSource, backup_env_configs.sync_config)
+        patch_config(base.logic.backup.target.BackupTarget, backup_env_configs.sync_config)
         patch_multiple_configs(
             base.logic.backup.synchronisation.sync.Sync,
-            {"nas.json": backup_env.nas_config, "sync.json": backup_env.sync_config},
+            {"nas.json": backup_env_configs.nas_config, "sync.json": backup_env_configs.sync_config},
         )
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,
-            {"nas.json": backup_env.nas_config, "sync.json": backup_env.sync_config},
+            {"nas.json": backup_env_configs.nas_config, "sync.json": backup_env_configs.sync_config},
         )
-        patch_config(base.logic.nas.Nas, backup_env.nas_config)
+        patch_config(base.logic.nas.Nas, backup_env_configs.nas_config)
         patch_multiple_configs(
             base.logic.network_share.NetworkShare,
-            {"sync.json": backup_env.sync_config, "nas.json": backup_env.nas_config},
+            {"sync.json": backup_env_configs.sync_config, "nas.json": backup_env_configs.nas_config},
         )
-        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env.sync_config)
+        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env_configs.sync_config)
         patch_unmount_smb_share = mocker.patch("base.logic.network_share.NetworkShare.unmount_datasource_via_smb")
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_conductor.run()
