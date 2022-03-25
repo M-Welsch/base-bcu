@@ -46,7 +46,7 @@ class BackupSource:
                 ├── files
                 └── more files ...
 
-        this method would in this case return Path("/media/NASHDD/files_to_backup")
+        in this case it would return Path("/media/NASHDD/files_to_backup")
         """
         local_nas_hdd_mount_path = Path(self._config_sync.local_nas_hdd_mount_point)
         remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
@@ -54,7 +54,9 @@ class BackupSource:
         try:
             subfolder_on_mountpoint = remote_backup_source_location.relative_to(smb_share_root)
         except ValueError as e:
-            raise InvalidBackupSource("Backup source location on NAS is not within smb share point") from e
+            error_message = "Backup source location on NAS is not within smb share point"
+            LOG.critical(error_message)
+            raise InvalidBackupSource(error_message) from e
         return local_nas_hdd_mount_path / subfolder_on_mountpoint
 
     def _backup_source_directory_for_ssh(self) -> Path:

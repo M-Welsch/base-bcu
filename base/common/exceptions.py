@@ -119,3 +119,7 @@ class BackupSizeRetrievalError(Exception):
 
 class InvalidBackupSource(Exception):
     pass
+
+
+class BackupDeletionError(Exception):
+    pass

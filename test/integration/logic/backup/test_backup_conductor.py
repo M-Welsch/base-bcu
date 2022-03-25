@@ -1,3 +1,4 @@
+import logging
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -12,18 +13,22 @@ from test.utils.patch_config import patch_config, patch_multiple_configs
 from typing import Callable, Generator, List, Tuple, Type
 
 import pytest
+import serial
+from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
-from base.common.exceptions import DockingError, NetworkError
+from base.common.exceptions import BackupDeletionError, BackupSizeRetrievalError, InvalidBackupSource, NetworkError
 
 sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
-
 from test.utils.utils import derive_mock_string
 
 import base.logic.backup.backup_conductor
+from base.common.system import System
+from base.hardware.drive import Drive
 from base.hardware.hardware import Hardware
 from base.hardware.mechanics import Mechanics
 from base.hardware.sbu.serial_interface import SerialInterface
+from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 from base.logic.backup.backup import Backup
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.backup.backup_conductor import BackupConductor
@@ -57,10 +62,7 @@ def patch_configs_for_backup_conductor_tests(backup_env: BackupTestEnvironmentOu
     patch_multiple_configs(RsyncCommand, {"nas.json": backup_env.nas_config, "sync.json": backup_env.sync_config})
     patch_config(Nas, backup_env.nas_config)
     patch_multiple_configs(NetworkShare, {"sync.json": backup_env.sync_config, "nas.json": backup_env.nas_config})
-    patch_config(SerialInterface, {"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
-    patch_config(base.hardware.hardware.Hardware, {})
-    patch_config(base.hardware.mechanics.Mechanics, {})
-    patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env.sync_config)
+    patch_config(BackupBrowser, backup_env.sync_config)
 
 
 @pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB])
@@ -81,15 +83,15 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
         patch_unmount_smb_share = mocker.patch("base.logic.network_share.NetworkShare.unmount_datasource_via_smb")
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_conductor.run()
-        backup_conductor._backup.join()  # wait until backup thread is finished!!
-        files_in_source = [file.stem for file in backup_conductor._backup.source.iterdir()]
-        files_in_target = [file.stem for file in backup_conductor._backup.target.iterdir()]
+        backup_conductor._backup.join()  # type: ignore
+        files_in_source = [file.stem for file in backup_conductor._backup.source.iterdir()]  # type: ignore
+        files_in_target = [file.stem for file in backup_conductor._backup.target.iterdir()]  # type: ignore
         assert set(files_in_source) == set(files_in_target)
         if protocol == Protocol.SMB:
             assert patch_unmount_smb_share.called_once_with()
 
 
-def mocking_procedure_network_share_not_available(mocker: MockFixture, *args) -> None:
+def mocking_procedure_network_share_not_available(mocker: MockFixture, *args) -> None:  # type: ignore
     error_process = Popen('echo "error(2)" 1>&2', shell=True, stderr=PIPE, stdout=PIPE)
     mocker.patch("base.common.system.System.mount_smb_share", return_value=error_process)
 
@@ -99,19 +101,25 @@ def mocking_procedure_errant_ip_address(mocker: MockFixture, backup_env: BackupT
     mocker.patch("base.common.system.System.mount_smb_share", return_value=error_process)
 
 
-def mocking_procedure_docking_timeout_exceeded(mocker: MockFixture, *args) -> None:
+def mocking_procedure_invalid_backup_src(mocker: MockFixture, backup_env: BackupTestEnvironmentOutput) -> None:
+    backup_env.sync_config["remote_backup_source_location"] = "/something/invalid"
+
+
+def mocking_procedure_backup_deletion_error(mocker: MockFixture, backup_env: BackupTestEnvironmentOutput) -> None:
     ...
 
 
 @pytest.mark.parametrize(
     "mocking_procedure, side_effect, protocol, consequence, log_message",
     [
-        (mocking_procedure_network_share_not_available, NetworkError, Protocol.SMB, "", ""),
-        (mocking_procedure_errant_ip_address, NetworkError, Protocol.SMB, "", ""),
+        (mocking_procedure_network_share_not_available, NetworkError, Protocol.SMB, "", "Network share not available"),
+        (mocking_procedure_errant_ip_address, NetworkError, Protocol.SMB, "", "could not resolve address"),
+        (mocking_procedure_invalid_backup_src, InvalidBackupSource, Protocol.SMB, "", "not within smb share point"),
     ],
 )
 def test_backup_conductor_error_cases(
     mocker: MockFixture,
+    caplog: LogCaptureFixture,
     mocking_procedure: Callable,
     side_effect: Type[Exception],
     protocol: Protocol,
@@ -133,9 +141,11 @@ def test_backup_conductor_error_cases(
         mocking_procedure(mocker, backup_env)
         patch_configs_for_backup_conductor_tests(backup_env)
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
-        with pytest.raises(side_effect):
-            backup_conductor.run()
-            backup_conductor._backup.join()  # wait until backup thread is finished!!
+        with caplog.at_level(logging.WARNING):
+            with pytest.raises(side_effect):
+                backup_conductor.run()
+                backup_conductor._backup.join()  # type: ignore
+        assert log_message in caplog.text
 
 
 """

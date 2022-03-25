@@ -47,8 +47,12 @@ class NetworkShare:
                 elif "error(2)" in line:
                     # No such file or directory
                     self._available = HddState.not_available
-                    raise NetworkError(f"Network share not available: {line}")
+                    error_msg = f"Network share not available: {line}"
+                    LOG.critical(error_msg)
+                    raise NetworkError(error_msg)
                 elif "could not resolve address" in line:
-                    raise NetworkError(f"Errant IP address: {line}")
+                    error_msg = f"Errant IP address: {line}"
+                    LOG.critical(error_msg)
+                    raise NetworkError(error_msg)
                 else:
                     LOG.debug("stderr: " + line)

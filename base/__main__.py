@@ -36,7 +36,18 @@ def main(mocked: bool, config_dir: Path, log_dir: Path) -> None:
     from base.base_application import BaSeApplication
 
     app = BaSeApplication()
-    app.start()
+    try:
+        app.start()
+    except Exception as e:
+        write_email(e)
+    try:
+        app.finalize_service()
+    except Exception:
+        ...
+
+
+def write_email(exception):
+    ...
 
 
 if __name__ == "__main__":

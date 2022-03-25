@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import fields
+import shutil
 from pathlib import Path
 from typing import List, Optional
 
 from base.common.config import Config, get_config
 from base.common.constants import BackupDirectorySuffix
-from base.common.exceptions import BackupHddAccessError
+from base.common.exceptions import BackupDeletionError, BackupHddAccessError
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -49,3 +49,10 @@ class BackupBrowser:
             if backup.suffix not in BackupDirectorySuffix.not_valid_for_continuation():
                 latest_valid_backup = backup
         return latest_valid_backup
+
+    def delete_oldest_backup(self) -> None:
+        if self.oldest_backup is not None:
+            shutil.rmtree(self.oldest_backup.absolute())
+            LOG.info(f"deleting {self.oldest_backup} to free space for new backup")
+        else:
+            raise BackupDeletionError(f"no backup found to delete. Available backups: {self.index}")

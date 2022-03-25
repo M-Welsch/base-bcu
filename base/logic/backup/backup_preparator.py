@@ -8,7 +8,7 @@ from time import sleep
 from typing import IO, List, Optional
 
 from base.common.constants import BackupDirectorySuffix
-from base.common.exceptions import BackupSizeRetrievalError
+from base.common.exceptions import BackupDeletionError, BackupSizeRetrievalError
 from base.common.logger import LoggerFactory
 from base.common.system import System
 from base.logic.backup.backup import Backup
@@ -50,13 +50,26 @@ class BackupPreparator:
 
     def _free_space_if_necessary(self) -> None:
         while not self._enough_space_for_next_backup():
-            self._delete_oldest_backup()
+            try:
+                BackupBrowser().delete_oldest_backup()
+            except BackupDeletionError as e:
+                LOG.error(f"{e}. Resuming until space is full.")
 
     def _enough_space_for_next_backup(self) -> bool:
-        free_space_on_bu_hdd: int = self._free_space()
-        self._backup.estimated_backup_size = System.size_of_next_backup(self._backup.target, self._backup.source)
-        LOG.info(f"Space free on BU HDD: {free_space_on_bu_hdd}, Space needed: {self._backup.estimated_backup_size}")
-        return free_space_on_bu_hdd > self._backup.estimated_backup_size
+        try:
+            free_space_on_bu_hdd: int = self._free_space()
+            self._backup.estimated_backup_size = System.size_of_next_backup(self._backup.target, self._backup.source)
+            LOG.info(
+                f"Space free on BU HDD: {free_space_on_bu_hdd}, Space needed: {self._backup.estimated_backup_size}"
+            )
+            enough = free_space_on_bu_hdd > self._backup.estimated_backup_size
+        except BackupSizeRetrievalError as e:
+            LOG.error(
+                "Estimation of whether there's sufficient space for next backup failed."
+                f"Assuming it is enough and wait for further errors. Details: {e}"
+            )
+            enough = True
+        return enough
 
     def _free_space(self) -> int:
         """returns free space on backup hdd in bytes"""
@@ -66,6 +79,7 @@ class BackupPreparator:
 
         command: List[str] = ["df", "--output=avail", self._backup.target.as_posix()]
         out = Popen(command, stdout=PIPE, stderr=PIPE)
+        out.wait()
         if out.stderr is not None or out.stdout is None:
             stderr_lines = out.stderr.readlines()
             if stderr_lines:
@@ -75,14 +89,3 @@ class BackupPreparator:
         free_space_on_bu_hdd = _remove_heading_from_df_output(out.stdout)
         LOG.info(f"obtaining free space on bu hdd with command: {' '.join(command)}. Received {free_space_on_bu_hdd}")
         return free_space_on_bu_hdd
-
-    @staticmethod
-    def _delete_oldest_backup() -> None:
-        backup_browser = BackupBrowser()
-        oldest_backup: Optional[Path] = backup_browser.oldest_backup
-        if oldest_backup is not None:
-            shutil.rmtree(oldest_backup.absolute())
-            LOG.info("deleting {} to free space for new backup".format(oldest_backup))
-        else:
-            # Todo: better raise something?!
-            LOG.error(f"no backup found to delete. Available backups: {backup_browser.index}")

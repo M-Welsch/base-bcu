@@ -2,6 +2,7 @@ from time import sleep
 from typing import Optional
 
 from base.common.config import Config, get_config
+from base.common.exceptions import ComponentOffError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
@@ -20,7 +21,10 @@ class Hardware:
         self._config: Config = get_config("hardware.json")
         self._mechanics: Mechanics = Mechanics()
         self._power: Power = Power()
-        self._sbu: SBU = SBU(SbuCommunicator())
+        try:
+            self._sbu: SBU = SBU(SbuCommunicator())
+        except ComponentOffError:
+            self._sbu = None
         self._hmi: HMI = HMI(self._sbu)
         self._drive: Drive = Drive()
 
