@@ -93,12 +93,12 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
 
 def mocking_procedure_network_share_not_available(mocker: MockFixture, *args) -> None:  # type: ignore
     error_process = Popen('echo "error(2)" 1>&2', shell=True, stderr=PIPE, stdout=PIPE)
-    mocker.patch("base.common.system.System.mount_smb_share", return_value=error_process)
+    mocker.patch("base.common.system.SmbShareMount.run_command", return_value=error_process)
 
 
 def mocking_procedure_errant_ip_address(mocker: MockFixture, backup_env: BackupTestEnvironmentOutput) -> None:
     error_process = Popen('echo "could not resolve address" 1>&2', shell=True, stderr=PIPE, stdout=PIPE)
-    mocker.patch("base.common.system.System.mount_smb_share", return_value=error_process)
+    mocker.patch("base.common.system.SmbShareMount.run_command", return_value=error_process)
 
 
 def mocking_procedure_invalid_backup_src(mocker: MockFixture, backup_env: BackupTestEnvironmentOutput) -> None:

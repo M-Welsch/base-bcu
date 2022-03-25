@@ -1,7 +1,10 @@
-from os import getlogin
+from getpass import getuser
 from pathlib import Path
 from subprocess import PIPE, Popen
-from test.utils.backup_environment.virtual_backup_environment import prepare_source_sink_dirs  # fixture, don't remove
+from test.utils.backup_environment.virtual_backup_environment import (  # fixture, don't remove
+    prepare_source_sink_dirs,
+    temp_source_sink_dirs,
+)
 from test.utils.patch_config import patch_multiple_configs
 from typing import Dict, Tuple
 
@@ -23,7 +26,7 @@ def test_obtain_size_of_next_backup_increment_smb(temp_source_sink_dirs: Tuple[P
 
 
 def test_obtain_size_of_next_backup_increment_ssh(temp_source_sink_dirs: Tuple[Path, Path]) -> None:
-    user = getlogin()
+    user = getuser()
     patch_multiple_configs(
         RsyncCommand,
         {

@@ -4,7 +4,7 @@ from subprocess import PIPE, Popen, call
 from typing import Dict, List
 
 from base.common.constants import BackupDirectorySuffix
-from base.common.exceptions import BackupSizeRetrievalError, ExternalCommandError
+from base.common.exceptions import BackupSizeRetrievalError, ExternalCommandError, NetworkError
 from base.common.logger import LoggerFactory
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 
@@ -36,8 +36,40 @@ class System:
         LOG.info(f"copy command: {copy_command}")
         return Popen(copy_command, bufsize=0, shell=True, stdout=PIPE, stderr=PIPE)
 
-    @staticmethod
-    def mount_smb_share(mount_point: str) -> subprocess.Popen:
+
+class SmbShareMount:
+    def mount_smb_share(self, mount_point: str) -> None:
         command = f"mount {mount_point}".split()
         LOG.info(f"mount datasource with command: {command}")
-        return Popen(command, bufsize=0, stderr=PIPE, stdout=PIPE)
+        self._parse_process_output(self.run_command(command))
+
+    def unmount_smb_share(self, mount_point: str) -> None:
+        command = f"umount {mount_point}".split()
+        LOG.info(f"unmount datasource with command: {command}")
+        self._parse_process_output(self.run_command(command))
+
+    @staticmethod
+    def run_command(command: List[str]) -> Popen:
+        return Popen(command, bufsize=0, stdout=PIPE, stderr=PIPE)
+
+    @staticmethod
+    def _parse_process_output(process: Popen) -> None:
+        if process.stdout is not None:
+            for line in process.stdout.readlines():
+                LOG.debug("stdout: " + line)
+        if process.stderr is not None:
+            for line in [line.decode() for line in process.stderr.readlines()]:
+                if "error(16)" in line:
+                    # Device or resource busy
+                    LOG.warning(f"Device probably already (un)mounted: {line}")
+                elif "error(2)" in line:
+                    # No such file or directory
+                    error_msg = f"Network share not available: {line}"
+                    LOG.critical(error_msg)
+                    raise NetworkError(error_msg)
+                elif "could not resolve address" in line:
+                    error_msg = f"Errant IP address: {line}"
+                    LOG.critical(error_msg)
+                    raise NetworkError(error_msg)
+                else:
+                    LOG.debug("stderr: " + line)
