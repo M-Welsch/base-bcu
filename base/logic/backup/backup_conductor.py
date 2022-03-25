@@ -99,8 +99,6 @@ class BackupConductor:
     def _mark_backup_target_as_finished(self) -> None:
         if self._backup is not None:
             self._backup.set_process_step(BackupDirectorySuffix.finished)
-            # new_name = self._backup.target.with_suffix(BackupDirectorySuffix.finished.suffix)
-            # self._backup.target.rename(new_name)
 
     def _return_to_default_state(self) -> None:
         self.hardware_disengage_request.emit()

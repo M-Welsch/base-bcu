@@ -22,7 +22,7 @@ def test_compose_rsync_command(mocker: MockFixture, dry: Optional[bool], dry_com
         },
     )
     rc = RsyncCommand()
-    prot_specific = ["protocol", "specific"]
+    prot_specific = ["protocol", "specific"]  # Fixme: should be str not list
     dry_run = ["dry"]
     mocked_protocol_specific = mocker.patch(
         "base.logic.backup.synchronisation.rsync_command.RsyncCommand._protocol_specific", return_value=prot_specific
