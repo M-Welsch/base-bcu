@@ -1,8 +1,10 @@
 #!/bin/sh
 
+# globals
 fstab="/etc/fstab"
 smbconf="/etc/samba/smb.conf"
 smbcredentials="/etc/base-credentials"
+additional_hints=""
 
 echo_info () {
   NORMAL='\033[0;39m'
@@ -23,6 +25,17 @@ configure_ssh () {
   ssh-copy-id -i ~/.ssh/id_rsa.pub "$(users)"@127.0.0.1
 }
 
+add_entry_to_file () {
+  target=$1
+  condition=$(grep "$2" "$target")
+  line_to_add=$3
+
+  if [ -z "$condition" ];
+  then
+    echo "$line_to_add" | sudo tee -a  "$target" > /dev/null
+  fi;
+}
+
 configure_samba () {
   echo_info "Add linux-user 'base' and smb-user 'base' in order to simulate a backup from a samba-source"
   sudo useradd base
@@ -38,21 +51,10 @@ configure_samba () {
 password=<the password for the smb user 'base' from above>
 domain=WORKGROUP
   " | sudo tee "$smbcredentials" > /dev/null
-  sudo chmod 404 "$smbcredentials"
+  sudo chmod 606 "$smbcredentials"
   RED='\033[1;31m'
   NORMAL='\033[0;39m'
-  echo "${RED}Important !! Go to the file $smbcredentials and enter the correct for the base-samba share. This is the same password you entered earlier${NORMAL}"
-}
-
-add_entry_to_file () {
-  target=$1
-  condition=$(grep "$2" "$target")
-  line_to_add=$3
-
-  if [ -z "$condition" ];
-  then
-    echo "$line_to_add" | sudo tee -a  "$target" > /dev/null
-  fi;
+  additional_hints="$additional_hints${RED}Important !! Go to the file $smbcredentials and enter the correct for the base-samba share. This is the same password you entered earlier${NORMAL}. Set permissions to 404 afterwards by 'sudo chmod 404 $smbcredentials'."
 }
 
 setup_virtual_hard_drive () {
@@ -77,7 +79,7 @@ make_backup_sink_writable () {
   mkdir $vhd_mount_dir
   mount $vhd_mount_dir
   sudo mkdir "$backup_target"
-  sudo chmod 666 "$backup_target"
+  sudo chmod 777 "$backup_target"
   sudo chown $(users):$(users) "$backup_target"
   umount $vhd_mount_dir
 }
@@ -88,3 +90,5 @@ configure_samba
 setup_virtual_hard_drive
 setup_virtual_smb_share
 make_backup_sink_writable
+
+echo "$additional_hints"

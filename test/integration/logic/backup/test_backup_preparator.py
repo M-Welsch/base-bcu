@@ -62,15 +62,15 @@ def test_backup_preparator(protocol: Protocol) -> None:
         amount_preexisting_source_files_in_latest_backup=0,
     )
     with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
-        backup_env = virtual_backup_env.create()
+        backup_env_configs = virtual_backup_env.create()
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,
-            {"nas.json": backup_env.nas_config, "sync.json": backup_env.sync_config},
+            {"nas.json": backup_env_configs.nas_config, "sync.json": backup_env_configs.sync_config},
         )
-        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env.sync_config)
+        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env_configs.sync_config)
         backup = Backup()
         backup.source = virtual_backup_env.source
-        backup.target = Path(backup_env.sync_config["local_backup_target_location"]) / "new_backup"
+        backup.target = Path(backup_env_configs.sync_config["local_backup_target_location"]) / "new_backup"
         backup_preparator = BackupPreparator(backup=backup)  # type: ignore
         backup_preparator.prepare()
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix
