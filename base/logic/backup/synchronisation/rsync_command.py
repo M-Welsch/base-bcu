@@ -9,9 +9,7 @@ class RsyncCommand:
         self._nas_config = get_config("nas.json")
 
     def compose(self, local_target_location: Path, source_location: Path, dry: bool = False) -> str:
-        cmd = (
-            "rsync -avH --outbuf=N --info=progress2 --stats --delete"  # stats are important for the bu increment size
-        )
+        cmd = "rsync -avH --outbuf=N --info=progress2 --stats --delete"  # stats are important for the bu increment size
         cmd += " " + self._protocol_specific(local_target_location, source_location)
         cmd += " " + self._dry_run(dry)
         return cmd

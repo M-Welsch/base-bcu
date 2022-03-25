@@ -1,11 +1,7 @@
 import os
-import shutil
 import signal
 import subprocess
-from pathlib import Path
-from subprocess import PIPE, Popen
-from time import sleep
-from typing import IO, List, Optional
+from typing import Optional
 
 from base.common.constants import BackupDirectorySuffix
 from base.common.exceptions import BackupDeletionError, BackupSizeRetrievalError
@@ -73,19 +69,4 @@ class BackupPreparator:
 
     def _free_space(self) -> int:
         """returns free space on backup hdd in bytes"""
-
-        def _remove_heading_from_df_output(df_output: IO[bytes]) -> int:
-            return int(list(df_output)[-1].decode().strip())
-
-        command: List[str] = ["df", "--output=avail", self._backup.target.as_posix()]
-        out = Popen(command, stdout=PIPE, stderr=PIPE)
-        out.wait()
-        if out.stderr is not None or out.stdout is None:
-            stderr_lines = out.stderr.readlines()
-            if stderr_lines:
-                raise BackupSizeRetrievalError(
-                    f"Cannot obtain free space on backup hdd: {[stderr_line.decode().strip() for stderr_line in stderr_lines]}"
-                )
-        free_space_on_bu_hdd = _remove_heading_from_df_output(out.stdout)
-        LOG.info(f"obtaining free space on bu hdd with command: {' '.join(command)}. Received {free_space_on_bu_hdd}")
-        return free_space_on_bu_hdd
+        return System.free_space(self._backup.target)

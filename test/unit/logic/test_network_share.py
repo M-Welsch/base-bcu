@@ -1,13 +1,8 @@
-import logging
-import subprocess
-from subprocess import PIPE, Popen
 from test.utils.patch_config import patch_config
-from typing import Generator, Optional, Type
+from typing import Generator
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 
-from base.common.exceptions import NetworkError
 from base.logic.network_share import NetworkShare
 
 

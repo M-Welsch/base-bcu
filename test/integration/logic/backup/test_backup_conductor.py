@@ -161,8 +161,6 @@ Possible Error Conditions:
   - Backup HDD cannot be mounted
 - InvalidBackupSource
   - backup source is not within NAS smb share 
-- BackupSizeRetrievalError
-  - unable to obtain size of backup to be made
 - UnmountError
 - DockingError (while undocking)
 - NetworkError (during unmount NAS smb share)

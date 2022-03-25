@@ -1,10 +1,9 @@
 import subprocess
 from pathlib import Path
-from subprocess import PIPE, Popen, call
-from typing import Dict, List
+from subprocess import PIPE, Popen
+from typing import List, IO
 
-from base.common.constants import BackupDirectorySuffix
-from base.common.exceptions import BackupSizeRetrievalError, ExternalCommandError, NetworkError
+from base.common.exceptions import BackupSizeRetrievalError, NetworkError
 from base.common.logger import LoggerFactory
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 
@@ -35,6 +34,26 @@ class System:
         copy_command = f"cp -al {recent_backup}/* {new_backup}"
         LOG.info(f"copy command: {copy_command}")
         return Popen(copy_command, bufsize=0, shell=True, stdout=PIPE, stderr=PIPE)
+
+    @staticmethod
+    def free_space(backup_target: Path) -> int:
+        """returns free space on backup hdd in bytes"""
+
+        def _remove_heading_from_df_output(df_output: IO[bytes]) -> int:
+            return int(list(df_output)[-1].decode().strip())
+
+        command: List[str] = ["df", "--output=avail", backup_target.as_posix()]
+        out = Popen(command, stdout=PIPE, stderr=PIPE)
+        out.wait()
+        if out.stderr is not None:
+            stderr_lines = out.stderr.readlines()
+            if stderr_lines:
+                raise BackupSizeRetrievalError(
+                    f"Cannot obtain free space on backup hdd: {[stderr_line.decode().strip() for stderr_line in stderr_lines]}"
+                )
+        free_space_on_bu_hdd = _remove_heading_from_df_output(out.stdout)  # type: ignore
+        LOG.info(f"obtaining free space on bu hdd with command: {' '.join(command)}. Received {free_space_on_bu_hdd}")
+        return free_space_on_bu_hdd
 
 
 class SmbShareMount:
