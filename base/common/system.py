@@ -35,4 +35,10 @@ class System:
     def copy_newest_backup_with_hardlinks(recent_backup: Path, new_backup: Path) -> subprocess.Popen:
         copy_command = f"cp -al {recent_backup}/* {new_backup}"
         LOG.info(f"copy command: {copy_command}")
-        return Popen(copy_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE)
+        return Popen(copy_command, bufsize=0, shell=True, stdout=PIPE, stderr=PIPE)
+
+    @staticmethod
+    def mount_smb_share(mount_point: str) -> subprocess.Popen:
+        command = f"mount {mount_point}".split()
+        LOG.info(f"mount datasource with command: {command}")
+        return Popen(command, bufsize=0, stderr=PIPE, stdout=PIPE)
