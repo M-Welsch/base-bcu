@@ -10,6 +10,7 @@ from typing import Generator, List, Optional, Type
 
 from base.common.config import get_config
 from base.common.logger import LoggerFactory
+from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 from base.logic.backup.synchronisation.rsync_patterns import Patterns
 from base.logic.backup.synchronisation.sync_status import SyncStatus
 
@@ -20,19 +21,25 @@ class Sync:
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
         self._sync_config = get_config("sync.json")
         self._nas_config = get_config("nas.json")
-        self._local_target_location: Path = local_target_location
-        self._command: List[str] = self._compose_rsync_command(local_target_location, source_location)
         self._process: Optional[Popen] = None
         self._status: SyncStatus = SyncStatus()
+        self._source = source_location
+        self._target = local_target_location
+
+    def update_target(self, new_target: Path) -> None:
+        self._target = new_target
 
     def __enter__(self) -> Generator[SyncStatus, None, None]:
+        rsync_command: str = RsyncCommand().compose(self._target, self._source)
+        LOG.debug(f"syncing with command: {rsync_command}")
+        # Fixme: we're having an outdated version of "target" here ...
         self._process = Popen(
-            self._command,
+            rsync_command,
             bufsize=0,
             universal_newlines=True,
             stdout=PIPE,
             stderr=STDOUT,
-            shell=False,
+            shell=True,
             preexec_fn=os.setsid,
         )
         return self._output_generator()
@@ -44,27 +51,11 @@ class Sync:
         exc_traceback: Optional[TracebackType],
     ) -> None:
         if isinstance(self._process, Popen):
-            self._process.wait(1)
+            self._process.wait()  # Fixme: put timeout of "1" back in?
         try:
             self.terminate()
         except ProcessLookupError:
             pass
-
-    def _compose_rsync_command(self, local_target_location: Path, source_location: Path) -> List[str]:
-        host = self._nas_config.ssh_host
-        user = self._nas_config.ssh_user
-        protocol = self._sync_config.protocol
-        ssh_keyfile_path = self._sync_config.ssh_keyfile_path
-        command = "sudo rsync -avH".split()
-        if protocol == "smb":
-            command.extend(f"{source_location}/ {local_target_location}".split())
-        else:
-            command.append("-e")
-            command.append(f"ssh -i {ssh_keyfile_path}")
-            command.extend(f"{user}@{host}:{source_location}/ {local_target_location}".split())
-        command.extend("--outbuf=N --info=progress2".split())
-        LOG.info(f"About to sync with: {command}")
-        return command
 
     def _output_generator(self) -> Generator[SyncStatus, None, None]:
         assert isinstance(self._process, Popen)

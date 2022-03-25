@@ -1,10 +1,11 @@
 from pathlib import Path
-from subprocess import PIPE, Popen
+from subprocess import Popen
 
 from base.common.config import Config, get_config
 from base.common.exceptions import NetworkError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
+from base.common.system import SmbShareMount
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -18,45 +19,33 @@ class NetworkShare:
     def is_available(self) -> HddState:
         return self._available
 
-    # Todo: create new user on NAS that has the permission to READ the hdd but not to write to it
     def mount_datasource_via_smb(self) -> None:
-        try:
-            Path(self._config.local_nas_hdd_mount_point).mkdir(exist_ok=True)
-        except FileExistsError:
-            pass  # exist_ok=True was intended to supress this error, howe it works in a different way
-        except OSError as e:
-            LOG.warning(f"strange OS-Error occured on trying to create the NAS-HDD Mountpoint: {e}")
-        nas_config = get_config("nas.json")
-        command = (
-            f"mount -t cifs "
-            f"-o credentials={nas_config.smb_credentials_file} "
-            f"//{nas_config.smb_host}/{nas_config.smb_share_name} "
-            f"{self._config.local_nas_hdd_mount_point}".split()
-        )
-        LOG.info(f"mount datasource with command: {command}")
-        process = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
-        self._parse_process_output(process)
+        self._create_mountpoint()
+        self._perform_mount()
         self._available = HddState.available
 
     def unmount_datasource_via_smb(self) -> None:
-        command = f"umount {self._config.local_nas_hdd_mount_point}".split()
-        process = Popen(command, bufsize=0, universal_newlines=True, stdout=PIPE, stderr=PIPE)
-        self._parse_process_output(process)
+        self._perform_unmount()
+        self._available = HddState.not_available
 
-    def _parse_process_output(self, process: Popen) -> None:
-        if process.stdout is not None:
-            for line in process.stdout:
-                LOG.debug("stdout: " + line)
-        if process.stderr is not None:
-            for line in process.stderr:
-                if "error(16)" in line:
-                    # Device or resource busy
-                    LOG.warning(f"Device probably already mounted: {line}")
-                elif "error(2)" in line:
-                    # No such file or directory
-                    self._available = HddState.not_available
-                    raise NetworkError(f"Network share not available: {line}")
-                elif "could not resolve address" in line:
-                    raise NetworkError(f"Errant IP address: {line}")
-                else:
-                    LOG.debug("stderr: " + line)
+    def _create_mountpoint(self) -> None:
+        try:
+            Path(self._config.local_nas_hdd_mount_point).mkdir(exist_ok=True)
+        except FileExistsError:
+            pass  # exist_ok=True was intended to supress this error, however it works in a different way
+        except OSError as e:
+            LOG.warning(f"strange OS-Error occured on trying to create the NAS-HDD Mountpoint: {e}")
+
+    def _perform_mount(self) -> None:
+        try:
+            SmbShareMount().mount_smb_share(self._config.local_nas_hdd_mount_point)
+        except NetworkError as e:
+            self._available = HddState.unknown
+            raise NetworkError from e
+
+    def _perform_unmount(self) -> None:
+        try:
+            SmbShareMount().unmount_smb_share(self._config.local_nas_hdd_mount_point)
+        except NetworkError as e:
+            self._available = HddState.unknown
+            raise NetworkError from e

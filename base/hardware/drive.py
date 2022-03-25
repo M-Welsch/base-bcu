@@ -10,14 +10,12 @@ from base.common.exceptions import BackupPartitionError, MountError, UnmountErro
 from base.common.file_system import FileSystemWatcher
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
-from base.logic.backup.backup_browser import BackupBrowser
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
 class Drive:
-    def __init__(self, backup_browser: BackupBrowser):
-        self._backup_browser: BackupBrowser = backup_browser
+    def __init__(self) -> None:
         self._config: Config = get_config("drive.json")
         self._partition_info: Optional[PartitionInfo] = None
         self._available: HddState = HddState.unknown
@@ -33,16 +31,14 @@ class Drive:
             self._mount_backup_partition_or_raise(self._partition_info)
         LOG.info(f"Mounted HDD {self._partition_info.path} at {self._config.backup_hdd_mount_point}")
         self._available = HddState.available
-        self._backup_browser.update_backup_list()
 
     def unmount(self) -> None:
         try:
             LOG.debug("Unmounting drive")
             self._unmount_backup_hdd_or_raise()
-        except UnmountError:
+        except (UnmountError, RuntimeError) as e:
             LOG.warning(f"Unmounting didn't work: {UnmountError}")
-        except RuntimeError:
-            LOG.warning(f"Unmounting didn't work: {RuntimeError}")
+            raise UnmountError from e
 
     @property
     def is_mounted(self) -> bool:
@@ -136,7 +132,7 @@ class Drive:
 
 
 def call_mount_command(partition: str, mount_point: Path, file_system: str) -> None:
-    command = [f"mount", "-t", str(file_system), str(partition), str(mount_point)]
+    command = ["sudo", "mount", "-t", str(file_system), str(partition), str(mount_point)]
     LOG.debug(" ".join(command))
     cp = run(command, stdout=PIPE, stderr=PIPE)
     if cp.stderr:

@@ -1,73 +1,41 @@
+from configparser import ConfigParser, ParsingError
 from pathlib import Path
-from typing import List
 
 from base.common.config import get_config
-from base.common.logger import LoggerFactory
+from base.common.exceptions import NasSmbConfError
 from base.common.ssh_interface import SSHInterface
-
-LOG = LoggerFactory.get_logger(__name__)
 
 
 class Nas:
     def __init__(self) -> None:
         self._config = get_config("nas.json")
-        self._login_data = [self._config.ssh_host, self._config.ssh_user]
-        self._protocol = get_config("sync.json").protocol
-        self._services_stopped: List[str] = []
 
-    def stop_services(self) -> None:
-        self._services_stopped = self._filter_services()
-        LOG.info(f"Stopping {self._services_stopped} on nas {self._config.ssh_host} with user {self._config.ssh_user}")
-        with SSHInterface() as sshi:
-            for service in self._services_stopped:
-                sshi.connect(self._config.ssh_host, self._config.ssh_user)
-                try:
-                    sshi.run_and_raise(f"systemctl stop {service}")
-                except RuntimeError as e:
-                    LOG.error(str(e))
-
-    def resume_services(self) -> None:
-        with SSHInterface() as sshi:
-            LOG.info(
-                f"Resuming {self._services_stopped} on nas {self._config.ssh_host} with user {self._config.ssh_user}"
-            )
-            for service in self._services_stopped:
-                sshi.connect(self._config.ssh_host, self._config.ssh_user)
-                try:
-                    sshi.run_and_raise(f"systemctl start {service}")
-                except RuntimeError as e:
-                    LOG.error(str(e))
-
-    def _filter_services(self) -> List[str]:
-        return [service for service in self._config.services if not (service == "smbd" and self._protocol == "smb")]
-
-    def smb_backup_mode(self) -> None:
+    def root_of_share(self, share_name: str = "Backup") -> Path:
         with SSHInterface() as sshi:
             sshi.connect(self._config.ssh_host, self._config.ssh_user)
-            sshi.run_and_raise("systemctl stop smbd")
-            sshi.run_and_raise("cp /etc/samba/smb.conf_backupmode /etc/samba/smb.conf")
-            sshi.run_and_raise("systemctl start smbd")
-            smb_confs = sshi.run("ls /etc/samba")
-            assert "smb.conf_normalmode" in str(smb_confs)
+            smb_conf = self._get_smb_conf(sshi)
+            return self._extract_root_of_share(smb_conf, share_name)
 
-    def smb_normal_mode(self) -> None:
-        with SSHInterface() as sshi:
-            sshi.connect(self._config.ssh_host, self._config.ssh_user)
-            sshi.run_and_raise("systemctl stop smbd")
-            sshi.run_and_raise("cp /etc/samba/smb.conf_normalmode /etc/samba/smb.conf")
-            sshi.run_and_raise("systemctl start smbd")
-            smb_confs = sshi.run("ls /etc/samba")
-            assert "smb.conf_backupmode" in str(smb_confs)
+    def _get_smb_conf(self, sshi: SSHInterface) -> ConfigParser:
+        try:
+            smb_conf_str = sshi.run_and_raise(f"cat /etc/samba/smb.conf")
+        except RuntimeError as e:
+            raise NasSmbConfError from e
 
-    def correct_smb_conf(self, mode: str = "normalmode") -> bool:
-        with SSHInterface() as sshi:
-            sshi.connect(self._config.ssh_host, self._config.ssh_user)
-            cmp = sshi.run_and_raise(f"cmp /etc/samba/smb.conf /etc/samba/smb.conf_{mode}")
-        return not cmp
+        return self._get_parser_from_smb_conf(smb_conf_str)
 
-    def mount_point(self, file: Path) -> Path:
-        with SSHInterface() as sshi:
-            sshi.connect(self._config.ssh_host, self._config.ssh_user)
-            response = sshi.run_and_raise(f'findmnt -T {file} --output="TARGET" -nf')
-            response = response.strip()
-            return Path(response)
+    @staticmethod
+    def _get_parser_from_smb_conf(smb_conf_str: str) -> ConfigParser:
+        parser = ConfigParser()
+        try:
+            parser.read_string(smb_conf_str)
+        except ParsingError as e:
+            raise NasSmbConfError("your Nas's /etc/samba/smb.conf is invalid") from e
+        return parser
+
+    @staticmethod
+    def _extract_root_of_share(smb_conf: ConfigParser, share_name: str) -> Path:
+        try:
+            return Path(smb_conf[share_name]["path"])
+        except KeyError as e:
+            raise NasSmbConfError("/etc/samba/smb.conf on NAS does not seem to exist. Is samba installed?") from e

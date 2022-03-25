@@ -8,9 +8,9 @@ from typing import Optional, Tuple, Type
 import serial
 
 from base.common.config import Config, get_config
+from base.common.constants import BAUD_RATE
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SerialInterfaceError
 from base.common.logger import LoggerFactory
-from base.hardware.constants import BAUD_RATE
 from base.hardware.pin_interface import PinInterface
 from base.hardware.sbu.message import SbuMessage
 

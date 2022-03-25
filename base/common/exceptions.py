@@ -43,6 +43,10 @@ class NasNotAvailableError(BackupserverException):
     pass
 
 
+class NasSmbConfError(BackupserverException):
+    pass
+
+
 class NetworkError(BackupserverException):
     pass
 
@@ -65,13 +69,6 @@ class BackupRequestError(Exception):
 
 class RemoteCommandError(BackupserverException):
     pass
-
-
-if __name__ == "__main__":
-    try:
-        raise DockingError("Timout exceeded!")
-    except DockingError:
-        print(f"Cannot Do Backup due to DockingError: {DockingError}")
 
 
 class SbuNotAvailableError(Exception):
@@ -113,4 +110,16 @@ class ConfigValidationError(Exception):
 
 
 class ConfigSaveError(Exception):
+    pass
+
+
+class BackupSizeRetrievalError(Exception):
+    pass
+
+
+class InvalidBackupSource(Exception):
+    pass
+
+
+class BackupDeletionError(Exception):
     pass

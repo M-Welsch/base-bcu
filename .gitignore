@@ -1,8 +1,10 @@
 *.pyc
 __pycache__
 log
-*.sublime-project
-*.sublime-workspace
 *.idea
 *.log
-.pytest_cache
+.mypy_cache/
+.pytest_cache/
+/test/utils/backup_environment/virtual_hard_drive
+venv/
+base/log/
