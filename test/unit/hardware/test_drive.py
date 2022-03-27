@@ -10,7 +10,6 @@ from _pytest.logging import LogCaptureFixture
 from py import path
 
 import base.hardware.drive
-from base.common.drive_inspector import PartitionInfo
 from base.common.exceptions import MountError, UnmountError
 from base.common.status import HddState
 from base.hardware.drive import LOG, Drive
@@ -31,9 +30,6 @@ class MockDrive(Drive):
     @property
     def virtual_hard_drive_location(self) -> Path:
         return self._virtual_hard_drive_location
-
-    def _get_partition_info_or_raise(self) -> PartitionInfo:
-        return PartitionInfo(path=str(self._virtual_hard_drive_location), mount_point="", bytes_size=0)
 
 
 def call_mount_command(*args, **kwargs) -> None:  # type: ignore
@@ -74,23 +70,23 @@ def drive_invalid_mountpoint(drive: MockDrive) -> Generator[MockDrive, None, Non
     yield drive
 
 
-@pytest.fixture
-def drive_invalid_device(drive: MockDrive) -> Generator[MockDrive, None, None]:
-    drive._virtual_hard_drive_location = drive._virtual_hard_drive_location.parent / "nonexisting_drive"
-    yield drive
+# @pytest.fixture
+# def drive_invalid_device(drive: MockDrive) -> Generator[MockDrive, None, None]:
+#     drive._virtual_hard_drive_location = drive._virtual_hard_drive_location.parent / "nonexisting_drive"
+#     yield drive
 
 
-@pytest.fixture
-def drive_mounted(drive: MockDrive) -> Generator[MockDrive, None, None]:
-    """
-    Return a mounted MockDrive.
-
-    Waits for mount command to complete before yield.
-    """
-    call_mount_command()
-    assert drive.is_mounted
-    drive._partition_info = drive._get_partition_info_or_raise()
-    yield drive
+# @pytest.fixture
+# def drive_mounted(drive: MockDrive) -> Generator[MockDrive, None, None]:
+#     """
+#     Return a mounted MockDrive.
+#
+#     Waits for mount command to complete before yield.
+#     """
+#     call_mount_command()
+#     assert drive.is_mounted
+#     drive._partition_info = drive._get_partition_info_or_raise()
+#     yield drive
 
 
 def test_is_mounted(drive: MockDrive) -> None:
@@ -116,9 +112,9 @@ def test_space_used_percent(drive: MockDrive) -> None:
     print(drive.space_used_percent())
 
 
-def test_space_used_percent_invalid_mountpoint(drive_invalid_mountpoint: MockDrive) -> None:
-    drive_invalid_mountpoint._partition_info = PartitionInfo(path="", mount_point="", bytes_size=0)
-    assert drive_invalid_mountpoint.space_used_percent() == 0
+# def test_space_used_percent_invalid_mountpoint(drive_invalid_mountpoint: MockDrive) -> None:
+#     drive_invalid_mountpoint._partition_info = PartitionInfo(path="", mount_point="", bytes_size=0)
+#     assert drive_invalid_mountpoint.space_used_percent() == 0
 
 
 def test_get_string_from_df_output(drive: MockDrive) -> None:
@@ -146,9 +142,9 @@ def test_mount(drive: MockDrive) -> None:
     assert drive.is_available == HddState.available
 
 
-def test_unmount(drive_mounted: MockDrive) -> None:
-    base.hardware.drive.call_unmount_command = call_unmount_command
-    drive_mounted.unmount()
-    assert not drive_mounted.is_mounted
-    assert drive_mounted._partition_info is not None
-    assert not Path(drive_mounted._partition_info.path).is_mount()
+# def test_unmount(drive_mounted: MockDrive) -> None:
+#     base.hardware.drive.call_unmount_command = call_unmount_command
+#     drive_mounted.unmount()
+#     assert not drive_mounted.is_mounted
+#     assert drive_mounted._partition_info is not None
+#     assert not Path(drive_mounted._partition_info.path).is_mount()

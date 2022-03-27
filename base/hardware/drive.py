@@ -1,13 +1,11 @@
 from pathlib import Path
 from subprocess import PIPE, Popen, run
-from time import sleep
+from time import sleep, time
 from typing import Optional
 from typing.io import IO
 
 from base.common.config import Config, get_config
-from base.common.drive_inspector import PartitionInfo, PartitionSignature
-from base.common.exceptions import BackupPartitionError, MountError, UnmountError
-from base.common.file_system import FileSystemWatcher
+from base.common.exceptions import BackupHddNotAvailable, MountError, UnmountError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 
@@ -17,19 +15,14 @@ LOG = LoggerFactory.get_logger(__name__)
 class Drive:
     def __init__(self) -> None:
         self._config: Config = get_config("drive.json")
-        self._partition_info: Optional[PartitionInfo] = None
         self._available: HddState = HddState.unknown
 
-    @property
-    def backup_hdd_device_info(self) -> Optional[PartitionInfo]:
-        return self._partition_info
-
     def mount(self) -> None:
+        """udev recognizes the correct drive and creates a symlink to /dev/BACKUPHDD"""
         LOG.debug("Mounting drive")
-        self._partition_info = self._get_partition_info_or_raise()
-        if not self._partition_info.mount_point:
-            self._mount_backup_partition_or_raise(self._partition_info)
-        LOG.info(f"Mounted HDD {self._partition_info.path} at {self._config.backup_hdd_mount_point}")
+        self._wait_for_backup_hdd()
+        call_mount_command()
+        LOG.info(f"Mounted /dev/BACKUPHDD at {self._config.backup_hdd_mount_point}")
         self._available = HddState.available
 
     def unmount(self) -> None:
@@ -40,6 +33,13 @@ class Drive:
             LOG.warning(f"Unmounting didn't work: {UnmountError}")
             raise UnmountError from e
 
+    def _wait_for_backup_hdd(self) -> None:
+        time_start = time()
+        while not Path("/dev/BACKUPHDD").exists():
+            if time() - time_start > self._config.backup_hdd_spinup_timeout:
+                raise BackupHddNotAvailable
+            sleep(0.5)
+
     @property
     def is_mounted(self) -> bool:
         return Path(self._config.backup_hdd_mount_point).is_mount()
@@ -47,27 +47,6 @@ class Drive:
     @property
     def is_available(self) -> HddState:
         return self._available
-
-    def _get_partition_info_or_raise(self) -> PartitionInfo:
-        try:
-            return FileSystemWatcher(
-                backup_hdd_device_signature=PartitionSignature(**self._config.backup_hdd_device_signature),
-                timeout_seconds=self._config.backup_hdd_spinup_timeout,
-            ).backup_partition_info()
-        except BackupPartitionError as e:
-            LOG.error("Backup HDD not found!")
-            self._available = HddState.not_available
-            raise e
-
-    def _mount_backup_partition_or_raise(self, partition_info: PartitionInfo) -> None:
-        try:
-            call_mount_command(
-                partition_info.path, Path(self._config.backup_hdd_mount_point), self._config.backup_hdd_file_system
-            )
-        except MountError as e:
-            LOG.error("Backup HDD could not be mounted!")
-            self._available = HddState.not_available
-            raise e
 
     def _unmount_backup_hdd_or_raise(self) -> None:
         LOG.debug("Trying to unmount backup HDD...")
@@ -88,33 +67,25 @@ class Drive:
         raise UnmountError
 
     def space_used_percent(self) -> int:
-        if self._partition_info:
+        space_used = 0
+        if self.is_mounted:
             mount_point = self._config.backup_hdd_mount_point
             command = ["df", "--output=pcent", mount_point]
             LOG.debug(f"obtaining space used on bu hdd with command: {command}")
             try:
                 proc = Popen(command, stdout=PIPE, stderr=PIPE)
                 assert proc.stdout is not None
-                # LOG.info(f"Space used on Backup HDD: {space_used}%")
+                space_used = int(self._extract_space_used_from_output(proc.stdout))
             except FileNotFoundError:
                 LOG.debug(f"FileNotFound during 'space_used_percent' with command {command}")
-                return 0
             except TypeError:
                 LOG.debug(f"Retrival of used space not possible yet. Mounting still in progress")
-                return 0
-            try:
-                space_used = int(self._extract_space_used_from_output(proc.stdout))
             except IndexError:
                 LOG.debug(f"IndexError during 'space_used_percent' with command {command}")
-                space_used = 0
             except ValueError:
                 LOG.debug(f"Value Error during 'space_used_percent' with command {command}")
-                space_used = 0
-
-            if space_used is not None:
-                return space_used
-        LOG.debug("no partition info in 'space_used_percent'")
-        return 0
+        LOG.debug("not mounted")
+        return space_used
 
     def _extract_space_used_from_output(self, df_output: IO[bytes]) -> float:
         df_output_str = self._get_string_from_df_output(df_output)
@@ -131,17 +102,17 @@ class Drive:
         return float(string) if string else 0
 
 
-def call_mount_command(partition: str, mount_point: Path, file_system: str) -> None:
-    command = ["sudo", "mount", "-t", str(file_system), str(partition), str(mount_point)]
-    LOG.debug(" ".join(command))
-    cp = run(command, stdout=PIPE, stderr=PIPE)
+def call_mount_command() -> None:
+    command = "mount /dev/BACKUPHDD"
+    LOG.debug(f"Mounting with {command}")
+    cp = run(command.split(), stdout=PIPE, stderr=PIPE)
     if cp.stderr:
         raise MountError(f"Partition could not be mounted: {str(cp.stderr)}")
 
 
 def call_unmount_command(mount_point: Path) -> None:
-    command = ["sudo", "umount", str(mount_point)]
-    LOG.debug(" ".join(command))
-    cp = run(command, stdout=PIPE, stderr=PIPE)
+    command = f"umount {mount_point.as_posix()}"
+    LOG.debug(f"Unmounting with {command}")
+    cp = run(command.split(), stdout=PIPE, stderr=PIPE)
     if cp.stderr:
         raise UnmountError(f"Partition could not be unmounted: {str(cp.stderr)}")

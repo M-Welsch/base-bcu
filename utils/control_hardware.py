@@ -30,7 +30,7 @@ sys.path.append(path_to_module)
 def control_hardware(
     dock: bool, undock: bool, power: bool, unpower: bool, open_sbu_channel: bool, close_sbu_channel: bool
 ) -> None:
-    cfg_path = Path("/home/base/python.base/base/config/")
+    cfg_path = Path("/home/base/base-bcu/base/config/")
     setup_logger(cfg_path)
     from base.common.config import BoundConfig
 
