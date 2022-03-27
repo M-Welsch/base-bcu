@@ -1,13 +1,8 @@
 {
-    "backup_hdd_file_system": "ext4",
     "backup_hdd_mount_point": "/media/BackupHDD",
     "backup_hdd_spinup_timeout": 20,
+    "backup_hdd_mount_trials": 5,
     "backup_hdd_unmount_trials": 5,
-    "backup_hdd_unmount_waiting_secs": 1,
-    "backup_hdd_device_signature": {
-        "model_name": "SAMSUNG_HD501LJ",
-        "serial_number": "S0MUJ1FPC26555",
-        "bytes_size": 500107862016,
-        "partition_index": 2
-    }
+    "backup_hdd_mount_waiting_secs": 1,
+    "backup_hdd_unmount_waiting_secs": 1
 }
