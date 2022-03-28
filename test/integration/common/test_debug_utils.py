@@ -11,7 +11,7 @@ from base.common.ssh_interface import SSHInterface
 
 @pytest.fixture(scope="class")
 def config() -> Generator[Config, None, None]:
-    BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config"))
+    BoundConfig.set_config_base_path(Path().cwd()/"base/config")
     yield BoundConfig("base.json")
 
 
