@@ -19,19 +19,21 @@ class Drive:
 
     def mount(self) -> None:
         """udev recognizes the correct drive and creates a symlink to /dev/BACKUPHDD"""
-        LOG.debug("Mounting drive")
-        self._wait_for_backup_hdd()
-        call_mount_command()
-        LOG.info(f"Mounted /dev/BACKUPHDD at {self._config.backup_hdd_mount_point}")
-        self._available = HddState.available
+        if not self.is_mounted:
+            LOG.debug("Mounting drive")
+            self._wait_for_backup_hdd()
+            self._mount_backup_hdd_or_raise()
+            LOG.info(f"Mounted /dev/BACKUPHDD at {self._config.backup_hdd_mount_point}")
+            self._available = HddState.available
+        else:
+            LOG.debug("BackupHDD is already mounted. No need to mount")
 
     def unmount(self) -> None:
-        try:
+        if self.is_mounted:
             LOG.debug("Unmounting drive")
             self._unmount_backup_hdd_or_raise()
-        except (UnmountError, RuntimeError) as e:
-            LOG.warning(f"Unmounting didn't work: {UnmountError}")
-            raise UnmountError from e
+        else:
+            LOG.debug("Backup HDD not mounted, therefore no need to unmount")
 
     def _wait_for_backup_hdd(self) -> None:
         time_start = time()
@@ -48,6 +50,24 @@ class Drive:
     def is_available(self) -> HddState:
         return self._available
 
+    def _mount_backup_hdd_or_raise(self) -> None:
+        LOG.debug("Mounting Backup HDD")
+        for i in range(self._config.backup_hdd_mount_trials):
+            try:
+                call_mount_command()
+                return
+            except MountError as e:
+                LOG.info(
+                    f"Couldn't mount BackupHDD after {i+1} trials. "
+                    f"Waiting for {self._config.backup_hdd_mount_waiting_secs}s and try again. Error: {e}"
+                )
+            sleep(self._config.backup_hdd_mount_waiting_secs)
+        LOG.error(
+            f"Couldn't mount BackupHDD within {self._config.backup_hdd_mount_trials} trials and waiting "
+            f"for {self._config.backup_hdd_mount_waiting_secs}s between trials."
+        )
+        raise MountError
+
     def _unmount_backup_hdd_or_raise(self) -> None:
         LOG.debug("Trying to unmount backup HDD...")
         for i in range(self._config.backup_hdd_unmount_trials):
@@ -55,12 +75,12 @@ class Drive:
                 call_unmount_command(self._config.backup_hdd_mount_point)
                 return
             except UnmountError as e:
-                LOG.warning(
+                LOG.info(
                     f"Couldn't unmount BackupHDD after {i+1} trials. "
                     f"Waiting for {self._config.backup_hdd_unmount_waiting_secs}s and try again. Error: {e}"
                 )
             sleep(self._config.backup_hdd_unmount_waiting_secs)
-        LOG.warning(
+        LOG.error(
             f"Couldn't unmount BackupHDD within {self._config.backup_hdd_unmount_trials} trials and waiting "
             f"for {self._config.backup_hdd_unmount_waiting_secs}s between trials."
         )
@@ -110,8 +130,8 @@ def call_mount_command() -> None:
         raise MountError(f"Partition could not be mounted: {str(cp.stderr)}")
 
 
-def call_unmount_command(mount_point: Path) -> None:
-    command = f"umount {mount_point.as_posix()}"
+def call_unmount_command(mount_point: str) -> None:
+    command = f"umount {mount_point}"
     LOG.debug(f"Unmounting with {command}")
     cp = run(command.split(), stdout=PIPE, stderr=PIPE)
     if cp.stderr:

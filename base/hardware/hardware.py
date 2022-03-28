@@ -41,7 +41,8 @@ class Hardware:
         LOG.debug("disengaging hardware")
         self._drive.unmount()
         self._power.hdd_power_off()
-        sleep(self._config.hdd_spindown_time)
+        if self.docked:  # this step takes quite a time, so do it only if necessary
+            sleep(self._config.hdd_spindown_time)
         self._mechanics.undock()
 
     def prepare_sbu_for_shutdown(self, timestamp: str, seconds: int) -> None:
