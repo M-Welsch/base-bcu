@@ -68,7 +68,7 @@ def on_backup_finished(*args, **kwargs):  # type: ignore
 
 @pytest.fixture
 def rsync_wrapper_thread(mocker: MockFixture) -> Generator[Backup, None, None]:
-    BoundConfig.set_config_base_path(Path("python.base/base/config"))
+    BoundConfig.set_config_base_path(Path().cwd()/"base/config")
     mocker.patch("signalslot.Signal.emit")
     rswt = Backup(on_backup_finished)
     # monkeypatch.setattr(sync.RsyncWrapperThread, '_ssh_rsync', SshRsyncMock(["first", "second"]))
@@ -78,7 +78,7 @@ def rsync_wrapper_thread(mocker: MockFixture) -> Generator[Backup, None, None]:
 
 @pytest.fixture
 def rsync_wrapper_thread_loooong_loop(mocker: MockFixture) -> Generator[Backup, None, None]:
-    BoundConfig.set_config_base_path(Path("python.base/base/config"))
+    BoundConfig.set_config_base_path(Path().cwd()/"base/config")
     mocker.patch("signalslot.Signal.emit")
     rswt = Backup(on_backup_finished)
     rswt._sync = SyncMockLoooongLoop()
