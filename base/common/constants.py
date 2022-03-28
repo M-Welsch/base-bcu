@@ -2,6 +2,9 @@ from collections import namedtuple
 from dataclasses import dataclass, fields
 from typing import List
 
+BACKUP_HDD_DEVICE_NODE = "/dev/BACKUPHDD"
+
+
 BAUD_RATE: int = 9600
 
 

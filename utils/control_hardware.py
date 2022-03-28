@@ -9,12 +9,10 @@ sys.path.append(path_to_module)
 
 
 @click.command()
-@click.option("--dock", "-D", help="dock backup hdd", is_flag=True, default=False)
-@click.option("--undock", "-d", help="undock backup hdd", is_flag=True, default=False)
-@click.option("--power", "-P", help="power backup hdd", is_flag=True, default=False)
-@click.option("--unpower", "-p", help="unpower backup hdd", is_flag=True, default=False)
-@click.option("--mount", "-M", help="mount backup hdd", is_flag=True, default=False)
-@click.option("--unmount", "-m", help="unmount backup hdd", is_flag=True, default=False)
+@click.option("--dock", "-d", help="dock backup hdd", is_flag=True, default=False)
+@click.option("--undock", "-u", help="undock backup hdd", is_flag=True, default=False)
+@click.option("--power", "-p", help="power backup hdd", is_flag=True, default=False)
+@click.option("--unpower", "-r", help="unpower backup hdd", is_flag=True, default=False)
 @click.option(
     "--open_sbu_channel",
     "-c",
@@ -30,7 +28,14 @@ sys.path.append(path_to_module)
     default=False,
 )
 def control_hardware(
-    dock: bool, undock: bool, power: bool, unpower: bool, mount: bool, unmount: bool, open_sbu_channel: bool, close_sbu_channel: bool
+    dock: bool,
+    undock: bool,
+    power: bool,
+    unpower: bool,
+    mount: bool,
+    unmount: bool,
+    open_sbu_channel: bool,
+    close_sbu_channel: bool,
 ) -> None:
     cfg_path = Path("/home/base/base-bcu/base/config/")
     setup_logger(cfg_path)
@@ -38,9 +43,9 @@ def control_hardware(
 
     setup_config(cfg_path)
 
+    from base.hardware.drive import Drive
     from base.hardware.mechanics import Mechanics
     from base.hardware.power import Power
-    from base.hardware.drive import Drive
 
     power_unit = Power()
     mechanics = Mechanics()
@@ -52,18 +57,18 @@ def control_hardware(
     if power:
         print("power")
         power_unit.hdd_power_on()
-    if unpower:
-        print("unpower")
-        power_unit.hdd_power_off()
-    if undock:
-        print("undocking. Properly")
-        mechanics.undock()
     if mount:
         print("mounting")
         drive.mount()
     if unmount:
         print("unmounting")
         drive.unmount()
+    if unpower:
+        print("unpower")
+        power_unit.hdd_power_off()
+    if undock:
+        print("undocking. Properly")
+        mechanics.undock()
     if open_sbu_channel:
         print("Opening Channel")
         power_unit._pin_interface.set_sbu_serial_path_to_communication()
