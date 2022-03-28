@@ -1,13 +1,12 @@
 from pathlib import Path
 from subprocess import PIPE, Popen, run
-from time import sleep
+from time import sleep, time
 from typing import Optional
 from typing.io import IO
 
 from base.common.config import Config, get_config
-from base.common.drive_inspector import PartitionInfo, PartitionSignature
-from base.common.exceptions import BackupPartitionError, MountError, UnmountError
-from base.common.file_system import FileSystemWatcher
+from base.common.constants import BACKUP_HDD_DEVICE_NODE
+from base.common.exceptions import BackupHddNotAvailable, MountError, UnmountError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 
@@ -17,67 +16,74 @@ LOG = LoggerFactory.get_logger(__name__)
 class Drive:
     def __init__(self) -> None:
         self._config: Config = get_config("drive.json")
-        self._partition_info: Optional[PartitionInfo] = None
         self._available: HddState = HddState.unknown
-
-    @property
-    def backup_hdd_device_info(self) -> Optional[PartitionInfo]:
-        return self._partition_info
+        self._backup_hdd_device_node = BACKUP_HDD_DEVICE_NODE
 
     def mount(self) -> None:
-        LOG.debug("Mounting drive")
-        self._partition_info = self._get_partition_info_or_raise()
-        if not self._partition_info.mount_point:
-            self._mount_backup_partition_or_raise(self._partition_info)
-        LOG.info(f"Mounted HDD {self._partition_info.path} at {self._config.backup_hdd_mount_point}")
+        """udev recognizes the correct drive and creates a symlink to /dev/BACKUPHDD"""
+        if not self.is_mounted:
+            LOG.debug("Mounting drive")
+            self._wait_for_backup_hdd()
+            self._mount_backup_hdd_or_raise()
+            LOG.info(f"Mounted /dev/BACKUPHDD at {self._config.backup_hdd_mount_point}")
+        else:
+            LOG.debug("BackupHDD is already mounted. No need to mount")
         self._available = HddState.available
 
     def unmount(self) -> None:
-        try:
+        if self.is_mounted:
             LOG.debug("Unmounting drive")
             self._unmount_backup_hdd_or_raise()
-        except (UnmountError, RuntimeError) as e:
-            LOG.warning(f"Unmounting didn't work: {UnmountError}")
-            raise UnmountError from e
+        else:
+            LOG.debug("Backup HDD not mounted, therefore no need to unmount")
+        self._available = HddState.not_available
+
+    def _wait_for_backup_hdd(self) -> None:
+        time_start = time()
+        while not Path(self._backup_hdd_device_node).exists():
+            if time() - time_start > self._config.backup_hdd_spinup_timeout:
+                raise BackupHddNotAvailable
+            sleep(0.5)
 
     @property
     def is_mounted(self) -> bool:
+        return self._is_mounted()
+
+    def _is_mounted(self) -> bool:
         return Path(self._config.backup_hdd_mount_point).is_mount()
 
     @property
     def is_available(self) -> HddState:
         return self._available
 
-    def _get_partition_info_or_raise(self) -> PartitionInfo:
-        try:
-            return FileSystemWatcher(
-                backup_hdd_device_signature=PartitionSignature(**self._config.backup_hdd_device_signature),
-                timeout_seconds=self._config.backup_hdd_spinup_timeout,
-            ).backup_partition_info()
-        except BackupPartitionError as e:
-            LOG.error("Backup HDD not found!")
-            self._available = HddState.not_available
-            raise e
-
-    def _mount_backup_partition_or_raise(self, partition_info: PartitionInfo) -> None:
-        try:
-            call_mount_command(
-                partition_info.path, Path(self._config.backup_hdd_mount_point), self._config.backup_hdd_file_system
-            )
-        except MountError as e:
-            LOG.error("Backup HDD could not be mounted!")
-            self._available = HddState.not_available
-            raise e
+    def _mount_backup_hdd_or_raise(self) -> None:
+        LOG.debug("Mounting Backup HDD")
+        for i in range(self._config.backup_hdd_mount_trials):
+            try:
+                self._call_mount_command()
+                return
+            except MountError as e:
+                LOG.info(
+                    f"Couldn't mount BackupHDD. "
+                    f"Waiting for {self._config.backup_hdd_mount_waiting_secs}s and try again. Error: {e}"
+                )
+            sleep(self._config.backup_hdd_mount_waiting_secs)
+        LOG.error(
+            f"Couldn't mount BackupHDD within {self._config.backup_hdd_mount_trials} trials and waiting "
+            f"for {self._config.backup_hdd_mount_waiting_secs}s between trials."
+        )
+        self._available = HddState.not_available
+        raise MountError
 
     def _unmount_backup_hdd_or_raise(self) -> None:
         LOG.debug("Trying to unmount backup HDD...")
         for i in range(self._config.backup_hdd_unmount_trials):
             try:
-                call_unmount_command(self._config.backup_hdd_mount_point)
+                self._call_unmount_command()
                 return
             except UnmountError as e:
-                LOG.warning(
-                    f"Couldn't unmount BackupHDD after {i+1} trials. "
+                LOG.info(
+                    f"Couldn't unmount BackupHDD. "
                     f"Waiting for {self._config.backup_hdd_unmount_waiting_secs}s and try again. Error: {e}"
                 )
             sleep(self._config.backup_hdd_unmount_waiting_secs)
@@ -85,36 +91,28 @@ class Drive:
             f"Couldn't unmount BackupHDD within {self._config.backup_hdd_unmount_trials} trials and waiting "
             f"for {self._config.backup_hdd_unmount_waiting_secs}s between trials."
         )
-        raise UnmountError
+        self._available = HddState.unknown
 
     def space_used_percent(self) -> int:
-        if self._partition_info:
+        space_used = 0
+        if self.is_mounted:
             mount_point = self._config.backup_hdd_mount_point
             command = ["df", "--output=pcent", mount_point]
             LOG.debug(f"obtaining space used on bu hdd with command: {command}")
             try:
                 proc = Popen(command, stdout=PIPE, stderr=PIPE)
                 assert proc.stdout is not None
-                # LOG.info(f"Space used on Backup HDD: {space_used}%")
+                space_used = int(self._extract_space_used_from_output(proc.stdout))
             except FileNotFoundError:
                 LOG.debug(f"FileNotFound during 'space_used_percent' with command {command}")
-                return 0
             except TypeError:
                 LOG.debug(f"Retrival of used space not possible yet. Mounting still in progress")
-                return 0
-            try:
-                space_used = int(self._extract_space_used_from_output(proc.stdout))
             except IndexError:
                 LOG.debug(f"IndexError during 'space_used_percent' with command {command}")
-                space_used = 0
             except ValueError:
                 LOG.debug(f"Value Error during 'space_used_percent' with command {command}")
-                space_used = 0
-
-            if space_used is not None:
-                return space_used
-        LOG.debug("no partition info in 'space_used_percent'")
-        return 0
+        LOG.debug("not mounted")
+        return space_used
 
     def _extract_space_used_from_output(self, df_output: IO[bytes]) -> float:
         df_output_str = self._get_string_from_df_output(df_output)
@@ -130,18 +128,16 @@ class Drive:
         string = "".join(x for x in df_output_str if x.isdigit())
         return float(string) if string else 0
 
+    def _call_mount_command(self) -> None:
+        command = f"mount {self._backup_hdd_device_node}"
+        LOG.debug(f"Mounting with {command}")
+        cp = run(command.split(), stdout=PIPE, stderr=PIPE)
+        if cp.stderr:
+            raise MountError(f"Partition could not be mounted: {str(cp.stderr)}")
 
-def call_mount_command(partition: str, mount_point: Path, file_system: str) -> None:
-    command = ["sudo", "mount", "-t", str(file_system), str(partition), str(mount_point)]
-    LOG.debug(" ".join(command))
-    cp = run(command, stdout=PIPE, stderr=PIPE)
-    if cp.stderr:
-        raise MountError(f"Partition could not be mounted: {str(cp.stderr)}")
-
-
-def call_unmount_command(mount_point: Path) -> None:
-    command = ["sudo", "umount", str(mount_point)]
-    LOG.debug(" ".join(command))
-    cp = run(command, stdout=PIPE, stderr=PIPE)
-    if cp.stderr:
-        raise UnmountError(f"Partition could not be unmounted: {str(cp.stderr)}")
+    def _call_unmount_command(self) -> None:
+        command = f"umount {self._backup_hdd_device_node}"
+        LOG.debug(f"Unmounting with {command}")
+        cp = run(command.split(), stdout=PIPE, stderr=PIPE)
+        if cp.stderr:
+            raise UnmountError(f"Partition could not be unmounted: {str(cp.stderr)}")

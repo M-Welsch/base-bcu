@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import List, IO
+from typing import IO, List
 
 from base.common.exceptions import BackupSizeRetrievalError, NetworkError
 from base.common.logger import LoggerFactory

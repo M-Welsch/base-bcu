@@ -55,6 +55,10 @@ class BackupHddAccessError(BackupserverException):
     pass
 
 
+class BackupHddNotAvailable(BackupserverException):
+    pass
+
+
 class NasNotCorrectError(Exception):
     pass
 
