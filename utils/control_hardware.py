@@ -30,7 +30,14 @@ sys.path.append(path_to_module)
     default=False,
 )
 def control_hardware(
-    dock: bool, undock: bool, power: bool, unpower: bool, mount: bool, unmount: bool, open_sbu_channel: bool, close_sbu_channel: bool
+    dock: bool,
+    undock: bool,
+    power: bool,
+    unpower: bool,
+    mount: bool,
+    unmount: bool,
+    open_sbu_channel: bool,
+    close_sbu_channel: bool,
 ) -> None:
     cfg_path = Path("/home/base/base-bcu/base/config/")
     setup_logger(cfg_path)
@@ -38,9 +45,9 @@ def control_hardware(
 
     setup_config(cfg_path)
 
+    from base.hardware.drive import Drive
     from base.hardware.mechanics import Mechanics
     from base.hardware.power import Power
-    from base.hardware.drive import Drive
 
     power_unit = Power()
     mechanics = Mechanics()
