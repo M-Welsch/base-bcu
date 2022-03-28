@@ -86,9 +86,6 @@ class Hardware:
     def mount(self) -> None:
         self._drive.mount()
 
-    def unmount(self) -> None:
-        self._drive.unmount()
-
     def set_display_brightness(self, brightness, **kwargs):  # type: ignore
         self._sbu.set_display_brightness_percent(brightness)
 
