@@ -3,6 +3,7 @@ from random import randint
 from typing import Generator
 
 import pytest
+from py import path
 
 from base.common.config import BoundConfig, Config
 from base.common.debug_utils import copy_logfiles_to_nas
@@ -11,14 +12,15 @@ from base.common.ssh_interface import SSHInterface
 
 @pytest.fixture(scope="class")
 def config() -> Generator[Config, None, None]:
-    BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config"))
+    BoundConfig.set_config_base_path(Path().cwd() / "base/config")
     yield BoundConfig("base.json")
 
 
 class TestDebugUtils:
-    def test_copy_logfiles_to_nas(self, config: Config) -> None:
+    @pytest.mark.skip("not sure whether to keep or not")
+    def test_copy_logfiles_to_nas(self, tmp_path: path.local, config: Config) -> None:
         testfile_name = "testfile.txt"
-        testfile_path = Path.cwd().parent.parent / Path(config.logs_directory) / testfile_name
+        testfile_path = Path.cwd() / Path(config.logs_directory) / testfile_name
         testfile_content = str(randint(1, 10000))
         with open(testfile_path, "w") as file:
             file.write(testfile_content)

@@ -1,4 +1,6 @@
+import sys
 from pathlib import Path
+from platform import machine
 
 
 def pytest_configure() -> None:
@@ -10,3 +12,9 @@ def pytest_configure() -> None:
     from base.common.logger import LoggerFactory
 
     LoggerFactory(Path.cwd() / "base/log", "BaSe_test", development_mode=True)
+
+    if machine() not in ["armv6l", "armv7l"]:
+        from importlib import import_module
+
+        sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
+        print("Not on SBC")

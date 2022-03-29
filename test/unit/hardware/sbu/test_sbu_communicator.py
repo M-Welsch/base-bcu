@@ -28,8 +28,7 @@ def test_get_uart_interface(
     mocker.patch("base.hardware.sbu.communicator.get_sbu_uart_interface", return_value=expected, side_effect=error)
     if error:
         with caplog.at_level(logging.ERROR):
-            with pytest.raises(ComponentOffError):
-                SbuCommunicator._get_uart_interface()
+            SbuCommunicator._get_uart_interface()
         assert "Display and buttons will not work!" in caplog.text
         assert "Shutdown will not work!" in caplog.text
     else:

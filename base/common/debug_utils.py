@@ -32,9 +32,9 @@ def copy_logfiles_to_nas() -> None:
     except TimeoutExpired as e:
         LOG.warning(f"Copying logfiles timed out! {e}")
     except SubprocessError as e:
-        LOG.warning(f"Copying Logfile wasn't sucessful (not due to timeout): {e}")
+        LOG.warning(f"Copying Logfile wasn't successful (not due to timeout): {e}")
     except Exception as e:
-        LOG.warning(f"some unexprected error happend during copying the logfiles to nas: {e}")
+        LOG.warning(f"some unexpected error happened during copying the logfiles to nas: {e}")
 
 
 def _run_external_command_as_generator_shell(command: str, timeout: int = None) -> IO[str]:

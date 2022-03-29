@@ -21,10 +21,15 @@ class SbuCommunicator:
         if self._sbu_uart_interface is None:
             self._sbu_uart_interface = self._get_uart_interface()
 
+    @property
+    def available(self) -> bool:
+        return self._sbu_uart_interface is not None
+
     @staticmethod
-    def _get_uart_interface() -> Path:
+    def _get_uart_interface() -> Optional[Path]:
+        interface: Optional[Path]
         try:
-            return get_sbu_uart_interface()
+            interface = get_sbu_uart_interface()
         except SbuNotAvailableError as e:
             text = (
                 "WARNING! Serial port to SBU could not found!\n"
@@ -32,11 +37,13 @@ class SbuCommunicator:
                 "Shutdown will not work! System must be repowered manually!"
             )
             LOG.error(text)  # TODO: #14
-            raise ComponentOffError(text, component="SBU", avoids_shutdown=True) from e
+            interface = None
+            # raise ComponentOffError(text, component="SBU", avoids_shutdown=True) from e
+        return interface
 
     def write(self, command: SbuCommand, payload: str = "") -> None:
         message = SbuMessage(command=command, payload=payload)
-        if isinstance(self._sbu_uart_interface, Path):
+        if self._sbu_uart_interface is not None:
             try:
                 with SerialInterface(port=self._sbu_uart_interface, baud_rate=BAUD_RATE) as ser:
                     ser.write_to_sbu(message=message)
@@ -46,9 +53,9 @@ class SbuCommunicator:
                 raise e
 
     def query(self, command: SbuCommand, payload: str = "") -> str:
-        message = SbuMessage(command=command, payload=payload)
         sbu_response = ""
-        if isinstance(self._sbu_uart_interface, Path):
+        if self._sbu_uart_interface is not None:
+            message = SbuMessage(command=command, payload=payload)
             try:
                 with SerialInterface(port=self._sbu_uart_interface, baud_rate=BAUD_RATE) as ser:
                     sbu_response = ser.query_from_sbu(message=message)

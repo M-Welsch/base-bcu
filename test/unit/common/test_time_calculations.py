@@ -37,7 +37,7 @@ def test_next_backup_seconds(mocker: MockerFixture) -> None:
     )
     config = Config(
         {
-            "backup_frequency": "days",
+            "backup_interval": "days",
             "day_of_month": 1,
             "day_of_week": 2,
             "hour": 3,
@@ -57,7 +57,7 @@ def test_next_backup_seconds(mocker: MockerFixture) -> None:
 def test_plan_from_config_days(config_frequency: str, dateutil_weekly: int, dateutil_monthly: int) -> None:
     config = Config(
         {
-            "backup_frequency": config_frequency,
+            "backup_interval": config_frequency,
             "day_of_month": 1,
             "day_of_week": 2,
             "hour": 3,
@@ -66,7 +66,7 @@ def test_plan_from_config_days(config_frequency: str, dateutil_weekly: int, date
         }
     )
     plan = tc._plan_from_config(config)
-    frequency = tc.BACKUP_INTERVALS[config.backup_frequency]
+    frequency = tc.BACKUP_INTERVALS[config.backup_interval]
     assert plan.freq == frequency
     assert plan.bymonthday == dateutil_monthly
     assert plan.byweekday == dateutil_weekly

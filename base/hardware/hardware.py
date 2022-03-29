@@ -21,10 +21,7 @@ class Hardware:
         self._config: Config = get_config("hardware.json")
         self._mechanics: Mechanics = Mechanics()
         self._power: Power = Power()
-        try:
-            self._sbu: SBU = SBU(SbuCommunicator())
-        except ComponentOffError:
-            self._sbu = None
+        self._sbu: SBU = SBU(SbuCommunicator())
         self._hmi: HMI = HMI(self._sbu)
         self._drive: Drive = Drive()
 
@@ -85,6 +82,9 @@ class Hardware:
 
     def mount(self) -> None:
         self._drive.mount()
+
+    def unmount(self) -> None:
+        self._drive.unmount()
 
     def set_display_brightness(self, brightness, **kwargs):  # type: ignore
         self._sbu.set_display_brightness_percent(brightness)
