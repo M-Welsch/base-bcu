@@ -27,6 +27,10 @@ class SBU:
     def __init__(self, sbu_communicator: SbuCommunicator) -> None:
         self._sbu_communicator = sbu_communicator
 
+    @property
+    def available(self) -> bool:
+        return self._sbu_communicator.available
+
     def request_wakeup_reason(self) -> WakeupReason:
         wakeup_reason_code = self._sbu_communicator.query(SbuCommands.request_wakeup_reason)
         return WakeupReason(wakeup_reason_code)

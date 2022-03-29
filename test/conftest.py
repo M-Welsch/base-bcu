@@ -1,6 +1,7 @@
+import sys
 from pathlib import Path
 from platform import machine
-import sys
+
 
 def pytest_configure() -> None:
     """

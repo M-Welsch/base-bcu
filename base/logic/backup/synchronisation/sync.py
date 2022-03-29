@@ -30,7 +30,7 @@ class Sync:
         self._target = new_target
 
     def __enter__(self) -> Generator[SyncStatus, None, None]:
-        rsync_command: str = RsyncCommand().compose(self._target, self._source)
+        rsync_command: str = self._get_command()
         LOG.debug(f"syncing with command: {rsync_command}")
         # Fixme: we're having an outdated version of "target" here ...
         self._process = Popen(
@@ -43,6 +43,9 @@ class Sync:
             preexec_fn=os.setsid,
         )
         return self._output_generator()
+
+    def _get_command(self) -> str:
+        return RsyncCommand().compose(self._target, self._source)
 
     def __exit__(
         self,

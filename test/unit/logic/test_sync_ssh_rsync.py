@@ -1,5 +1,6 @@
 from pathlib import Path
 from subprocess import PIPE, Popen
+from test.utils.patch_config import patch_multiple_configs
 from time import sleep
 from typing import Generator
 
@@ -8,25 +9,23 @@ from _pytest.monkeypatch import MonkeyPatch
 from pytest_mock import MockFixture
 
 from base.common.config import BoundConfig
-from base.logic.backup.synchronisation.sync import Sync
-from test.utils.patch_config import patch_multiple_configs
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
+from base.logic.backup.synchronisation.sync import Sync
 
 
 def patch_rsync_command_configs() -> None:
-    patch_multiple_configs(RsyncCommand, {"nas.json": {"ssh_host": "192.168.178.64",
-                                                       "ssh_port": 22,
-                                                       "ssh_user": "root"},
-                                          "sync.json": {
-                                              "protocol": "ssh",
-                                              "ssh_keyfile_path": "/home/base/.ssh/id_rsa"
-                                          }
-                                          })
+    patch_multiple_configs(
+        RsyncCommand,
+        {
+            "nas.json": {"ssh_host": "192.168.178.64", "ssh_port": 22, "ssh_user": "root"},
+            "sync.json": {"protocol": "ssh", "ssh_keyfile_path": "/home/base/.ssh/id_rsa"},
+        },
+    )
 
 
 @pytest.fixture
 def sync() -> Generator[Sync, None, None]:
-    BoundConfig.set_config_base_path(Path()/"base/config")
+    BoundConfig.set_config_base_path(Path() / "base/config")
     sync = Sync(local_target_location=Path(), source_location=Path())
     stimulus = ["echo", "-e", "Status Line 1\n\nExit"]
     sync._process = Popen(stimulus, stdout=PIPE, stderr=PIPE, bufsize=0, universal_newlines=True)
@@ -35,19 +34,18 @@ def sync() -> Generator[Sync, None, None]:
 
 @pytest.fixture
 def sync_process_terminate_mocked(mocker: MockFixture) -> Generator[Sync, None, None]:
-    BoundConfig.set_config_base_path(Path()/"base/config")
+    BoundConfig.set_config_base_path(Path() / "base/config")
     patch_rsync_command_configs()
     sync = Sync(local_target_location=Path(), source_location=Path())
     mocker.patch("base.logic.backup.synchronisation.sync.Sync.terminate")
-    sync._command = ["echo", "no one will ever see this, so I can print everything I always wanted ... cobol rocks"]
     yield sync
 
 
 @pytest.fixture
-def sync_process() -> Generator[Sync, None, None]:
-    BoundConfig.set_config_base_path(Path()/"base/config")
+def sync_process(mocker: MockFixture) -> Generator[Sync, None, None]:
+    mocker.patch("base.logic.backup.synchronisation.sync.Sync._get_command", return_value="/bin/sleep 0.3")
+    BoundConfig.set_config_base_path(Path() / "base/config")
     sync = Sync(local_target_location=Path(), source_location=Path())
-    sync._command = ["/bin/sleep", "0.5"]
     yield sync
 
 

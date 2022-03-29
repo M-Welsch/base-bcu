@@ -25,6 +25,9 @@ def setmode(*args: Any) -> None:
 
 
 def setup(pin: int = 0, direction: int = 0, pull_up_down: int = 0) -> None:
+    global PINS_N_SENSOR_DOCKED_OCCURRENCES, PINS_N_SENSOR_UNDOCKED_OCCURRENCES
+    PINS_N_SENSOR_DOCKED_OCCURRENCES = 0
+    PINS_N_SENSOR_UNDOCKED_OCCURRENCES = 0
     print(f"Call setup with pin = {pin}, dir = {direction}")
     PIN_DIRECTIONS.add((pin, direction, pull_up_down))
 

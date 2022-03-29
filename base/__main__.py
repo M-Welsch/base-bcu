@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import Any, Type
 
 import click
 
@@ -46,7 +47,7 @@ def main(mocked: bool, config_dir: Path, log_dir: Path) -> None:
         ...
 
 
-def write_email(exception):
+def write_email(exception: Exception) -> Any:
     ...
 
 
