@@ -1,0 +1,16 @@
+{
+    "use_pre_backup_hook": {
+        "type": "bool"
+    },
+    "pre_backup_hook_path": {
+        "type": "pathlib.Path",
+        "optional": true
+    },
+    "use_post_backup_hook": {
+        "type": "bool"
+    },
+    "post_backup_hook_path": {
+        "type": "pathlib.Path",
+        "optional": true
+    }
+}

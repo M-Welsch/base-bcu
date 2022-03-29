@@ -1,0 +1,4 @@
+{
+    "logs_directory": "base/log",
+    "shutdown_between_backups": true
+}

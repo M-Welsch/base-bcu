@@ -1,0 +1,5 @@
+paramiko>=2.7.1
+pyserial>=3.4
+python-dateutil
+signalslot
+pyinotify

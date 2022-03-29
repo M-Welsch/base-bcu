@@ -1,0 +1,8 @@
+{
+    "shutdown_between_backups": {
+        "type": "bool"
+    },
+    "logs_directory": {
+        "type": "pathlib.Path"
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "use_pre_backup_hook": false,
+    "use_post_backup_hook": false,
+    "pre_backup_hook_path": "undefined this should be none",
+    "post_backup_hook_path": "undefined this too",
+    "low_disk_space_threshold_bytes": 1e8,
+    "enough_disk_space_threshold_bytes": 1e9
+}

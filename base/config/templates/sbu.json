@@ -1,0 +1,21 @@
+{
+  "logs_directory": {
+    "type": "pathlib.Path"
+  },
+  "wait_for_channel_free_timeout": {
+    "type": "float",
+    "range": {"min": 0.01, "max": 10}
+  },
+  "sbu_response_timeout": {
+    "type": "float",
+    "range": {"min": 0.01, "max": 10}
+  },
+  "wait_for_measurement_result_timeout": {
+    "type": "float",
+    "range": {"min": 0.01, "max": 10}
+  },
+  "serial_connection_timeout": {
+    "type": "float",
+    "range": {"min": 0.01, "max": 10}
+  }
+}
