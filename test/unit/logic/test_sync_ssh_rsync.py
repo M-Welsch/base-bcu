@@ -9,11 +9,24 @@ from pytest_mock import MockFixture
 
 from base.common.config import BoundConfig
 from base.logic.backup.synchronisation.sync import Sync
+from test.utils.patch_config import patch_multiple_configs
+from base.logic.backup.synchronisation.rsync_command import RsyncCommand
+
+
+def patch_rsync_command_configs() -> None:
+    patch_multiple_configs(RsyncCommand, {"nas.json": {"ssh_host": "192.168.178.64",
+                                                       "ssh_port": 22,
+                                                       "ssh_user": "root"},
+                                          "sync.json": {
+                                              "protocol": "ssh",
+                                              "ssh_keyfile_path": "/home/base/.ssh/id_rsa"
+                                          }
+                                          })
 
 
 @pytest.fixture
 def sync() -> Generator[Sync, None, None]:
-    BoundConfig.set_config_base_path(Path("python.base/base/config"))
+    BoundConfig.set_config_base_path(Path()/"base/config")
     sync = Sync(local_target_location=Path(), source_location=Path())
     stimulus = ["echo", "-e", "Status Line 1\n\nExit"]
     sync._process = Popen(stimulus, stdout=PIPE, stderr=PIPE, bufsize=0, universal_newlines=True)
@@ -22,7 +35,8 @@ def sync() -> Generator[Sync, None, None]:
 
 @pytest.fixture
 def sync_process_terminate_mocked(mocker: MockFixture) -> Generator[Sync, None, None]:
-    BoundConfig.set_config_base_path(Path("python.base/base/config"))
+    BoundConfig.set_config_base_path(Path()/"base/config")
+    patch_rsync_command_configs()
     sync = Sync(local_target_location=Path(), source_location=Path())
     mocker.patch("base.logic.backup.synchronisation.sync.Sync.terminate")
     sync._command = ["echo", "no one will ever see this, so I can print everything I always wanted ... cobol rocks"]
@@ -31,9 +45,9 @@ def sync_process_terminate_mocked(mocker: MockFixture) -> Generator[Sync, None, 
 
 @pytest.fixture
 def sync_process() -> Generator[Sync, None, None]:
-    BoundConfig.set_config_base_path(Path("python.base/base/config"))
+    BoundConfig.set_config_base_path(Path()/"base/config")
     sync = Sync(local_target_location=Path(), source_location=Path())
-    sync._command = ["/bin/sleep", "0.3"]
+    sync._command = ["/bin/sleep", "0.5"]
     yield sync
 
 
@@ -62,7 +76,7 @@ class TestSshRsync:
 
     def test_manual_process_termination(self, sync_process: Sync) -> None:
         with sync_process:
-            sleep(0.1)
+            sleep(0.01)
             assert isinstance(sync_process._process, Popen)
             assert sync_process._process.poll() is None
             sync_process.terminate()
