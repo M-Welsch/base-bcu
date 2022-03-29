@@ -3,6 +3,7 @@ from random import randint
 from typing import Generator
 
 import pytest
+from py import path
 
 from base.common.config import BoundConfig, Config
 from base.common.debug_utils import copy_logfiles_to_nas
@@ -16,9 +17,10 @@ def config() -> Generator[Config, None, None]:
 
 
 class TestDebugUtils:
-    def test_copy_logfiles_to_nas(self, config: Config) -> None:
+    @pytest.mark.skip("not sure whether to keep or not")
+    def test_copy_logfiles_to_nas(self, tmp_path: path.local, config: Config) -> None:
         testfile_name = "testfile.txt"
-        testfile_path = Path.cwd().parent.parent / Path(config.logs_directory) / testfile_name
+        testfile_path = Path.cwd() / Path(config.logs_directory) / testfile_name
         testfile_content = str(randint(1, 10000))
         with open(testfile_path, "w") as file:
             file.write(testfile_content)
