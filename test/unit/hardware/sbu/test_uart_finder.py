@@ -13,7 +13,6 @@ from pytest_mock import MockFixture
 
 from base.common.config import Config
 from base.common.exceptions import SbuNotAvailableError, SerialInterfaceError
-
 from base.hardware.sbu.message import PredefinedSbuMessages
 from base.hardware.sbu.serial_interface import SerialInterface
 from base.hardware.sbu.uart_finder import (

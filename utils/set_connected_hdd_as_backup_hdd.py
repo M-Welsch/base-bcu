@@ -2,7 +2,7 @@ class BuHddSetter:
     def __init__(self) -> None:
         raise NotImplementedError
 
-    def set_connected_hdd_as_backup_hdd(self):
+    def set_connected_hdd_as_backup_hdd(self) -> None:
         raise NotImplementedError
 
 

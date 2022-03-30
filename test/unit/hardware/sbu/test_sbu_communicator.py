@@ -10,12 +10,11 @@ from pytest_mock import MockFixture
 
 import base.hardware.sbu.communicator
 from base.common.config import Config
-
 from base.common.exceptions import ComponentOffError, SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
+from base.hardware.pin_interface import PinInterface
 from base.hardware.sbu.commands import SbuCommands
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.serial_interface import SerialInterface
-from base.hardware.pin_interface import PinInterface
 
 
 @pytest.mark.parametrize(

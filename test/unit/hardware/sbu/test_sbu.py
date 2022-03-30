@@ -7,7 +7,6 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockerFixture
 
-
 from base.hardware.sbu.commands import SbuCommand, SbuCommands
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU, WakeupReason
