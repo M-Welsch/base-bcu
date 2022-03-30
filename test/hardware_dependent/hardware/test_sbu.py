@@ -16,7 +16,7 @@ from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 @pytest.fixture(scope="session")
 def sbu(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SBU, None, None]:
     tmpdir = tmpdir_factory.mktemp("sbu_test_config_dir")
-    config_path = Path("/home/base/python.base/base/config/")
+    config_path = Path("/home/base/base-bcu/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))
     with open(config_path / "sbu.json", "r") as src, open(config_test_path / "sbu.json", "w") as dst:
         drive_config_data = json.load(src)

@@ -26,7 +26,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    cfg_path = Path("/home/base/python.base/base/config/")
+    cfg_path = Path("/home/base/base-bcu/base/config/")
     setup_logger(cfg_path)
     setup_config(cfg_path)
     main()

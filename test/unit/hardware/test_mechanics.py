@@ -5,7 +5,6 @@ from typing import Generator
 import pytest
 from pytest_mock import MockFixture
 
-sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 from test.utils.patch_config import patch_config
 
 from base.hardware.mechanics import Mechanics

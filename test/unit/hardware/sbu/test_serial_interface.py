@@ -13,8 +13,6 @@ from base.common.exceptions import SbuCommunicationTimeout, SerialInterfaceError
 from base.hardware.sbu.commands import SbuCommand
 from base.hardware.sbu.message import SbuMessage
 
-sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
-
 from base.hardware.sbu.serial_interface import SerialInterface
 
 
@@ -53,6 +51,7 @@ def test_setup_teardown(serial_interface: SerialInterface, mocker: MockFixture) 
 
 
 def test_connect_serial_communication_path(serial_interface: SerialInterface, mocker: MockFixture) -> None:
+
     mocker.patch("serial.Serial.open")
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface.flush_sbu_channel")
     patched_set_sbu_serial_path_to_communication = mocker.patch(

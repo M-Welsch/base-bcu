@@ -13,7 +13,7 @@ from base.hardware.sbu.sbu import SBU
 
 class ConfigSbu:
     def __init__(self) -> None:
-        BoundConfig.set_config_base_path(Path("/home/base/python.base/base/config/"))
+        BoundConfig.set_config_base_path(Path("/home/base/base-bcu/base/config/"))
         self._schedule: Config = get_config("schedule_backup.json")
         self._sbu: SBU = SBU(SbuCommunicator())
 

@@ -19,7 +19,6 @@ from pytest_mock import MockFixture
 
 from base.common.exceptions import BackupDeletionError, BackupSizeRetrievalError, InvalidBackupSource, NetworkError
 
-sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 from test.utils.utils import derive_mock_string
 
 import base.logic.backup.backup_conductor
