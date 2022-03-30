@@ -31,7 +31,7 @@ class System:
 
     @staticmethod
     def copy_newest_backup_with_hardlinks(recent_backup: Path, new_backup: Path) -> subprocess.Popen:
-        copy_command = f"cp -al {recent_backup}/* {new_backup}"
+        copy_command = f"cp -al {recent_backup}/. {new_backup}"
         LOG.info(f"copy command: {copy_command}")
         return Popen(copy_command, bufsize=0, shell=True, stdout=PIPE, stderr=PIPE)
 
