@@ -7,7 +7,6 @@ from typing import Callable, List, Tuple
 from signalslot import Signal
 
 from base.common.config import Config, get_config
-from base.common.debug_utils import copy_logfiles_to_nas
 from base.common.exceptions import DockingError, MountError, NetworkError
 from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
 from base.common.logger import LoggerFactory
@@ -77,19 +76,21 @@ class BaSeApplication:
         }
         self._webapp_server = WebappServer(set(self._codebook.keys()))
         self._webapp_server.start()
-        self._shutting_down = False
         self._connect_signals()
 
     def start(self) -> None:
         self.prepare_service()
-        while not self._shutting_down:
+        shutting_down: bool = False
+        while not shutting_down:
+            # TODO: Use asyncio loop instead of python loop to eliminate the threading.Thread in webapp_server.
+            # See scratch.py or #33.
             try:
                 # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
                 self._schedule.run_pending()
-                self._webapp_server.current_status = self.collect_status
+                self._webapp_server.current_status = self.status
                 sleep(1)
             except ShutdownInterrupt:
-                self._shutting_down = True
+                shutting_down = True
             except Button0Interrupt:
                 self.button_0_pressed.emit()
             except Button1Interrupt:
@@ -144,11 +145,10 @@ class BaSeApplication:
         self._hardware.prepare_sbu_for_shutdown(
             self._schedule.next_backup_timestamp, self._schedule.next_backup_seconds  # Todo: wake BCU a little earlier?
         )
-        self._execute_shutdown()
-        sleep(1)
+        sleep(1)  # TODO: Evaluate and comment
+        LOG.info("executing shutdown command NOW")
 
     def _connect_signals(self) -> None:
-        self._schedule.shutdown_request.connect(self._initiate_shutdown)
         self._schedule.backup_request.connect(self._on_backup_request)
         self._backup_conductor.postpone_request.connect(self._schedule.on_postpone_backup)
         self._backup_conductor.reschedule_request.connect(self._schedule.on_reschedule_backup)
@@ -163,21 +163,8 @@ class BaSeApplication:
         self._webapp_server.display_brightness_change.connect(self._hardware.set_display_brightness)
         self._webapp_server.display_text.connect(self._hardware.write_to_display)
 
-    def _initiate_shutdown(self, **kwargs):  # type: ignore
-        self._stop_threads()
-        self._shutting_down = True
-
-    @staticmethod
-    def _execute_shutdown() -> None:
-        LOG.info("executing shutdown command NOW")
-        copy_logfiles_to_nas()  # Here to catch last log-message as well
-        os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().
-
-    def _stop_threads(self) -> None:
-        pass
-
     @property
-    def collect_status(self) -> str:
+    def status(self) -> str:
         return json.dumps(
             {
                 "diagnose": OrderedDict(

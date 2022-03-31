@@ -25,14 +25,21 @@ class WebappServer(Thread):
     display_brightness_change = Signal(args=["brightness"])
     display_text = Signal(args=["text"])
 
+    dock_event = Signal()
+    undock_event = Signal()
+    power_event = Signal()
+    unpower_event = Signal()
+    mount_event = Signal()
+    unmount_event = Signal()
+
     def __init__(self, codebook: Set[str]) -> None:
         super().__init__()
         self._codebook = codebook
-        self._start_server = websockets.serve(self.echo, "0.0.0.0", 8453)
+        self._start_server = websockets.serve(self.handler, "0.0.0.0", 8453)
         self._event_loop = asyncio.get_event_loop()
         self.current_status: Optional[str] = None
 
-    async def echo(self, websocket: websockets.WebSocketServer, path: Path) -> None:
+    async def handler(self, websocket: websockets.WebSocketServer, path: Path) -> None:
         try:
             message = await websocket.recv()
             print(f"< {message}")

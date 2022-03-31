@@ -36,8 +36,8 @@ def main(mocked: bool, config_dir: Path, log_dir: Path) -> None:
 
     from base.base_application import BaSeApplication
 
-    app = BaSeApplication()
     try:
+        app = BaSeApplication()
         app.start()
     except Exception as e:
         write_email(e)
@@ -45,6 +45,7 @@ def main(mocked: bool, config_dir: Path, log_dir: Path) -> None:
         app.finalize_service()
     except Exception:
         ...
+    os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().
 
 
 def write_email(exception: Exception) -> Any:
