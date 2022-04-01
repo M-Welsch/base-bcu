@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 from collections import OrderedDict
+from pathlib import Path
 from time import sleep
 from typing import Callable, List, Tuple
 
@@ -76,7 +77,7 @@ class BaSeApplication:
             "shutdown": lambda: True,
         }
         self._mainloop = asyncio.get_event_loop()
-        self._webapp_server = WebappServer(set(self._codebook.keys()), self._mainloop)
+        self._webapp_server = WebappServer(set(self._codebook.keys()), self._hardware, self._mainloop)
         # self._webapp_server.start()
         self._connect_signals()
 
@@ -172,12 +173,12 @@ class BaSeApplication:
         self._backup_conductor.hardware_disengage_request.connect(self._hardware.disengage)
         self._backup_conductor.stop_shutdown_timer_request.connect(self._schedule.on_stop_shutdown_timer_request)
         self._backup_conductor.backup_finished_notification.connect(self._on_go_to_idle_state)
-        self._webapp_server.webapp_event.connect(self.on_webapp_event)
-        self._webapp_server.backup_now_request.connect(self._on_backup_request)
-        self._webapp_server.backup_abort.connect(self._backup_conductor.on_backup_abort)
-        self._webapp_server.reschedule_request.connect(self._schedule.on_reschedule_backup)
-        self._webapp_server.display_brightness_change.connect(self._hardware.set_display_brightness)
-        self._webapp_server.display_text.connect(self._hardware.write_to_display)
+        # self._webapp_server.webapp_event.connect(self.on_webapp_event)
+        # self._webapp_server.backup_now_request.connect(self._on_backup_request)
+        # self._webapp_server.backup_abort.connect(self._backup_conductor.on_backup_abort)
+        # self._webapp_server.reschedule_request.connect(self._schedule.on_reschedule_backup)
+        # self._webapp_server.display_brightness_change.connect(self._hardware.set_display_brightness)
+        # self._webapp_server.display_text.connect(self._hardware.write_to_display)
 
     @property
     def status(self) -> str:

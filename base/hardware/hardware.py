@@ -89,8 +89,11 @@ class Hardware:
     def set_display_brightness(self, brightness, **kwargs):  # type: ignore
         self._sbu.set_display_brightness_percent(brightness)
 
-    def write_to_display(self, text, **kwargs):  # type: ignore
+    def write_to_display_old(self, text, **kwargs):  # type: ignore
         self._sbu.write_to_display(text[:16], text[16:])
+
+    def write_to_display(self, line1: str, line2: str) -> None:
+        self._sbu.write_to_display(line1, line2)
 
     @property
     def input_current(self) -> Optional[float]:

@@ -16,7 +16,12 @@ def get_config_data() -> str:
     return json.dumps({file.stem: json_content(file) for file in Path(BoundConfig.base_path).glob("*.json")})
 
 
-def update_config_data(new_cfg_s: str) -> None:
+def update_config_data(new_cfg: dict) -> None:
+    for file, new_content in new_cfg.items():
+        update_config_file(file, new_content)
+
+
+def update_config_data_old(new_cfg_s: str) -> None:
     try:
         new_cfg = json.loads(new_cfg_s)
     except json.JSONDecodeError as e:

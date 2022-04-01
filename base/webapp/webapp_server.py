@@ -3,14 +3,15 @@ import json
 from asyncio import AbstractEventLoop
 from pathlib import Path
 from threading import Thread
-from typing import Any, Optional, Set
+from typing import Any, Callable, Dict, Optional, Set, Tuple
 
 import websockets
 from signalslot import Signal
 
 from base.common.config import BoundConfig
-from base.common.exceptions import MountError
+from base.common.exceptions import BackupHddNotAvailable, DockingError, MountError
 from base.common.logger import LoggerFactory
+from base.hardware.hardware import Hardware
 from base.logic.backup.backup_browser import BackupBrowser
 from base.webapp.config_data import get_config_data, update_config_data
 from base.webapp.log_data import list_logfiles, logfile_content
@@ -33,12 +34,31 @@ class WebappServer:
     mount_event = Signal()
     unmount_event = Signal()
 
-    def __init__(self, codebook: Set[str], mainloop: AbstractEventLoop) -> None:
+    def __init__(self, codebook: Set[str], hardware: Hardware, mainloop: AbstractEventLoop) -> None:
         # super().__init__()
-        self._codebook = codebook
+        self._codebook_old = codebook
         self._start_server = websockets.serve(self.handler, "0.0.0.0", 8453)
         self._event_loop = mainloop  # asyncio.get_event_loop()
         self.current_status: Optional[str] = None
+        self._hardware = hardware
+        self._codebook: Dict[str, Callable] = {
+            "heartbeat": self._heartbeat,
+            "dock": self._dock,
+            "undock": self._undock,
+            "power": self._power,
+            "unpower": self._unpower,
+            "mount": self._mount,
+            "unmount": self._unmount,
+            "backup_now": self._backup_now,
+            "backup_abort": self._backup_abort,
+            "request_config": self._request_config,
+            "new_config": self._new_config,
+            "display_brightness": self._display_brightness,
+            "display_text": self._display_text,
+            "backup_index": self._backup_index,
+            "logfile_index": self._logfile_index,
+            "request_logfile": self._request_logfile,
+        }
 
     @property
     def start_webserver(self) -> Any:
@@ -46,62 +66,100 @@ class WebappServer:
 
     async def handler(self, websocket: websockets.WebSocketServer, path: Path) -> None:
         try:
-            message = await websocket.recv()
-            print(f"< {message}")
-            if message in self._codebook:
-                self.webapp_event.emit(payload=message)
-            elif message == "heartbeat?":
-                if self.current_status is not None:
-                    await websocket.send(self.current_status)
-            elif message == "backup_now":
-                LOG.info("Backup requested by user")
-                # Todo: log some information about the requester
-                self.backup_now_request.emit()
-                await websocket.send("backup_request_acknowledged")
-            elif message == "backup_abort":
-                LOG.info("Backup abort requested by user")
-                self.backup_abort.emit()
-                await websocket.send("backup_abort_acknowledged")
-            elif message == "request_config":
-                await websocket.send(get_config_data())
-            elif message.startswith("new config: "):
-                update_config_data(message[len("new config: ") :])
-                BoundConfig.reload_all()
-                self.reschedule_request.emit()
-            elif message.startswith("display brightness: "):
-                payload = message[len("display brightness: ") :]
-                try:
-                    self.display_brightness_change.emit(brightness=float(payload))
-                except ValueError:
-                    LOG.warning(f"cannot process brightness value: {payload}")
-            elif message.startswith("display text: "):
-                payload = message[len("display text: ") :]
-                # Todo: äöü etc are displayed strangely
-                self.display_text.emit(text=payload)
-            elif message.startswith("backup_index"):
-                await websocket.send(json.dumps(BackupBrowser().index))
-            elif message.startswith("logfile_index"):
-                await websocket.send(json.dumps(list_logfiles(newest_first=True)))
-            elif message.startswith("request_logfile"):
-                logfile_name = message[len("request_logfile: ") :]
-                await websocket.send(json.dumps(logfile_content(logfile_name, recent_line_first=True)))
-            else:
-                LOG.info(f"unknown message code: {message}")
-
-            # greeting = f"Hello {message}!"
-            #
-            # await websocket.send(greeting)
-            # print(f"> {greeting}")
+            raw_message = await websocket.recv()
+            print(f"< {raw_message}")
+            message_code, payload = self._decode_message(raw_message)
+            response = self._codebook[message_code](payload)
+            if response is not None:
+                await websocket.send(response)
+        except KeyError:
+            LOG.error(f"got invalid message_code: {raw_message}")
+        except json.decoder.JSONDecodeError as e:
+            LOG.debug(f"cannot decode: {e}")
         except websockets.exceptions.ConnectionClosedOK as e:
             LOG.debug(f"Client went away: {e}")
         except websockets.exceptions.ConnectionClosedError as e:
             LOG.debug(f"Connection died X-P : {e}")
         except websockets.exceptions.ConnectionClosed as e:
             LOG.debug(f"Connection died :-( : {e}")
-        except MountError as e:
-            LOG.error(f"Mounting error occurred: {e}")  # TODO: Display error message in webapp
 
-    def run(self) -> None:
-        ...
-        # self._event_loop.run_until_complete(self._start_server)
-        # self._event_loop.run_forever()
+    @staticmethod
+    def _decode_message(raw_message: str) -> Tuple[str, Any]:
+        package = json.loads(raw_message)
+        return package["code"], package.get("payload", None)
+
+    def _heartbeat(self, payload: str) -> str:
+        return self.current_status if self.current_status is not None else ""
+
+    def _dock(self, payload: str) -> Optional[str]:
+        try:
+            self._hardware.dock()
+        except DockingError:
+            pass
+        return None
+
+    def _undock(self, payload: str) -> Optional[str]:
+        try:
+            self._hardware.undock()
+        except DockingError:
+            pass
+        return None
+
+    def _power(self, payload: str) -> Optional[str]:
+        self._hardware.power()
+        return None
+
+    def _unpower(self, payload: str) -> Optional[str]:
+        self._hardware.unpower()
+        return None
+
+    def _mount(self, payload: str) -> Optional[str]:
+        try:
+            self._hardware.mount()
+        except BackupHddNotAvailable:
+            pass
+        except MountError:
+            pass
+        return None
+
+    def _unmount(self, payload: str) -> Optional[str]:
+        self._hardware.unmount()
+        return None
+
+    def _backup_now(self, payload: str) -> str:
+        LOG.info("Backup requested by user via webapp")
+        self.backup_now_request.emit()
+        return "backup_request_acknowledged"
+
+    def _backup_abort(self, payload: str) -> str:
+        LOG.info("Backup abort requested by user via webapp")
+        self.backup_abort.emit()
+        return "backup_abort_acknowledged"
+
+    def _request_config(self, payload: str) -> str:
+        return get_config_data()
+
+    def _new_config(self, payload: dict) -> None:
+        update_config_data(payload)
+        BoundConfig.reload_all()
+        self.reschedule_request.emit()
+
+    def _display_brightness(self, payload: float) -> None:
+        try:
+            self._hardware.set_display_brightness(payload)
+        except ValueError:
+            LOG.warning(f"cannot process brightness value: {payload}")
+
+    def _display_text(self, payload: dict) -> None:
+        line1 = payload.get("line1", "")
+        line2 = payload.get("line2", "")
+        self._hardware.write_to_display(line1, line2)
+
+    def _backup_index(self, payload: str) -> str:
+        return json.dumps(BackupBrowser().index)
+
+    def _logfile_index(self, payload: str) -> str:
+        return json.dumps(list_logfiles(newest_first=True))
+
+    def _request_logfile(self, payload: str) -> str:
+        return json.dumps(logfile_content(payload, recent_line_first=True))
