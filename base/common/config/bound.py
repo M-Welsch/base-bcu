@@ -55,6 +55,8 @@ class BoundConfig(Config):
         LOG.info(f"reloading config: {self._config_path}")
         with open(self._config_path, "r") as jf:
             self.update(json.load(jf))
+        with ConfigValidator() as validator:
+            validator.validate(self)
 
     def save(self) -> None:
         LOG.info(f"saving config: {self._config_path}")

@@ -3,6 +3,7 @@
     "use_post_backup_hook": false,
     "pre_backup_hook_path": "undefined this should be none",
     "post_backup_hook_path": "undefined this too",
-    "low_disk_space_threshold_bytes": 1e8,
-    "enough_disk_space_threshold_bytes": 1e9
+    "low_disk_space_threshold_bytes": 100000000.0,
+    "enough_disk_space_threshold_bytes": 1000000000.0,
+    "shutdown_between_backups": false
 }
