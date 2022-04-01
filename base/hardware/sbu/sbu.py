@@ -108,7 +108,11 @@ class SBU:
 
     @staticmethod
     def _extract_digits(response: str) -> int:
-        return int(findall(r"[0-9]+", response[2:])[0])
+        if response:
+            digits = int(findall(r"[0-9]+", response[2:])[0])
+        else:
+            digits = 0
+        return digits
 
     @staticmethod
     def _convert_measurement_result(command: SbuCommand, raw_value: int) -> Optional[float]:

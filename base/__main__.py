@@ -41,11 +41,12 @@ def main(mocked: bool, config_dir: Path, log_dir: Path) -> None:
         app.start()
     except Exception as e:
         write_email(e)
+        raise e
     try:
         app.finalize_service()
-    except Exception:
-        ...
-    os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().
+    except Exception as e:
+        raise e
+    # os.system("shutdown -h now")  # TODO: os.system() is deprecated. Replace with subprocess.call().
 
 
 def write_email(exception: Exception) -> Any:
