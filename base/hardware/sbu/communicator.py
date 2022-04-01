@@ -39,7 +39,7 @@ class SbuCommunicator:
             text = (
                 "WARNING! Serial port to SBU could not found!\n"
                 "Display and buttons will not work!\n"
-                "Shutdown will not work! System must be repowered manually!"
+                "Wakeup will not work! System must be repowered manually!"
             )
             LOG.error(text)  # TODO: #14
             interface = None

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from collections import OrderedDict
@@ -74,14 +75,29 @@ class BaSeApplication:
             "unmount": self._hardware.unmount,
             "shutdown": lambda: True,
         }
-        self._webapp_server = WebappServer(set(self._codebook.keys()))
-        self._webapp_server.start()
+        self._mainloop = asyncio.get_event_loop()
+        self._webapp_server = WebappServer(set(self._codebook.keys()), self._mainloop)
+        # self._webapp_server.start()
         self._connect_signals()
 
+    def mainloop_content(self) -> None:
+        print("Mainloop run")
+        self.mainloop_start()
+
+    def mainloop_start(self) -> None:
+        self._mainloop.call_later(1, self.mainloop_content)
+
     def start(self) -> None:
+        self.mainloop_start()
+        self._mainloop.run_until_complete(self._webapp_server.start_webserver)
+        self._mainloop.run_forever()
+        self._mainloop.close()
+
+    def start_old(self) -> None:
         self.prepare_service()
         shutting_down: bool = False
         while not shutting_down:
+            print("Looping")
             # TODO: Use asyncio loop instead of python loop to eliminate the threading.Thread in webapp_server.
             # See scratch.py or #33.
             try:

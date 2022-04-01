@@ -1,8 +1,9 @@
 import asyncio
 import json
+from asyncio import AbstractEventLoop
 from pathlib import Path
 from threading import Thread
-from typing import Optional, Set
+from typing import Any, Optional, Set
 
 import websockets
 from signalslot import Signal
@@ -17,7 +18,7 @@ from base.webapp.log_data import list_logfiles, logfile_content
 LOG = LoggerFactory.get_logger(__name__)
 
 
-class WebappServer(Thread):
+class WebappServer:
     webapp_event = Signal()
     backup_now_request = Signal()
     backup_abort = Signal()
@@ -32,12 +33,16 @@ class WebappServer(Thread):
     mount_event = Signal()
     unmount_event = Signal()
 
-    def __init__(self, codebook: Set[str]) -> None:
-        super().__init__()
+    def __init__(self, codebook: Set[str], mainloop: AbstractEventLoop) -> None:
+        # super().__init__()
         self._codebook = codebook
         self._start_server = websockets.serve(self.handler, "0.0.0.0", 8453)
-        self._event_loop = asyncio.get_event_loop()
+        self._event_loop = mainloop  # asyncio.get_event_loop()
         self.current_status: Optional[str] = None
+
+    @property
+    def start_webserver(self) -> Any:
+        return self._start_server
 
     async def handler(self, websocket: websockets.WebSocketServer, path: Path) -> None:
         try:
@@ -97,5 +102,6 @@ class WebappServer(Thread):
             LOG.error(f"Mounting error occurred: {e}")  # TODO: Display error message in webapp
 
     def run(self) -> None:
-        self._event_loop.run_until_complete(self._start_server)
-        self._event_loop.run_forever()
+        ...
+        # self._event_loop.run_until_complete(self._start_server)
+        # self._event_loop.run_forever()
