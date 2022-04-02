@@ -1,8 +1,6 @@
 import asyncio
 import json
-import os
 from collections import OrderedDict
-from pathlib import Path
 from time import sleep
 from typing import Callable, List, Tuple
 
@@ -67,55 +65,35 @@ class BaSeApplication:
         self._backup_conductor = BackupConductor(self._maintenance_mode.is_on)
         self._schedule = Schedule()
         self._maintenance_mode.set_connections([(self._schedule.backup_request, self._backup_conductor.run)])
-        self._codebook = {
-            "dock": self._hardware.dock,
-            "undock": self._hardware.undock,
-            "power": self._hardware.power,
-            "unpower": self._hardware.unpower,
-            "mount": self._hardware.mount,
-            "unmount": self._hardware.unmount,
-            "shutdown": lambda: True,
-        }
-        self._mainloop = asyncio.get_event_loop()
-        self._webapp_server = WebappServer(set(self._codebook.keys()), self._hardware, self._mainloop)
-        # self._webapp_server.start()
+        self._webapp_server = WebappServer(self._hardware)
         self._connect_signals()
 
-    def mainloop_content(self) -> None:
+    def _mainloop(self) -> None:
         print("Mainloop run")
-        self.mainloop_start()
-
-    def mainloop_start(self) -> None:
-        self._mainloop.call_later(1, self.mainloop_content)
+        eventloop = asyncio.get_event_loop()
+        try:
+            # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
+            self._schedule.run_pending()
+            self._webapp_server.current_status = self.status
+        except ShutdownInterrupt:
+            eventloop.stop()
+        except Button0Interrupt:
+            self.button_0_pressed.emit()
+        except Button1Interrupt:
+            self.button_1_pressed.emit()
+        if eventloop.is_running():
+            eventloop.call_later(1, self._mainloop)
 
     def start(self) -> None:
-        self.mainloop_start()
-        self._mainloop.run_until_complete(self._webapp_server.start_webserver)
-        self._mainloop.run_forever()
-        self._mainloop.close()
-
-    def start_old(self) -> None:
-        self.prepare_service()
-        shutting_down: bool = False
-        while not shutting_down:
-            print("Looping")
-            # TODO: Use asyncio loop instead of python loop to eliminate the threading.Thread in webapp_server.
-            # See scratch.py or #33.
-            try:
-                # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
-                self._schedule.run_pending()
-                self._webapp_server.current_status = self.status
-                sleep(1)
-            except ShutdownInterrupt:
-                shutting_down = True
-            except Button0Interrupt:
-                self.button_0_pressed.emit()
-            except Button1Interrupt:
-                self.button_1_pressed.emit()
-        LOG.info("Exiting Mainloop, initiating Shutdown")
+        self._prepare_service()
+        self._mainloop()
+        self._webapp_server.start()
+        eventloop = asyncio.get_event_loop()
+        eventloop.run_forever()
+        eventloop.close()
         self.finalize_service()
 
-    def prepare_service(self) -> None:
+    def _prepare_service(self) -> None:
         self._hardware.disengage()  # TODO: What if the planned backup is only 5 min away?
         self._process_wakeup_reason()
         self._on_go_to_idle_state()
@@ -173,12 +151,6 @@ class BaSeApplication:
         self._backup_conductor.hardware_disengage_request.connect(self._hardware.disengage)
         self._backup_conductor.stop_shutdown_timer_request.connect(self._schedule.on_stop_shutdown_timer_request)
         self._backup_conductor.backup_finished_notification.connect(self._on_go_to_idle_state)
-        # self._webapp_server.webapp_event.connect(self.on_webapp_event)
-        # self._webapp_server.backup_now_request.connect(self._on_backup_request)
-        # self._webapp_server.backup_abort.connect(self._backup_conductor.on_backup_abort)
-        # self._webapp_server.reschedule_request.connect(self._schedule.on_reschedule_backup)
-        # self._webapp_server.display_brightness_change.connect(self._hardware.set_display_brightness)
-        # self._webapp_server.display_text.connect(self._hardware.write_to_display)
 
     @property
     def status(self) -> str:
@@ -204,7 +176,3 @@ class BaSeApplication:
                 "log_tail": LoggerFactory.get_last_lines(),
             }
         )
-
-    def on_webapp_event(self, payload, **kwargs):  # type: ignore
-        LOG.debug(f"received webapp event with payload: {payload}")
-        self._codebook[payload]()
