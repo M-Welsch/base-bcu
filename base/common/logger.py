@@ -61,6 +61,7 @@ class LoggerFactory:
     __parent_logger_name: Optional[str] = None
     __file_handler: Optional[CachingFileHandler] = None
     __warning_file_handler: Optional[WarningFileHandler] = None
+    __logs_directory = Path.cwd() / "base/log"
 
     def __init__(self, log_path: Path, parent_logger_name: str, development_mode: bool = False) -> None:
         """Virtually private constructor."""
@@ -77,6 +78,10 @@ class LoggerFactory:
             LoggerFactory.__instance = self
         else:
             raise RuntimeError(f"{self.__class__.__name__} is a singleton and was already instantiated!")
+
+    @classmethod
+    def logs_directory(cls) -> Path:
+        return cls.__logs_directory
 
     @classmethod
     def get_last_lines(cls) -> Tuple[str, ...]:

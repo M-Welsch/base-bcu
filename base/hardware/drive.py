@@ -111,7 +111,6 @@ class Drive:
                 LOG.debug(f"IndexError during 'space_used_percent' with command {command}")
             except ValueError:
                 LOG.debug(f"Value Error during 'space_used_percent' with command {command}")
-        LOG.debug("not mounted")
         return space_used
 
     def _extract_space_used_from_output(self, df_output: IO[bytes]) -> float:

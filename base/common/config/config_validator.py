@@ -39,6 +39,9 @@ class ConfigValidator:
 
     def _check_type_validity(self, key: str, template_data: dict, config: Config) -> None:
         valid_type = locate(template_data["type"])
+        if isinstance(config[key], int) and template_data["type"] == "float":
+            # ignore if a value has to be float but is integer. That's no actual error.
+            return
         if type(config[key]) is not self.type_to_check[template_data["type"]]:
             self.invalid_keys.append(
                 ConfigError(
@@ -116,11 +119,11 @@ class ConfigValidator:
     def _check_ip(self, key: str, template_data: dict, config: Config) -> None:
         template_data[
             "regex"
-        ] = r"(\\b25[0-5]|\\b2[0-4][0-9]|\\b[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
+        ] = r"(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}"
         self._check_regex(key, template_data, config)
 
     def _check_linux_user(self, key: str, template_data: dict, config: Config) -> None:
-        template_data["regex"] = r"^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\\$)$"
+        template_data["regex"] = r"^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)$"
         self._check_regex(key, template_data, config)
 
     def validate(self, config: Config) -> None:
@@ -135,7 +138,7 @@ class ConfigValidator:
 
     def _validate_items(self, template: dict, config: Config) -> None:
         for template_key, template_data in template.items():
-            self._validate_item(config, template_data, template_key)
+            self._validate_item(config, template_key, template_data)
 
     def _validate_item(self, config: Config, template_key: str, template_data: dict) -> None:
         if self._check_validation_required(config, template_key, template_data):

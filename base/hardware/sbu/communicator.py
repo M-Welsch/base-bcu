@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from platform import machine
 from typing import Optional
 
 from base.common.constants import BAUD_RATE
@@ -18,8 +19,12 @@ class SbuCommunicator:
     _sbu_uart_interface: Optional[Path] = None
 
     def __init__(self) -> None:
-        if self._sbu_uart_interface is None:
-            self._sbu_uart_interface = self._get_uart_interface()
+        if machine() in ["armv6l", "armv7l"]:
+            if self._sbu_uart_interface is None:
+                self._sbu_uart_interface = self._get_uart_interface()
+        else:
+            self.write = self._write_mock  # type: ignore
+            self.query = self._query_mock  # type: ignore
 
     @property
     def available(self) -> bool:
@@ -34,7 +39,7 @@ class SbuCommunicator:
             text = (
                 "WARNING! Serial port to SBU could not found!\n"
                 "Display and buttons will not work!\n"
-                "Shutdown will not work! System must be repowered manually!"
+                "Wakeup will not work! System must be repowered manually!"
             )
             LOG.error(text)  # TODO: #14
             interface = None
@@ -64,3 +69,13 @@ class SbuCommunicator:
             except SbuCommunicationTimeout as e:
                 raise e
         return sbu_response
+
+    def _write_mock(self, command: SbuCommand, payload: str = "") -> None:
+        ...
+
+    def _query_mock(self, command: SbuCommand, payload: str = "") -> str:
+        if command.message_code == "":
+            response = ""
+        else:
+            response = ""
+        return response

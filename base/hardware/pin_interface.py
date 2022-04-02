@@ -1,7 +1,15 @@
 from __future__ import annotations
 
+from platform import machine
 from time import sleep
 from typing import Optional, cast
+
+if not machine() in ["armv6l", "armv7l"]:
+    print("Not on Single Board Computer. Importing Mockup for RPi.GPIO")
+    import sys
+    from importlib import import_module
+
+    sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
 
 import RPi.GPIO as GPIO
 

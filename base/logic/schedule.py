@@ -6,6 +6,7 @@ from signalslot import Signal
 
 import base.common.time_calculations as tc
 from base.common.config import Config, get_config
+from base.common.interrupts import ShutdownInterrupt
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -13,7 +14,6 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Schedule:
     valid_days_of_week = set(range(7))
-    shutdown_request = Signal()
     backup_request = Signal()
 
     def __init__(self) -> None:
@@ -58,8 +58,11 @@ class Schedule:
         LOG.info(f"Reconfiguring according to {new_config}...")  # TODO: actually do something with new_config
 
     def on_shutdown_requested(self, **kwargs):  # type: ignore
+        def raise_shutdown() -> None:
+            raise ShutdownInterrupt
+
         delay = self._config.shutdown_delay_minutes * 60
-        self._shutdown_job = self._scheduler.enter(delay, 1, self.shutdown_request.emit)
+        self._shutdown_job = self._scheduler.enter(delay, 1, raise_shutdown)
         # TODO: delay shutdown for 5 minutes or so on every event from webapp
 
     def on_stop_shutdown_timer_request(self, **kwargs):  # type: ignore
