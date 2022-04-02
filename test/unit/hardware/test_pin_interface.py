@@ -3,8 +3,6 @@ from importlib import import_module
 
 import pytest
 
-sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
-
 from base.hardware.pin_interface import GPIO, PinInterface
 
 

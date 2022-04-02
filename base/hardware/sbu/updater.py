@@ -55,6 +55,6 @@ class SbuUpdater:
 
     @staticmethod
     def _get_filename_of_newest_hex_file() -> Path:
-        list_of_sbc_fw_files = Path("/home/base/python.base/sbu_fw_files/").glob("*")
+        list_of_sbc_fw_files = Path("/home/base/base_bcu/sbu_fw_files/").glob("*")
         latest_sbc_fw_file = max(list_of_sbc_fw_files, key=os.path.getctime)
         return latest_sbc_fw_file

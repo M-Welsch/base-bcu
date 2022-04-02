@@ -10,6 +10,7 @@ from test.utils.backup_environment.virtual_backup_environment import (
     prepare_source_sink_dirs,
 )
 from test.utils.patch_config import patch_config, patch_multiple_configs
+from test.utils.utils import derive_mock_string
 from typing import Callable, Generator, List, Tuple, Type
 
 import pytest
@@ -17,12 +18,8 @@ import serial
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
-from base.common.exceptions import BackupDeletionError, BackupSizeRetrievalError, InvalidBackupSource, NetworkError
-
-sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
-from test.utils.utils import derive_mock_string
-
 import base.logic.backup.backup_conductor
+from base.common.exceptions import BackupDeletionError, BackupSizeRetrievalError, InvalidBackupSource, NetworkError
 from base.common.system import System
 from base.hardware.drive import Drive
 from base.hardware.hardware import Hardware

@@ -8,11 +8,10 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
+import base.hardware.sbu.communicator
 from base.common.config import Config
-
-sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
-
 from base.common.exceptions import ComponentOffError, SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
+from base.hardware.pin_interface import PinInterface
 from base.hardware.sbu.commands import SbuCommands
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.serial_interface import SerialInterface
@@ -56,7 +55,10 @@ def test_write(
         "base.hardware.sbu.serial_interface.SerialInterface.write_to_sbu", side_effect=error
     )
     mocker.patch("base.hardware.sbu.communicator.SbuCommunicator._get_uart_interface", return_value=Path())
-
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._close_connection")
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._connect_serial_communication_path")
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._establish_serial_connection_or_raise")
+    mocker.patch("base.hardware.pin_interface.PinInterface.disable_receiving_messages_from_sbu")
     # the following mocks the SerialInterface context manager
     SerialInterface._config = Config({"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
     mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._wait_for_channel_free")
@@ -97,6 +99,11 @@ def test_query(
         "base.hardware.sbu.serial_interface.SerialInterface.query_from_sbu", side_effect=error, return_value=response
     )
     mocker.patch("base.hardware.sbu.communicator.SbuCommunicator._get_uart_interface", return_value=Path())
+
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._close_connection")
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._connect_serial_communication_path")
+    mocker.patch("base.hardware.sbu.serial_interface.SerialInterface._establish_serial_connection_or_raise")
+    mocker.patch("base.hardware.pin_interface.PinInterface.disable_receiving_messages_from_sbu")
 
     # the following mocks the SerialInterface context manager
     SerialInterface._config = Config({"wait_for_channel_free_timeout": 1, "serial_connection_timeout": 1})
