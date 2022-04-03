@@ -29,7 +29,7 @@ from base.common.config import Config, ConfigValidator
         ("True", "bool", False),
         (1, "bool", False),
         (1.5, "float", True),
-        (1, "float", False),
+        (1, "float", True),
         ("1.5", "float", False),
         (True, "float", False),
         ({}, "dict", True),

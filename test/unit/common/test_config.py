@@ -11,8 +11,14 @@ from base.common.config import BoundConfig, Config
 from base.common.exceptions import ConfigValidationError
 
 
+def mock_config_validator(mocker: MockFixture) -> None:
+    mocker.patch("base.common.config.config_validator.ConfigValidator.__exit__")
+    mocker.patch("base.common.config.config_validator.ConfigValidator.validate")
+
+
 @pytest.fixture()
-def config_path(tmpdir: path.local) -> Generator[Path, None, None]:
+def config_path(mocker: MockFixture, tmpdir: path.local) -> Generator[Path, None, None]:
+    mock_config_validator(mocker)
     config_path = Path(tmpdir)
     BoundConfig.set_config_base_path(config_path)
     yield config_path
