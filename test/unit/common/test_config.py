@@ -87,6 +87,8 @@ def test_bound_config_assert_keys(config_path: Path) -> None:
 
 
 def test_bound_config_assert_keys_error(config_path: Path) -> None:
+    # make this work by either rename the config_file_name to something unused (dirty hack) or
+    # make sure the BoundConfig.__instances weakref-dict is properly cleared after each test
     config_file_name = "test_json"
     write_test_file(content={"key": "value"}, file_path=config_path / config_file_name)
     config = BoundConfig(config_file_name)
