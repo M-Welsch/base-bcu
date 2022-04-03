@@ -1,6 +1,4 @@
 import logging
-import sys
-from importlib import import_module
 from pathlib import Path
 from typing import Optional, Type, Union
 
@@ -8,10 +6,8 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
-import base.hardware.sbu.communicator
 from base.common.config import Config
-from base.common.exceptions import ComponentOffError, SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
-from base.hardware.pin_interface import PinInterface
+from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
 from base.hardware.sbu.commands import SbuCommands
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.serial_interface import SerialInterface
@@ -28,8 +24,8 @@ def test_get_uart_interface(
     if error:
         with caplog.at_level(logging.ERROR):
             SbuCommunicator._get_uart_interface()
-        assert "Display and buttons will not work!" in caplog.text
-        assert "Shutdown will not work!" in caplog.text
+        assert "Display will not work!" in caplog.text
+        assert "Wakeup will not work!" in caplog.text
     else:
         assert expected == SbuCommunicator._get_uart_interface()
 
