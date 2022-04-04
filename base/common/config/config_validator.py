@@ -39,7 +39,7 @@ class ConfigValidator:
 
     def _check_type_validity(self, key: str, template_data: dict, config: Config) -> None:
         valid_type = locate(template_data["type"])
-        if isinstance(config[key], int) and template_data["type"] == "float":
+        if type(config[key]) == int and template_data["type"] == "float":
             # ignore if a value has to be float but is integer. That's no actual error.
             return
         if type(config[key]) is not self.type_to_check[template_data["type"]]:

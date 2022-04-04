@@ -2,7 +2,7 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from test.utils.patch_config import patch_multiple_configs
 from time import sleep
-from typing import Generator
+from typing import Generator, Type
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -13,9 +13,9 @@ from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 from base.logic.backup.synchronisation.sync import Sync
 
 
-def patch_rsync_command_configs() -> None:
+def patch_sync_nas_json(module: Type) -> None:
     patch_multiple_configs(
-        RsyncCommand,
+        module,
         {
             "nas.json": {"ssh_host": "192.168.178.64", "ssh_port": 22, "ssh_user": "root"},
             "sync.json": {"protocol": "ssh", "ssh_keyfile_path": "/home/base/.ssh/id_rsa"},
@@ -25,7 +25,7 @@ def patch_rsync_command_configs() -> None:
 
 @pytest.fixture
 def sync() -> Generator[Sync, None, None]:
-    BoundConfig.set_config_base_path(Path() / "base/config")
+    patch_sync_nas_json(Sync)
     sync = Sync(local_target_location=Path(), source_location=Path())
     stimulus = ["echo", "-e", "Status Line 1\n\nExit"]
     sync._process = Popen(stimulus, stdout=PIPE, stderr=PIPE, bufsize=0, universal_newlines=True)
@@ -34,8 +34,8 @@ def sync() -> Generator[Sync, None, None]:
 
 @pytest.fixture
 def sync_process_terminate_mocked(mocker: MockFixture) -> Generator[Sync, None, None]:
-    BoundConfig.set_config_base_path(Path() / "base/config")
-    patch_rsync_command_configs()
+    patch_sync_nas_json(Sync)
+    patch_sync_nas_json(RsyncCommand)
     sync = Sync(local_target_location=Path(), source_location=Path())
     mocker.patch("base.logic.backup.synchronisation.sync.Sync.terminate")
     yield sync
@@ -80,6 +80,3 @@ class TestSshRsync:
             sync_process.terminate()
             sync_process._process.wait(0.1)
             assert sync_process._process.poll() is not None
-
-    def test_parse_line_to_status(self) -> None:
-        ...

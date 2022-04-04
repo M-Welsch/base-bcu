@@ -1,13 +1,9 @@
-import sys
-from importlib import import_module
-from platform import machine
 from test.utils.patch_config import patch_config
 from typing import Generator
 
 import pytest
 from pytest_mock import MockFixture
 
-import base.hardware.hardware
 from base.hardware.mechanics import Mechanics
 from base.hardware.pin_interface import PinInterface
 
@@ -20,7 +16,6 @@ def mechanics() -> Generator[Mechanics, None, None]:
 
 class TestMechanics:
     @staticmethod
-    @pytest.mark.skipif(machine() in ["armv6l", "armv7l"])
     def test_dock(mechanics: Mechanics, mocker: MockFixture) -> None:
         patched_stepper_driver_on = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_on")
         patched_stepper_direction_docking = mocker.patch(
@@ -38,7 +33,6 @@ class TestMechanics:
         assert not PinInterface.global_instance().docked_sensor_pin_high
 
     @staticmethod
-    @pytest.mark.skipif(machine() in ["armv6l", "armv7l"])
     def test_undock(mechanics: Mechanics, mocker: MockFixture) -> None:
         patched_stepper_driver_on = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_on")
         patched_stepper_direction_undocking = mocker.patch(

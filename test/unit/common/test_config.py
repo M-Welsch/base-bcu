@@ -11,11 +11,18 @@ from base.common.config import BoundConfig, Config
 from base.common.exceptions import ConfigValidationError
 
 
+def mock_config_validator(mocker: MockFixture) -> None:
+    mocker.patch("base.common.config.config_validator.ConfigValidator.__exit__")
+    mocker.patch("base.common.config.config_validator.ConfigValidator.validate")
+
+
 @pytest.fixture()
-def config_path(tmpdir: path.local) -> Generator[Path, None, None]:
+def config_path(mocker: MockFixture, tmpdir: path.local) -> Generator[Path, None, None]:
+    mock_config_validator(mocker)
     config_path = Path(tmpdir)
     BoundConfig.set_config_base_path(config_path)
     yield config_path
+    BoundConfig._BoundConfig__instances.clear()  # type: ignore
 
 
 def write_test_file(content: Dict[str, Any], file_path: Path) -> None:
@@ -81,6 +88,8 @@ def test_bound_config_assert_keys(config_path: Path) -> None:
 
 
 def test_bound_config_assert_keys_error(config_path: Path) -> None:
+    # make this work by either rename the config_file_name to something unused (dirty hack) or
+    # make sure the BoundConfig.__instances weakref-dict is properly cleared after each test
     config_file_name = "test_json"
     write_test_file(content={"key": "value"}, file_path=config_path / config_file_name)
     config = BoundConfig(config_file_name)

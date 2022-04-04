@@ -7,6 +7,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockerFixture
 
+import base.hardware.platform as pf
 from base.hardware.sbu.commands import SbuCommand, SbuCommands
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU, WakeupReason
@@ -14,8 +15,10 @@ from base.hardware.sbu.sbu import SBU, WakeupReason
 
 @pytest.fixture
 def sbu(mocker: MockerFixture) -> Generator[SBU, None, None]:
+    mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.platform_with_sbu", return_value=True)
     mocker.patch("base.hardware.sbu.communicator.SbuCommunicator._get_uart_interface")
-    yield SBU(SbuCommunicator())
+    sbu = SBU(SbuCommunicator())
+    yield sbu
 
 
 @pytest.mark.parametrize(
