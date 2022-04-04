@@ -80,6 +80,3 @@ class TestSshRsync:
             sync_process.terminate()
             sync_process._process.wait(0.1)
             assert sync_process._process.poll() is not None
-
-    def test_parse_line_to_status(self) -> None:
-        ...

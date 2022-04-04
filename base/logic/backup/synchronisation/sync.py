@@ -19,8 +19,6 @@ LOG = LoggerFactory.get_logger(__name__)
 
 class Sync:
     def __init__(self, local_target_location: Path, source_location: Path) -> None:
-        self._sync_config = get_config("sync.json")
-        self._nas_config = get_config("nas.json")
         self._process: Optional[Popen] = None
         self._status: SyncStatus = SyncStatus()
         self._source = source_location
