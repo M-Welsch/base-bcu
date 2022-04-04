@@ -1,4 +1,10 @@
+from __future__ import annotations
+
+import asyncio
 import sched
+from abc import ABC, abstractmethod
+from asyncio import Task
+from enum import Enum
 from time import sleep, time
 from typing import Any, List, Optional
 
@@ -11,64 +17,104 @@ from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
 
+backup_request = Signal()
+
+
+class TaskName(Enum):
+    BACKUP = "backup"
+    SHUTDOWN = "shutdown"
+    STATUS = "status"
+    HMI_POLL = "hmi_poll"
+
+
+class BaseTask(ABC):
+    __instance: Optional[asyncio.Task] = None
+    name: TaskName
+
+    def __init__(self, delay: int = 0) -> None:
+        self.delay = delay
+
+    @abstractmethod
+    async def wrapper(self) -> Any:
+        ...
+
+    @abstractmethod
+    async def work(self) -> Any:
+        ...
+
+    @property
+    def as_asyncio_task(self) -> Task:
+        return asyncio.get_event_loop().create_task(self.wrapper(), name=self.name.value)
+
+    def schedule(self) -> None:
+        print(f"Schedule task {self.name} to run in {self.delay} seconds.")
+        self.unschedule()
+        self.__instance = self.as_asyncio_task
+
+    def unschedule(self) -> None:
+        if isinstance(self.__instance, asyncio.Task):
+            self.__instance.cancel()
+            del self.__instance
+
+
+class SingleTask(BaseTask, ABC):
+    async def wrapper(self) -> None:
+        try:
+            await asyncio.sleep(self.delay)
+            await self.work()
+        except asyncio.CancelledError:
+            print(f"Task '{self.name}' cancelled.")
+
+
+class LoopTask(BaseTask, ABC):
+    async def wrapper(self) -> None:
+        try:
+            await asyncio.sleep(self.delay)
+            await self.work()
+            asyncio.create_task(self.as_asyncio_task)
+        except asyncio.CancelledError:
+            print(f"Task '{self.name}' cancelled")
+
+
+class BackupTask(SingleTask):
+    name = TaskName.BACKUP
+
+    async def work(self) -> None:
+        backup_request.emit()
+
+
+class ShutdownTask(SingleTask):
+    name = TaskName.SHUTDOWN
+
+    async def work(self) -> None:
+        raise ShutdownInterrupt
+
+
+class StatusTask(LoopTask):
+    name = TaskName.STATUS
+
+    async def work(self) -> None:
+        print("Syncing status to webapp.")
+
+
+class HMIPollTask(LoopTask):
+    name = TaskName.HMI_POLL
+
+    async def work(self) -> None:
+        print("Polling HMI...")
+
 
 class Schedule:
     valid_days_of_week = set(range(7))
     backup_request = Signal()
 
     def __init__(self) -> None:
-        self._scheduler: sched.scheduler = sched.scheduler(time, sleep)
         self._config: Config = get_config("schedule_config.json")
         self._schedule: Config = get_config("schedule_backup.json")
-        self._backup_job: Optional[sched.Event] = None
-        self._postponed_backup_job: Optional[sched.Event] = None
-        self._shutdown_job: Optional[sched.Event] = None
-
-    @property
-    def queue(self) -> List:
-        return self._scheduler.queue
-
-    def run_pending(self) -> None:
-        self._scheduler.run(blocking=False)
-
-    def on_schedule_changed(self, **kwargs):  # type: ignore
-        self._schedule.reload()
-        if self._backup_job is not None:
-            self._scheduler.cancel(self._backup_job)
-        self.on_reschedule_backup()
-
-    def _invoke_backup(self) -> None:
-        self.backup_request.emit()
-
-    def on_reschedule_backup(self, **kwargs):  # type: ignore
-        due = tc.next_backup(self._schedule).timestamp()
-        LOG.info(f"Scheduled next backup on {tc.next_backup_timestring(self._schedule)}")
-        self._backup_job = self._scheduler.enterabs(due, 2, self._invoke_backup)
-
-    def on_postpone_backup(self, seconds, **kwargs):  # type: ignore
-        LOG.info(f"Backup shall be postponed by {seconds} seconds")
-        if self._postponed_backup_job is None or self._postponed_backup_job not in self._scheduler.queue:
-            self._postponed_backup_job = self._scheduler.enter(seconds, 2, self._invoke_backup)
-
-    def on_reconfig(self, new_config, **kwargs):  # type: ignore
-        self._scheduler.enter(1, 1, lambda: self._reconfig(new_config))
-
-    @staticmethod
-    def _reconfig(new_config: Any) -> None:
-        LOG.info(f"Reconfiguring according to {new_config}...")  # TODO: actually do something with new_config
-
-    def on_shutdown_requested(self, **kwargs):  # type: ignore
-        def raise_shutdown() -> None:
-            raise ShutdownInterrupt
-
-        delay = self._config.shutdown_delay_minutes * 60
-        self._shutdown_job = self._scheduler.enter(delay, 1, raise_shutdown)
-        # TODO: delay shutdown for 5 minutes or so on every event from webapp
-
-    def on_stop_shutdown_timer_request(self, **kwargs):  # type: ignore
-        if self._shutdown_job is not None and self._shutdown_job in self._scheduler.queue:
-            LOG.info("Stopping shutdown timer")
-            self._scheduler.queue.remove(self._shutdown_job)
+        self._backup_task = BackupTask()
+        self._shutdown_task = ShutdownTask()
+        self._update_hmi_task = HMIPollTask()
+        self._update_webapp_status = StatusTask()
 
     @property
     def next_backup_timestamp(self) -> str:
@@ -77,3 +123,34 @@ class Schedule:
     @property
     def next_backup_seconds(self) -> int:
         return tc.next_backup_seconds(self._schedule)
+
+    def on_schedule_changed(self, **kwargs):  # type: ignore
+        self._schedule.reload()
+        self._backup_task.unschedule()
+        self.on_reschedule_backup()
+
+    def on_reschedule_backup(self, **kwargs):  # type: ignore
+        seconds_to_next_backup = tc.next_backup_seconds(self._schedule)
+        LOG.info(f"Scheduled next backup on {tc.next_backup_timestring(self._schedule)} in {seconds_to_next_backup}s")
+        self._backup_task.delay = seconds_to_next_backup
+        self._backup_task.schedule()
+
+    def on_postpone_backup(self, seconds, **kwargs):  # type: ignore
+        LOG.info(f"Backup shall be postponed by {seconds} seconds")
+        self._backup_task.unschedule()
+        self._backup_task.delay = seconds
+        self._backup_task.schedule()
+
+    def on_shutdown_requested(self, **kwargs):  # type: ignore
+        delay_seconds = self._config.shutdown_delay_minutes * 60
+        LOG.info(f"setting shutdown timer to {delay_seconds} seconds from now")
+        self._shutdown_task.delay = delay_seconds
+        self._shutdown_task.schedule()
+
+    def on_stop_shutdown_timer_request(self, **kwargs):  # type: ignore
+        LOG.debug("Stopping shutdown timer")
+        self._shutdown_task.unschedule()
+
+    def on_reset_shutdown_timer_request(self, **kwargs):  # type: ignore
+        self.on_stop_shutdown_timer_request()
+        self.on_shutdown_requested()

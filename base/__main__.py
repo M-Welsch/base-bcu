@@ -28,7 +28,7 @@ def setup_logger(logs_directory: Path) -> None:
 @click.command()
 @click.option("--mocked", is_flag=True, help="Mock hardware to allow running on arbitrary machines")
 @click.argument("config_dir", type=click.Path(), default=Path(__file__).parent / "config", required=False)
-@click.argument("log_dir", type=click.Path(), default=Path(__file__).parent / "log", required=False)
+@click.argument("log_dir", type=click.Path(), default=Path(__file__).parent.parent / "log", required=False)
 def main(mocked: bool, config_dir: Path, log_dir: Path) -> None:
     """BaSe Firmware"""
     setup_logger(log_dir)

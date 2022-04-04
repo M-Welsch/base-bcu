@@ -69,11 +69,11 @@ class BaSeApplication:
         self._connect_signals()
 
     def _mainloop(self) -> None:
+        """this method is called on every run of the mainloop"""
+        # Fixme: deprecated
         print("Mainloop run")
         eventloop = asyncio.get_event_loop()
         try:
-            # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
-            self._schedule.run_pending()
             self._webapp_server.current_status = self.status
         except ShutdownInterrupt:
             eventloop.stop()
@@ -81,8 +81,7 @@ class BaSeApplication:
             self.button_0_pressed.emit()
         except Button1Interrupt:
             self.button_1_pressed.emit()
-        if eventloop.is_running():
-            eventloop.call_later(1, self._mainloop)
+        eventloop.call_later(1, self._mainloop)
 
     def start(self) -> None:
         self._prepare_service()
@@ -144,7 +143,7 @@ class BaSeApplication:
         LOG.info("executing shutdown command NOW")
 
     def _connect_signals(self) -> None:
-        self._schedule.backup_request.connect(self._on_backup_request)
+        Schedule.backup_request.connect(self._on_backup_request)
         self._backup_conductor.postpone_request.connect(self._schedule.on_postpone_backup)
         self._backup_conductor.reschedule_request.connect(self._schedule.on_reschedule_backup)
         self._backup_conductor.hardware_engage_request.connect(self._hardware.engage)

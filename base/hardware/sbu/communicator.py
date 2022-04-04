@@ -19,12 +19,12 @@ class SbuCommunicator:
     _sbu_uart_interface: Optional[Path] = None
 
     def __init__(self) -> None:
-        if self.platform_with_sbu:
+        if self.platform_with_sbu():
             if self._sbu_uart_interface is None:
                 self._sbu_uart_interface = self._get_uart_interface()
         else:
-            self.write = self.__write_mock
-            self.query = self.__query_mock
+            self.write = self.__write_mock  # type: ignore
+            self.query = self.__query_mock  # type: ignore
 
     @staticmethod
     def platform_with_sbu() -> bool:
