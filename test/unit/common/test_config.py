@@ -22,6 +22,7 @@ def config_path(mocker: MockFixture, tmpdir: path.local) -> Generator[Path, None
     config_path = Path(tmpdir)
     BoundConfig.set_config_base_path(config_path)
     yield config_path
+    BoundConfig._BoundConfig__instances.clear()  # type: ignore
 
 
 def write_test_file(content: Dict[str, Any], file_path: Path) -> None:

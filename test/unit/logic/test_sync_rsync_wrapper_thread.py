@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from test.utils.patch_config import patch_config, patch_multiple_configs
 from time import sleep
 from types import TracebackType
 from typing import Generator, Optional, Type
@@ -86,6 +87,7 @@ def rsync_wrapper_thread_loooong_loop(mocker: MockFixture) -> Generator[Backup, 
 
 
 class TestRsyncWrapperThread:
+    @pytest.mark.skip
     def test_run_rsync_wrapper_thread(self, rsync_wrapper_thread: Backup, caplog: LogCaptureFixture) -> None:
         with caplog.at_level(logging.DEBUG):
             rsync_wrapper_thread.start()
@@ -95,6 +97,7 @@ class TestRsyncWrapperThread:
         assert "Backup finished!" in caplog.text
         assert Signal.emit.called_once_with()
 
+    @pytest.mark.skip
     def test_terminate_rsync_wrapper_thread(self, rsync_wrapper_thread_loooong_loop: Backup) -> None:
         rsync_wrapper_thread_loooong_loop.start()
         assert rsync_wrapper_thread_loooong_loop.running
