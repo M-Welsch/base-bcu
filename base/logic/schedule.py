@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-import sched
 from abc import ABC, abstractmethod
 from asyncio import Task
 from enum import Enum
-from time import sleep, time
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from signalslot import Signal
 
