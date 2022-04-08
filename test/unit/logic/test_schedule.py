@@ -1,11 +1,15 @@
+import asyncio
+from asyncio import Task
 from datetime import datetime
+from time import time
+
 from test.utils.patch_config import patch_multiple_configs
 from typing import Generator
 
 import pytest
 from pytest_mock import MockFixture
 
-from base.logic.schedule import Schedule
+from base.logic.schedule import Schedule, BackupTask
 
 
 @pytest.fixture()
@@ -80,3 +84,35 @@ def test_backup_seconds(schedule: Schedule, mocker: MockFixture) -> None:
     )
     assert schedule.next_backup_seconds == seconds_to_return
     assert mocked_next_backup.called_once_with(schedule._config)
+
+
+def test_safety_lock_on_unschedule_backup(schedule: Schedule, mocker: MockFixture) -> None:
+    mocked_unschedule = mocker.patch("base.logic.schedule.BackupTask.unschedule")
+    with pytest.raises(RuntimeError):
+        schedule._unschedule_backup()
+    assert mocked_unschedule.call_count == 0
+    schedule._unschedule_backup(testing=True)
+    assert mocked_unschedule.call_count == 1
+
+
+async def schedule_and_unschedule_backup(backup_task: BackupTask, seconds_to_cancellation: float):
+    backup_task.schedule()
+    await asyncio.sleep(seconds_to_cancellation)
+    backup_task.unschedule()
+
+
+def test_schedule_and_unschedule_backup_wo_scheduler(schedule: Schedule, mocker: MockFixture) -> None:
+    seconds_to_cancellation = 0.2
+    backup_task = schedule._backup_task
+    backup_task.delay = 1
+    assert backup_task.delay > seconds_to_cancellation
+    loop = asyncio.get_event_loop()
+    task = loop.create_task(schedule_and_unschedule_backup(backup_task, seconds_to_cancellation))
+    start_time = time()
+    loop.run_until_complete(task)
+    run_time = time() - start_time
+    assert backup_task.delay > run_time > seconds_to_cancellation
+
+
+def test_schedule_and_unschedule_backup(schedule: Schedule) -> None:
+    loop = asyncio.get_event_loop()

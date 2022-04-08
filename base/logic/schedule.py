@@ -133,6 +133,12 @@ class Schedule:
         self._backup_task.delay = seconds_to_next_backup
         self._backup_task.schedule()
 
+    def _unschedule_backup(self, testing: bool = False) -> None:
+        if testing:
+            self._backup_task.unschedule()
+        else:
+            raise RuntimeError("This function is for test purposes only. Do not run in production environment!")
+
     def on_postpone_backup(self, seconds, **kwargs):  # type: ignore
         LOG.info(f"Backup shall be postponed by {seconds} seconds")
         self._backup_task.unschedule()
