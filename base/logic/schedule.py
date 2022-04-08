@@ -4,7 +4,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from asyncio import Task
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from signalslot import Signal
 
@@ -29,15 +29,12 @@ class BaseTask(ABC):
     __instance: Optional[asyncio.Task] = None
     name: TaskName
 
-    def __init__(self, delay: int = 0) -> None:
+    def __init__(self, work: Callable, delay: int = 0) -> None:
         self.delay = delay
+        self._work = work
 
     @abstractmethod
     async def wrapper(self) -> Any:
-        ...
-
-    @abstractmethod
-    async def work(self) -> Any:
         ...
 
     @property
@@ -59,7 +56,7 @@ class SingleTask(BaseTask, ABC):
     async def wrapper(self) -> None:
         try:
             await asyncio.sleep(self.delay)
-            await self.work()
+            await self._work()
         except asyncio.CancelledError:
             print(f"Task '{self.name}' cancelled.")
 
@@ -68,7 +65,7 @@ class LoopTask(BaseTask, ABC):
     async def wrapper(self) -> None:
         try:
             await asyncio.sleep(self.delay)
-            await self.work()
+            await self._work()
             asyncio.create_task(self.as_asyncio_task)
         except asyncio.CancelledError:
             print(f"Task '{self.name}' cancelled")
@@ -77,29 +74,17 @@ class LoopTask(BaseTask, ABC):
 class BackupTask(SingleTask):
     name = TaskName.BACKUP
 
-    async def work(self) -> None:
-        backup_request.emit()
-
 
 class ShutdownTask(SingleTask):
     name = TaskName.SHUTDOWN
-
-    async def work(self) -> None:
-        raise ShutdownInterrupt
 
 
 class StatusTask(LoopTask):
     name = TaskName.STATUS
 
-    async def work(self) -> None:
-        print("Syncing status to webapp.")
-
 
 class HMIPollTask(LoopTask):
     name = TaskName.HMI_POLL
-
-    async def work(self) -> None:
-        print("Polling HMI...")
 
 
 class Schedule:
@@ -109,10 +94,10 @@ class Schedule:
     def __init__(self) -> None:
         self._config: Config = get_config("schedule_config.json")
         self._schedule: Config = get_config("schedule_backup.json")
-        self._backup_task = BackupTask()
-        self._shutdown_task = ShutdownTask()
-        self._update_hmi_task = HMIPollTask()
-        self._update_webapp_status = StatusTask()
+        self._backup_task = BackupTask(lambda: True)
+        self._shutdown_task = ShutdownTask(lambda: True)
+        self._update_hmi_task = HMIPollTask(lambda: True)
+        self._update_webapp_status = StatusTask(lambda: True)
 
     @property
     def next_backup_timestamp(self) -> str:

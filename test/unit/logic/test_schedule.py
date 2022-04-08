@@ -1,15 +1,14 @@
 import asyncio
 from asyncio import Task
 from datetime import datetime
-from time import time
-
 from test.utils.patch_config import patch_multiple_configs
+from time import time
 from typing import Generator
 
 import pytest
 from pytest_mock import MockFixture
 
-from base.logic.schedule import Schedule, BackupTask
+from base.logic.schedule import BackupTask, Schedule
 
 
 @pytest.fixture()
@@ -95,7 +94,7 @@ def test_safety_lock_on_unschedule_backup(schedule: Schedule, mocker: MockFixtur
     assert mocked_unschedule.call_count == 1
 
 
-async def schedule_and_unschedule_backup(backup_task: BackupTask, seconds_to_cancellation: float):
+async def schedule_and_unschedule_backup(backup_task: BackupTask, seconds_to_cancellation: float) -> None:
     backup_task.schedule()
     await asyncio.sleep(seconds_to_cancellation)
     backup_task.unschedule()
