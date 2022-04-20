@@ -15,6 +15,7 @@ LOG = LoggerFactory.get_logger(__name__)
 class Schedule:
     valid_days_of_week = set(range(7))
     backup_request = Signal()
+    disengage_request = Signal()
 
     def __init__(self) -> None:
         self._scheduler: sched.scheduler = sched.scheduler(time, sleep)
@@ -23,6 +24,7 @@ class Schedule:
         self._backup_job: Optional[sched.Event] = None
         self._postponed_backup_job: Optional[sched.Event] = None
         self._shutdown_job: Optional[sched.Event] = None
+        self._disengage_job: Optional[sched.Event] = None
 
     @property
     def queue(self) -> List:
@@ -52,6 +54,13 @@ class Schedule:
 
     def on_reconfig(self, new_config, **kwargs):  # type: ignore
         self._scheduler.enter(1, 1, lambda: self._reconfig(new_config))
+
+    def on_schedule_disengage(self):  # type: ignore
+        delay = self._config.disengage_delay_minutes * 60
+        self._disengage_job = self._scheduler.enter(delay, 2, self._disengage)
+
+    def _disengage(self) -> None:
+        self.disengage_request.emit()
 
     @staticmethod
     def _reconfig(new_config: Any) -> None:

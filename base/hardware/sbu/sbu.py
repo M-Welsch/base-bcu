@@ -18,6 +18,7 @@ _sbu_measurement_data_conversion_map: Dict[str, Callable[[float], float]] = {
 
 class WakeupReason(Enum):
     BACKUP_NOW = "WR_BACKUP"
+    SCHEDULED_BACKUP = "WR_SCHEDULED_BACKUP"
     CONFIGURATION = "WR_CONFIG"
     HEARTBEAT_TIMEOUT = "WR_HB_TIMEOUT"
     NO_REASON = ""

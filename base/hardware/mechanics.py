@@ -9,6 +9,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Mechanics:
+    _failed_once: bool = False
+
     def __init__(self) -> None:
         self._config: Config = get_config("mechanics.json")
         self._pin_interface: PinInterface = PinInterface.global_instance()
@@ -21,7 +23,8 @@ class Mechanics:
 
             time_start = time()
             while not self._pin_interface.docked:
-                self._check_for_timeout(time_start)
+                if self._timeout(time_start):
+                    raise DockingError("Maximum Docking Time exceeded")
                 self._pin_interface.stepper_step()
             self._pin_interface.stepper_driver_off()
         else:
@@ -35,17 +38,25 @@ class Mechanics:
 
             time_start = time()
             while not self._pin_interface.undocked:
-                self._check_for_timeout(time_start)
+                self._timeout(time_start)
                 self._pin_interface.stepper_step()
             self._pin_interface.stepper_driver_off()
         else:
             LOG.debug("Already undocked")
 
-    def _check_for_timeout(self, time_start: float) -> None:
+    def _timeout(self, time_start: float) -> bool:
         diff_time = time() - time_start
+        timeout_reached: bool = False
         if diff_time > self._config.maximum_docking_time:
-            self._pin_interface.stepper_driver_off()
-            raise DockingError("Maximum Docking Time exceeded: {}".format(diff_time))
+            timeout_reached = True
+            if self._failed_once:
+                self._pin_interface.stepper_driver_off()
+                LOG.critical("Docking failed for the second time. Aborting.")
+            else:
+                LOG.error("Docking failed for the first time. Retrying.")
+                self._failed_once = True
+                self.undock()
+        return timeout_reached
 
     @property
     def docked(self) -> bool:

@@ -54,6 +54,10 @@ class MaintenanceMode:
         LOG.warning("Backup request received during maintenance mode!")
 
 
+class CriticalException(Exception):
+    pass
+
+
 class BaSeApplication:
     button_0_pressed = Signal()
     button_1_pressed = Signal()
@@ -81,8 +85,9 @@ class BaSeApplication:
             self.button_0_pressed.emit()
         except Button1Interrupt:
             self.button_1_pressed.emit()
-        if eventloop.is_running():
-            eventloop.call_later(1, self._mainloop)
+        except CriticalException:
+            self._on_go_to_idle_state()
+        eventloop.call_later(1, self._mainloop)
 
     def start(self) -> None:
         self._prepare_service()
@@ -94,7 +99,6 @@ class BaSeApplication:
         self.finalize_service()
 
     def _prepare_service(self) -> None:
-        self._hardware.disengage()  # TODO: What if the planned backup is only 5 min away?
         self._process_wakeup_reason()
         self._on_go_to_idle_state()
 
@@ -103,12 +107,17 @@ class BaSeApplication:
         if wakeup_reason == WakeupReason.BACKUP_NOW:
             LOG.info("Woke up for manual backup")
             self._backup_conductor.run()
+        elif wakeup_reason == WakeupReason.SCHEDULED_BACKUP:
+            LOG.info("Woke up for scheduled backup")
         elif wakeup_reason == WakeupReason.CONFIGURATION:
             LOG.info("Woke up for configuration")
+
         elif wakeup_reason == WakeupReason.HEARTBEAT_TIMEOUT:
             LOG.warning("BCU heartbeat timeout occurred")
+            self._hardware.disengage()
         elif wakeup_reason == WakeupReason.NO_REASON:
             LOG.info("Woke up for no specific reason")
+            self._hardware.disengage()
         else:
             LOG.warning("Invalid wakeup reason. Did I fall from the shelf or what?")
 
@@ -145,6 +154,7 @@ class BaSeApplication:
 
     def _connect_signals(self) -> None:
         self._schedule.backup_request.connect(self._on_backup_request)
+        self._schedule.disengage_request.connect(self._hardware.disengage)
         self._backup_conductor.postpone_request.connect(self._schedule.on_postpone_backup)
         self._backup_conductor.reschedule_request.connect(self._schedule.on_reschedule_backup)
         self._backup_conductor.hardware_engage_request.connect(self._hardware.engage)
