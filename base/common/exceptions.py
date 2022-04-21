@@ -127,3 +127,7 @@ class InvalidBackupSource(Exception):
 
 class BackupDeletionError(Exception):
     pass
+
+
+class CriticalException(Exception):
+    pass

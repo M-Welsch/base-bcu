@@ -23,8 +23,7 @@ class Mechanics:
 
             time_start = time()
             while not self._pin_interface.docked:
-                if self._timeout(time_start):
-                    raise DockingError("Maximum Docking Time exceeded")
+                self._check_for_timeout(time_start)
                 self._pin_interface.stepper_step()
             self._pin_interface.stepper_driver_off()
         else:
@@ -38,25 +37,17 @@ class Mechanics:
 
             time_start = time()
             while not self._pin_interface.undocked:
-                self._timeout(time_start)
+                self._check_for_timeout(time_start)
                 self._pin_interface.stepper_step()
             self._pin_interface.stepper_driver_off()
         else:
             LOG.debug("Already undocked")
 
-    def _timeout(self, time_start: float) -> bool:
+    def _check_for_timeout(self, time_start: float) -> None:
         diff_time = time() - time_start
-        timeout_reached: bool = False
         if diff_time > self._config.maximum_docking_time:
-            timeout_reached = True
-            if self._failed_once:
-                self._pin_interface.stepper_driver_off()
-                LOG.critical("Docking failed for the second time. Aborting.")
-            else:
-                LOG.error("Docking failed for the first time. Retrying.")
-                self._failed_once = True
-                self.undock()
-        return timeout_reached
+            self._pin_interface.stepper_driver_off()
+            raise DockingError("Maximum Docking Time exceeded: {}".format(diff_time))
 
     @property
     def docked(self) -> bool:

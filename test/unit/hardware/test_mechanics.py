@@ -26,7 +26,7 @@ def test_dock(mechanics: Mechanics, mocker: MockFixture) -> None:
     )
     patched_stepper_step = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_step")
     patched_stepper_driver_off = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_off")
-    patched_check_for_timeout = mocker.patch("base.hardware.mechanics.Mechanics._timeout", return_value=False)
+    patched_check_for_timeout = mocker.patch("base.hardware.mechanics.Mechanics._check_for_timeout")
     mechanics.dock()
     assert patched_stepper_driver_on.called_once_with()
     assert patched_stepper_direction_docking.called_once_with()
@@ -36,29 +36,14 @@ def test_dock(mechanics: Mechanics, mocker: MockFixture) -> None:
     assert not PinInterface.global_instance().docked_sensor_pin_high
 
 
-def test_dock_retry(mechanics: Mechanics, mocker: MockFixture, caplog: LogCaptureFixture) -> None:
-    patched_docked = mocker.patch(
-        "base.hardware.pin_interface.PinInterface.docked", return_value=False, new_callable=PropertyMock
-    )
-    with pytest.raises(DockingError):
-        with caplog.at_level(logging.ERROR):
-            mechanics.dock()
-    assert "Retrying" in caplog.text
-    assert "Aborting" in caplog.text
-
-
 def test_undock(mechanics: Mechanics, mocker: MockFixture) -> None:
-    patched_undocked = mocker.patch(
-        "base.hardware.pin_interface.PinInterface.undocked", return_value=False, new_callable=PropertyMock
-    )
-
     patched_stepper_driver_on = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_on")
     patched_stepper_direction_undocking = mocker.patch(
         "base.hardware.pin_interface.PinInterface.stepper_direction_undocking"
     )
     patched_stepper_step = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_step")
     patched_stepper_driver_off = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_off")
-    patched_check_for_timeout = mocker.patch("base.hardware.mechanics.Mechanics._timeout", return_value=False)
+    patched_check_for_timeout = mocker.patch("base.hardware.mechanics.Mechanics._check_for_timeout")
     mechanics.undock()
     assert patched_stepper_driver_on.called_once_with()
     assert patched_stepper_direction_undocking.called_once_with()

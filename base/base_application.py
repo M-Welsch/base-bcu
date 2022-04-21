@@ -7,7 +7,7 @@ from typing import Callable, List, Tuple
 from signalslot import Signal
 
 from base.common.config import Config, get_config
-from base.common.exceptions import DockingError, MountError, NetworkError
+from base.common.exceptions import CriticalException, DockingError, MountError, NetworkError
 from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
 from base.common.logger import LoggerFactory
 from base.hardware.hardware import Hardware
@@ -52,10 +52,6 @@ class MaintenanceMode:
     @staticmethod
     def _log_warning() -> None:
         LOG.warning("Backup request received during maintenance mode!")
-
-
-class CriticalException(Exception):
-    pass
 
 
 class BaSeApplication:

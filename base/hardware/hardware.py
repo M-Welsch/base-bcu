@@ -2,7 +2,7 @@ from time import sleep
 from typing import Optional
 
 from base.common.config import Config, get_config
-from base.common.exceptions import ComponentOffError
+from base.common.exceptions import BackupHddNotAvailable, ComponentOffError, CriticalException, DockingError, MountError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
@@ -17,6 +17,8 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Hardware:
+    _failed_once: bool = False
+
     def __init__(self) -> None:
         self._config: Config = get_config("hardware.json")
         self._mechanics: Mechanics = Mechanics()
@@ -30,17 +32,38 @@ class Hardware:
 
     def engage(self, **kwargs):  # type: ignore
         LOG.debug("engaging hardware")
-        self._mechanics.dock()
-        self._power.hdd_power_on()
-        self._drive.mount()
+        try:
+            self._mechanics.dock()
+            self._power.hdd_power_on()
+            self._drive.mount()
+            self._failed_once = False
+        except (DockingError, BackupHddNotAvailable, MountError) as e:
+            if not self._failed_once:
+                LOG.error(f"Engaging Backup-HDD failed due to: {e}. Retrying.")
+                self._failed_once = True
+                self.engage()
+            else:
+                LOG.critical(f"Engaging Backup HDD failed after retrying due to {e}. Aborting.")
+                self._failed_once = False
+                raise CriticalException from e
 
     def disengage(self, **kwargs):  # type: ignore
         LOG.debug("disengaging hardware")
-        self._drive.unmount()
-        self._power.hdd_power_off()
-        if self.docked:  # this step takes quite a time, so do it only if necessary
-            sleep(self._config.hdd_spindown_time)
-        self._mechanics.undock()
+        try:
+            self._drive.unmount()
+            self._power.hdd_power_off()
+            if self.docked:  # this step takes quite a time, so do it only if necessary
+                sleep(self._config.hdd_spindown_time)
+            self._mechanics.undock()
+            self._failed_once = False
+        except DockingError as e:
+            if not self._failed_once:
+                LOG.error(f"Disengaging Backup-HDD failed due to: {e}. Retrying.")
+                self._failed_once = True
+                self.disengage()
+            else:
+                self._failed_once = False
+                LOG.critical(f"Disengaging Backup HDD failed after retrying due to {e}. Proceeding anyway!")
 
     def prepare_sbu_for_shutdown(self, timestamp: str, seconds: int) -> None:
         self._sbu.send_readable_timestamp(timestamp)
