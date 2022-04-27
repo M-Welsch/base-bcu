@@ -7,9 +7,10 @@ from typing import Callable, List, Tuple
 from signalslot import Signal
 
 from base.common.config import Config, get_config
-from base.common.exceptions import DockingError, MountError, NetworkError
+from base.common.exceptions import CriticalException, DockingError, MountError, NetworkError
 from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
 from base.common.logger import LoggerFactory
+from base.common.mailer import Mailer
 from base.hardware.hardware import Hardware
 from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.backup_conductor import BackupConductor
@@ -81,20 +82,26 @@ class BaSeApplication:
             self.button_0_pressed.emit()
         except Button1Interrupt:
             self.button_1_pressed.emit()
-        if eventloop.is_running():
-            eventloop.call_later(1, self._mainloop)
+        except CriticalException:
+            self._on_go_to_idle_state()
+        eventloop.call_later(1, self._mainloop)
 
     def start(self) -> None:
-        self._prepare_service()
-        self._mainloop()
-        self._webapp_server.start()
-        eventloop = asyncio.get_event_loop()
-        eventloop.run_forever()
-        eventloop.close()
-        self.finalize_service()
+        try:
+            self._prepare_service()
+            self._mainloop()
+            self._webapp_server.start()
+            eventloop = asyncio.get_event_loop()
+            eventloop.run_forever()
+            eventloop.close()
+            self.finalize_service()
+        except Exception as e:
+            LOG.critical(f"unknown error occured: {e}")
+        finally:
+            mailer = Mailer()
+            mailer.send_summary()
 
     def _prepare_service(self) -> None:
-        self._hardware.disengage()  # TODO: What if the planned backup is only 5 min away?
         self._process_wakeup_reason()
         self._on_go_to_idle_state()
 
@@ -103,12 +110,17 @@ class BaSeApplication:
         if wakeup_reason == WakeupReason.BACKUP_NOW:
             LOG.info("Woke up for manual backup")
             self._backup_conductor.run()
+        elif wakeup_reason == WakeupReason.SCHEDULED_BACKUP:
+            LOG.info("Woke up for scheduled backup")
         elif wakeup_reason == WakeupReason.CONFIGURATION:
             LOG.info("Woke up for configuration")
+
         elif wakeup_reason == WakeupReason.HEARTBEAT_TIMEOUT:
             LOG.warning("BCU heartbeat timeout occurred")
+            self._hardware.disengage()
         elif wakeup_reason == WakeupReason.NO_REASON:
             LOG.info("Woke up for no specific reason")
+            self._hardware.disengage()
         else:
             LOG.warning("Invalid wakeup reason. Did I fall from the shelf or what?")
 
@@ -145,6 +157,7 @@ class BaSeApplication:
 
     def _connect_signals(self) -> None:
         self._schedule.backup_request.connect(self._on_backup_request)
+        self._schedule.disengage_request.connect(self._hardware.disengage)
         self._backup_conductor.postpone_request.connect(self._schedule.on_postpone_backup)
         self._backup_conductor.reschedule_request.connect(self._schedule.on_reschedule_backup)
         self._backup_conductor.hardware_engage_request.connect(self._hardware.engage)

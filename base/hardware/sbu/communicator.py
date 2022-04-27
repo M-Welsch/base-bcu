@@ -19,12 +19,12 @@ class SbuCommunicator:
     _sbu_uart_interface: Optional[Path] = None
 
     def __init__(self) -> None:
-        if self.platform_with_sbu:
+        if self.platform_with_sbu():
             if self._sbu_uart_interface is None:
                 self._sbu_uart_interface = self._get_uart_interface()
         else:
-            self.write = self.__write_mock
-            self.query = self.__query_mock
+            self.write = self.__write_mock  # type: ignore
+            self.query = self.__query_mock  # type: ignore
 
     @staticmethod
     def platform_with_sbu() -> bool:
@@ -40,14 +40,12 @@ class SbuCommunicator:
         try:
             interface = get_sbu_uart_interface()
         except SbuNotAvailableError as e:
-            text = (
+            LOG.error(  # TODO: #14
                 "WARNING! Serial port to SBU could not found!\n"
                 "Display will not work!\n"
                 "Wakeup will not work! System must be repowered manually!"
             )
-            LOG.error(text)  # TODO: #14
             interface = None
-            # raise ComponentOffError(text, component="SBU", avoids_shutdown=True) from e
         return interface
 
     def write(self, command: SbuCommand, payload: str = "") -> None:

@@ -7,15 +7,7 @@ class BackupserverException(Exception):
     pass
 
 
-class DockingError(BackupserverException):
-    pass
-
-
 class UndockingError(BackupserverException):
-    pass
-
-
-class MountError(BackupserverException):
     pass
 
 
@@ -52,10 +44,6 @@ class NetworkError(BackupserverException):
 
 
 class BackupHddAccessError(BackupserverException):
-    pass
-
-
-class BackupHddNotAvailable(BackupserverException):
     pass
 
 
@@ -121,9 +109,25 @@ class BackupSizeRetrievalError(Exception):
     pass
 
 
-class InvalidBackupSource(Exception):
+class CriticalException(Exception):
+    pass
+
+
+class InvalidBackupSource(CriticalException):
+    pass
+
+
+class DockingError(CriticalException):
     pass
 
 
 class BackupDeletionError(Exception):
+    pass
+
+
+class BackupHddNotAvailable(CriticalException):
+    pass
+
+
+class MountError(CriticalException):
     pass
