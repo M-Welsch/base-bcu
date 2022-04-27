@@ -9,8 +9,6 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Mechanics:
-    _failed_once: bool = False
-
     def __init__(self) -> None:
         self._config: Config = get_config("mechanics.json")
         self._pin_interface: PinInterface = PinInterface.global_instance()
