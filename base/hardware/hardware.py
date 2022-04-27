@@ -52,7 +52,7 @@ class Hardware:
             else:
                 LOG.critical(f"Engaging Backup HDD failed after retrying due to {e}. Aborting.")
                 self._failed_once = False
-                raise CriticalException from e
+                raise e
 
     def disengage(self, **kwargs):  # type: ignore
         LOG.debug("disengaging hardware")
