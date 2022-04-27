@@ -2,7 +2,14 @@ from time import sleep
 from typing import Optional
 
 from base.common.config import Config, get_config
-from base.common.exceptions import BackupHddNotAvailable, ComponentOffError, CriticalException, DockingError, MountError
+from base.common.exceptions import (
+    BackupHddNotAvailable,
+    ComponentOffError,
+    CriticalException,
+    DockingError,
+    InvalidBackupSource,
+    MountError,
+)
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive

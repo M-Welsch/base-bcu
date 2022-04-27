@@ -40,14 +40,12 @@ class SbuCommunicator:
         try:
             interface = get_sbu_uart_interface()
         except SbuNotAvailableError as e:
-            text = (
+            LOG.error(  # TODO: #14
                 "WARNING! Serial port to SBU could not found!\n"
                 "Display will not work!\n"
                 "Wakeup will not work! System must be repowered manually!"
             )
-            LOG.error(text)  # TODO: #14
             interface = None
-            # raise ComponentOffError(text, component="SBU", avoids_shutdown=True) from e
         return interface
 
     def write(self, command: SbuCommand, payload: str = "") -> None:

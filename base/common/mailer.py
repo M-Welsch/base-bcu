@@ -1,0 +1,6 @@
+class Mailer:
+    def __init__(self) -> None:
+        ...
+
+    def send_summary(self) -> None:
+        ...

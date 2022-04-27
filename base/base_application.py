@@ -10,6 +10,7 @@ from base.common.config import Config, get_config
 from base.common.exceptions import CriticalException, DockingError, MountError, NetworkError
 from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
 from base.common.logger import LoggerFactory
+from base.common.mailer import Mailer
 from base.hardware.hardware import Hardware
 from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.backup_conductor import BackupConductor
@@ -86,13 +87,19 @@ class BaSeApplication:
         eventloop.call_later(1, self._mainloop)
 
     def start(self) -> None:
-        self._prepare_service()
-        self._mainloop()
-        self._webapp_server.start()
-        eventloop = asyncio.get_event_loop()
-        eventloop.run_forever()
-        eventloop.close()
-        self.finalize_service()
+        try:
+            self._prepare_service()
+            self._mainloop()
+            self._webapp_server.start()
+            eventloop = asyncio.get_event_loop()
+            eventloop.run_forever()
+            eventloop.close()
+            self.finalize_service()
+        except Exception as e:
+            LOG.critical(f"unknown error occured: {e}")
+        finally:
+            mailer = Mailer()
+            mailer.send_summary()
 
     def _prepare_service(self) -> None:
         self._process_wakeup_reason()
