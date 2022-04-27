@@ -26,9 +26,9 @@ def setup_logger(logs_directory: Path) -> None:
 
 
 @click.command()
-@click.argument("config_dir", type=click.Path(), default=Path(__file__).parent / "config", required=False)
-@click.argument("log_dir", type=click.Path(), default=Path(__file__).parent / "log", required=False)
-@click.option("no_shutdown", is_flag=True, help="Do not shutdown after termination. For testing.")
+@click.argument("config-dir", type=click.Path(), default=Path(__file__).parent / "config", required=False)
+@click.argument("log-dir", type=click.Path(), default=Path(__file__).parent / "log", required=False)
+@click.option("no-shutdown", is_flag=True, help="Do not shutdown after termination. For testing.")
 def main(config_dir: Path, log_dir: Path, no_shutdown: bool) -> None:
     """BaSe Firmware"""
     setup_logger(log_dir)
