@@ -1,73 +1,42 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, List
-import smtplib, ssl
 
+from typing import List
 
-@dataclass
-class Credentials:
-    username: str
-    password: str
+from yagmail import SMTP
+from yagmail.error import YagAddressError, YagInvalidEmailAddress
 
-    @classmethod
-    def from_credentials_file(cls, filename: Path = Path('/etc/base_mail_credentials')) -> Credentials:
-        with open(filename, 'r') as credentials_file:
-            content = credentials_file.readlines()
-        username = password = ""
-        username = cls.extract_value(content, "user")
-        password = cls.extract_value(content, "password")
-        return cls(
-            username=username,
-            password=password
-        )
+from base.common.config import get_config
+from base.common.exceptions import CriticalException
+from base.common.logger import LoggerFactory, most_recent_logfile
 
-    @staticmethod
-    def extract_value(content: List[str], key: str) -> Optional[str]:
-        for line in content:
-            if key in line:
-                return line.split('=')[1]
+LOG = LoggerFactory.get_logger(__name__)
 
 
 class Mailer:
     def __init__(self) -> None:
-        ...
+        self._receivers: List[str] = get_config("base.json").email_notification_receivers
 
     def send_summary(self) -> None:
-        ...
+        try:
+            yag = SMTP("navi.deciv@gmail.com")
+            yag.send(
+                to=self._receivers,
+                subject=self._compose_email_subject(),
+                contents=self._compose_email_body(),
+                attachments=most_recent_logfile(),
+            )
+        except (YagAddressError, YagInvalidEmailAddress) as e:
+            raise CriticalException from e
 
-    def login(self, server: smtplib.SMTP) -> None:
-        credentials = Credentials.from_credentials_file()
-        server.login(credentials.username, credentials.password)
+    def _last_backup_ok(self) -> bool:
+        return True
 
+    def _compose_email_subject(self) -> str:
+        if self._last_backup_ok():
+            report = "Backup Successful"
+        else:
+            report = "Error Occured"
+        return "Backup Server Email Notification: " + report
 
-def smtplib_trial():
-    port = 465  # For SSL
-
-    # Create a secure SSL context
-    context = ssl.create_default_context()
-    message = """\
-    Subject: Hi there
-
-    This message is sent from Python."""
-    with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
-        m = Mailer()
-        m.login(server)
-        sender_email = "navi.deciv@gmail.com"
-        receiver_email = "maxiwelsch@posteo.de"
-        server.sendmail(from_addr=sender_email, to_addrs=receiver_email, msg=message)
-
-
-if __name__ == "__main__":
-    import yagmail
-
-    receiver_email = "maxiwelsch@posteo.de"
-    body = "Hello there from Yagmail"
-    filename = "document.pdf"
-
-    yag = yagmail.SMTP("navi.deciv@gmail.com")
-    yag.send(
-        to=receiver_email,
-        subject="Yagmail test with attachment",
-        contents=body,
-    )
+    def _compose_email_body(self) -> str:
+        return "Lorem Ipsum ..."

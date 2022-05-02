@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from os.path import getctime
 from pathlib import Path
 from typing import Any, Optional, Tuple
 
@@ -131,5 +132,10 @@ class LoggerFactory:
     @classmethod
     def get_logger(cls, module_name: str) -> logging.Logger:
         if cls.__instance is None:
-            raise RuntimeError(f"Instantiate {cls.__name__} first.")
+            cls(log_path=Path("/tmp/logs"), parent_logger_name="BaSe", development_mode=True)
+            print("WARNING: Logger has been initialized with default values. Not for production.")
         return logging.getLogger(f"{cls.__parent_logger_name}.{module_name}")
+
+
+def most_recent_logfile() -> Optional[Path]:
+    return max(LoggerFactory.logs_directory().iterdir(), key=getctime, default=None)  # type: ignore
