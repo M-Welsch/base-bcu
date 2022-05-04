@@ -2,6 +2,8 @@ import sys
 from pathlib import Path
 from platform import machine
 
+from base.hardware.platform import platform_with_sbu
+
 
 def pytest_configure() -> None:
     """
@@ -13,7 +15,7 @@ def pytest_configure() -> None:
 
     LoggerFactory(Path.cwd() / "base/log", "BaSe_test", development_mode=True)
 
-    if machine() not in ["armv6l", "armv7l"]:
+    if not platform_with_sbu():
         from importlib import import_module
 
         sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")

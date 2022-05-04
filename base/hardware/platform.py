@@ -15,3 +15,7 @@ def who_am_i() -> BaSePlatform:
     else:
         i_am = BaSePlatform("PC")
     return i_am
+
+
+def platform_with_sbu() -> bool:
+    return who_am_i() == BaSePlatform.BANANAPI
