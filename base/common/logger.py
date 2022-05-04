@@ -2,18 +2,18 @@ import logging
 from datetime import datetime
 from os.path import getctime
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Type
 
 
 class LineBuffer(list):
-    def __init__(self, size: int) -> None:
+    def __init__(self, maximum_size: int) -> None:
         super().__init__()
-        self._size: int = size
+        self._maximum_size: int = maximum_size
 
     def push(self, item: str) -> None:
         if not isinstance(item, str):
             raise ValueError(f"Item has to be of type str, but is of type {type(item)}")
-        if len(self) >= self._size:
+        if len(self) >= self._maximum_size:
             del self[0]
         self.append(str(item))
 
@@ -70,11 +70,7 @@ class LoggerFactory:
             self._logs_directory = log_path
             self.__class__.__parent_logger_name = parent_logger_name
             self._development_mode: bool = development_mode
-            self._current_log_name: Path = Path()
-            self._current_warning_log_name: Path = Path()
             self._parent_logger: logging.Logger
-            self._file_handler: CachingFileHandler
-            self._warning_file_handler: WarningFileHandler
             self._setup_project_logger()
             LoggerFactory.__instance = self
         else:
@@ -97,29 +93,27 @@ class LoggerFactory:
     def _setup_project_logger(self) -> None:
         self._parent_logger = logging.getLogger(self.__class__.__parent_logger_name)
         self._parent_logger.setLevel(logging.DEBUG if self._development_mode else logging.INFO)
-        self._setup_file_handler()
-        self._setup_warning_file_handler()
+        self._setup_file_handler(
+            handler_class=CachingFileHandler,
+            log_file_name=datetime.now().strftime("%Y-%m-%d_%H-%M-%S.log"),
+            log_level=logging.DEBUG
+        )
+        self._setup_file_handler(
+            handler_class=WarningFileHandler,
+            log_file_name="warnings.log",
+            log_level=logging.WARNING
+        )
         self._setup_console_handler()
 
-    def _setup_file_handler(self) -> None:
-        self._logs_directory.mkdir(exist_ok=True)
-        self._current_log_name = self._logs_directory / datetime.now().strftime("%Y-%m-%d_%H-%M-%S.log")
-        self.__class__.__file_handler = CachingFileHandler(self._current_log_name)
-        self.__class__.__file_handler.setLevel(logging.DEBUG)
+    def _setup_file_handler(self, handler_class: Type[logging.Handler], log_file_name: str, log_level: int) -> None:
+        self._logs_directory.mkdir(exist_ok=True, parents=True)
+        current_log_name = self._logs_directory / log_file_name
+        self.__class__.__file_handler = handler_class(current_log_name.as_posix())
+        self.__class__.__file_handler.setLevel(log_level)
         formatter = logging.Formatter("%(asctime)s %(levelname)s: %(name)s: %(message)s")
         formatter.datefmt = "%m.%d.%Y %H:%M:%S"
         self.__class__.__file_handler.setFormatter(formatter)
         self._parent_logger.addHandler(self.__class__.__file_handler)
-
-    def _setup_warning_file_handler(self) -> None:
-        self._logs_directory.mkdir(exist_ok=True)
-        self._current_warning_log_name = self._logs_directory / Path("warnings.log")
-        self.__class__.__warning_file_handler = WarningFileHandler(self._current_log_name)
-        self.__class__.__warning_file_handler.setLevel(logging.WARNING)
-        formatter = logging.Formatter("%(asctime)s %(levelname)s: %(name)s: %(message)s")
-        formatter.datefmt = "%m.%d.%Y %H:%M:%S"
-        self.__class__.__warning_file_handler.setFormatter(formatter)
-        self._parent_logger.addHandler(self.__class__.__warning_file_handler)
 
     def _setup_console_handler(self) -> None:
         handler = logging.StreamHandler()
