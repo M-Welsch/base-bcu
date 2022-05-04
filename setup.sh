@@ -174,7 +174,7 @@ program_sbu () {
 restart_services () {
   services="nginx"
   echo_info "restarting services $services"
-  for service in services
+  for service in $services
   do
     sudo systemctl restart $service
   done
