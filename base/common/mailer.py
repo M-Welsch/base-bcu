@@ -6,7 +6,7 @@ from yagmail import SMTP
 from yagmail.error import YagAddressError, YagInvalidEmailAddress
 
 from base.common.config import get_config
-from base.common.logger import LoggerFactory, most_recent_logfile
+from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -23,7 +23,7 @@ class Mailer:
                 to=self._receivers,
                 subject=self._compose_email_subject(),
                 contents=self._compose_email_body(),
-                attachments=most_recent_logfile(),
+                attachments=LoggerFactory.current_log_file(),
             )
         except Exception as e:
             LOG.critical(f"Error occurent during sending summary: {e}")
