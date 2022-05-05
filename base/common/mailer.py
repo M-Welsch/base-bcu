@@ -40,7 +40,5 @@ class Mailer:
             body = "Backup conducted successfully!"
         else:
             critical_messages = "\n".join(list(self._critical_messages))
-            body = f"""Backup program produced critical errors:
-{critical_messages}
-"""
+            body = f"Backup program produced critical errors:\n{critical_messages}"
         return body
