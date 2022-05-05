@@ -37,7 +37,7 @@ class Mailer:
 
     def _compose_email_body(self) -> str:
         if self._last_backup_ok():
-            body = """Backup conducted successfully!"""
+            body = "Backup conducted successfully!"
         else:
             critical_messages = "\n".join(list(self._critical_messages))
             body = f"""Backup program produced critical errors:
