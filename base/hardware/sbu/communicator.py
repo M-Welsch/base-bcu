@@ -6,7 +6,7 @@ from typing import Optional
 from base.common.constants import BAUD_RATE
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
 from base.common.logger import LoggerFactory
-from base.hardware.platform import platform_with_sbu
+from base.hardware.platform import HAS_SBU
 from base.hardware.sbu.commands import SbuCommand
 from base.hardware.sbu.message import SbuMessage
 from base.hardware.sbu.serial_interface import SerialInterface
@@ -19,7 +19,7 @@ class SbuCommunicator:
     _sbu_uart_interface: Optional[Path] = None
 
     def __init__(self) -> None:
-        if platform_with_sbu():
+        if HAS_SBU:
             if self._sbu_uart_interface is None:
                 self._sbu_uart_interface = self._get_uart_interface()
         else:

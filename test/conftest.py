@@ -6,7 +6,7 @@ from typing import Generator
 import pytest
 from py import path
 
-from base.hardware.platform import platform_with_sbu
+from base.hardware.platform import HAS_SBU
 
 
 def pytest_configure() -> None:
@@ -16,7 +16,7 @@ def pytest_configure() -> None:
     file after command line options have been parsed.
     """
 
-    if not platform_with_sbu():
+    if not HAS_SBU:
         from importlib import import_module
 
         sys.modules["RPi"] = import_module("test.fake_libs.RPi_mock")
