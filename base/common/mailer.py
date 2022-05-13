@@ -32,18 +32,13 @@ class Mailer:
         return not bool(self._critical_messages)
 
     def _compose_email_subject(self) -> str:
-        if self._last_backup_ok():
-            report = "Backup Successful"
-        else:
-            report = "Error Occured"
+        report = "Backup Successful" if self._last_backup_ok() else "Error Occured"
         return "Backup Server Email Notification: " + report
 
     def _compose_email_body(self) -> str:
         if self._last_backup_ok():
-            body = """Backup conducted successfully!"""
+            body = "Backup conducted successfully!"
         else:
             critical_messages = "\n".join(list(self._critical_messages))
-            body = f"""Backup program produced critical errors:
-{critical_messages}
-"""
+            body = f"Backup program produced critical errors:\n{critical_messages}"
         return body
