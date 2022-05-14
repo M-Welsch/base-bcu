@@ -6,7 +6,7 @@ from typing import Optional
 from base.common.constants import BAUD_RATE
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
 from base.common.logger import LoggerFactory
-from base.hardware.platform import BaSePlatform, who_am_i
+from base.hardware.platform import HAS_SBU
 from base.hardware.sbu.commands import SbuCommand
 from base.hardware.sbu.message import SbuMessage
 from base.hardware.sbu.serial_interface import SerialInterface
@@ -19,16 +19,12 @@ class SbuCommunicator:
     _sbu_uart_interface: Optional[Path] = None
 
     def __init__(self) -> None:
-        if self.platform_with_sbu():
+        if HAS_SBU:
             if self._sbu_uart_interface is None:
                 self._sbu_uart_interface = self._get_uart_interface()
         else:
             self.write = self.__write_mock  # type: ignore
             self.query = self.__query_mock  # type: ignore
-
-    @staticmethod
-    def platform_with_sbu() -> bool:
-        return who_am_i() == BaSePlatform.BANANAPI
 
     @property
     def available(self) -> bool:

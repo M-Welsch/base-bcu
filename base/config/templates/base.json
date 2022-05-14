@@ -4,5 +4,8 @@
     },
     "logs_directory": {
         "type": "pathlib.Path"
+    },
+    "email_notification_receivers": {
+        "type": "list"
     }
 }

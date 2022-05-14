@@ -84,6 +84,9 @@ class BaSeApplication:
             self.button_1_pressed.emit()
         except CriticalException:
             self._on_go_to_idle_state()
+        except Exception as e:
+            LOG.critical(f"unknown error occured: {e}")
+            self._on_go_to_idle_state()
         eventloop.call_later(1, self._mainloop)
 
     def start(self) -> None:
