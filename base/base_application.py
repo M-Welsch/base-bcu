@@ -70,13 +70,13 @@ class BaSeApplication:
         self._connect_signals()
 
     def _mainloop(self) -> None:
-        print("Mainloop run")
         eventloop = asyncio.get_event_loop()
         try:
             # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
             self._schedule.run_pending()
             self._webapp_server.current_status = self.status
         except ShutdownInterrupt:
+            LOG.info("Received shutdown interrupt. Exiting mainloop")
             eventloop.stop()
         except Button0Interrupt:
             self.button_0_pressed.emit()
@@ -85,21 +85,25 @@ class BaSeApplication:
         except CriticalException:
             self._on_go_to_idle_state()
         except Exception as e:
-            LOG.critical(f"unknown error occured: {e}")
+            LOG.critical(f"Unknown error occured: {e}")
             self._on_go_to_idle_state()
         eventloop.call_later(1, self._mainloop)
 
     def start(self) -> None:
+        LOG.info("Logger and Config started. Starting BaSe Application")
         try:
             self._prepare_service()
+            LOG.info("Starting mainloop")
             self._mainloop()
             self._webapp_server.start()
             eventloop = asyncio.get_event_loop()
+            LOG.info("Starting eventloop")
             eventloop.run_forever()
             eventloop.close()
+            LOG.info("Eventloop stopped")
             self.finalize_service()
         except Exception as e:
-            LOG.critical(f"unknown error occured: {e}")
+            LOG.critical(f"Unknown error occured: {e}")
         finally:
             mailer = Mailer()
             mailer.send_summary()
@@ -117,7 +121,6 @@ class BaSeApplication:
             LOG.info("Woke up for scheduled backup")
         elif wakeup_reason == WakeupReason.CONFIGURATION:
             LOG.info("Woke up for configuration")
-
         elif wakeup_reason == WakeupReason.HEARTBEAT_TIMEOUT:
             LOG.warning("BCU heartbeat timeout occurred")
             self._hardware.disengage()
@@ -130,10 +133,10 @@ class BaSeApplication:
     def _on_go_to_idle_state(self, **kwargs):  # type: ignore
         self._schedule.on_reschedule_backup()
         if self._config.shutdown_between_backups:
-            LOG.info("Now starting sleep timer")
+            LOG.info("Going to Idle State, starting sleep timer")
             self.schedule_shutdown_timer()
         else:
-            LOG.info("Now staying awake")
+            LOG.info("Going to Idle State, staying awake (no shutdown timer)")
 
     def _on_backup_request(self, **kwargs):  # type: ignore
         try:
@@ -151,12 +154,13 @@ class BaSeApplication:
             self._schedule.on_shutdown_requested()
 
     def finalize_service(self) -> None:
+        LOG.info("Finalizing BaSe application")
         self._hardware.disengage()
         self._hardware.prepare_sbu_for_shutdown(
             self._schedule.next_backup_timestamp, self._schedule.next_backup_seconds  # Todo: wake BCU a little earlier?
         )
         sleep(1)  # TODO: Evaluate and comment
-        LOG.info("executing shutdown command NOW")
+        LOG.info("Exiting BaSe Application, about to shut down")
 
     def _connect_signals(self) -> None:
         self._schedule.backup_request.connect(self._on_backup_request)

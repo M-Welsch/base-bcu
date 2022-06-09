@@ -158,3 +158,12 @@ def test_bound_config_reload_all(config_path: Path, mocker: MockFixture) -> None
     BoundConfig.reload_all()
     assert patched_reload.call_count == len(configs)
     assert patched_validate.call_count == len(configs)
+
+
+def test_load_cached_config(config_path: Path) -> None:
+    config_file_name = "test.json"
+    with open(config_path / config_file_name, "w") as jf:
+        json.dump({"key": "new_value"}, jf)
+    a = BoundConfig(config_file_name)
+    b = BoundConfig(config_file_name)
+    assert a == b

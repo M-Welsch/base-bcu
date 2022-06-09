@@ -26,13 +26,13 @@ class Mailer:
                 attachments=LoggerFactory.current_log_file(),
             )
         except Exception as e:
-            LOG.critical(f"Error occurent during sending summary: {e}")
+            LOG.critical(f"Error occurred during sending summary: {e}")
 
     def _last_backup_ok(self) -> bool:
         return not bool(self._critical_messages)
 
     def _compose_email_subject(self) -> str:
-        report = "Backup Successful" if self._last_backup_ok() else "Error Occured"
+        report = "Backup Successful" if self._last_backup_ok() else "Error occurred"
         return "Backup Server Email Notification: " + report
 
     def _compose_email_body(self) -> str:

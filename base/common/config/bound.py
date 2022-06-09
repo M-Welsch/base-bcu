@@ -25,12 +25,13 @@ class BoundConfig(Config):
         return self
 
     def __init__(self, config_file_name: str, read_only: bool = True, *args: Any, **kwargs: Any) -> None:
-        super(Config, self).__init__(*args, **kwargs)
-        self._read_only: bool = read_only
-        self._config_path: Path = self.base_path / config_file_name
-        self._template_path: Path = self.base_path / "templates" / config_file_name
-        self._initialized: bool = True
-        self.reload()
+        if "_initialized" not in self.__dict__:
+            super(Config, self).__init__(*args, **kwargs)
+            self._read_only: bool = read_only
+            self._config_path: Path = self.base_path / config_file_name
+            self._template_path: Path = self.base_path / "templates" / config_file_name
+            self._initialized: bool = True
+            self.reload()
 
     @property
     def config_path(self) -> Path:
@@ -52,14 +53,14 @@ class BoundConfig(Config):
                 validator.validate(config)
 
     def reload(self, **kwargs):  # type: ignore
-        LOG.info(f"reloading config: {self._config_path}")
+        LOG.debug(f"reloading config: {self._config_path}")
         with open(self._config_path, "r") as jf:
             self.update(json.load(jf))
         with ConfigValidator() as validator:
             validator.validate(self)
 
     def save(self) -> None:
-        LOG.info(f"saving config: {self._config_path}")
+        LOG.debug(f"saving config: {self._config_path}")
         if self._read_only:
             raise ConfigSaveError("This config is read-only and is therefore not savable")
         with open(self._config_path, "w") as jf:
