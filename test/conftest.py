@@ -27,6 +27,7 @@ def pytest_configure() -> None:
 def init_logger_factory(tmpdir: path.local) -> Generator[None, None, None]:
     from base.common.logger import LoggerFactory
 
+    LoggerFactory._LoggerFactory__instance = None  # type: ignore
     LoggerFactory(log_path=Path(tmpdir), parent_logger_name="BaSe_test", development_mode=True)
     yield
     LoggerFactory._LoggerFactory__instance = None  # type: ignore
