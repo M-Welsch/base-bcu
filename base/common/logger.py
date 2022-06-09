@@ -165,7 +165,8 @@ class LoggerFactory:
     @classmethod
     def get_logger(cls, module_name: str) -> logging.Logger:
         if cls.__instance is None:
-            cls(log_path=Path("/tmp/logs"), parent_logger_name="BaSe", development_mode=True)
+            (log_path := Path("/tmp/logs")).mkdir(exist_ok=True)
+            cls(log_path=log_path, parent_logger_name="BaSe", development_mode=True)
             print("WARNING: Logger has been initialized with default values. Not for production.")
         assert isinstance(cls.__project_logger, logging.Logger)
         return logging.getLogger(f"{cls.__project_logger.name}.{module_name}")
