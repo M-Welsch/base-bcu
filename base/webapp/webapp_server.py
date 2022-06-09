@@ -46,8 +46,10 @@ class WebappServer:
         }
 
     def start(self) -> None:
+        LOG.info("Starting webserver")
         start_server = websockets.serve(self.handler, "0.0.0.0", 8453)
         asyncio.get_event_loop().run_until_complete(start_server)
+        LOG.info("Webserver started")
 
     async def handler(self, websocket: websockets.WebSocketServer, path: Path) -> None:
         try:
