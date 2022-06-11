@@ -7,7 +7,8 @@ from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
     BackupTestEnvironmentOutput,
-    prepare_source_sink_dirs, all_files_transferred,
+    all_files_transferred,
+    prepare_source_sink_dirs,
 )
 from test.utils.patch_config import patch_config, patch_multiple_configs
 from test.utils.utils import derive_mock_string

@@ -5,13 +5,6 @@ from typing import Any, Type
 
 import click
 
-path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# TODO: Fix this somehow...
-# print(path_to_module)
-# print(os.getcwd())
-# print('\n'.join(sys.path))
-sys.path.append(path_to_module)
-
 
 def setup_config(config_path: Path) -> None:
     from base.common.config import BoundConfig

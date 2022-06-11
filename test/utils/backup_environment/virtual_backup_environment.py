@@ -88,6 +88,7 @@ class BackupTestEnvironmentInput:
     bytesize_of_each_old_backup: int
     amount_preexisting_source_files_in_latest_backup: int = 0
     no_teardown: bool = False
+    automount_virtual_drive: bool = True
 
 
 BackupTestEnvironmentOutput = namedtuple("BackupTestEnvironmentOutput", "sync_config backup_config nas_config")
@@ -108,16 +109,16 @@ class BackupTestEnvironment:
     │       └── backup_2022_01_17-12_00_00          (directory that mimics preexisting backup)
     │
     ├── base_tmpshare           >╌╌╌╮
-    │   └── backup_source           │           sync.json["remote_backup_source_location"] (in case of smb)
+    │   └── backup_source           │               sync.json["remote_backup_source_location"] (in case of smb)
     │       └── random files ...    │mount (smb)
     │                               │
-    └── base_tmpshare_mntdir    <╌╌╌╯           sync.json["local_nas_hdd_mount_point"]
+    └── base_tmpshare_mntdir    <╌╌╌╯               sync.json["local_nas_hdd_mount_point"]
     """
 
     def __init__(self, configuration: BackupTestEnvironmentInput) -> None:
         self._virtual_hard_drive = VirtualHardDrive()
         self._src = self._get_source()
-        self._sink = self._get_sink(configuration.use_virtual_drive_for_sink)
+        self._sink = self._get_sink(configuration.use_virtual_drive_for_sink, configuration.automount_virtual_drive)
         self._configuration = configuration
 
     @property
@@ -144,8 +145,8 @@ class BackupTestEnvironment:
         src.mkdir(exist_ok=True)
         return src
 
-    def _get_sink(self, vhd_for_sink: bool) -> Path:
-        if vhd_for_sink:
+    def _get_sink(self, vhd_for_sink: bool, mount_sink: bool) -> Path:
+        if vhd_for_sink and mount_sink:
             self._virtual_hard_drive.mount()
         sink = self._virtual_hard_drive.mount_point / "backup_target"
         sink.mkdir(exist_ok=True)

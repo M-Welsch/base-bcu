@@ -129,14 +129,14 @@ class Drive:
 
     def _call_mount_command(self) -> None:
         command = f"mount {self._backup_hdd_device_node}"
-        LOG.debug(f"Mounting with {command}")
+        LOG.debug(f"Mounting Backup HDD with {command}")
         cp = run(command.split(), stdout=PIPE, stderr=PIPE)
         if cp.stderr:
             raise MountError(f"Partition could not be mounted: {str(cp.stderr)}")
 
     def _call_unmount_command(self) -> None:
         command = f"umount {self._backup_hdd_device_node}"
-        LOG.debug(f"Unmounting with {command}")
+        LOG.debug(f"Unmounting Backup HDD with {command}")
         cp = run(command.split(), stdout=PIPE, stderr=PIPE)
         if cp.stderr:
             raise UnmountError(f"Partition could not be unmounted: {str(cp.stderr)}")
