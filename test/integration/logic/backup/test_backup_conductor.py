@@ -7,7 +7,7 @@ from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
     BackupTestEnvironmentOutput,
-    prepare_source_sink_dirs,
+    prepare_source_sink_dirs, all_files_transferred,
 )
 from test.utils.patch_config import patch_config, patch_multiple_configs
 from test.utils.utils import derive_mock_string
@@ -81,9 +81,7 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_conductor.run()
         backup_conductor._backup.join()  # type: ignore
-        files_in_source = [file.stem for file in backup_conductor._backup.source.iterdir()]  # type: ignore
-        files_in_target = [file.stem for file in backup_conductor._backup.target.iterdir()]  # type: ignore
-        assert set(files_in_source) == set(files_in_target)
+        assert all_files_transferred(backup_conductor._backup.source, backup_conductor._backup.target)
         if protocol == Protocol.SMB:
             assert patch_unmount_smb_share.called_once_with()
 

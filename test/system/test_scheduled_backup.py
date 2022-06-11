@@ -7,15 +7,17 @@ from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
     BackupTestEnvironmentOutput,
+    all_files_transferred,
 )
 from typing import Dict, Union
 from unittest.mock import MagicMock
 
+import pytest
 from py import path
 from pytest_mock import MockFixture
 
 from base.base_application import BaSeApplication
-from base.common.config import Config
+from base.common.config import BoundConfig
 from base.hardware.hardware import Hardware
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
@@ -77,6 +79,7 @@ def inject_wakeup_reason(wakeup_reason: WakeupReason, mocker: MockFixture) -> Ma
     return mock
 
 
+# @pytest.mark.parametrize("wakeup_reason", [WakeupReason.SCHEDULED_BACKUP, WakeupReason.BACKUP_NOW, WakeupReason.CONFIGURATION, WakeupReason.NO_REASON])
 def test_scheduled_backup(tmp_path: path.local, mocker: MockFixture) -> None:
     bu_env = backup_environment()
     temp_config_dir = Path(tmp_path) / "config"
@@ -90,3 +93,12 @@ def test_scheduled_backup(tmp_path: path.local, mocker: MockFixture) -> None:
     )
     inject_wakeup_reason(WakeupReason.SCHEDULED_BACKUP, mocker)
     mocks = mock_hardware(mocker)
+    BoundConfig.set_config_base_path(temp_config_dir)
+    app = BaSeApplication()
+    app.start()
+    assert mocks.engage.called_once()
+    assert mocks.disengage.called_once()
+    # assert all_files_transferred(
+    #     Path(bu_env.sync_config["remote_backup_source_location"]),
+    #     Path(bu_env.sync_config["local_backup_target_location"]),
+    # )  # unmounted already, cannot assert here

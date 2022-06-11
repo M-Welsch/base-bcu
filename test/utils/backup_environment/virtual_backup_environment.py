@@ -235,3 +235,9 @@ class BackupTestEnvironment:
             "ssh_user": getuser(),
         }
         return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config)
+
+
+def all_files_transferred(backup_source: Path, backup_target: Path) -> bool:
+    files_in_source = [file.stem for file in backup_source.iterdir()]
+    files_in_target = [file.stem for file in backup_target.iterdir()]
+    return set(files_in_source) == set(files_in_target)
