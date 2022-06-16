@@ -11,7 +11,7 @@ from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
     BackupTestEnvironmentOutput,
-    all_files_transferred,
+    Verification,
 )
 from typing import Dict, Union
 from unittest.mock import MagicMock
@@ -45,6 +45,10 @@ def setup_temporary_config_dir(tmp_config_dir: Path, keys_to_update: Dict[str, d
 
 
 def next_backup_timestamp() -> Dict[str, Union[str, int]]:
+    next_bu = datetime.now() + timedelta(seconds=20)
+    return {"backup_interval": "days", "hour": next_bu.hour, "minute": next_bu.minute, "second": next_bu.second}
+
+def next_backup_timestamp_() -> Dict[str, Union[str, int]]:
     def next_full_minute_after_x_seconds(x: int) -> datetime:
         afterxseconds = datetime.now() + timedelta(seconds=x)
         return afterxseconds.replace(second=0) + timedelta(minutes=1)
@@ -54,7 +58,7 @@ def next_backup_timestamp() -> Dict[str, Union[str, int]]:
     return {"backup_interval": "days", "hour": next_safe_timestamp.hour, "minute": next_safe_timestamp.minute}
 
 
-def backup_environment() -> BackupTestEnvironmentOutput:
+def backup_environment() -> BackupTestEnvironment:
     backup_environment_configuration = BackupTestEnvironmentInput(
         protocol=Protocol.SMB,
         amount_files_in_source=10,
@@ -66,7 +70,7 @@ def backup_environment() -> BackupTestEnvironmentOutput:
         automount_virtual_drive=False,
         automount_data_source=False
     )
-    return BackupTestEnvironment(backup_environment_configuration).create()
+    return BackupTestEnvironment(backup_environment_configuration)
 
 
 @dataclass
@@ -111,41 +115,40 @@ def check_log_messages(captured_logs: str) -> bool:
         "mount datasource via smb": clog("Mounting data source via smb")
     }
     for check, result in checks.items():
-        if result:
+        if not result:
             print(f"check {check} failed!")
-    return not bool(checks)
+    return all(checks.values())
 
 
 @pytest.mark.parametrize("wakeup_reason", [WakeupReason.SCHEDULED_BACKUP])
 def test_scheduled_backup_in_test_env(tmp_path: path.local, mocker: MockFixture, caplog: LogCaptureFixture, wakeup_reason: WakeupReason) -> None:
-    bu_env = backup_environment()  # start off without backup_env, use local file system first
+    bu_env: BackupTestEnvironment = backup_environment()
+    bu_env_output: BackupTestEnvironmentOutput = bu_env.create()
     temp_config_dir = Path(tmp_path) / "config"
     setup_temporary_config_dir(
         temp_config_dir,
         {
             "schedule_backup.json": next_backup_timestamp(),
-            "sync.json": bu_env.sync_config,
-            "nas.json": bu_env.nas_config,
+            "sync.json": bu_env_output.sync_config,
+            "nas.json": bu_env_output.nas_config,
             "schedule_config.json": {"shutdown_delay_minutes": 2},
             "drive.json": {
+                "backup_hdd_mount_point": "/tmp/base_tmpfs_mntdir",
                 "backup_hdd_spinup_timeout": 1,
-                "backup_hdd_mount_waiting_secs": 1
+                "backup_hdd_mount_waiting_secs": 0.2,
+                "backup_hdd_mount_trials": 2,
+                "backup_hdd_unmount_trials": 2
             }
         },
     )
     inject_wakeup_reason(wakeup_reason, mocker)
-    mocks = mock_hardware(mocker, bu_env.backup_hdd_mount_point)
+    mocks = mock_hardware(mocker, bu_env_output.backup_hdd_mount_point)
     BoundConfig.set_config_base_path(temp_config_dir)
     with caplog.at_level(logging.DEBUG):
         app = BaSeApplication()
         app.start()
     assert check_log_messages(caplog.text)
-
-    # assert mocks.engage.called_once()
-    # assert mocks.disengage.called_once()
-    # assert all_files_transferred(
-    #     Path(bu_env.sync_config["remote_backup_source_location"]),
-    #     Path(bu_env.sync_config["local_backup_target_location"]),
-    # )  # unmounted already, cannot assert here
-
-
+    assert not Path("/tmp/base_tmpshare_mntdir").is_mount()
+    assert not Path("/tmp/base_tmpfs_mntdir").is_mount()
+    with Verification(bu_env) as ver:
+        assert ver.all_files_transferred()

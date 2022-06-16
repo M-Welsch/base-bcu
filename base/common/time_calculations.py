@@ -30,11 +30,15 @@ def next_backup_seconds(config: Config) -> int:
 
 def _plan_from_config(config: Config) -> _Plan:
     interval = BACKUP_INTERVALS[config.backup_interval]
+    try:
+        second = config.second
+    except AttributeError:
+        second = 0
     return _Plan(
         freq=interval,
         bymonthday=config.day_of_month if interval == MONTHLY else None,
         byweekday=config.day_of_week if interval == WEEKLY else None,
         byhour=config.hour,
         byminute=config.minute,
-        bysecond=0
+        bysecond=second
     )

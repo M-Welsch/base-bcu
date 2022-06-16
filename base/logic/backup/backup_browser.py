@@ -12,27 +12,28 @@ from base.common.logger import LoggerFactory
 LOG = LoggerFactory.get_logger(__name__)
 
 
+def read_backups(target_location) -> List[Path]:
+    """
+    :return:    present backups. Lowest index is the oldest.
+    """
+    try:
+        return sorted(
+            [
+                path
+                for path in Path(target_location).iterdir()
+                if path.stem.startswith("backup")
+            ],
+            reverse=True,
+        )
+    except OSError as e:
+        LOG.error(f"BackupHDD cannot be accessed! {e}")
+        raise BackupHddAccessError
+
+
 class BackupBrowser:
     def __init__(self) -> None:
         self._config: Config = get_config("sync.json")
-        self._backup_index: List[Path] = self._read_backups()
-
-    def _read_backups(self) -> List[Path]:
-        """
-        :return:    present backups. Lowest index is the oldest.
-        """
-        try:
-            return sorted(
-                [
-                    path
-                    for path in Path(self._config.local_backup_target_location).iterdir()
-                    if path.stem.startswith("backup")
-                ],
-                reverse=True,
-            )
-        except OSError as e:
-            LOG.error(f"BackupHDD cannot be accessed! {e}")
-            raise BackupHddAccessError
+        self._backup_index: List[Path] = read_backups(self._config.local_backup_target_location)
 
     @property
     def index(self) -> List[str]:

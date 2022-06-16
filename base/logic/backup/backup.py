@@ -49,7 +49,6 @@ class Backup(Thread):
 
     @property
     def running(self) -> bool:
-        LOG.debug(f"Backup is {'running' if self.is_alive() else 'not running'} yet")
         return self.is_alive()
 
     @property

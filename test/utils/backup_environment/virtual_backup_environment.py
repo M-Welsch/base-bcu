@@ -19,6 +19,7 @@ from py import path
 
 from base.common.constants import current_backup_timestring_format_for_directory
 from base.logic.backup.protocol import Protocol
+from base.logic.backup.backup_browser import read_backups
 
 
 @pytest.fixture
@@ -123,6 +124,10 @@ class BackupTestEnvironment:
         self._configuration = configuration
 
     @property
+    def configuration(self):
+        return self._configuration
+
+    @property
     def source(self) -> Path:
         return self._src
 
@@ -179,8 +184,12 @@ class BackupTestEnvironment:
         )
 
     @staticmethod
+    def mount_smb() -> None:
+        Popen(f"mount {SMB_MOUNTPOINT}".split()).wait()
+
+    @staticmethod
     def unmount_smb() -> None:
-        Popen(f"umount {SMB_MOUNTPOINT}".split())
+        Popen(f"umount {SMB_MOUNTPOINT}".split()).wait()
 
     def teardown(self, delete_files: bool = True) -> None:
         if delete_files:
@@ -239,8 +248,32 @@ class BackupTestEnvironment:
         }
         return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config, backup_hdd_mount_point=self._virtual_hard_drive.mount_point)
 
+    def mount_all(self) -> None:
+        self._virtual_hard_drive.mount()
+        if self._configuration.protocol == Protocol.SMB:
+            self.mount_smb()
 
-def all_files_transferred(backup_source: Path, backup_target: Path) -> bool:
-    files_in_source = [file.stem for file in backup_source.iterdir()]
-    files_in_target = [file.stem for file in backup_target.iterdir()]
-    return set(files_in_source) == set(files_in_target)
+    def unmount_all(self) -> None:
+        self._virtual_hard_drive.unmount()
+        if self._configuration.protocol == Protocol.SMB:
+            self.unmount_smb()
+
+
+class Verification:
+    def __init__(self, backup_test_environment: BackupTestEnvironment):
+        self._backup_test_environment = backup_test_environment
+
+    def __enter__(self) -> Verification:
+        self._backup_test_environment.mount_all()
+        return self
+
+    def __exit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
+        self._backup_test_environment.unmount_all()
+
+    def all_files_transferred(self) -> bool:
+        files_in_source = [file.stem for file in self._backup_test_environment.source.iterdir()]
+        backup_target: list = read_backups(self._backup_test_environment.sink)
+        files_in_target = [file.stem for file in backup_target[-1].iterdir()]
+        return set(files_in_source) == set(files_in_target)

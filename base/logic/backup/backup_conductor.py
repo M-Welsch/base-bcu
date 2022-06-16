@@ -47,6 +47,7 @@ class BackupConductor:
 
     @property
     def conditions_met(self) -> bool:
+        LOG.debug(f"Backup is {'running' if self.is_running else 'not running'} yet")
         return not self._is_maintenance_mode_on() and not self.is_running
 
     @property
