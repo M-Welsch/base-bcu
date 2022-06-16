@@ -17,7 +17,11 @@ class Drive:
     def __init__(self) -> None:
         self._config: Config = get_config("drive.json")
         self._available: HddState = HddState.unknown
-        self._backup_hdd_device_node = BACKUP_HDD_DEVICE_NODE
+        self._backup_hdd_device_node = self.get_backup_hdd_device_node()
+
+    @staticmethod
+    def get_backup_hdd_device_node() -> str:
+        return BACKUP_HDD_DEVICE_NODE
 
     def mount(self) -> None:
         """udev recognizes the correct drive and creates a symlink to /dev/BACKUPHDD"""
@@ -42,7 +46,7 @@ class Drive:
         time_start = time()
         while not Path(self._backup_hdd_device_node).exists():
             if time() - time_start > self._config.backup_hdd_spinup_timeout:
-                raise BackupHddNotAvailable
+                raise BackupHddNotAvailable("timeout reached while waiting for backup hdd")
             sleep(0.5)
 
     @property

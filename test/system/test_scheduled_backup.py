@@ -1,8 +1,12 @@
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from shutil import copytree
+
+from _pytest.logging import LogCaptureFixture
+
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
@@ -22,6 +26,7 @@ from base.common.config import BoundConfig
 from base.hardware.hardware import Hardware
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
+from base.hardware.drive import Drive
 from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.protocol import Protocol
 
@@ -59,6 +64,7 @@ def backup_environment() -> BackupTestEnvironmentOutput:
         bytesize_of_each_old_backup=0,
         amount_preexisting_source_files_in_latest_backup=0,
         automount_virtual_drive=False,
+        automount_data_source=False
     )
     return BackupTestEnvironment(backup_environment_configuration).create()
 
@@ -69,16 +75,20 @@ class MockCollection:
     undock: MagicMock
     power: MagicMock
     unpower: MagicMock
+    wait_for_backup_hdd: MagicMock
+    get_backup_hdd_device_node: MagicMock
     # engage: MagicMock
     # disengage: MagicMock
 
 
-def mock_hardware(mocker: MockFixture) -> MockCollection:
+def mock_hardware(mocker: MockFixture, backup_hdd_mountpoint: str) -> MockCollection:
     return MockCollection(
         dock=mocker.patch("base.hardware.mechanics.Mechanics.dock"),
         undock=mocker.patch("base.hardware.mechanics.Mechanics.undock"),
         power=mocker.patch("base.hardware.power.Power.hdd_power_on"),
         unpower=mocker.patch("base.hardware.power.Power.hdd_power_off"),
+        wait_for_backup_hdd=mocker.patch("base.hardware.drive.Drive._wait_for_backup_hdd"),
+        get_backup_hdd_device_node=mocker.patch("base.hardware.drive.Drive.get_backup_hdd_device_node", return_value=backup_hdd_mountpoint)
         # engage=mocker.patch("base.hardware.hardware.Hardware.engage"),
         # disengage=mocker.patch("base.hardware.hardware.Hardware.disengage"),
     )
@@ -89,8 +99,25 @@ def inject_wakeup_reason(wakeup_reason: WakeupReason, mocker: MockFixture) -> Ma
     return mock
 
 
-# @pytest.mark.parametrize("wakeup_reason", [WakeupReason.SCHEDULED_BACKUP, WakeupReason.BACKUP_NOW, WakeupReason.CONFIGURATION, WakeupReason.NO_REASON])
-def test_scheduled_backup_in_test_env(tmp_path: path.local, mocker: MockFixture) -> None:
+def check_log_messages(captured_logs: str) -> bool:
+    def clog(text: str) -> bool:
+        return text in captured_logs
+    checks = {
+        "check wakeup": clog("Woke up for"),
+        "reschedule backup": clog("Scheduled next backup on"),
+        "start mainloop": clog("Starting mainloop"),
+        "start webserver": clog("Webserver started"),
+        "check backup conditions": clog("backup conditions are met"),
+        "mount datasource via smb": clog("Mounting data source via smb")
+    }
+    for check, result in checks.items():
+        if result:
+            print(f"check {check} failed!")
+    return not bool(checks)
+
+
+@pytest.mark.parametrize("wakeup_reason", [WakeupReason.SCHEDULED_BACKUP])
+def test_scheduled_backup_in_test_env(tmp_path: path.local, mocker: MockFixture, caplog: LogCaptureFixture, wakeup_reason: WakeupReason) -> None:
     bu_env = backup_environment()  # start off without backup_env, use local file system first
     temp_config_dir = Path(tmp_path) / "config"
     setup_temporary_config_dir(
@@ -100,13 +127,20 @@ def test_scheduled_backup_in_test_env(tmp_path: path.local, mocker: MockFixture)
             "sync.json": bu_env.sync_config,
             "nas.json": bu_env.nas_config,
             "schedule_config.json": {"shutdown_delay_minutes": 2},
+            "drive.json": {
+                "backup_hdd_spinup_timeout": 1,
+                "backup_hdd_mount_waiting_secs": 1
+            }
         },
     )
-    inject_wakeup_reason(WakeupReason.SCHEDULED_BACKUP, mocker)
-    mocks = mock_hardware(mocker)
+    inject_wakeup_reason(wakeup_reason, mocker)
+    mocks = mock_hardware(mocker, bu_env.backup_hdd_mount_point)
     BoundConfig.set_config_base_path(temp_config_dir)
-    app = BaSeApplication()
-    app.start()
+    with caplog.at_level(logging.DEBUG):
+        app = BaSeApplication()
+        app.start()
+    assert check_log_messages(caplog.text)
+
     # assert mocks.engage.called_once()
     # assert mocks.disengage.called_once()
     # assert all_files_transferred(
@@ -115,36 +149,3 @@ def test_scheduled_backup_in_test_env(tmp_path: path.local, mocker: MockFixture)
     # )  # unmounted already, cannot assert here
 
 
-# @pytest.mark.parametrize("wakeup_reason", [WakeupReason.SCHEDULED_BACKUP, WakeupReason.BACKUP_NOW, WakeupReason.CONFIGURATION, WakeupReason.NO_REASON])
-@pytest.mark.skip(reason="doesn't work and we want to mock as little stuff as possible")
-def test_scheduled_backup_wo_test_env(tmp_path: path.local, mocker: MockFixture) -> None:
-    # bu_env = backup_environment()  # start off without backup_env, use local file system first
-    temp_config_dir = Path(tmp_path) / "config"
-    temp_source_dir = Path(tmp_path) / "source"
-    temp_target_dir = Path(tmp_path) / "target"
-    [p.mkdir() for p in [temp_source_dir, temp_target_dir]]
-    setup_temporary_config_dir(
-        temp_config_dir,
-        {
-            "schedule_backup.json": next_backup_timestamp(),
-            "sync.json": {
-                "remote_backup_source_location": temp_source_dir.absolute().as_posix(),
-                "local_backup_target_location": temp_target_dir.absolute().as_posix(),
-                "protocol": "smb",
-            },
-            # "sync.json": bu_env.sync_config,
-            # "nas.json": bu_env.nas_config,
-            "schedule_config.json": {"shutdown_delay_minutes": 2},
-        },
-    )
-    inject_wakeup_reason(WakeupReason.SCHEDULED_BACKUP, mocker)
-    mocks = mock_hardware(mocker)
-    BoundConfig.set_config_base_path(temp_config_dir)
-    app = BaSeApplication()
-    app.start()
-    assert mocks.engage.called_once()
-    assert mocks.disengage.called_once()
-    # assert all_files_transferred(
-    #     Path(bu_env.sync_config["remote_backup_source_location"]),
-    #     Path(bu_env.sync_config["local_backup_target_location"]),
-    # )  # unmounted already, cannot assert here

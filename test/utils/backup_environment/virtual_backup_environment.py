@@ -89,9 +89,10 @@ class BackupTestEnvironmentInput:
     amount_preexisting_source_files_in_latest_backup: int = 0
     no_teardown: bool = False
     automount_virtual_drive: bool = True
+    automount_data_source: bool = True
 
 
-BackupTestEnvironmentOutput = namedtuple("BackupTestEnvironmentOutput", "sync_config backup_config nas_config")
+BackupTestEnvironmentOutput = namedtuple("BackupTestEnvironmentOutput", "sync_config backup_config nas_config backup_hdd_mount_point")
 
 
 class BackupTestEnvironment:
@@ -214,15 +215,16 @@ class BackupTestEnvironment:
             "smb_credentials_file": "/etc/base-credentials",
             "smb_share_name": "Backup",
         }
-        p = Popen("mount /tmp/base_tmpshare_mntdir/".split(), stderr=PIPE)
-        p.wait()
-        if p.stderr:
-            lines = [l.decode() for l in p.stderr.readlines()]
-            if any(["No such file or directory" in line for line in lines]):
-                raise Exception(
-                    "Error in the Test Environment: please make sure /etc/samba/smb.conf is set up to have a share named 'Backup' on path '/tmp/base_tmpshare'"
-                )
-        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config)
+        if self._configuration.automount_data_source:
+            p = Popen("mount /tmp/base_tmpshare_mntdir/".split(), stderr=PIPE)
+            p.wait()
+            if p.stderr:
+                lines = [l.decode() for l in p.stderr.readlines()]
+                if any(["No such file or directory" in line for line in lines]):
+                    raise Exception(
+                        "Error in the Test Environment: please make sure /etc/samba/smb.conf is set up to have a share named 'Backup' on path '/tmp/base_tmpshare'"
+                    )
+        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config, backup_hdd_mount_point=self._virtual_hard_drive.mount_point)
 
     def prepare_for_ssh(self) -> BackupTestEnvironmentOutput:
         sync_config = {

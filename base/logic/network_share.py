@@ -19,14 +19,24 @@ class NetworkShare:
     def is_available(self) -> HddState:
         return self._available
 
+    @property
+    def is_mounted(self):
+        return Path(self._config.local_nas_hdd_mount_point).is_mount()
+
     def mount_datasource_via_smb(self) -> None:
-        self._create_mountpoint()
-        self._perform_mount()
-        self._available = HddState.available
+        if self.is_mounted:
+            LOG.warning(f"datasource is already mounted at {self._config.local_nas_hdd_mount_point}")
+        else:
+            self._create_mountpoint()
+            self._perform_mount()
+            self._available = HddState.available
 
     def unmount_datasource_via_smb(self) -> None:
-        self._perform_unmount()
-        self._available = HddState.not_available
+        if self.is_mounted:
+            self._perform_unmount()
+            self._available = HddState.not_available
+        else:
+            LOG.warning(f"datasource is already unmounted from {self._config.local_nas_hdd_mount_point}")
 
     def _create_mountpoint(self) -> None:
         try:
