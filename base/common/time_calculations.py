@@ -6,7 +6,7 @@ from dateutil.rrule import DAILY, MONTHLY, WEEKLY, rrule
 from base.common.config import Config
 from base.common.constants import next_backup_timestring_format_for_sbu
 
-_Plan = namedtuple("_Plan", "freq bymonthday byweekday byhour byminute")
+_Plan = namedtuple("_Plan", "freq bymonthday byweekday byhour byminute bysecond")
 
 
 BACKUP_INTERVALS = {"days": DAILY, "weeks": WEEKLY, "months": MONTHLY}
@@ -36,4 +36,5 @@ def _plan_from_config(config: Config) -> _Plan:
         byweekday=config.day_of_week if interval == WEEKLY else None,
         byhour=config.hour,
         byminute=config.minute,
+        bysecond=0
     )

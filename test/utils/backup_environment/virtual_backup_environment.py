@@ -237,7 +237,7 @@ class BackupTestEnvironment:
             "ssh_port": 22,
             "ssh_user": getuser(),
         }
-        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config)
+        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config, backup_hdd_mount_point=self._virtual_hard_drive.mount_point)
 
 
 def all_files_transferred(backup_source: Path, backup_target: Path) -> bool:
