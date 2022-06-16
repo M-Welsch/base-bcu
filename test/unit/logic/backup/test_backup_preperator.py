@@ -52,7 +52,7 @@ def test_prepare(backup_preparator: BackupPreparator, mocker: MockFixture, newes
     mocked_free_space_if_necessary = mocker.patch(
         "base.logic.backup.backup_preparator.BackupPreparator._free_space_if_necessary"
     )
-    mocked_read_backups = mocker.patch("base.logic.backup.backup_browser.BackupBrowser._read_backups")
+    mocked_read_backups = mocker.patch("base.logic.backup.backup_browser.read_backups")
     mocked_newest_valid_backup = mocker.patch(
         "base.logic.backup.backup_browser.BackupBrowser.newest_valid_backup", return_value=newest_valid_bu
     )

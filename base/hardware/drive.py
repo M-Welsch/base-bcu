@@ -21,7 +21,7 @@ class Drive:
 
     @staticmethod
     def get_backup_hdd_device_node() -> str:
-        """ Refactor me if you dare, but be warned! Some tests will fail :) """
+        """Refactor me if you dare, but be warned! Some tests will fail :)"""
         return BACKUP_HDD_DEVICE_NODE
 
     def mount(self) -> None:

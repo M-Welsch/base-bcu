@@ -7,7 +7,7 @@ from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
     BackupTestEnvironmentOutput,
-    all_files_transferred,
+    Verification,
     prepare_source_sink_dirs,
 )
 from test.utils.patch_config import patch_config, patch_multiple_configs
@@ -82,9 +82,10 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_conductor.run()
         backup_conductor._backup.join()  # type: ignore
-        assert all_files_transferred(backup_conductor._backup.source, backup_conductor._backup.target)
         if protocol == Protocol.SMB:
             assert patch_unmount_smb_share.called_once_with()
+        with Verification(virtual_backup_env) as veri:
+            assert veri.all_files_transferred()
 
 
 def mocking_procedure_network_share_not_available(mocker: MockFixture, *args) -> None:  # type: ignore

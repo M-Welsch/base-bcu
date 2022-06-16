@@ -12,19 +12,17 @@ from base.common.logger import LoggerFactory
 LOG = LoggerFactory.get_logger(__name__)
 
 
-def read_backups(target_location) -> List[Path]:
+def read_backups(target_location: str) -> List[Path]:
     """
     :return:    present backups. Lowest index is the oldest.
     """
     try:
-        return sorted(
-            [
-                path
-                for path in Path(target_location).iterdir()
-                if path.stem.startswith("backup")
-            ],
-            reverse=True,
+        directories = sorted(
+            [path.as_posix() for path in Path(target_location).iterdir() if path.stem.startswith("backup")],
+            # reverse=True,
         )
+        # way to make sure paths are sorted correctly
+        return [Path(directory) for directory in directories]
     except OSError as e:
         LOG.error(f"BackupHDD cannot be accessed! {e}")
         raise BackupHddAccessError

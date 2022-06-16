@@ -20,7 +20,7 @@ class NetworkShare:
         return self._available
 
     @property
-    def is_mounted(self):
+    def is_mounted(self) -> bool:
         return Path(self._config.local_nas_hdd_mount_point).is_mount()
 
     def mount_datasource_via_smb(self) -> None:

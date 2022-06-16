@@ -40,5 +40,5 @@ def _plan_from_config(config: Config) -> _Plan:
         byweekday=config.day_of_week if interval == WEEKLY else None,
         byhour=config.hour,
         byminute=config.minute,
-        bysecond=second
+        bysecond=second,
     )

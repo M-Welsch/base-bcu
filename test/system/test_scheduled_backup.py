@@ -4,9 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from shutil import copytree
-
-from _pytest.logging import LogCaptureFixture
-
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
@@ -17,16 +14,17 @@ from typing import Dict, Union
 from unittest.mock import MagicMock
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from py import path
 from pytest_mock import MockFixture
 
 import base.hardware.mechanics
 from base.base_application import BaSeApplication
 from base.common.config import BoundConfig
+from base.hardware.drive import Drive
 from base.hardware.hardware import Hardware
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
-from base.hardware.drive import Drive
 from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.protocol import Protocol
 
@@ -48,6 +46,7 @@ def next_backup_timestamp() -> Dict[str, Union[str, int]]:
     next_bu = datetime.now() + timedelta(seconds=20)
     return {"backup_interval": "days", "hour": next_bu.hour, "minute": next_bu.minute, "second": next_bu.second}
 
+
 def next_backup_timestamp_() -> Dict[str, Union[str, int]]:
     def next_full_minute_after_x_seconds(x: int) -> datetime:
         afterxseconds = datetime.now() + timedelta(seconds=x)
@@ -68,7 +67,7 @@ def backup_environment() -> BackupTestEnvironment:
         bytesize_of_each_old_backup=0,
         amount_preexisting_source_files_in_latest_backup=0,
         automount_virtual_drive=False,
-        automount_data_source=False
+        automount_data_source=False,
     )
     return BackupTestEnvironment(backup_environment_configuration)
 
@@ -92,7 +91,9 @@ def mock_hardware(mocker: MockFixture, backup_hdd_mountpoint: str) -> MockCollec
         power=mocker.patch("base.hardware.power.Power.hdd_power_on"),
         unpower=mocker.patch("base.hardware.power.Power.hdd_power_off"),
         wait_for_backup_hdd=mocker.patch("base.hardware.drive.Drive._wait_for_backup_hdd"),
-        get_backup_hdd_device_node=mocker.patch("base.hardware.drive.Drive.get_backup_hdd_device_node", return_value=backup_hdd_mountpoint)
+        get_backup_hdd_device_node=mocker.patch(
+            "base.hardware.drive.Drive.get_backup_hdd_device_node", return_value=backup_hdd_mountpoint
+        )
         # engage=mocker.patch("base.hardware.hardware.Hardware.engage"),
         # disengage=mocker.patch("base.hardware.hardware.Hardware.disengage"),
     )
@@ -106,13 +107,14 @@ def inject_wakeup_reason(wakeup_reason: WakeupReason, mocker: MockFixture) -> Ma
 def check_log_messages(captured_logs: str) -> bool:
     def clog(text: str) -> bool:
         return text in captured_logs
+
     checks = {
         "check wakeup": clog("Woke up for"),
         "reschedule backup": clog("Scheduled next backup on"),
         "start mainloop": clog("Starting mainloop"),
         "start webserver": clog("Webserver started"),
         "check backup conditions": clog("backup conditions are met"),
-        "mount datasource via smb": clog("Mounting data source via smb")
+        "mount datasource via smb": clog("Mounting data source via smb"),
     }
     for check, result in checks.items():
         if not result:
@@ -121,7 +123,9 @@ def check_log_messages(captured_logs: str) -> bool:
 
 
 @pytest.mark.parametrize("wakeup_reason", [WakeupReason.SCHEDULED_BACKUP])
-def test_scheduled_backup_in_test_env(tmp_path: path.local, mocker: MockFixture, caplog: LogCaptureFixture, wakeup_reason: WakeupReason) -> None:
+def test_scheduled_backup_in_test_env(
+    tmp_path: path.local, mocker: MockFixture, caplog: LogCaptureFixture, wakeup_reason: WakeupReason
+) -> None:
     bu_env: BackupTestEnvironment = backup_environment()
     bu_env_output: BackupTestEnvironmentOutput = bu_env.create()
     temp_config_dir = Path(tmp_path) / "config"
@@ -137,8 +141,8 @@ def test_scheduled_backup_in_test_env(tmp_path: path.local, mocker: MockFixture,
                 "backup_hdd_spinup_timeout": 1,
                 "backup_hdd_mount_waiting_secs": 0.2,
                 "backup_hdd_mount_trials": 2,
-                "backup_hdd_unmount_trials": 2
-            }
+                "backup_hdd_unmount_trials": 2,
+            },
         },
     )
     inject_wakeup_reason(wakeup_reason, mocker)

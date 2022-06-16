@@ -18,8 +18,8 @@ import pytest
 from py import path
 
 from base.common.constants import current_backup_timestring_format_for_directory
-from base.logic.backup.protocol import Protocol
 from base.logic.backup.backup_browser import read_backups
+from base.logic.backup.protocol import Protocol
 
 
 @pytest.fixture
@@ -93,7 +93,9 @@ class BackupTestEnvironmentInput:
     automount_data_source: bool = True
 
 
-BackupTestEnvironmentOutput = namedtuple("BackupTestEnvironmentOutput", "sync_config backup_config nas_config backup_hdd_mount_point")
+BackupTestEnvironmentOutput = namedtuple(
+    "BackupTestEnvironmentOutput", "sync_config backup_config nas_config backup_hdd_mount_point"
+)
 
 
 class BackupTestEnvironment:
@@ -124,7 +126,7 @@ class BackupTestEnvironment:
         self._configuration = configuration
 
     @property
-    def configuration(self):
+    def configuration(self) -> BackupTestEnvironmentInput:
         return self._configuration
 
     @property
@@ -233,7 +235,12 @@ class BackupTestEnvironment:
                     raise Exception(
                         "Error in the Test Environment: please make sure /etc/samba/smb.conf is set up to have a share named 'Backup' on path '/tmp/base_tmpshare'"
                     )
-        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config, backup_hdd_mount_point=self._virtual_hard_drive.mount_point)
+        return BackupTestEnvironmentOutput(
+            sync_config=sync_config,
+            backup_config={},
+            nas_config=nas_config,
+            backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
+        )
 
     def prepare_for_ssh(self) -> BackupTestEnvironmentOutput:
         sync_config = {
@@ -246,7 +253,12 @@ class BackupTestEnvironment:
             "ssh_port": 22,
             "ssh_user": getuser(),
         }
-        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config, backup_hdd_mount_point=self._virtual_hard_drive.mount_point)
+        return BackupTestEnvironmentOutput(
+            sync_config=sync_config,
+            backup_config={},
+            nas_config=nas_config,
+            backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
+        )
 
     def mount_all(self) -> None:
         self._virtual_hard_drive.mount()
@@ -274,6 +286,6 @@ class Verification:
 
     def all_files_transferred(self) -> bool:
         files_in_source = [file.stem for file in self._backup_test_environment.source.iterdir()]
-        backup_target: list = read_backups(self._backup_test_environment.sink)
+        backup_target: list = read_backups(self._backup_test_environment.sink.as_posix())
         files_in_target = [file.stem for file in backup_target[-1].iterdir()]
         return set(files_in_source) == set(files_in_target)
