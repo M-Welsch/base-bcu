@@ -27,6 +27,7 @@ from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
 from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.protocol import Protocol
+from base.logic.schedule import Schedule
 
 
 def setup_temporary_config_dir(tmp_config_dir: Path, keys_to_update: Dict[str, dict]) -> None:
@@ -42,8 +43,8 @@ def setup_temporary_config_dir(tmp_config_dir: Path, keys_to_update: Dict[str, d
             print(f"no such config-file as {config_file} in {tmp_config_dir}")
 
 
-def next_backup_timestamp() -> Dict[str, Union[str, int]]:
-    next_bu = datetime.now() + timedelta(seconds=20)
+def next_backup_timestamp(seconds_to_next_backup: int) -> Dict[str, Union[str, int]]:
+    next_bu = datetime.now() + timedelta(seconds=seconds_to_next_backup)
     return {"backup_interval": "days", "hour": next_bu.hour, "minute": next_bu.minute, "second": next_bu.second}
 
 
@@ -99,6 +100,11 @@ def mock_hardware(mocker: MockFixture, backup_hdd_mountpoint: str) -> MockCollec
     )
 
 
+def inject_shutdown_delay(seconds_to_shutdown: int, mocker: MockFixture) -> MagicMock:
+    mock: MagicMock = mocker.patch("base.logic.schedule.Schedule.seconds_to_shutdown", return_value=seconds_to_shutdown)
+    return mock
+
+
 def inject_wakeup_reason(wakeup_reason: WakeupReason, mocker: MockFixture) -> MagicMock:
     mock: MagicMock = mocker.patch("base.hardware.hardware.Hardware.get_wakeup_reason", return_value=wakeup_reason)
     return mock
@@ -126,13 +132,16 @@ def check_log_messages(captured_logs: str) -> bool:
 def test_scheduled_backup_in_test_env(
     tmp_path: path.local, mocker: MockFixture, caplog: LogCaptureFixture, wakeup_reason: WakeupReason
 ) -> None:
+    seconds_to_next_backup = 1
+    seconds_to_shutdown = 2
+    assert seconds_to_shutdown > seconds_to_next_backup  # if this fails, it will shut down before backup
     bu_env: BackupTestEnvironment = backup_environment()
     bu_env_output: BackupTestEnvironmentOutput = bu_env.create()
     temp_config_dir = Path(tmp_path) / "config"
     setup_temporary_config_dir(
         temp_config_dir,
         {
-            "schedule_backup.json": next_backup_timestamp(),
+            "schedule_backup.json": next_backup_timestamp(seconds_to_next_backup),
             "sync.json": bu_env_output.sync_config,
             "nas.json": bu_env_output.nas_config,
             "schedule_config.json": {"shutdown_delay_minutes": 2},
@@ -145,6 +154,7 @@ def test_scheduled_backup_in_test_env(
             },
         },
     )
+    inject_shutdown_delay(seconds_to_shutdown, mocker)
     inject_wakeup_reason(wakeup_reason, mocker)
     mocks = mock_hardware(mocker, bu_env_output.backup_hdd_mount_point)
     BoundConfig.set_config_base_path(temp_config_dir)

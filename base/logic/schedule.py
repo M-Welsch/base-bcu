@@ -70,9 +70,13 @@ class Schedule:
         def raise_shutdown() -> None:
             raise ShutdownInterrupt
 
-        delay = self._config.shutdown_delay_minutes * 60
-        self._shutdown_job = self._scheduler.enter(delay, 2, raise_shutdown)
+        self._shutdown_job = self._scheduler.enter(self.seconds_to_shutdown(), 2, raise_shutdown)
         # TODO: delay shutdown for 5 minutes or so on every event from webapp
+
+    def seconds_to_shutdown(self) -> int:
+        """I feel useless in production code. But in the tests - yeah - I'm super strong!"""
+        shutdown_delay_minutes: int = self._config.shutdown_delay_minutes
+        return shutdown_delay_minutes * 60
 
     def on_stop_shutdown_timer_request(self, **kwargs):  # type: ignore
         if self._shutdown_job is not None and self._shutdown_job in self._scheduler.queue:
