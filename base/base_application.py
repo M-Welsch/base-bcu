@@ -103,6 +103,7 @@ class BaSeApplication:
             LOG.info("Eventloop stopped")
             self.finalize_service()
         except Exception as e:
+            LOG.exception("")
             LOG.critical(f"Unknown error occured: {e}")
         finally:
             mailer = Mailer()
@@ -116,7 +117,8 @@ class BaSeApplication:
         wakeup_reason = self._hardware.get_wakeup_reason()
         if wakeup_reason == WakeupReason.BACKUP_NOW:
             LOG.info("Woke up for manual backup")
-            self._backup_conductor.run()
+            self._schedule.on_schedule_manual_backup(1)
+            # self._backup_conductor.run()
         elif wakeup_reason == WakeupReason.SCHEDULED_BACKUP:
             LOG.info("Woke up for scheduled backup")
         elif wakeup_reason == WakeupReason.CONFIGURATION:

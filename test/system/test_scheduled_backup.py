@@ -110,30 +110,51 @@ def inject_wakeup_reason(wakeup_reason: WakeupReason, mocker: MockFixture) -> Ma
     return mock
 
 
-def check_log_messages(captured_logs: str) -> bool:
-    def clog(text: str) -> bool:
-        return text in captured_logs
-
-    checks = {
-        "check wakeup": clog("Woke up for"),
-        "reschedule backup": clog("Scheduled next backup on"),
-        "start mainloop": clog("Starting mainloop"),
-        "start webserver": clog("Webserver started"),
-        "check backup conditions": clog("backup conditions are met"),
-        "mount datasource via smb": clog("Mounting data source via smb"),
-    }
+def check_log_messages(captured_logs: str, checks: dict) -> bool:
+    success = True
     for check, result in checks.items():
-        if not result:
+        if result not in captured_logs:
             print(f"check {check} failed!")
-    return all(checks.values())
+            success = False
+    return success
 
 
-@pytest.mark.parametrize("wakeup_reason", [WakeupReason.SCHEDULED_BACKUP])
+@pytest.mark.parametrize(
+    "wakeup_reason, logs_to_check_for",
+    [
+        (
+            WakeupReason.BACKUP_NOW,
+            {
+                "check wakeup": "Woke up for manual backup",
+                "schedule manual backup": "Scheduled user requested backup",
+                "start mainloop": "Starting mainloop",
+                "start webserver": "Webserver started",
+                "check backup conditions": "backup conditions are met",
+                "mount datasource via smb": "Mounting data source via smb",
+            },
+        ),
+        (
+            WakeupReason.SCHEDULED_BACKUP,
+            {
+                "check wakeup": "Woke up for",
+                "reschedule backup": "Scheduled next backup on",
+                "start mainloop": "Starting mainloop",
+                "start webserver": "Webserver started",
+                "check backup conditions": "backup conditions are met",
+                "mount datasource via smb": "Mounting data source via smb",
+            },
+        ),
+    ],
+)
 def test_scheduled_backup_in_test_env(
-    tmp_path: path.local, mocker: MockFixture, caplog: LogCaptureFixture, wakeup_reason: WakeupReason
+    tmp_path: path.local,
+    mocker: MockFixture,
+    caplog: LogCaptureFixture,
+    wakeup_reason: WakeupReason,
+    logs_to_check_for: dict,
 ) -> None:
     seconds_to_next_backup = 1
-    seconds_to_shutdown = 2
+    seconds_to_shutdown = 3
     assert seconds_to_shutdown > seconds_to_next_backup  # if this fails, it will shut down before backup
     bu_env: BackupTestEnvironment = backup_environment()
     bu_env_output: BackupTestEnvironmentOutput = bu_env.create()
@@ -161,7 +182,7 @@ def test_scheduled_backup_in_test_env(
     with caplog.at_level(logging.DEBUG):
         app = BaSeApplication()
         app.start()
-    assert check_log_messages(caplog.text)
+    assert check_log_messages(caplog.text, logs_to_check_for)
     assert not Path("/tmp/base_tmpshare_mntdir").is_mount()
     assert not Path("/tmp/base_tmpfs_mntdir").is_mount()
     with Verification(bu_env) as ver:
