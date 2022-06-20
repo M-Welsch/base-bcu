@@ -7,7 +7,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockerFixture
 
-import base.hardware.platform as pf
+# from base.hardware.platform import has_sbu
 from base.hardware.sbu.commands import SbuCommand, SbuCommands
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU, WakeupReason
@@ -15,7 +15,7 @@ from base.hardware.sbu.sbu import SBU, WakeupReason
 
 @pytest.fixture
 def sbu(mocker: MockerFixture) -> Generator[SBU, None, None]:
-    mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.platform_with_sbu", return_value=True)
+    mocker.patch("base.hardware.platform.has_sbu", return_value=True)
     mocker.patch("base.hardware.sbu.communicator.SbuCommunicator._get_uart_interface")
     sbu = SBU(SbuCommunicator())
     yield sbu
@@ -32,6 +32,7 @@ def sbu(mocker: MockerFixture) -> Generator[SBU, None, None]:
 )
 def test_request_wakeup_reason(sbu: SBU, mocker: MockerFixture, wr_code: str, reason: WakeupReason) -> None:
     patched_query = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.query", return_value=wr_code)
+    sbu._sbu_communicator.query = sbu._sbu_communicator._query_production  # type: ignore
     assert sbu.request_wakeup_reason() == reason
     assert patched_query.called_once_with(SbuCommands.request_wakeup_reason)
 

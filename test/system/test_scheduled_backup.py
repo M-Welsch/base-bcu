@@ -136,12 +136,28 @@ def check_log_messages(captured_logs: str, checks: dict) -> bool:
         (
             WakeupReason.SCHEDULED_BACKUP,
             {
-                "check wakeup": "Woke up for",
+                "check wakeup": "Woke up for scheduled backup",
                 "reschedule backup": "Scheduled next backup on",
                 "start mainloop": "Starting mainloop",
                 "start webserver": "Webserver started",
                 "check backup conditions": "backup conditions are met",
                 "mount datasource via smb": "Mounting data source via smb",
+            },
+        ),
+        (
+            WakeupReason.CONFIGURATION,
+            {
+                "check wakeup": "Woke up for configuration",
+                "reschedule backup": "Scheduled next backup on",
+                "start mainloop": "Starting mainloop",
+                "start webserver": "Webserver started",
+            },
+        ),
+        (WakeupReason.HEARTBEAT_TIMEOUT, {"check wakeup": "BCU heartbeat timeout occurred"}),
+        (
+            WakeupReason.NO_REASON,
+            {
+                "check wakeup": "Woke up for no specific reason",
             },
         ),
     ],
@@ -153,9 +169,12 @@ def test_scheduled_backup_in_test_env(
     wakeup_reason: WakeupReason,
     logs_to_check_for: dict,
 ) -> None:
-    seconds_to_next_backup = 1
     seconds_to_shutdown = 3
-    assert seconds_to_shutdown > seconds_to_next_backup  # if this fails, it will shut down before backup
+    if wakeup_reason == wakeup_reason.SCHEDULED_BACKUP:
+        seconds_to_next_backup = 1
+        assert seconds_to_shutdown > seconds_to_next_backup  # if this fails, it will shut down before backup
+    else:
+        seconds_to_next_backup = 60
     bu_env: BackupTestEnvironment = backup_environment()
     bu_env_output: BackupTestEnvironmentOutput = bu_env.create()
     temp_config_dir = Path(tmp_path) / "config"
@@ -187,3 +206,13 @@ def test_scheduled_backup_in_test_env(
     assert not Path("/tmp/base_tmpfs_mntdir").is_mount()
     with Verification(bu_env) as ver:
         assert ver.all_files_transferred()
+
+
+def test_interrupt_backup() -> None:
+    raise NotImplementedError
+
+
+def test_writing_to_full_backup_hdd() -> None:
+    """this case might occur if the source data turns out to be bigger than the backup hdd can take
+    in this case the base must interrupt the backup and clean some space before continuing."""
+    raise NotImplementedError
