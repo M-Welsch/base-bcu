@@ -152,7 +152,7 @@ class BaSeApplication:
         # TODO: Postpone backup
 
     def schedule_shutdown_timer(self) -> None:
-        if not self._backup_conductor.is_running:
+        if not self._backup_conductor.is_running_func():
             self._schedule.on_shutdown_requested()
 
     def finalize_service(self) -> None:
@@ -192,7 +192,7 @@ class BaSeApplication:
                 "docked": self._hardware.docked,
                 "powered": self._hardware.powered,
                 "mounted": self._hardware.mounted,
-                "backup_running": self._backup_conductor.is_running,
+                "backup_running": self._backup_conductor.is_running_func(),
                 "backup_hdd_usage": self._hardware.drive_space_used,
                 "recent_warnings_count": LoggerFactory.get_warning_count(),
                 "log_tail": LoggerFactory.get_last_lines(),

@@ -5,7 +5,7 @@ from typing import Callable, Optional
 
 from signalslot import Signal
 
-from base.common.constants import BackupDirectorySuffix, BackupProcessStep
+from base.common.constants import BackupProcessStep
 from base.common.logger import LoggerFactory
 from base.logic.backup.source import BackupSource
 from base.logic.backup.synchronisation.sync import Sync
@@ -17,10 +17,10 @@ LOG = LoggerFactory.get_logger(__name__)
 class Backup(Thread):
     terminated = Signal()
 
-    def __init__(self, on_backup_finished: Callable) -> None:
+    def __init__(self, on_backup_finished: Callable, continue_last_backup: bool = False) -> None:
         super().__init__()
         self._source = BackupSource().path
-        self._target = BackupTarget().path
+        self._target = BackupTarget(continue_last_backup).path
         self._estimated_backup_size: Optional[int] = None
         self._actual_backup_size: Optional[int] = None
         self._sync = Sync(self._target, self._source)

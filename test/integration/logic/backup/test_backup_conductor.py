@@ -167,7 +167,7 @@ class BackupKiller(Thread):
                 self.terminate_backup()
                 print("Backup terminated!")
                 break
-            sleep(0.05)
+            sleep(0.1)
         print("Backup Killer dead")
 
 
@@ -203,5 +203,42 @@ def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
         assert backup_conductor._backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix  # type: ignore
 
 
-def test_backup_abort_then_continue() -> None:
-    raise NotImplementedError
+@pytest.mark.parametrize(
+    "protocol",
+    [
+        (Protocol.SMB),
+        # (Protocol.SSH),
+    ],
+)
+@pytest.mark.skip(reason="doesn't work yet. Not important for this milestone")
+def test_backup_abort_then_continue(protocol: Protocol, caplog: LogCaptureFixture) -> None:
+    backup_environment_configuration = BackupTestEnvironmentInput(
+        protocol=protocol,
+        amount_files_in_source=2,
+        bytesize_of_each_sourcefile=1024 * 1024 * 1024,
+        use_virtual_drive_for_sink=False,
+        amount_old_backups=0,
+        bytesize_of_each_old_backup=100000,
+        amount_preexisting_source_files_in_latest_backup=0,
+        no_teardown=False,
+    )
+
+    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
+        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
+        patch_configs_for_backup_conductor_tests(backup_env)
+        backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
+        backup_killer = BackupKiller(backup_conductor.is_running_func, backup_conductor.on_backup_abort)
+        with caplog.at_level(logging.INFO):
+            backup_killer.start()
+            backup_conductor.run()
+            backup_conductor._backup.join()  # type: ignore
+        assert "Backup terminated" in caplog.text
+        assert backup_conductor._backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix  # type: ignore
+
+        sleep(2)
+
+        with caplog.at_level(logging.INFO):
+            backup_conductor.continue_aborted_backup()
+        assert backup_conductor._backup.target.suffix == BackupDirectorySuffix.finished.suffix  # type: ignore
+        with Verification(virtual_backup_env) as veri:
+            veri.all_files_transferred()

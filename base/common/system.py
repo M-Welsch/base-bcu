@@ -69,7 +69,9 @@ class SmbShareMount:
 
     @staticmethod
     def run_command(command: List[str]) -> Popen:
-        return Popen(command, bufsize=0, stdout=PIPE, stderr=PIPE)
+        p = Popen(command, bufsize=0, stdout=PIPE, stderr=PIPE)
+        p.wait()
+        return p
 
     @staticmethod
     def _parse_process_output(process: Popen) -> None:
