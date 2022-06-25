@@ -12,6 +12,8 @@ from test.utils.backup_environment.virtual_backup_environment import (
 )
 from test.utils.patch_config import patch_config, patch_multiple_configs
 from test.utils.utils import derive_mock_string
+from threading import Thread
+from time import sleep
 from typing import Callable, Generator, List, Tuple, Type
 
 import pytest
@@ -132,8 +134,11 @@ def test_backup_conductor_error_cases(
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
         no_teardown=False,
+        automount_data_source=False,
+        automount_virtual_drive=False,
     )
     with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
+
         backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
         mocking_procedure(mocker, backup_env)
         patch_configs_for_backup_conductor_tests(backup_env)
@@ -143,6 +148,57 @@ def test_backup_conductor_error_cases(
                 backup_conductor.run()
                 backup_conductor._backup.join()  # type: ignore
         assert log_message in caplog.text
+
+
+class BackupKiller(Thread):
+    def __init__(self, is_backup_running: bool, terminate_backup: Callable):
+        super().__init__()
+        self.is_backup_running: bool = is_backup_running
+        self.terminate_backup: Callable = terminate_backup
+
+    def run(self) -> None:
+        maximum_trials = 100
+        while maximum_trials:
+            maximum_trials -= 1
+            if self.is_backup_running:
+                print("Backup is running")
+                sleep(0.1)
+                self.terminate_backup()
+                print("Backup terminated!")
+                break
+            sleep(0.1)
+        print("Backup Killer dead")
+
+
+@pytest.mark.parametrize(
+    "protocol",
+    [
+        (Protocol.SMB),
+        (Protocol.SSH),
+    ],
+)
+def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
+    backup_environment_configuration = BackupTestEnvironmentInput(
+        protocol=protocol,
+        amount_files_in_source=10,
+        bytesize_of_each_sourcefile=1024 * 1024 * 1024,
+        use_virtual_drive_for_sink=True,
+        amount_old_backups=0,
+        bytesize_of_each_old_backup=100000,
+        amount_preexisting_source_files_in_latest_backup=0,
+        no_teardown=False,
+    )
+
+    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
+        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
+        patch_configs_for_backup_conductor_tests(backup_env)
+        backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
+        backup_killer = BackupKiller(backup_conductor.is_running, backup_conductor.on_backup_abort)
+        with caplog.at_level(logging.WARNING):
+            backup_killer.start()
+            backup_conductor.run()
+            backup_conductor._backup.join()  # type: ignore
+        # assert log_message in caplog.text
 
 
 """
