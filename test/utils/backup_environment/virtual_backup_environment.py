@@ -49,15 +49,16 @@ def create_old_backups(base_path: Path, amount: int, respective_file_size_bytes:
 
 
 def create_file_with_random_data(path: Path, size_bytes: int) -> None:
-    # ten_mb = 10*1024*1024
-    # if size_bytes > ten_mb:
-    #     create_large_file_with_zeros(path, size_megabytes=ceil(size_bytes/ten_mb))
-    with open(path, "wb") as fout:
-        fout.write(os.urandom(size_bytes))
+    ten_mb = 10 * 1024 * 1024
+    if size_bytes > ten_mb:
+        create_large_file_with_zeros(path, size_megabytes=ceil(size_bytes / ten_mb))
+    else:
+        with open(path, "wb") as fout:
+            fout.write(os.urandom(size_bytes))
 
 
 def create_large_file_with_zeros(path: Path, size_megabytes: int) -> None:
-    subprocess.Popen(f'dd if="/dev/zero of={path.as_posix()} count={1024*size_megabytes} bs=1024')
+    subprocess.Popen(f"dd if=/dev/zero of={path.as_posix()} count={1024*size_megabytes} bs=1024".split()).wait()
 
 
 def prepare_source_sink_dirs(

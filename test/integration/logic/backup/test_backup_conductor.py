@@ -22,6 +22,7 @@ from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
 import base.logic.backup.backup_conductor
+from base.common.constants import BackupDirectorySuffix
 from base.common.exceptions import BackupDeletionError, BackupSizeRetrievalError, InvalidBackupSource, NetworkError
 from base.common.system import System
 from base.hardware.drive import Drive
@@ -151,22 +152,22 @@ def test_backup_conductor_error_cases(
 
 
 class BackupKiller(Thread):
-    def __init__(self, is_backup_running: bool, terminate_backup: Callable):
+    def __init__(self, is_backup_running: Callable, terminate_backup: Callable):
         super().__init__()
-        self.is_backup_running: bool = is_backup_running
+        self.is_backup_running: Callable = is_backup_running
         self.terminate_backup: Callable = terminate_backup
 
     def run(self) -> None:
         maximum_trials = 100
         while maximum_trials:
             maximum_trials -= 1
-            if self.is_backup_running:
+            if self.is_backup_running():
                 print("Backup is running")
-                sleep(0.1)
+                sleep(0.05)
                 self.terminate_backup()
                 print("Backup terminated!")
                 break
-            sleep(0.1)
+            sleep(0.05)
         print("Backup Killer dead")
 
 
@@ -180,9 +181,9 @@ class BackupKiller(Thread):
 def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
     backup_environment_configuration = BackupTestEnvironmentInput(
         protocol=protocol,
-        amount_files_in_source=10,
+        amount_files_in_source=2,
         bytesize_of_each_sourcefile=1024 * 1024 * 1024,
-        use_virtual_drive_for_sink=True,
+        use_virtual_drive_for_sink=False,
         amount_old_backups=0,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
@@ -193,28 +194,14 @@ def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
         backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
         patch_configs_for_backup_conductor_tests(backup_env)
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
-        backup_killer = BackupKiller(backup_conductor.is_running, backup_conductor.on_backup_abort)
-        with caplog.at_level(logging.WARNING):
+        backup_killer = BackupKiller(backup_conductor.is_running_func, backup_conductor.on_backup_abort)
+        with caplog.at_level(logging.INFO):
             backup_killer.start()
             backup_conductor.run()
             backup_conductor._backup.join()  # type: ignore
-        # assert log_message in caplog.text
+        assert "Backup terminated" in caplog.text
+        assert backup_conductor._backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix  # type: ignore
 
 
-"""
-Possible Error Conditions:
-- NetworkError by network_share (_attach_backup_datasource->network_share.mount_datasource_via_smb()
-  - Network share unavailable
-  - if NAS IP is errant
-- DockingError
-  - docking timeout exceeded
-- BackupPartitionError
-  - Backup HDD not found
-- MountError
-  - Backup HDD cannot be mounted
-- InvalidBackupSource
-  - backup source is not within NAS smb share 
-- UnmountError
-- DockingError (while undocking)
-- NetworkError (during unmount NAS smb share)
-"""
+def test_backup_abort_then_continue() -> None:
+    raise NotImplementedError

@@ -42,7 +42,7 @@ class System:
         def _remove_heading_from_df_output(df_output: IO[bytes]) -> int:
             return int(list(df_output)[-1].decode().strip())
 
-        command: List[str] = ["df", "--output=avail", backup_target.as_posix()]
+        command: List[str] = ["df", "--output=avail", backup_target.as_posix(), "-B 1"]
         out = Popen(command, stdout=PIPE, stderr=PIPE)
         out.wait()
         if out.stderr is not None:

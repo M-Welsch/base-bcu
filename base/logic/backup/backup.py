@@ -26,6 +26,7 @@ class Backup(Thread):
         self._sync = Sync(self._target, self._source)
         self._on_backup_finished = on_backup_finished
         self.terminated.connect(self._on_backup_finished)
+        self.aborted_flag = False
 
     @property
     def estimated_backup_size(self) -> Optional[int]:
@@ -67,4 +68,5 @@ class Backup(Thread):
 
     def terminate(self) -> None:
         if self._sync is not None:
+            self.aborted_flag = True
             self._sync.terminate()

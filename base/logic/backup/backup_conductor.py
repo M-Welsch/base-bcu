@@ -31,6 +31,7 @@ class BackupConductor:
     reschedule_request = Signal()
     stop_shutdown_timer_request = Signal()
     backup_finished_notification = Signal()
+    backup_aborted_notification = Signal()
 
     def __init__(self, is_maintenance_mode_on: Callable) -> None:
         self._is_maintenance_mode_on = is_maintenance_mode_on
@@ -52,6 +53,9 @@ class BackupConductor:
 
     @property
     def is_running(self) -> bool:
+        return self._backup is not None and self._backup.running
+
+    def is_running_func(self) -> bool:
         return self._backup is not None and self._backup.running
 
     def run(self) -> None:
@@ -87,7 +91,8 @@ class BackupConductor:
 
     def on_backup_finished(self, **kwargs):  # type: ignore
         LOG.info("Backup terminated")
-        self._mark_backup_target_as_finished()
+        if not self._backup.aborted_flag:
+            self._mark_backup_target_as_finished()
         try:
             self._return_to_default_state()
         except DockingError as e:
