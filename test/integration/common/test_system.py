@@ -1,7 +1,7 @@
 from getpass import getuser
 from pathlib import Path
 from platform import machine
-from subprocess import PIPE, Popen
+from subprocess import PIPE, Popen, run
 from test.utils.backup_environment.virtual_backup_environment import (  # fixture, don't remove
     prepare_source_sink_dirs,
     temp_source_sink_dirs,
@@ -108,3 +108,9 @@ def get_bytesize_of_directories(directory: Path, include_top_dir: bool = False) 
             if not current_path == directory or include_top_dir:
                 sizes[current_path] = int(size_of_current_dir)
     return sizes
+
+
+def test_free_space() -> None:
+    free_space = System.free_space(Path.cwd())
+    assert isinstance(free_space, int)
+    assert free_space > 0
