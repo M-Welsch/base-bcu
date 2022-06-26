@@ -86,7 +86,7 @@ class Schedule:
 
     def current_shutdown_time_timestring(self) -> str:
         if self._shutdown_job is not None:
-            return datetime.utcfromtimestamp(self._shutdown_job.time).strftime("%D.%m.%Y %H:%M")
+            return datetime.utcfromtimestamp(self._shutdown_job.time).strftime("%d.%m.%Y %H:%M")
         else:
             return "unknown"
 

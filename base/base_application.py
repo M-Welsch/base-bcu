@@ -58,6 +58,7 @@ class MaintenanceMode:
 class BaSeApplication:
     button_0_pressed = Signal()
     button_1_pressed = Signal()
+    mainloop_counter = 0
 
     def __init__(self) -> None:
         self._config: Config = get_config("base.json")
@@ -88,6 +89,10 @@ class BaSeApplication:
             LOG.critical(f"Unknown error occured: {e}")
             self._on_go_to_idle_state()
         eventloop.call_later(1, self._mainloop)
+        self.mainloop_counter += 1
+        if self.mainloop_counter == 60:
+            self.mainloop_counter = 0
+            LOG.info(f"schedule queue: {self._schedule.queue}")
 
     def start(self) -> None:
         LOG.info("Logger and Config started. Starting BaSe Application")

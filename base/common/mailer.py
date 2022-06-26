@@ -17,7 +17,7 @@ LOG = LoggerFactory.get_logger(__name__)
 class Mailer:
     def __init__(self) -> None:
         self._config: dict = get_config("notification.json").email
-        self._critical_messages = LoggerFactory.get_critical_messages()
+        self._critical_messages = list(LoggerFactory.get_critical_messages())
 
     def send_summary(self) -> None:
         receivers = self._config["receivers"]
