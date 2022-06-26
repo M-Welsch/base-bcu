@@ -8,7 +8,7 @@ echo_info () {
 }
 
 install_apt_packages () {
-  packages_to_install="python3 python3-pip"
+  packages_to_install="python3 python3-pip libxml2-dev libxslt1-dev"
   echo_info "installing packages that are required for testing: '$packages_to_install'"
   sudo apt update
   sudo apt install $packages_to_install
