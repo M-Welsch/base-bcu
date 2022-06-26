@@ -1,4 +1,5 @@
 import sched
+from datetime import datetime
 from time import sleep, time
 from typing import Any, List, Optional
 
@@ -82,6 +83,12 @@ class Schedule:
 
         self._shutdown_job = self._scheduler.enter(self.seconds_to_shutdown(), 2, raise_shutdown)
         # TODO: delay shutdown for 5 minutes or so on every event from webapp
+
+    def current_shutdown_time_timestring(self) -> str:
+        if self._shutdown_job is not None:
+            return datetime.utcfromtimestamp(self._shutdown_job.time).strftime("%D.%m.%Y %H:%M")
+        else:
+            return "unknown"
 
     def seconds_to_shutdown(self) -> int:
         """I feel useless in production code. But in the tests - yeah - I'm super strong!"""

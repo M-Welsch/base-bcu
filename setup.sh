@@ -7,6 +7,13 @@ echo_info () {
   echo "${YELLOW}$MESSAGE${NORMAL}"
 }
 
+echo_important () {
+  NORMAL='\033[0;39m'
+  RED='\033[1;31m'
+  MESSAGE="$1"
+  echo "${RED}$MESSAGE${NORMAL}"
+}
+
 install_apt_packages () {
   packages_to_install="python3 python3-pip libxml2-dev libxslt1-dev"
   echo_info "installing packages that are required for testing: '$packages_to_install'"
@@ -78,7 +85,7 @@ Description=Backup Server's Backup Control Unit
 
 [Service]
 Type=simple
-User=root
+User=base
 WorkingDirectory=/home/base/base-bcu
 ExecStart=python3 base
 
@@ -180,6 +187,13 @@ restart_services () {
   done
 }
 
+create_mail_credentials_file_template () {
+  email_cred_file="base/config/.email_credentials"
+  echo "user=<login data to your email provider>
+password=<valid password or better app-password>" > $email_cred_file
+  echo_important "put your email credentials in $email_cred_file and set its permissions to 404 - don't worry, BaSe is smart enough to find it anyway ;)"
+}
+
 install_packages
 create_directories
 create_aliases
@@ -187,3 +201,4 @@ create_files
 enable_access_to_hardware
 program_sbu
 restart_services
+create_mail_credentials_file_template

@@ -135,8 +135,8 @@ class BaSeApplication:
     def _on_go_to_idle_state(self, **kwargs):  # type: ignore
         self._schedule.on_reschedule_backup()
         if self._config.shutdown_between_backups:
-            LOG.info("Going to Idle State, starting sleep timer")
             self.schedule_shutdown_timer()
+            LOG.info(f"Going to Idle State, sleep timer set to {self._schedule.current_shutdown_time_timestring()}")
         else:
             LOG.info("Going to Idle State, staying awake (no shutdown timer)")
 

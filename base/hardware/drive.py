@@ -68,7 +68,7 @@ class Drive:
                 self._call_mount_command()
                 return
             except MountError as e:
-                LOG.info(
+                LOG.debug(
                     f"Couldn't mount BackupHDD. "
                     f"Waiting for {self._config.backup_hdd_mount_waiting_secs}s and try again. Error: {e}"
                 )
@@ -87,7 +87,7 @@ class Drive:
                 self._call_unmount_command()
                 return
             except UnmountError as e:
-                LOG.info(
+                LOG.debug(
                     f"Couldn't unmount BackupHDD. "
                     f"Waiting for {self._config.backup_hdd_unmount_waiting_secs}s and try again. Error: {e}"
                 )
