@@ -61,7 +61,8 @@ class Backup(Thread):
         self._sync.update_target(self._target)
         with self._sync as output_generator:
             for status in output_generator:
-                LOG.debug(str(status))
+                # LOG.debug(str(status))  # hotfix issue 54
+                print(str(status))  # Todo: Capture important info somehow
             LOG.info("Backup finished!")
         self.terminated.emit()
         self.terminated.disconnect(self._on_backup_finished)

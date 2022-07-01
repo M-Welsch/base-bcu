@@ -31,6 +31,7 @@ class Mailer:
             server.ehlo()
             server.login(sender_email, password)
             server.sendmail(sender_email, receivers, message.as_string())
+            LOG.info("Email sent")
         except (
             smtplib.SMTPAuthenticationError,
             smtplib.SMTPServerDisconnected,
