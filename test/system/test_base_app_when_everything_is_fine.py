@@ -1,7 +1,6 @@
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from pathlib import Path
 from shutil import copytree
 from test.utils.backup_environment.virtual_backup_environment import (
@@ -10,7 +9,8 @@ from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironmentOutput,
     Verification,
 )
-from typing import Dict, Union
+from test.utils.patch_config import next_backup_timestamp
+from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -18,16 +18,10 @@ from _pytest.logging import LogCaptureFixture
 from py import path
 from pytest_mock import MockFixture
 
-import base.hardware.mechanics
 from base.base_application import BaSeApplication
 from base.common.config import BoundConfig
-from base.hardware.drive import Drive
-from base.hardware.hardware import Hardware
-from base.hardware.mechanics import Mechanics
-from base.hardware.power import Power
 from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.protocol import Protocol
-from base.logic.schedule import Schedule
 
 
 def setup_temporary_config_dir(tmp_config_dir: Path, keys_to_update: Dict[str, dict]) -> None:
@@ -41,21 +35,6 @@ def setup_temporary_config_dir(tmp_config_dir: Path, keys_to_update: Dict[str, d
                 config_file.write(json.dumps(config_content))
         except FileNotFoundError:
             print(f"no such config-file as {config_file} in {tmp_config_dir}")
-
-
-def next_backup_timestamp(seconds_to_next_backup: int) -> Dict[str, Union[str, int]]:
-    next_bu = datetime.now() + timedelta(seconds=seconds_to_next_backup)
-    return {"backup_interval": "days", "hour": next_bu.hour, "minute": next_bu.minute, "second": next_bu.second}
-
-
-def next_backup_timestamp_() -> Dict[str, Union[str, int]]:
-    def next_full_minute_after_x_seconds(x: int) -> datetime:
-        afterxseconds = datetime.now() + timedelta(seconds=x)
-        return afterxseconds.replace(second=0) + timedelta(minutes=1)
-
-    print(f"now is: {datetime.now()}")
-    next_safe_timestamp = next_full_minute_after_x_seconds(15)
-    return {"backup_interval": "days", "hour": next_safe_timestamp.hour, "minute": next_safe_timestamp.minute}
 
 
 def backup_environment() -> BackupTestEnvironment:
@@ -206,13 +185,3 @@ def test_scheduled_backup_in_test_env(
     assert not Path("/tmp/base_tmpfs_mntdir").is_mount()
     with Verification(bu_env) as ver:
         assert ver.all_files_transferred()
-
-
-def test_interrupt_backup() -> None:
-    raise NotImplementedError
-
-
-def test_writing_to_full_backup_hdd() -> None:
-    """this case might occur if the source data turns out to be bigger than the backup hdd can take
-    in this case the base must interrupt the backup and clean some space before continuing."""
-    raise NotImplementedError

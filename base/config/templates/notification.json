@@ -1,0 +1,14 @@
+{
+    "email": {
+        "type": "dict",
+        "receivers": {
+            "type": "list"
+        },
+        "smtp_port": {
+            "type": "int"
+        },
+        "smtp_server": {
+            "type": "str"
+        }
+    }
+}

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from getpass import getuser
+from math import ceil
 from pathlib import Path
 from shutil import copy, rmtree
 from subprocess import PIPE, Popen
@@ -47,8 +49,16 @@ def create_old_backups(base_path: Path, amount: int, respective_file_size_bytes:
 
 
 def create_file_with_random_data(path: Path, size_bytes: int) -> None:
-    with open(path, "wb") as fout:
-        fout.write(os.urandom(size_bytes))
+    ten_mb = 10 * 1024 * 1024
+    if size_bytes > ten_mb:
+        create_large_file_with_zeros(path, size_megabytes=ceil(size_bytes / ten_mb))
+    else:
+        with open(path, "wb") as fout:
+            fout.write(os.urandom(size_bytes))
+
+
+def create_large_file_with_zeros(path: Path, size_megabytes: int) -> None:
+    subprocess.Popen(f"dd if=/dev/zero of={path.as_posix()} count={1024*size_megabytes} bs=1024".split()).wait()
 
 
 def prepare_source_sink_dirs(
@@ -270,19 +280,28 @@ class BackupTestEnvironment:
         if self._configuration.protocol == Protocol.SMB:
             self.unmount_smb()
 
+    def is_everything_necessary_mounted(self) -> bool:
+        all_mounted = self._virtual_hard_drive.mount_point.is_mount()
+        if self._configuration.protocol == Protocol.SMB:
+            all_mounted &= SMB_MOUNTPOINT.is_mount()
+        return all_mounted
+
 
 class Verification:
     def __init__(self, backup_test_environment: BackupTestEnvironment):
         self._backup_test_environment = backup_test_environment
+        self._have_to_mount = not self._backup_test_environment.is_everything_necessary_mounted()
 
     def __enter__(self) -> Verification:
-        self._backup_test_environment.mount_all()
+        if self._have_to_mount:
+            self._backup_test_environment.mount_all()
         return self
 
     def __exit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
     ) -> None:
-        self._backup_test_environment.unmount_all()
+        if self._have_to_mount:
+            self._backup_test_environment.unmount_all()
 
     def all_files_transferred(self) -> bool:
         files_in_source = [file.stem for file in self._backup_test_environment.source.iterdir()]

@@ -2,13 +2,22 @@ from configparser import ConfigParser, ParsingError
 from pathlib import Path
 
 from base.common.config import get_config
-from base.common.exceptions import NasSmbConfError
+from base.common.exceptions import NasSmbConfError, RemoteCommandError
 from base.common.ssh_interface import SSHInterface
 
 
 class Nas:
     def __init__(self) -> None:
         self._config = get_config("nas.json")
+
+    def reachable(self) -> bool:
+        reachable = True
+        try:
+            with SSHInterface() as sshi:
+                sshi.connect(self._config.ssh_host, self._config.ssh_user)
+        except RemoteCommandError:
+            reachable = False
+        return reachable
 
     def root_of_share(self, share_name: str = "Backup") -> Path:
         with SSHInterface() as sshi:

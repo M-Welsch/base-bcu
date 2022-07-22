@@ -5,7 +5,7 @@ from typing import Callable, Optional
 
 from signalslot import Signal
 
-from base.common.constants import BackupDirectorySuffix, BackupProcessStep
+from base.common.constants import BackupProcessStep
 from base.common.logger import LoggerFactory
 from base.logic.backup.source import BackupSource
 from base.logic.backup.synchronisation.sync import Sync
@@ -17,15 +17,16 @@ LOG = LoggerFactory.get_logger(__name__)
 class Backup(Thread):
     terminated = Signal()
 
-    def __init__(self, on_backup_finished: Callable) -> None:
+    def __init__(self, on_backup_finished: Callable, continue_last_backup: bool = False) -> None:
         super().__init__()
         self._source = BackupSource().path
-        self._target = BackupTarget().path
+        self._target = BackupTarget(continue_last_backup).path
         self._estimated_backup_size: Optional[int] = None
         self._actual_backup_size: Optional[int] = None
         self._sync = Sync(self._target, self._source)
         self._on_backup_finished = on_backup_finished
         self.terminated.connect(self._on_backup_finished)
+        self.aborted_flag = False
 
     @property
     def estimated_backup_size(self) -> Optional[int]:
@@ -60,11 +61,13 @@ class Backup(Thread):
         self._sync.update_target(self._target)
         with self._sync as output_generator:
             for status in output_generator:
-                LOG.debug(str(status))
+                # LOG.debug(str(status))  # hotfix issue 54
+                print(str(status))  # Todo: Capture important info somehow
             LOG.info("Backup finished!")
         self.terminated.emit()
         self.terminated.disconnect(self._on_backup_finished)
 
     def terminate(self) -> None:
         if self._sync is not None:
+            self.aborted_flag = True
             self._sync.terminate()

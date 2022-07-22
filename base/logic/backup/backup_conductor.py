@@ -30,6 +30,7 @@ class BackupConductor:
     reschedule_request = Signal()
     stop_shutdown_timer_request = Signal()
     backup_finished_notification = Signal()
+    backup_aborted_notification = Signal()
 
     def __init__(self, is_maintenance_mode_on: Callable) -> None:
         self._is_maintenance_mode_on = is_maintenance_mode_on
@@ -46,15 +47,19 @@ class BackupConductor:
 
     @property
     def conditions_met(self) -> bool:
-        LOG.debug(f"Backup is {'running' if self.is_running else 'not running'} yet")
-        return not self._is_maintenance_mode_on() and not self.is_running
+        LOG.debug(f"Backup is {'running' if self.is_running_func() else 'not running'} yet")
+        return not self._is_maintenance_mode_on() and not self.is_running_func() and self.source_reachable
 
     @property
-    def is_running(self) -> bool:
+    def source_reachable(self) -> bool:
+        return self._nas.reachable()
+
+    def is_running_func(self) -> bool:
+        """please don't make me a property. Only so I can be passed as a callable!"""
         return self._backup is not None and self._backup.running
 
     def run(self) -> None:
-        LOG.debug("Received backup request...")
+        LOG.info("Received new backup request...")
         if self.conditions_met:
             LOG.debug("...and backup conditions are met!")
             self.stop_shutdown_timer_request.emit()
@@ -66,7 +71,25 @@ class BackupConductor:
             self._backup_preparator.prepare()
             self._backup.start()
         else:
-            LOG.debug("...but backup conditions are not met.")
+            LOG.info("...but backup conditions are not met.")
+            # Todo: reschedule Backup now?
+
+    def continue_aborted_backup(self) -> None:
+        LOG.info("Received backup continuation request...")
+        if self._backup is None:
+            LOG.info("Received backup continuation request, however no backup was aborted recently. Starting new one")
+            self.run()
+        else:
+            if self.conditions_met:
+                LOG.debug("...and backup conditions are met!")
+                self.stop_shutdown_timer_request.emit()
+                self._attach_backup_datasource()
+                self._attach_backup_target()
+                del self._backup
+                self._backup = Backup(self.on_backup_finished, continue_last_backup=True)
+                self._backup.start()
+            else:
+                LOG.info("...but backup conditions are not met.")
 
     def _attach_backup_datasource(self) -> None:
         if get_config("sync.json").protocol == "smb":
@@ -86,7 +109,8 @@ class BackupConductor:
 
     def on_backup_finished(self, **kwargs):  # type: ignore
         LOG.info("Backup terminated")
-        self._mark_backup_target_as_finished()
+        if not self._backup.aborted_flag:
+            self._mark_backup_target_as_finished()
         try:
             self._return_to_default_state()
         except DockingError as e:
