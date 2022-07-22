@@ -105,9 +105,18 @@ class BaSeApplication:
         except Exception as e:
             LOG.exception("")
             LOG.critical(f"Unknown error occured: {e}")
+
         finally:
             mailer = Mailer()
             mailer.send_summary()
+            self._wait_if_critical_error()
+
+    @staticmethod
+    def _wait_if_critical_error():
+        """ in case of a critical error we wait a little before we shut down.
+            If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
+        if bool(LoggerFactory.get_critical_messages()):
+            sleep(5*60)
 
     def _prepare_service(self) -> None:
         self._process_wakeup_reason()

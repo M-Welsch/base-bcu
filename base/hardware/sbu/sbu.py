@@ -17,11 +17,11 @@ _sbu_measurement_data_conversion_map: Dict[str, Callable[[float], float]] = {
 
 
 class WakeupReason(Enum):
-    BACKUP_NOW = "WR_BACKUP"
-    SCHEDULED_BACKUP = "WR_SCHEDULED_BACKUP"
-    CONFIGURATION = "WR_CONFIG"
-    HEARTBEAT_TIMEOUT = "WR_HB_TIMEOUT"
-    NO_REASON = ""
+    BACKUP_NOW = "BACKUP"
+    SCHEDULED_BACKUP = "SCHEDULED"
+    CONFIGURATION = "CONFIG"
+    HEARTBEAT_TIMEOUT = "HEARTBEAT"
+    NO_REASON = "NO_REASON"
 
 
 class SBU:
@@ -33,8 +33,14 @@ class SBU:
         return self._sbu_communicator.available
 
     def request_wakeup_reason(self) -> WakeupReason:
-        wakeup_reason_code = self._sbu_communicator.query(SbuCommands.request_wakeup_reason)
-        return WakeupReason(wakeup_reason_code)
+        wakeup_reason_code = "not obtained yet"
+        try:
+            wakeup_reason_code = self._sbu_communicator.query(SbuCommands.request_wakeup_reason)
+            wakeup_raeson = WakeupReason(wakeup_reason_code)
+        except ValueError:
+            wakeup_raeson = WakeupReason.NO_REASON
+            LOG.error(f"couldn't find out wakeup reason. Code was {wakeup_reason_code}. Defaulting to {wakeup_raeson}")
+        return wakeup_raeson
 
     def set_wakeup_reason(self, reason: str) -> None:
         self._sbu_communicator.write(SbuCommands.set_wakeup_reason, payload=reason)
