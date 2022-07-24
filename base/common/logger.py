@@ -27,8 +27,8 @@ class BaseConsoleHandler(logging.StreamHandler):
     def __init__(self, parent: logging.Logger, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(levelname)s: %(name)s: %(message)s")
-        formatter.datefmt = "%m.%d.%Y %H:%M:%S"
+        formatter = logging.Formatter("%(asctime)s %(levelname)s: %(name)s: %(message)s")
+        formatter.datefmt = "%d.%m.%Y %H:%M:%S"
         self.setFormatter(formatter)
         parent.addHandler(self)
 
@@ -39,7 +39,7 @@ class BaseFileHandler(logging.FileHandler):
         self._log_file_path = log_file_path
         self.setLevel(log_level)
         formatter = logging.Formatter("%(asctime)s %(levelname)s: %(name)s: %(message)s")
-        formatter.datefmt = "%m.%d.%Y %H:%M:%S"
+        formatter.datefmt = "%d.%m.%Y %H:%M:%S"
         self.setFormatter(formatter)
         parent.addHandler(self)
 

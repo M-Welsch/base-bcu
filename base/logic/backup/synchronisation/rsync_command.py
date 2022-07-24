@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 from base.common.config import get_config
 
@@ -12,6 +13,29 @@ class RsyncCommand:
         cmd = "rsync -avH --outbuf=N --info=progress2 --stats --delete"  # stats are important for the bu increment size
         cmd += " " + self._protocol_specific(local_target_location, source_location)
         cmd += " " + self._dry_run(dry)
+        return cmd
+
+    def compose_list(self, local_target_location: Path, source_location: Path, dry: bool = False) -> List[str]:
+        if self._sync_config.protocol == "smb":
+            cmd = [
+                "rsync",
+                "-aH",
+                "--stats",
+                "--delete",
+                f"{source_location.as_posix()}/.",
+                local_target_location.as_posix(),
+            ]
+        else:
+            cmd = [
+                "rsync",
+                "-aH",
+                "--stats",
+                "--delete",
+                f"{self._nas_config.ssh_user}@{self._nas_config.ssh_host}:{source_location.as_posix()}/.",
+                local_target_location.as_posix(),
+            ]
+        if dry:
+            cmd.append("--dry-run")
         return cmd
 
     def _protocol_specific(self, local_target_location: Path, source_location: Path) -> str:

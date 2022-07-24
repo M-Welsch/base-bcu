@@ -58,6 +58,7 @@ class MaintenanceMode:
 class BaSeApplication:
     button_0_pressed = Signal()
     button_1_pressed = Signal()
+    mainloop_counter = 0
 
     def __init__(self) -> None:
         self._config: Config = get_config("base.json")
@@ -88,6 +89,10 @@ class BaSeApplication:
             LOG.critical(f"Unknown error occured: {e}")
             self._on_go_to_idle_state()
         eventloop.call_later(1, self._mainloop)
+        self.mainloop_counter += 1
+        if self.mainloop_counter == 60:
+            self.mainloop_counter = 0
+            LOG.info(f"schedule queue: {self._schedule.queue}")
 
     def start(self) -> None:
         LOG.info("Logger and Config started. Starting BaSe Application")
@@ -103,10 +108,20 @@ class BaSeApplication:
             LOG.info("Eventloop stopped")
             self.finalize_service()
         except Exception as e:
+            LOG.exception("")
             LOG.critical(f"Unknown error occured: {e}")
+
         finally:
             mailer = Mailer()
             mailer.send_summary()
+            self._wait_if_critical_error()
+
+    @staticmethod
+    def _wait_if_critical_error():
+        """ in case of a critical error we wait a little before we shut down.
+            If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
+        if bool(LoggerFactory.get_critical_messages()):
+            sleep(5*60)
 
     def _prepare_service(self) -> None:
         self._process_wakeup_reason()
@@ -116,7 +131,8 @@ class BaSeApplication:
         wakeup_reason = self._hardware.get_wakeup_reason()
         if wakeup_reason == WakeupReason.BACKUP_NOW:
             LOG.info("Woke up for manual backup")
-            self._backup_conductor.run()
+            self._schedule.on_schedule_manual_backup(1)
+            # self._backup_conductor.run()
         elif wakeup_reason == WakeupReason.SCHEDULED_BACKUP:
             LOG.info("Woke up for scheduled backup")
         elif wakeup_reason == WakeupReason.CONFIGURATION:
@@ -133,8 +149,8 @@ class BaSeApplication:
     def _on_go_to_idle_state(self, **kwargs):  # type: ignore
         self._schedule.on_reschedule_backup()
         if self._config.shutdown_between_backups:
-            LOG.info("Going to Idle State, starting sleep timer")
             self.schedule_shutdown_timer()
+            LOG.info(f"Going to Idle State, sleep timer set to {self._schedule.current_shutdown_time_timestring()}")
         else:
             LOG.info("Going to Idle State, staying awake (no shutdown timer)")
 
@@ -150,7 +166,7 @@ class BaSeApplication:
         # TODO: Postpone backup
 
     def schedule_shutdown_timer(self) -> None:
-        if not self._backup_conductor.is_running:
+        if not self._backup_conductor.is_running_func():
             self._schedule.on_shutdown_requested()
 
     def finalize_service(self) -> None:
@@ -190,7 +206,7 @@ class BaSeApplication:
                 "docked": self._hardware.docked,
                 "powered": self._hardware.powered,
                 "mounted": self._hardware.mounted,
-                "backup_running": self._backup_conductor.is_running,
+                "backup_running": self._backup_conductor.is_running_func(),
                 "backup_hdd_usage": self._hardware.drive_space_used,
                 "recent_warnings_count": LoggerFactory.get_warning_count(),
                 "log_tail": LoggerFactory.get_last_lines(),

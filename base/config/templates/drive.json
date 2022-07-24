@@ -4,7 +4,7 @@
     },
     "backup_hdd_spinup_timeout": {
         "type": "float",
-        "range": {"min": 5, "max": 60}
+        "range": {"min": 1, "max": 60}
     },
     "backup_hdd_mount_trials": {
         "type": "int",

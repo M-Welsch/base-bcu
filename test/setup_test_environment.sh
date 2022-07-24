@@ -37,7 +37,7 @@ add_entry_to_file () {
 }
 
 configure_samba () {
-  echo_info "Add linux-user 'base' and smb-user 'base' in order to simulate a backup from a samba-source"
+  echo_info "Add linux-user 'base' and smb-user 'base' in order to simulate a backup from a samba-source. Please enter a password you can remember"
   sudo useradd base
   sudo smbpasswd -a base
   echo_info "Adding entry to smb.conf"

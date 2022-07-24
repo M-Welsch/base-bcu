@@ -39,7 +39,7 @@ def test_run_pending(schedule: Schedule, mocker: MockFixture) -> None:
 def test_on_schedule_changed(
     schedule: Schedule, mocker: MockFixture, backup_job: Optional[str], schedule_cancelled: bool
 ) -> None:
-    schedule._backup_job = backup_job  # type: ignore
+    schedule._scheduled_backup_job = backup_job  # type: ignore
 
     mocked_schedule_reload = mocker.patch("base.common.config.bound.BoundConfig.reload")
     mocked_schedule_cancel = mocker.patch("sched.scheduler.cancel")
@@ -67,7 +67,7 @@ def test_on_reschedule_backup(schedule: Schedule, mocker: MockFixture) -> None:
     assert mocked_next_backup.called_with(schedule._schedule)
     assert mocked_next_backup.call_count == 2
     assert mocked_enterabs.called_once_with(timestamp, 2, schedule._invoke_backup)
-    assert schedule._backup_job == job
+    assert schedule._scheduled_backup_job == job
 
 
 @pytest.mark.parametrize(

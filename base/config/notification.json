@@ -1,0 +1,7 @@
+{
+    "email": {
+        "receivers": ["maxiwelsch@posteo.de"],
+        "smtp_port": 587,
+        "smtp_server": "smtp.aol.com"
+    }
+}

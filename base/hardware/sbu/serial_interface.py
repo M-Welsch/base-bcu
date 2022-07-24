@@ -93,7 +93,6 @@ class SerialInterface:
         self._send_message(message=message.binary)
         self._await_acknowledge(message.code)
         response_delay, response = self._wait_for_response(message.response_keyword)
-        LOG.debug(f", response received after {response_delay}")
         self._wait_for_sbu_ready()
         return response
 
@@ -104,11 +103,9 @@ class SerialInterface:
 
     def _await_acknowledge(self, message_code: str) -> None:
         acknowledge_delay, _ = self._wait_for_response(f"ACK:{message_code}")
-        LOG.debug(f"{message_code} acknowledged after {acknowledge_delay}s")
 
     def _wait_for_sbu_ready(self) -> None:
         ready_delay, _ = self._wait_for_response("Ready")
-        LOG.debug(f", ready after {ready_delay}")
         self.flush_sbu_channel()
 
     def _wait_for_response(self, response_keyword: str) -> Tuple[float, str]:
@@ -117,7 +114,11 @@ class SerialInterface:
         time_start = time()
         duration: float = 0.0
         while duration < self._config.sbu_response_timeout:
-            response: str = self._serial_connection.read_until().decode()
+            response: str = ""
+            try:
+                response = self._serial_connection.read_until().decode()
+            except UnicodeDecodeError:
+                pass
             if response_keyword in response:
                 return duration, response.strip("\x00").strip()
             duration = time() - time_start

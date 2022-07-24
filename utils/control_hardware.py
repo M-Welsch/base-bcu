@@ -9,20 +9,22 @@ sys.path.append(path_to_module)
 
 
 @click.command()
-@click.option("--dock", "-d", help="dock backup hdd", is_flag=True, default=False)
-@click.option("--undock", "-u", help="undock backup hdd", is_flag=True, default=False)
-@click.option("--power", "-p", help="power backup hdd", is_flag=True, default=False)
-@click.option("--unpower", "-r", help="unpower backup hdd", is_flag=True, default=False)
+@click.option("--dock", "-D", help="dock backup hdd", is_flag=True, default=False)
+@click.option("--undock", "-d", help="undock backup hdd", is_flag=True, default=False)
+@click.option("--power", "-P", help="power backup hdd", is_flag=True, default=False)
+@click.option("--unpower", "-p", help="unpower backup hdd", is_flag=True, default=False)
+@click.option("--mount", "-M", help="power backup hdd", is_flag=True, default=False)
+@click.option("--unmount", "-m", help="unpower backup hdd", is_flag=True, default=False)
 @click.option(
     "--open_sbu_channel",
-    "-c",
+    "-S",
     help="set communication path to communication (not programming) and enable BCU to receive messages",
     is_flag=True,
     default=False,
 )
 @click.option(
     "--close_sbu_channel",
-    "-v",
+    "-s",
     help="set communication path to programming and disable BCU to receive messages",
     is_flag=True,
     default=False,

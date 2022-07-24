@@ -17,12 +17,13 @@ class SSHInterface:
         self._client = paramiko.SSHClient()
 
     def connect(self, host: str, user: str) -> str:
+        LOG.debug(f"connecting to {host} as user {user}")
         try:
             self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             self._client.connect(host, username=user, timeout=10)
         except paramiko.AuthenticationException as e:
             LOG.error(f"Authentication failed, please verify your credentials. Error = {e}")
-            raise RemoteCommandError(e)
+            raise RemoteCommandError(str(e)) from e
         except paramiko.SSHException as e:
             if not str(e).find("not found in known_hosts") == 0:
                 LOG.error(
@@ -31,13 +32,19 @@ class SSHInterface:
                 )
             else:
                 LOG.error(f"SSH exception occured. Error = {e}")
-            response = str(e)
+            raise RemoteCommandError(str(e)) from e
         except socket.timeout as e:
             LOG.error(f"connection timed out. Error = {e}")
-            response = str(e)
+            raise RemoteCommandError(str(e)) from e
+        except paramiko.ssh_exception.NoValidConnectionsError as e:
+            LOG.error(f"NAS not reachable under {host} with user {user}. PYTHON SAYS: {e}")
+            raise RemoteCommandError(str(e)) from e
+        except OSError as e:
+            LOG.error(f"NAS IP is in the wrong subnet. PYTHON SAYS: {e}")
+            raise RemoteCommandError(str(e)) from e
         except Exception as e:
             LOG.error(f"Exception in connecting to the server. PYTHON SAYS: {e}")
-            response = str(e)
+            raise RemoteCommandError(str(e)) from e
         else:
             response = "Established"
         return response

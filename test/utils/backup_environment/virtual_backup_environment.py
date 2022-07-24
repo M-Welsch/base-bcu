@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from getpass import getuser
+from math import ceil
 from pathlib import Path
 from shutil import copy, rmtree
 from subprocess import PIPE, Popen
@@ -18,6 +20,7 @@ import pytest
 from py import path
 
 from base.common.constants import current_backup_timestring_format_for_directory
+from base.logic.backup.backup_browser import read_backups
 from base.logic.backup.protocol import Protocol
 
 
@@ -46,8 +49,16 @@ def create_old_backups(base_path: Path, amount: int, respective_file_size_bytes:
 
 
 def create_file_with_random_data(path: Path, size_bytes: int) -> None:
-    with open(path, "wb") as fout:
-        fout.write(os.urandom(size_bytes))
+    ten_mb = 10 * 1024 * 1024
+    if size_bytes > ten_mb:
+        create_large_file_with_zeros(path, size_megabytes=ceil(size_bytes / ten_mb))
+    else:
+        with open(path, "wb") as fout:
+            fout.write(os.urandom(size_bytes))
+
+
+def create_large_file_with_zeros(path: Path, size_megabytes: int) -> None:
+    subprocess.Popen(f"dd if=/dev/zero of={path.as_posix()} count={1024*size_megabytes} bs=1024".split()).wait()
 
 
 def prepare_source_sink_dirs(
@@ -88,9 +99,13 @@ class BackupTestEnvironmentInput:
     bytesize_of_each_old_backup: int
     amount_preexisting_source_files_in_latest_backup: int = 0
     no_teardown: bool = False
+    automount_virtual_drive: bool = True
+    automount_data_source: bool = True
 
 
-BackupTestEnvironmentOutput = namedtuple("BackupTestEnvironmentOutput", "sync_config backup_config nas_config")
+BackupTestEnvironmentOutput = namedtuple(
+    "BackupTestEnvironmentOutput", "sync_config backup_config nas_config backup_hdd_mount_point"
+)
 
 
 class BackupTestEnvironment:
@@ -108,17 +123,21 @@ class BackupTestEnvironment:
     │       └── backup_2022_01_17-12_00_00          (directory that mimics preexisting backup)
     │
     ├── base_tmpshare           >╌╌╌╮
-    │   └── backup_source           │           sync.json["remote_backup_source_location"] (in case of smb)
+    │   └── backup_source           │               sync.json["remote_backup_source_location"] (in case of smb)
     │       └── random files ...    │mount (smb)
     │                               │
-    └── base_tmpshare_mntdir    <╌╌╌╯           sync.json["local_nas_hdd_mount_point"]
+    └── base_tmpshare_mntdir    <╌╌╌╯               sync.json["local_nas_hdd_mount_point"]
     """
 
     def __init__(self, configuration: BackupTestEnvironmentInput) -> None:
         self._virtual_hard_drive = VirtualHardDrive()
         self._src = self._get_source()
-        self._sink = self._get_sink(configuration.use_virtual_drive_for_sink)
+        self._sink = self._get_sink(configuration.use_virtual_drive_for_sink, configuration.automount_virtual_drive)
         self._configuration = configuration
+
+    @property
+    def configuration(self) -> BackupTestEnvironmentInput:
+        return self._configuration
 
     @property
     def source(self) -> Path:
@@ -144,8 +163,8 @@ class BackupTestEnvironment:
         src.mkdir(exist_ok=True)
         return src
 
-    def _get_sink(self, vhd_for_sink: bool) -> Path:
-        if vhd_for_sink:
+    def _get_sink(self, vhd_for_sink: bool, mount_sink: bool) -> Path:
+        if vhd_for_sink and mount_sink:
             self._virtual_hard_drive.mount()
         sink = self._virtual_hard_drive.mount_point / "backup_target"
         sink.mkdir(exist_ok=True)
@@ -177,8 +196,12 @@ class BackupTestEnvironment:
         )
 
     @staticmethod
+    def mount_smb() -> None:
+        Popen(f"mount {SMB_MOUNTPOINT}".split()).wait()
+
+    @staticmethod
     def unmount_smb() -> None:
-        Popen(f"umount {SMB_MOUNTPOINT}".split())
+        Popen(f"umount {SMB_MOUNTPOINT}".split()).wait()
 
     def teardown(self, delete_files: bool = True) -> None:
         if delete_files:
@@ -213,15 +236,21 @@ class BackupTestEnvironment:
             "smb_credentials_file": "/etc/base-credentials",
             "smb_share_name": "Backup",
         }
-        p = Popen("mount /tmp/base_tmpshare_mntdir/".split(), stderr=PIPE)
-        p.wait()
-        if p.stderr:
-            lines = [l.decode() for l in p.stderr.readlines()]
-            if any(["No such file or directory" in line for line in lines]):
-                raise Exception(
-                    "Error in the Test Environment: please make sure /etc/samba/smb.conf is set up to have a share named 'Backup' on path '/tmp/base_tmpshare'"
-                )
-        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config)
+        if self._configuration.automount_data_source:
+            p = Popen("mount /tmp/base_tmpshare_mntdir/".split(), stderr=PIPE)
+            p.wait()
+            if p.stderr:
+                lines = [l.decode() for l in p.stderr.readlines()]
+                if any(["No such file or directory" in line for line in lines]):
+                    raise Exception(
+                        "Error in the Test Environment: please make sure /etc/samba/smb.conf is set up to have a share named 'Backup' on path '/tmp/base_tmpshare'"
+                    )
+        return BackupTestEnvironmentOutput(
+            sync_config=sync_config,
+            backup_config={},
+            nas_config=nas_config,
+            backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
+        )
 
     def prepare_for_ssh(self) -> BackupTestEnvironmentOutput:
         sync_config = {
@@ -234,4 +263,48 @@ class BackupTestEnvironment:
             "ssh_port": 22,
             "ssh_user": getuser(),
         }
-        return BackupTestEnvironmentOutput(sync_config=sync_config, backup_config={}, nas_config=nas_config)
+        return BackupTestEnvironmentOutput(
+            sync_config=sync_config,
+            backup_config={},
+            nas_config=nas_config,
+            backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
+        )
+
+    def mount_all(self) -> None:
+        self._virtual_hard_drive.mount()
+        if self._configuration.protocol == Protocol.SMB:
+            self.mount_smb()
+
+    def unmount_all(self) -> None:
+        self._virtual_hard_drive.unmount()
+        if self._configuration.protocol == Protocol.SMB:
+            self.unmount_smb()
+
+    def is_everything_necessary_mounted(self) -> bool:
+        all_mounted = self._virtual_hard_drive.mount_point.is_mount()
+        if self._configuration.protocol == Protocol.SMB:
+            all_mounted &= SMB_MOUNTPOINT.is_mount()
+        return all_mounted
+
+
+class Verification:
+    def __init__(self, backup_test_environment: BackupTestEnvironment):
+        self._backup_test_environment = backup_test_environment
+        self._have_to_mount = not self._backup_test_environment.is_everything_necessary_mounted()
+
+    def __enter__(self) -> Verification:
+        if self._have_to_mount:
+            self._backup_test_environment.mount_all()
+        return self
+
+    def __exit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
+        if self._have_to_mount:
+            self._backup_test_environment.unmount_all()
+
+    def all_files_transferred(self) -> bool:
+        files_in_source = [file.stem for file in self._backup_test_environment.source.iterdir()]
+        backup_target: list = read_backups(self._backup_test_environment.sink.as_posix())
+        files_in_target = [file.stem for file in backup_target[-1].iterdir()]
+        return set(files_in_source) == set(files_in_target)

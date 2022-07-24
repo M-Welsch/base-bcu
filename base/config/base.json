@@ -1,5 +1,4 @@
 {
     "logs_directory": "base/log",
-    "shutdown_between_backups": true,
-    "email_notification_receivers": ["maxiwelsch@posteo.de"]
+    "shutdown_between_backups": true
 }

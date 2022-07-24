@@ -1,15 +1,11 @@
 import os
 import sys
 from pathlib import Path
-from typing import Any, Type
 
 import click
 
+# seems to be necessary to define it here. If started as service it doesn't find the submodules
 path_to_module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# TODO: Fix this somehow...
-# print(path_to_module)
-# print(os.getcwd())
-# print('\n'.join(sys.path))
 sys.path.append(path_to_module)
 
 

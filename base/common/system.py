@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from subprocess import PIPE, Popen
+from subprocess import PIPE, Popen, run
 from typing import IO, List
 
 from base.common.exceptions import BackupSizeRetrievalError, NetworkError
@@ -14,44 +14,37 @@ class System:
     @staticmethod
     def size_of_next_backup(local_target_location: Path, source_location: Path) -> int:
         """Return size of next backup increment in bytes."""
-        cmd = RsyncCommand().compose(local_target_location, source_location, dry=True)
+        cmd = RsyncCommand().compose_list(local_target_location, source_location, dry=True)
         LOG.info(f"estimating size of new backup with: {cmd}")
-        p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
-        p.wait()
+        p = run(cmd, capture_output=True)
+        stdout_lines = p.stdout.decode().split("\n")
         try:
-            lines: List[str] = [
-                l.decode() for l in p.stdout.readlines() if l.startswith(b"Total transferred file size")  # type: ignore
-            ]
-            line = lines[0]
-            return int("".join(c for c in line if c.isdigit()))
+            relevant_line = [l for l in stdout_lines if l.startswith("Total transferred file size")][0]
+            return int("".join(c for c in relevant_line if c.isdigit()))
         except (IndexError, ValueError, AttributeError) as e:
-            if p.stderr:
-                LOG.error("\n".join([str(l) for l in p.stderr.read()]))
+            stderr_lines = p.stderr.decode()
+            LOG.error(stderr_lines)
             raise BackupSizeRetrievalError from e
 
     @staticmethod
     def copy_newest_backup_with_hardlinks(recent_backup: Path, new_backup: Path) -> subprocess.Popen:
         copy_command = f"cp -al {recent_backup}/. {new_backup}"
         LOG.info(f"copy command: {copy_command}")
+        # Popen here, because the 'run' automatically waits for the process to finish. Popen returns immediately
         return Popen(copy_command, bufsize=0, shell=True, stdout=PIPE, stderr=PIPE)
 
     @staticmethod
     def free_space(backup_target: Path) -> int:
         """returns free space on backup hdd in bytes"""
 
-        def _remove_heading_from_df_output(df_output: IO[bytes]) -> int:
-            return int(list(df_output)[-1].decode().strip())
+        def _remove_heading_from_df_output(df_output: bytes) -> int:
+            return int(df_output.decode().strip().split("\n")[-1])
 
-        command: List[str] = ["df", "--output=avail", backup_target.as_posix()]
-        out = Popen(command, stdout=PIPE, stderr=PIPE)
-        out.wait()
-        if out.stderr is not None:
-            stderr_lines = out.stderr.readlines()
-            if stderr_lines:
-                raise BackupSizeRetrievalError(
-                    f"Cannot obtain free space on backup hdd: {[stderr_line.decode().strip() for stderr_line in stderr_lines]}"
-                )
-        free_space_on_bu_hdd = _remove_heading_from_df_output(out.stdout)  # type: ignore
+        command: List[str] = ["df", "--output=avail", backup_target.as_posix(), "-B 1"]
+        out = run(command, capture_output=True)
+        if out.stderr:
+            raise BackupSizeRetrievalError(f"Cannot obtain free space on backup hdd: {out.stderr.decode()}")
+        free_space_on_bu_hdd = _remove_heading_from_df_output(out.stdout)
         LOG.info(f"obtaining free space on bu hdd with command: {' '.join(command)}. Received {free_space_on_bu_hdd}")
         return free_space_on_bu_hdd
 
@@ -69,7 +62,9 @@ class SmbShareMount:
 
     @staticmethod
     def run_command(command: List[str]) -> Popen:
-        return Popen(command, bufsize=0, stdout=PIPE, stderr=PIPE)
+        p = Popen(command, bufsize=0, stdout=PIPE, stderr=PIPE)
+        p.wait()
+        return p
 
     @staticmethod
     def _parse_process_output(process: Popen) -> None:
