@@ -82,7 +82,6 @@ class SerialInterface:
         self._serial_connection.reset_output_buffer()
 
     def flush_sbu_channel(self) -> None:
-        self._send_message(":".encode())
         self._send_message(b"\0")
 
     def write_to_sbu(self, message: SbuMessage) -> None:

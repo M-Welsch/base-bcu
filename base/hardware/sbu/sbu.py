@@ -21,7 +21,7 @@ class WakeupReason(Enum):
     SCHEDULED_BACKUP = "SCHEDULED"
     CONFIGURATION = "CONFIG"
     HEARTBEAT_TIMEOUT = "HEARTBEAT"
-    NO_REASON = "NO_REASON"
+    NO_REASON = ""
 
 
 class SBU:
@@ -96,7 +96,7 @@ class SBU:
             )
 
     def send_readable_timestamp(self, timestamp: str) -> None:
-        self._sbu_communicator.write(SbuCommands.send_readable_timestamp_of_next_bu, timestamp)
+        self._sbu_communicator.write(SbuCommands.send_readable_timestamp_of_next_bu, timestamp[:16])
 
     def measure_base_input_current(self) -> Optional[float]:
         return self._measure(SbuCommands.measure_current)
