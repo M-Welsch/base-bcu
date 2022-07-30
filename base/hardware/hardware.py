@@ -13,7 +13,6 @@ from base.common.exceptions import (
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
-from base.hardware.hmi import HMI
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
 from base.hardware.sbu.communicator import SbuCommunicator
@@ -31,8 +30,11 @@ class Hardware:
         self._mechanics: Mechanics = Mechanics()
         self._power: Power = Power()
         self._sbu: SBU = SBU(SbuCommunicator())
-        self._hmi: HMI = HMI(self._sbu)
         self._drive: Drive = Drive()
+
+    @property
+    def sbu(self) -> SBU:
+        return self._sbu
 
     def get_wakeup_reason(self) -> WakeupReason:
         return self._sbu.request_wakeup_reason()

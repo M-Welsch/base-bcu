@@ -1,5 +1,5 @@
 import sched
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep, time
 from typing import Any, List, Optional
 
@@ -106,5 +106,17 @@ class Schedule:
         return tc.next_backup_timestring(self._schedule)
 
     @property
+    def next_backup_timedelta(self) -> timedelta:
+        return tc.next_backup(self._schedule) - datetime.now()
+
+    @property
     def next_backup_seconds(self) -> int:
         return tc.next_backup_seconds(self._schedule)
+
+    @property
+    def next_shutdown_timestamp(self) -> str:
+        ...
+
+    @property
+    def next_shutdown_seconds(self) -> int:
+        ...

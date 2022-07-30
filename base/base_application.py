@@ -12,6 +12,7 @@ from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownI
 from base.common.logger import LoggerFactory
 from base.common.mailer import Mailer
 from base.hardware.hardware import Hardware
+from base.hardware.hmi import Hmi, HmiStates
 from base.hardware.sbu.sbu import WakeupReason
 from base.logic.backup.backup_conductor import BackupConductor
 from base.logic.schedule import Schedule
@@ -69,6 +70,7 @@ class BaSeApplication:
         self._maintenance_mode.set_connections([(self._schedule.backup_request, self._backup_conductor.run)])
         self._webapp_server = WebappServer(self._hardware)
         self._connect_signals()
+        self._hmi = Hmi(self._hardware.sbu, self._schedule)
 
     def _mainloop(self) -> None:
         eventloop = asyncio.get_event_loop()
@@ -76,13 +78,15 @@ class BaSeApplication:
             # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
             self._schedule.run_pending()
             self._webapp_server.current_status = self.status
+            self._hmi.display_status()
+            # something that raises the ButtonXInterrupts
         except ShutdownInterrupt:
             LOG.info("Received shutdown interrupt. Exiting mainloop")
             eventloop.stop()
         except Button0Interrupt:
-            self.button_0_pressed.emit()
+            self._hmi.process_button0()
         except Button1Interrupt:
-            self.button_1_pressed.emit()
+            self._hmi.process_button1()
         except CriticalException:
             self._on_go_to_idle_state()
         except Exception as e:
@@ -95,6 +99,7 @@ class BaSeApplication:
             LOG.info(f"schedule queue: {self._schedule.queue}")
 
     def start(self) -> None:
+        self._hardware.write_to_display("Backup Server", "up and running!")
         LOG.info("Logger and Config started. Starting BaSe Application")
         try:
             self._prepare_service()
@@ -131,16 +136,21 @@ class BaSeApplication:
         wakeup_reason = self._hardware.get_wakeup_reason()
         if wakeup_reason == WakeupReason.BACKUP_NOW:
             LOG.info("Woke up for manual backup")
+            self._hmi.set_status(HmiStates.backup_running)
             self._schedule.on_schedule_manual_backup(1)
             # self._backup_conductor.run()
         elif wakeup_reason == WakeupReason.SCHEDULED_BACKUP:
+            self._hmi.set_status(HmiStates.waiting_for_backup)
             LOG.info("Woke up for scheduled backup")
         elif wakeup_reason == WakeupReason.CONFIGURATION:
+            self._hmi.set_status(HmiStates.waiting_for_shutdown)
             LOG.info("Woke up for configuration")
         elif wakeup_reason == WakeupReason.HEARTBEAT_TIMEOUT:
+            self._hmi.set_status(HmiStates.waiting_for_shutdown)
             LOG.warning("BCU heartbeat timeout occurred")
             self._hardware.disengage()
         elif wakeup_reason == WakeupReason.NO_REASON:
+            self._hmi.set_status(HmiStates.waiting_for_shutdown)
             LOG.info("Woke up for no specific reason")
             self._hardware.disengage()
         else:
