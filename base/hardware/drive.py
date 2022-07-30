@@ -17,7 +17,12 @@ class Drive:
     def __init__(self) -> None:
         self._config: Config = get_config("drive.json")
         self._available: HddState = HddState.unknown
-        self._backup_hdd_device_node = BACKUP_HDD_DEVICE_NODE
+        self._backup_hdd_device_node = self.get_backup_hdd_device_node()
+
+    @staticmethod
+    def get_backup_hdd_device_node() -> str:
+        """Refactor me if you dare, but be warned! Some tests will fail :)"""
+        return BACKUP_HDD_DEVICE_NODE
 
     def mount(self) -> None:
         """udev recognizes the correct drive and creates a symlink to /dev/BACKUPHDD"""
@@ -42,7 +47,7 @@ class Drive:
         time_start = time()
         while not Path(self._backup_hdd_device_node).exists():
             if time() - time_start > self._config.backup_hdd_spinup_timeout:
-                raise BackupHddNotAvailable
+                raise BackupHddNotAvailable("timeout reached while waiting for backup hdd")
             sleep(0.5)
 
     @property
@@ -63,7 +68,7 @@ class Drive:
                 self._call_mount_command()
                 return
             except MountError as e:
-                LOG.info(
+                LOG.debug(
                     f"Couldn't mount BackupHDD. "
                     f"Waiting for {self._config.backup_hdd_mount_waiting_secs}s and try again. Error: {e}"
                 )
@@ -82,7 +87,7 @@ class Drive:
                 self._call_unmount_command()
                 return
             except UnmountError as e:
-                LOG.info(
+                LOG.debug(
                     f"Couldn't unmount BackupHDD. "
                     f"Waiting for {self._config.backup_hdd_unmount_waiting_secs}s and try again. Error: {e}"
                 )
@@ -129,14 +134,14 @@ class Drive:
 
     def _call_mount_command(self) -> None:
         command = f"mount {self._backup_hdd_device_node}"
-        LOG.debug(f"Mounting with {command}")
+        LOG.debug(f"Mounting Backup HDD with {command}")
         cp = run(command.split(), stdout=PIPE, stderr=PIPE)
         if cp.stderr:
             raise MountError(f"Partition could not be mounted: {str(cp.stderr)}")
 
     def _call_unmount_command(self) -> None:
         command = f"umount {self._backup_hdd_device_node}"
-        LOG.debug(f"Unmounting with {command}")
+        LOG.debug(f"Unmounting Backup HDD with {command}")
         cp = run(command.split(), stdout=PIPE, stderr=PIPE)
         if cp.stderr:
             raise UnmountError(f"Partition could not be unmounted: {str(cp.stderr)}")

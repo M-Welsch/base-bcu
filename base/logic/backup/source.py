@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from base.common.config import Config, get_config
-from base.common.exceptions import InvalidBackupSource
+from base.common.exceptions import CriticalException, InvalidBackupSource, RemoteCommandError
 from base.common.logger import LoggerFactory
 from base.logic.backup.protocol import Protocol
 from base.logic.nas import Nas
@@ -50,9 +50,13 @@ class BackupSource:
         """
         local_nas_hdd_mount_path = Path(self._config_sync.local_nas_hdd_mount_point)
         remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
-        smb_share_root = Nas().root_of_share()
+
         try:
+            smb_share_root = Nas().root_of_share()
             subfolder_on_mountpoint = remote_backup_source_location.relative_to(smb_share_root)
+        except RemoteCommandError as e:
+            LOG.critical(f"Couldn't connect to NAS. PYTHON says: {e}")
+            raise CriticalException from e
         except ValueError as e:
             error_message = "Backup source location on NAS is not within smb share point"
             LOG.critical(error_message)

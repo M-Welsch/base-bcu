@@ -14,7 +14,7 @@ from base.common.exceptions import ConfigValidationError
 
 def test_next_backup(mocker: MockerFixture) -> None:
     nearly_now = datetime.now()
-    plan = tc._Plan(freq=WEEKLY, bymonthday=None, byweekday=0, byhour=11, byminute=22)
+    plan = tc._Plan(freq=WEEKLY, bymonthday=None, byweekday=0, byhour=11, byminute=22, bysecond=0)
     patched_plan_from_config = mocker.patch("base.common.time_calculations._plan_from_config", return_value=plan)
     config = Config({})
     next_backup_time = tc.next_backup(config)

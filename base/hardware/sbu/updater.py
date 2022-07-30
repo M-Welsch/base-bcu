@@ -32,7 +32,7 @@ class SbuUpdater:
         self._execute_sbu_update(sbu_fw_filename, sbu_uart_channel)
 
     def _execute_sbu_update(self, sbu_fw_filename: Path, sbu_uart_channel: Path) -> None:
-        sbu_update_command = f'sudo su - base -c "pyupdi -d tiny816 -c {sbu_uart_channel} -f {sbu_fw_filename}"'
+        sbu_update_command = f'pyupdi -d tiny816 -c {sbu_uart_channel} -f {sbu_fw_filename}'
         try:
             process = Popen(
                 sbu_update_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE
@@ -42,7 +42,7 @@ class SbuUpdater:
                     LOG.info(str(line))
             if process.stderr is not None:
                 if process.stderr:
-                    LOG.error(str(process.stderr))
+                    LOG.error(str(process.stderr.readlines()))
         finally:
             self._pin_interface.set_sbu_serial_path_to_communication()
 
@@ -55,6 +55,6 @@ class SbuUpdater:
 
     @staticmethod
     def _get_filename_of_newest_hex_file() -> Path:
-        list_of_sbc_fw_files = Path("/home/base/base_bcu/sbu_fw_files/").glob("*")
+        list_of_sbc_fw_files = Path("/home/base/base-bcu/sbu_fw_files/").glob("*")
         latest_sbc_fw_file = max(list_of_sbc_fw_files, key=os.path.getctime)
         return latest_sbc_fw_file

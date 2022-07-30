@@ -6,7 +6,7 @@ from typing import Optional
 from base.common.constants import BAUD_RATE
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
 from base.common.logger import LoggerFactory
-from base.hardware.platform import HAS_SBU
+from base.hardware.platform import has_sbu
 from base.hardware.sbu.commands import SbuCommand
 from base.hardware.sbu.message import SbuMessage
 from base.hardware.sbu.serial_interface import SerialInterface
@@ -19,9 +19,11 @@ class SbuCommunicator:
     _sbu_uart_interface: Optional[Path] = None
 
     def __init__(self) -> None:
-        if HAS_SBU:
+        if has_sbu():
             if self._sbu_uart_interface is None:
                 self._sbu_uart_interface = self._get_uart_interface()
+            self.write = self._write_production  # type: ignore
+            self.query = self._query_production  # type: ignore
         else:
             self.write = self.__write_mock  # type: ignore
             self.query = self.__query_mock  # type: ignore
@@ -45,6 +47,12 @@ class SbuCommunicator:
         return interface
 
     def write(self, command: SbuCommand, payload: str = "") -> None:
+        ...
+
+    def query(self, command: SbuCommand, payload: str = "") -> str:
+        ...
+
+    def _write_production(self, command: SbuCommand, payload: str = "") -> None:
         message = SbuMessage(command=command, payload=payload)
         if self._sbu_uart_interface is not None:
             try:
@@ -55,7 +63,7 @@ class SbuCommunicator:
             except SbuCommunicationTimeout as e:
                 raise e
 
-    def query(self, command: SbuCommand, payload: str = "") -> str:
+    def _query_production(self, command: SbuCommand, payload: str = "") -> str:
         sbu_response = ""
         if self._sbu_uart_interface is not None:
             message = SbuMessage(command=command, payload=payload)
