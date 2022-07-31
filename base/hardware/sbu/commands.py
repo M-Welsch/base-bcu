@@ -8,7 +8,7 @@ class SbuCommand:
 
 
 class SbuCommands:
-    test = SbuCommand(message_code="Te", response_keyword="Echo")
+    test = SbuCommand(message_code="Test", response_keyword="Echo")
     write_to_display_line1 = SbuCommand(message_code="D1")
     write_to_display_line2 = SbuCommand(message_code="D2")
     set_display_brightness = SbuCommand(message_code="DB")

@@ -2,9 +2,9 @@ from typing import Generator
 
 import pytest
 
-from base.hardware.hmi import Hmi, HmiStates
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU
+from base.hmi.hmi import Hmi, HmiStates
 from base.logic.schedule import Schedule
 
 
@@ -23,7 +23,10 @@ def test_display_waiting_for_backup(hmi: Hmi) -> None:
     assert len(line2) == 16
 
 
-@pytest.mark.parametrize("hmi_state", [HmiStates.starting_up, HmiStates.waiting_for_backup, HmiStates.backup_running, HmiStates.waiting_for_shutdown])
+@pytest.mark.parametrize(
+    "hmi_state",
+    [HmiStates.starting_up, HmiStates.waiting_for_backup, HmiStates.backup_running, HmiStates.waiting_for_shutdown],
+)
 def test_hmi_print_status(hmi: Hmi, hmi_state: HmiStates) -> None:
     hmi._schedule.on_reschedule_backup()
     hmi._state = hmi_state

@@ -12,8 +12,8 @@ from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownI
 from base.common.logger import LoggerFactory
 from base.common.mailer import Mailer
 from base.hardware.hardware import Hardware
-from base.hardware.hmi import Hmi, HmiStates
 from base.hardware.sbu.sbu import WakeupReason
+from base.hmi.hmi import Hmi, HmiStates
 from base.logic.backup.backup_conductor import BackupConductor
 from base.logic.schedule import Schedule
 from base.webapp.webapp_server import WebappServer
@@ -123,10 +123,10 @@ class BaSeApplication:
 
     @staticmethod
     def _wait_if_critical_error():
-        """ in case of a critical error we wait a little before we shut down.
-            If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
+        """in case of a critical error we wait a little before we shut down.
+        If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
         if bool(LoggerFactory.get_critical_messages()):
-            sleep(5*60)
+            sleep(5 * 60)
 
     def _prepare_service(self) -> None:
         self._process_wakeup_reason()
@@ -136,21 +136,16 @@ class BaSeApplication:
         wakeup_reason = self._hardware.get_wakeup_reason()
         if wakeup_reason == WakeupReason.BACKUP_NOW:
             LOG.info("Woke up for manual backup")
-            self._hmi.set_status(HmiStates.backup_running)
             self._schedule.on_schedule_manual_backup(1)
             # self._backup_conductor.run()
         elif wakeup_reason == WakeupReason.SCHEDULED_BACKUP:
-            self._hmi.set_status(HmiStates.waiting_for_backup)
             LOG.info("Woke up for scheduled backup")
         elif wakeup_reason == WakeupReason.CONFIGURATION:
-            self._hmi.set_status(HmiStates.waiting_for_shutdown)
             LOG.info("Woke up for configuration")
         elif wakeup_reason == WakeupReason.HEARTBEAT_TIMEOUT:
-            self._hmi.set_status(HmiStates.waiting_for_shutdown)
             LOG.warning("BCU heartbeat timeout occurred")
             self._hardware.disengage()
         elif wakeup_reason == WakeupReason.NO_REASON:
-            self._hmi.set_status(HmiStates.waiting_for_shutdown)
             LOG.info("Woke up for no specific reason")
             self._hardware.disengage()
         else:
@@ -160,12 +155,26 @@ class BaSeApplication:
         self._schedule.on_reschedule_backup()
         if self._config.shutdown_between_backups:
             self.schedule_shutdown_timer()
-            LOG.info(f"Going to Idle State, sleep timer set to {self._schedule.current_shutdown_time_timestring()}")
+            self._set_hmi_waiting_status()
+            LOG.info(f"Going to Idle State, sleep timer set to {self._schedule.next_shutdown_timestamp}")
         else:
             LOG.info("Going to Idle State, staying awake (no shutdown timer)")
 
+    def _set_hmi_waiting_status(self) -> None:
+        seconds_to_shutdown = self._schedule.next_shutdown_seconds
+        if seconds_to_shutdown is None:
+            self._hmi.set_status(HmiStates.waiting_for_backup)
+            LOG.error("no shutdown scheduled!")
+        else:
+            seconds_to_backup = self._schedule.next_backup_seconds
+            if seconds_to_shutdown > seconds_to_backup:
+                self._hmi.set_status(HmiStates.waiting_for_backup)
+            else:
+                self._hmi.set_status(HmiStates.waiting_for_shutdown)
+
     def _on_backup_request(self, **kwargs):  # type: ignore
         try:
+            self._hmi.set_status(HmiStates.backup_running)
             self._backup_conductor.run()
         except NetworkError as e:
             LOG.error(e)
