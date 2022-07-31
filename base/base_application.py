@@ -120,12 +120,14 @@ class BaSeApplication:
             mailer = Mailer()
             mailer.send_summary()
             self._wait_if_critical_error()
+            self._prepare_immediate_shutdown()
 
     @staticmethod
-    def _wait_if_critical_error():
+    def _wait_if_critical_error() -> None:
         """in case of a critical error we wait a little before we shut down.
         If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
         if bool(LoggerFactory.get_critical_messages()):
+            LOG.info("waiting for 5 Minutes before shutdown because critical error have been raised")
             sleep(5 * 60)
 
     def _prepare_service(self) -> None:
@@ -191,6 +193,11 @@ class BaSeApplication:
     def finalize_service(self) -> None:
         LOG.info("Finalizing BaSe application")
         self._hardware.disengage()
+
+    def _prepare_immediate_shutdown(self) -> None:
+        """sbu waits about 30secs before it cuts power. Nothing time-consuming may happen here"""
+        self._hmi.set_status(HmiStates.shutting_down)
+        self._hmi.display_status()
         self._hardware.prepare_sbu_for_shutdown(
             self._schedule.next_backup_timestamp, self._schedule.next_backup_seconds  # Todo: wake BCU a little earlier?
         )

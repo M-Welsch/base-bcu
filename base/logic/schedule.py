@@ -150,4 +150,4 @@ class Stringify:
         days = timedelta_to_event.days
         hours, remainder = divmod(timedelta_to_event.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
-        return f"{days} {hours:02}:{minutes:02}:{seconds:02}"
+        return f"{days}d {hours:02}:{minutes:02}:{seconds:02}"

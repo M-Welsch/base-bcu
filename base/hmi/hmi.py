@@ -21,6 +21,7 @@ class Hmi:
             HmiStates.waiting_for_backup: self._display_waiting_for_backup,
             HmiStates.backup_running: self._display_backup_running,
             HmiStates.waiting_for_shutdown: self._display_waiting_for_shutdown,
+            HmiStates.shutting_down: self._display_shutting_down,
         }
         self.display_status()
 
@@ -56,3 +57,6 @@ class Hmi:
         line1 = "Shutdown in:"
         line2 = self._stringify.time_to_shutdown_16digits()
         return line1, line2
+
+    def _display_shutting_down(self) -> Tuple[str, str]:
+        return "Backup Server", "Shutting down"
