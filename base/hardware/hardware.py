@@ -74,11 +74,10 @@ class Hardware:
                 self._failed_once = False
                 LOG.critical(f"Disengaging Backup HDD failed after retrying due to {e}. Proceeding anyway!")
 
-    def prepare_sbu_for_shutdown(self, timestamp: str, seconds: int) -> None:
+    def send_next_backup_info_to_sbu(self, timestamp: str, seconds: int) -> None:
         LOG.info(f"Preparing SBU for shutdown. Wake up in {seconds}s. Transferring timestamp: {timestamp}")
         self._sbu.send_readable_timestamp(timestamp)
         self._sbu.send_seconds_to_next_bu(seconds)
-        self._sbu.request_shutdown()
 
     @property
     def drive_available(self) -> HddState:

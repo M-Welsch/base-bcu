@@ -38,6 +38,7 @@ def main(config_dir: Path, log_dir: Path, no_shutdown: bool) -> None:
     if no_shutdown:
         print("shutdown command overridden. Staying awake.")
     else:
+        app.prepare_immediate_shutdown()
         os.system("shutdown -h now")
 
 
