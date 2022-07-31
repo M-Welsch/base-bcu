@@ -120,7 +120,6 @@ class BaSeApplication:
             mailer = Mailer()
             mailer.send_summary()
             self._wait_if_critical_error()
-            self._prepare_immediate_shutdown()
 
     @staticmethod
     def _wait_if_critical_error() -> None:
@@ -197,14 +196,15 @@ class BaSeApplication:
     def finalize_service(self) -> None:
         LOG.info("Finalizing BaSe application")
         self._hardware.disengage()
-
-    def _prepare_immediate_shutdown(self) -> None:
-        """sbu waits about 30secs before it cuts power. Nothing time-consuming may happen here"""
         self._hmi.set_status(HmiStates.shutting_down)
         self._hmi.display_status()
-        self._hardware.prepare_sbu_for_shutdown(
+        self._hardware.send_next_backup_info_to_sbu(
             self._schedule.next_backup_timestamp, self._schedule.next_backup_seconds  # Todo: wake BCU a little earlier?
         )
+
+    def prepare_immediate_shutdown(self) -> None:
+        """sbu waits about 30secs before it cuts power. Nothing time-consuming may happen here"""
+        self._hardware.sbu.request_shutdown()
         sleep(1)  # TODO: Evaluate and comment
         LOG.info("Exiting BaSe Application, about to shut down")
 
