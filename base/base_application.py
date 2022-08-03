@@ -7,6 +7,7 @@ from typing import Callable, List, Tuple
 from signalslot import Signal
 
 from base.common.config import Config, get_config
+from base.common.debug_utils import BcuRevision
 from base.common.exceptions import CriticalException, DockingError, MountError, NetworkError
 from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
 from base.common.logger import LoggerFactory
@@ -100,6 +101,7 @@ class BaSeApplication:
 
     def start(self) -> None:
         self._hardware.write_to_display("Backup Server", "up and running!")
+        BcuRevision().log_repository_info()
         LOG.info("Logger and Config started. Starting BaSe Application")
         try:
             self._prepare_service()

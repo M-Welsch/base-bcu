@@ -1,12 +1,59 @@
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from subprocess import PIPE, STDOUT, Popen, SubprocessError, TimeoutExpired
-from typing import IO
+from subprocess import PIPE, STDOUT, Popen, SubprocessError, TimeoutExpired, check_output
+from typing import IO, List
 
 from base.common.config import get_config
 from base.common.logger import LoggerFactory
 
 LOG = LoggerFactory.get_logger(__name__)
+
+
+@dataclass
+class RepositoryInfo:
+    hash: str
+    branch: str
+    last_commit_date: str
+    status: str
+
+
+class BcuRevision:
+    def log_repository_info(self) -> None:
+        repo = self.get_repository_info()
+        LOG.info("Repository Info:")
+        LOG.info(f"  Commit: {repo.hash}")
+        LOG.info(f"  Branch: {repo.branch}")
+        LOG.info(f"  Date:   {repo.last_commit_date}")
+        LOG.info(f"  Status: {repo.status}")
+
+    def get_repository_info(self) -> RepositoryInfo:
+        return RepositoryInfo(
+            hash=self._parse_information(["git", "rev-parse", "HEAD"]),
+            branch=self._parse_information(["git", "branch", "--show-current"]),
+            last_commit_date=self._parse_information(["git", "log", "-n", "1", "--pretty=format:%ad"]),
+            status=self._repo_status(),
+        )
+
+    @staticmethod
+    def _parse_information(command: List[str]) -> str:
+        try:
+            return_value = check_output(command).decode().strip()
+        except Exception:
+            LOG.warning(f"cannot determine repo info with {' '.join(command)}")
+            return_value = "not available"
+        return return_value
+
+    @staticmethod
+    def _repo_status() -> str:
+        command = ["git", "status", "-s", "--untracked-files=no"]
+        try:
+            dirty = bool(check_output(command).decode())
+            status = "dirty" if dirty else "clean"
+        except Exception:
+            LOG.warning(f"cannot determine repo status with {' '.join(command)}")
+            status = "unknown"
+        return status
 
 
 def dump_ifconfig() -> None:
