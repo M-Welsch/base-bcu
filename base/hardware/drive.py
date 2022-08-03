@@ -103,7 +103,8 @@ class Drive:
         if self.is_mounted:
             mount_point = self._config.backup_hdd_mount_point
             command = ["df", "--output=pcent", mount_point]
-            LOG.debug(f"obtaining space used on bu hdd with command: {command}")
+            # LOG.debug(f"obtaining space used on bu hdd with command: {command}")  # it swamps the logfile since this
+                                                                                    # called every second by webapp
             try:
                 proc = Popen(command, stdout=PIPE, stderr=PIPE)
                 assert proc.stdout is not None

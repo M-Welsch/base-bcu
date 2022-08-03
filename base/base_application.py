@@ -178,6 +178,7 @@ class BaSeApplication:
     def _on_backup_request(self, **kwargs):  # type: ignore
         try:
             self._hmi.set_status(HmiStates.backup_running)
+            self._hmi.display_status()
             self._backup_conductor.run()
         except NetworkError as e:
             LOG.error(e)
@@ -186,6 +187,9 @@ class BaSeApplication:
         except MountError as e:
             LOG.error(e)
         # TODO: Postpone backup
+
+    def _on_backup_abort(self, **kwargs):  # type: ignore
+        self._backup_conductor.on_backup_abort()
 
     def schedule_shutdown_timer(self) -> None:
         if not self._backup_conductor.is_running_func():
@@ -215,6 +219,8 @@ class BaSeApplication:
         self._backup_conductor.hardware_disengage_request.connect(self._hardware.disengage)
         self._backup_conductor.stop_shutdown_timer_request.connect(self._schedule.on_stop_shutdown_timer_request)
         self._backup_conductor.backup_finished_notification.connect(self._on_go_to_idle_state)
+        self._webapp_server.backup_now_request.connect(self._on_backup_request)
+        self._webapp_server.backup_abort.connect(self._on_backup_abort)
 
     @property
     def status(self) -> str:
@@ -231,6 +237,7 @@ class BaSeApplication:
                     }
                 ),
                 "next_backup_due": self._schedule.next_backup_timestamp,
+                "shutdown_in": self._schedule.next_shutdown_seconds or "0",
                 "docked": self._hardware.docked,
                 "powered": self._hardware.powered,
                 "mounted": self._hardware.mounted,
