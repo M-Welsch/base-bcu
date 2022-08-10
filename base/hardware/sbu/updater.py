@@ -32,7 +32,7 @@ class SbuUpdater:
         self._execute_sbu_update(sbu_fw_filename, sbu_uart_channel)
 
     def _execute_sbu_update(self, sbu_fw_filename: Path, sbu_uart_channel: Path) -> None:
-        sbu_update_command = f'pyupdi -d tiny816 -c {sbu_uart_channel} -f {sbu_fw_filename}'
+        sbu_update_command = f"pyupdi -d tiny816 -c {sbu_uart_channel} -f {sbu_fw_filename}"
         try:
             process = Popen(
                 sbu_update_command, bufsize=0, shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE

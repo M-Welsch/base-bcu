@@ -13,7 +13,6 @@ from base.common.exceptions import (
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
-from base.hardware.hmi import HMI
 from base.hardware.mechanics import Mechanics
 from base.hardware.power import Power
 from base.hardware.sbu.communicator import SbuCommunicator
@@ -31,8 +30,11 @@ class Hardware:
         self._mechanics: Mechanics = Mechanics()
         self._power: Power = Power()
         self._sbu: SBU = SBU(SbuCommunicator())
-        self._hmi: HMI = HMI(self._sbu)
         self._drive: Drive = Drive()
+
+    @property
+    def sbu(self) -> SBU:
+        return self._sbu
 
     def get_wakeup_reason(self) -> WakeupReason:
         return self._sbu.request_wakeup_reason()
@@ -72,11 +74,10 @@ class Hardware:
                 self._failed_once = False
                 LOG.critical(f"Disengaging Backup HDD failed after retrying due to {e}. Proceeding anyway!")
 
-    def prepare_sbu_for_shutdown(self, timestamp: str, seconds: int) -> None:
+    def send_next_backup_info_to_sbu(self, timestamp: str, seconds: int) -> None:
         LOG.info(f"Preparing SBU for shutdown. Wake up in {seconds}s. Transferring timestamp: {timestamp}")
         self._sbu.send_readable_timestamp(timestamp)
         self._sbu.send_seconds_to_next_bu(seconds)
-        self._sbu.request_shutdown()
 
     @property
     def drive_available(self) -> HddState:

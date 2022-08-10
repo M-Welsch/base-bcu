@@ -67,9 +67,7 @@ def test_sbu_temperature_measurement(sbu: SBU) -> None:
     print(sbu.measure_sbu_temperature())
 
 
-@pytest.mark.parametrize(
-    "code, reason", [("BACKUP", WakeupReason.BACKUP_NOW), ("CONFIG", WakeupReason.CONFIGURATION)]
-)
+@pytest.mark.parametrize("code, reason", [("BACKUP", WakeupReason.BACKUP_NOW), ("CONFIG", WakeupReason.CONFIGURATION)])
 def test_wakeup_reason_backup_now(sbu: SBU, code: str, reason: WakeupReason) -> None:
     sbu.set_wakeup_reason(code)
     received_reason: WakeupReason = sbu.request_wakeup_reason()

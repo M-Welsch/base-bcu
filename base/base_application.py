@@ -7,12 +7,14 @@ from typing import Callable, List, Tuple
 from signalslot import Signal
 
 from base.common.config import Config, get_config
+from base.common.debug_utils import BcuRevision
 from base.common.exceptions import CriticalException, DockingError, MountError, NetworkError
 from base.common.interrupts import Button0Interrupt, Button1Interrupt, ShutdownInterrupt
 from base.common.logger import LoggerFactory
 from base.common.mailer import Mailer
 from base.hardware.hardware import Hardware
 from base.hardware.sbu.sbu import WakeupReason
+from base.hmi.hmi import Hmi, HmiStates
 from base.logic.backup.backup_conductor import BackupConductor
 from base.logic.schedule import Schedule
 from base.webapp.webapp_server import WebappServer
@@ -69,6 +71,7 @@ class BaSeApplication:
         self._maintenance_mode.set_connections([(self._schedule.backup_request, self._backup_conductor.run)])
         self._webapp_server = WebappServer(self._hardware)
         self._connect_signals()
+        self._hmi = Hmi(self._hardware.sbu, self._schedule)
 
     def _mainloop(self) -> None:
         eventloop = asyncio.get_event_loop()
@@ -76,13 +79,15 @@ class BaSeApplication:
             # LOG.debug(f"self._schedule.queue: {self._schedule.queue}")
             self._schedule.run_pending()
             self._webapp_server.current_status = self.status
+            self._hmi.display_status()
+            # something that raises the ButtonXInterrupts
         except ShutdownInterrupt:
             LOG.info("Received shutdown interrupt. Exiting mainloop")
             eventloop.stop()
         except Button0Interrupt:
-            self.button_0_pressed.emit()
+            self._hmi.process_button0()
         except Button1Interrupt:
-            self.button_1_pressed.emit()
+            self._hmi.process_button1()
         except CriticalException:
             self._on_go_to_idle_state()
         except Exception as e:
@@ -95,6 +100,8 @@ class BaSeApplication:
             LOG.info(f"schedule queue: {self._schedule.queue}")
 
     def start(self) -> None:
+        self._hardware.write_to_display("Backup Server", "up and running!")
+        BcuRevision().log_repository_info()
         LOG.info("Logger and Config started. Starting BaSe Application")
         try:
             self._prepare_service()
@@ -117,11 +124,12 @@ class BaSeApplication:
             self._wait_if_critical_error()
 
     @staticmethod
-    def _wait_if_critical_error():
-        """ in case of a critical error we wait a little before we shut down.
-            If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
+    def _wait_if_critical_error() -> None:
+        """in case of a critical error we wait a little before we shut down.
+        If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
         if bool(LoggerFactory.get_critical_messages()):
-            sleep(5*60)
+            LOG.info("waiting for 5 Minutes before shutdown because critical error have been raised")
+            sleep(5 * 60)
 
     def _prepare_service(self) -> None:
         self._process_wakeup_reason()
@@ -150,12 +158,27 @@ class BaSeApplication:
         self._schedule.on_reschedule_backup()
         if self._config.shutdown_between_backups:
             self.schedule_shutdown_timer()
-            LOG.info(f"Going to Idle State, sleep timer set to {self._schedule.current_shutdown_time_timestring()}")
+            self._set_hmi_waiting_status()
+            LOG.info(f"Going to Idle State, sleep timer set to {self._schedule.next_shutdown_timestamp}")
         else:
             LOG.info("Going to Idle State, staying awake (no shutdown timer)")
 
+    def _set_hmi_waiting_status(self) -> None:
+        seconds_to_shutdown = self._schedule.next_shutdown_seconds
+        if seconds_to_shutdown is None:
+            self._hmi.set_status(HmiStates.waiting_for_backup)
+            LOG.error("no shutdown scheduled!")
+        else:
+            seconds_to_backup = self._schedule.next_backup_seconds
+            if seconds_to_shutdown > seconds_to_backup:
+                self._hmi.set_status(HmiStates.waiting_for_backup)
+            else:
+                self._hmi.set_status(HmiStates.waiting_for_shutdown)
+
     def _on_backup_request(self, **kwargs):  # type: ignore
         try:
+            self._hmi.set_status(HmiStates.backup_running)
+            self._hmi.display_status()
             self._backup_conductor.run()
         except NetworkError as e:
             LOG.error(e)
@@ -165,6 +188,9 @@ class BaSeApplication:
             LOG.error(e)
         # TODO: Postpone backup
 
+    def _on_backup_abort(self, **kwargs):  # type: ignore
+        self._backup_conductor.on_backup_abort()
+
     def schedule_shutdown_timer(self) -> None:
         if not self._backup_conductor.is_running_func():
             self._schedule.on_shutdown_requested()
@@ -172,9 +198,15 @@ class BaSeApplication:
     def finalize_service(self) -> None:
         LOG.info("Finalizing BaSe application")
         self._hardware.disengage()
-        self._hardware.prepare_sbu_for_shutdown(
+        self._hmi.set_status(HmiStates.shutting_down)
+        self._hmi.display_status()
+        self._hardware.send_next_backup_info_to_sbu(
             self._schedule.next_backup_timestamp, self._schedule.next_backup_seconds  # Todo: wake BCU a little earlier?
         )
+
+    def prepare_immediate_shutdown(self) -> None:
+        """sbu waits about 30secs before it cuts power. Nothing time-consuming may happen here"""
+        self._hardware.sbu.request_shutdown()
         sleep(1)  # TODO: Evaluate and comment
         LOG.info("Exiting BaSe Application, about to shut down")
 
@@ -187,6 +219,8 @@ class BaSeApplication:
         self._backup_conductor.hardware_disengage_request.connect(self._hardware.disengage)
         self._backup_conductor.stop_shutdown_timer_request.connect(self._schedule.on_stop_shutdown_timer_request)
         self._backup_conductor.backup_finished_notification.connect(self._on_go_to_idle_state)
+        self._webapp_server.backup_now_request.connect(self._on_backup_request)
+        self._webapp_server.backup_abort.connect(self._on_backup_abort)
 
     @property
     def status(self) -> str:
@@ -203,6 +237,7 @@ class BaSeApplication:
                     }
                 ),
                 "next_backup_due": self._schedule.next_backup_timestamp,
+                "shutdown_in": self._schedule.next_shutdown_seconds or "0",
                 "docked": self._hardware.docked,
                 "powered": self._hardware.powered,
                 "mounted": self._hardware.mounted,

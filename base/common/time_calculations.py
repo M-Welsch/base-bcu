@@ -18,6 +18,10 @@ def next_backup(config: Config) -> datetime:
     return next_backup_time
 
 
+def next_shutdown() -> datetime:
+    ...
+
+
 def next_backup_timestring(config: Config) -> str:
     dt = next_backup(config)
     return dt.strftime(next_backup_timestring_format_for_sbu)

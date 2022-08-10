@@ -80,6 +80,6 @@ class TestSchedule:
         return "\n".join(elements)
 
 
-if __name__ == "__main__":
+def test_abort_shutdown_timer() -> None:
     test_sched = TestSchedule()
     test_sched.test_abort_shutdown_timer()

@@ -1,5 +1,5 @@
 import sched
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep, time
 from typing import Any, List, Optional
 
@@ -84,12 +84,6 @@ class Schedule:
         self._shutdown_job = self._scheduler.enter(self.seconds_to_shutdown(), 2, raise_shutdown)
         # TODO: delay shutdown for 5 minutes or so on every event from webapp
 
-    def current_shutdown_time_timestring(self) -> str:
-        if self._shutdown_job is not None:
-            return datetime.fromtimestamp(self._shutdown_job.time).strftime("%d.%m.%Y %H:%M")
-        else:
-            return "unknown"
-
     def seconds_to_shutdown(self) -> int:
         """I feel useless in production code. But in the tests - yeah - I'm super strong!"""
         shutdown_delay_minutes: int = self._config.shutdown_delay_minutes
@@ -106,5 +100,54 @@ class Schedule:
         return tc.next_backup_timestring(self._schedule)
 
     @property
+    def next_backup_timedelta(self) -> timedelta:
+        return tc.next_backup(self._schedule) - datetime.now()
+
+    @property
+    def next_shutdown_timedelta(self) -> Optional[timedelta]:
+        if self._shutdown_job is not None and self._shutdown_job in self._scheduler.queue:
+            return datetime.fromtimestamp(self._shutdown_job.time) - datetime.now()
+        else:
+            return None
+
+    @property
     def next_backup_seconds(self) -> int:
         return tc.next_backup_seconds(self._schedule)
+
+    @property
+    def next_shutdown_timestamp(self) -> str:
+        if self._shutdown_job is not None:
+            return datetime.fromtimestamp(self._shutdown_job.time).strftime("%d.%m.%Y %H:%M")
+        else:
+            return "unknown"
+
+    @property
+    def next_shutdown_seconds(self) -> Optional[int]:
+        td = self.next_shutdown_timedelta
+        if td is not None:
+            return td.seconds
+        else:
+            return None
+
+
+class Stringify:
+    def __init__(self, schedule: Schedule) -> None:
+        self._schedule = schedule
+
+    def time_to_next_backup_16digits(self) -> str:
+        next_backup_timedelta = self._schedule.next_backup_timedelta
+        return self._create_16digit_timestring(next_backup_timedelta)
+
+    def time_to_shutdown_16digits(self) -> str:
+        next_shutdown_timedelta = self._schedule.next_shutdown_timedelta
+        if next_shutdown_timedelta is not None:
+            return self._create_16digit_timestring(next_shutdown_timedelta)
+        else:
+            return "nothing planned"
+
+    @staticmethod
+    def _create_16digit_timestring(timedelta_to_event: timedelta) -> str:
+        days = timedelta_to_event.days
+        hours, remainder = divmod(timedelta_to_event.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{days}d {hours:02}:{minutes:02}:{seconds:02}"

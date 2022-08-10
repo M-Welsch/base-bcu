@@ -150,6 +150,7 @@ class LoggerFactory:
 
     @classmethod
     def _setup(cls, parent_logger_name: str, development_mode: bool) -> None:
+        cls.__logs_directory.mkdir(exist_ok=True)
         cls.__project_logger = logging.getLogger(parent_logger_name)
         cls.__project_logger.setLevel(logging.DEBUG if development_mode else logging.INFO)
         cls.__console_handler = BaseConsoleHandler(parent=cls.__project_logger)
