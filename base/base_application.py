@@ -1,9 +1,11 @@
 import asyncio
 import json
 from collections import OrderedDict
+from enum import Enum
 from time import sleep
 from typing import Callable, List, Tuple
 
+from finite_state_machine import StateMachine, transition
 from signalslot import Signal
 
 from base.common.config import Config, get_config
@@ -57,7 +59,169 @@ class MaintenanceMode:
         LOG.warning("Backup request received during maintenance mode!")
 
 
-class BaSeApplication:
+class BaseStates(Enum):
+    INIT = "init"
+    WAIT_FOR_BACKUP = "wait_for_backup"
+    WAIT_FOR_SHUTDOWN = "wait_for_shutdown"
+    BACKUP = "backup"
+    NOTIFY = "notify"
+    EXIT = "exit"
+
+
+class BaseFsm(StateMachine):
+    def __init__(self, schedule: Schedule):
+        self.state = BaseStates.INIT
+        self._schedule = schedule
+        super().__init__()
+
+    @transition(source=[BaseStates.INIT, BaseStates.WAIT_FOR_SHUTDOWN], target=BaseStates.WAIT_FOR_BACKUP)
+    def await_backup(self):
+        self._schedule.unschedule_next_shutdown()
+        self._schedule.schedule_next_backup()
+        print("awaiting backup")
+
+    @transition(source=[BaseStates.INIT, BaseStates.BACKUP], target=BaseStates.WAIT_FOR_SHUTDOWN)
+    def await_shutdown(self):
+        self._schedule.schedule_next_shutdown()
+        print("awaiting shutdown")
+
+    @transition(source=[BaseStates.WAIT_FOR_BACKUP, BaseStates.WAIT_FOR_SHUTDOWN], target=BaseStates.BACKUP)
+    def do_backup(self):
+        self._schedule.unschedule_next_backup()
+        self._schedule.unschedule_next_shutdown()
+        print("performing backup")
+
+    @transition(source=BaseStates.WAIT_FOR_SHUTDOWN, target=BaseStates.NOTIFY)
+    def notify(self):
+        print("notifying")
+
+    @transition(source=BaseStates.NOTIFY, target=BaseStates.EXIT)
+    def do_exit(self):
+        print("exiting")
+
+
+class BaseApplication:
+    def __init__(self):
+        self._maintenance_mode = MaintenanceMode()
+        self._hardware = Hardware()
+        self._backup_conductor = BackupConductor(self._maintenance_mode.is_on)
+        self._webapp_server = WebappServer(self._hardware)
+        self._schedule = Schedule()
+        self._fsm = BaseFsm(self._schedule)
+        self._hmi = Hmi(self._hardware.sbu, self._schedule)
+        self._running = True
+        self._mainloop_map = {
+            BaseStates.INIT: self.mainloop_init,
+            BaseStates.WAIT_FOR_BACKUP: self.mainloop_wait_for_backup,
+            BaseStates.WAIT_FOR_SHUTDOWN: self.mainloop_wait_for_shutdown,
+            BaseStates.BACKUP: self.mainloop_backup,
+            BaseStates.NOTIFY: self.mainloop_notify,
+            BaseStates.EXIT: self.mainloop_exit,
+        }
+
+    def start(self) -> None:
+        self._hardware.write_to_display("Backup Server", "up and running!")
+        BcuRevision().log_repository_info()
+        LOG.info("Logger and Config started. Starting BaSe Application")
+        try:
+            LOG.info("Starting mainloop")
+            self.loop()
+            self._webapp_server.start()
+            eventloop = asyncio.get_event_loop()
+            LOG.info("Starting eventloop")
+            eventloop.run_forever()
+            eventloop.close()
+            LOG.info("Eventloop stopped")
+        except Exception as e:
+            LOG.exception("")
+            LOG.critical(f"Unknown error occured: {e}")
+
+    def loop(self):
+        eventloop = asyncio.get_event_loop()
+        try:
+            self._webapp_server.current_status = self.status
+            self._mainloop_map[self._fsm.state]()
+        except CriticalException:
+            self._fsm.await_shutdown()
+        except Exception as e:
+            LOG.exception("")
+            LOG.critical(f"Unknown error occured: {e}")
+        eventloop.call_later(1, self.loop)
+
+    def mainloop_init(self) -> None:
+        wakeup_reason_state_map = {
+            WakeupReason.BACKUP_NOW: self._fsm.do_backup,
+            WakeupReason.SCHEDULED_BACKUP: self._fsm.await_backup,
+            WakeupReason.CONFIGURATION: self._fsm.await_shutdown,
+            WakeupReason.HEARTBEAT_TIMEOUT: self._fsm.await_shutdown,
+            WakeupReason.NO_REASON: self._fsm.await_shutdown,
+        }
+        wakeup_reason = self._hardware.get_wakeup_reason()
+        wakeup_reason_state_map[wakeup_reason]()
+        if wakeup_reason in [WakeupReason.HEARTBEAT_TIMEOUT, WakeupReason.NO_REASON]:
+            self._hardware.disengage()
+
+    def mainloop_wait_for_backup(self) -> None:
+        self._hmi.display_status()
+        if self._schedule.backup_due():
+            self._fsm.do_backup()
+
+    def mainloop_wait_for_shutdown(self) -> None:
+        self._hmi.display_status()
+        if self._schedule.shutdown_due():
+            self._fsm.notify()
+
+    def mainloop_backup(self) -> None:
+        self._hmi.display_status()
+        if self._backup_conductor.finished:
+            self._fsm.await_shutdown()
+
+    def mainloop_notify(self) -> None:
+        mailer = Mailer()
+        mailer.send_summary()
+        self._wait_if_critical_error()
+        self._fsm.do_exit()
+
+    def mainloop_exit(self) -> None:
+        eventloop = asyncio.get_event_loop()
+        eventloop.stop()
+
+    @staticmethod
+    def _wait_if_critical_error() -> None:
+        """in case of a critical error we wait a little before we shut down.
+        If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
+        if bool(LoggerFactory.get_critical_messages()):
+            LOG.info("waiting for 5 Minutes before shutdown because critical error have been raised")
+            sleep(5 * 60)
+
+    @property
+    def status(self) -> str:
+        return json.dumps(
+            {
+                "diagnose": OrderedDict(
+                    {
+                        "Stromaufnahme": f"{self._hardware.input_current:0.2f} A",
+                        "Systemspannung": f"{self._hardware.system_voltage_vcc3v:0.2f} V",
+                        "Umgebungstemperatur": f"{self._hardware.sbu_temperature:0.2f} °C",
+                        "Prozessortemperatur": f"{self._hardware.bcu_temperature:0.2f} °C",
+                        "Backup-HDD verfügbar": self._hardware.drive_available.value,
+                        "NAS-HDD verfügbar": self._backup_conductor.network_share.is_available.value,
+                    }
+                ),
+                "next_backup_due": self._schedule.visual.next_backup_timestamp,
+                "shutdown_in": self._schedule.visual.next_shutdown_seconds or "0",
+                "docked": self._hardware.docked,
+                "powered": self._hardware.powered,
+                "mounted": self._hardware.mounted,
+                "backup_running": self._backup_conductor.is_running_func(),
+                "backup_hdd_usage": self._hardware.drive_space_used,
+                "recent_warnings_count": LoggerFactory.get_warning_count(),
+                "log_tail": LoggerFactory.get_last_lines(),
+            }
+        )
+
+
+class BaSeApplication_old:
     button_0_pressed = Signal()
     button_1_pressed = Signal()
     mainloop_counter = 0
@@ -118,41 +282,8 @@ class BaSeApplication:
             LOG.exception("")
             LOG.critical(f"Unknown error occured: {e}")
 
-        finally:
-            mailer = Mailer()
-            mailer.send_summary()
-            self._wait_if_critical_error()
-
-    @staticmethod
-    def _wait_if_critical_error() -> None:
-        """in case of a critical error we wait a little before we shut down.
-        If we didn't base could shut down almost immediately after the error and the user has to chance to react"""
-        if bool(LoggerFactory.get_critical_messages()):
-            LOG.info("waiting for 5 Minutes before shutdown because critical error have been raised")
-            sleep(5 * 60)
-
     def _prepare_service(self) -> None:
-        self._process_wakeup_reason()
         self._on_go_to_idle_state()
-
-    def _process_wakeup_reason(self) -> None:
-        wakeup_reason = self._hardware.get_wakeup_reason()
-        if wakeup_reason == WakeupReason.BACKUP_NOW:
-            LOG.info("Woke up for manual backup")
-            self._schedule.on_schedule_manual_backup(1)
-            # self._backup_conductor.run()
-        elif wakeup_reason == WakeupReason.SCHEDULED_BACKUP:
-            LOG.info("Woke up for scheduled backup")
-        elif wakeup_reason == WakeupReason.CONFIGURATION:
-            LOG.info("Woke up for configuration")
-        elif wakeup_reason == WakeupReason.HEARTBEAT_TIMEOUT:
-            LOG.warning("BCU heartbeat timeout occurred")
-            self._hardware.disengage()
-        elif wakeup_reason == WakeupReason.NO_REASON:
-            LOG.info("Woke up for no specific reason")
-            self._hardware.disengage()
-        else:
-            LOG.warning("Invalid wakeup reason. Did I fall from the shelf or what?")
 
     def _on_go_to_idle_state(self, **kwargs):  # type: ignore
         self._schedule.on_reschedule_backup()
@@ -221,29 +352,3 @@ class BaSeApplication:
         self._backup_conductor.backup_finished_notification.connect(self._on_go_to_idle_state)
         self._webapp_server.backup_now_request.connect(self._on_backup_request)
         self._webapp_server.backup_abort.connect(self._on_backup_abort)
-
-    @property
-    def status(self) -> str:
-        return json.dumps(
-            {
-                "diagnose": OrderedDict(
-                    {
-                        "Stromaufnahme": f"{self._hardware.input_current:0.2f} A",
-                        "Systemspannung": f"{self._hardware.system_voltage_vcc3v:0.2f} V",
-                        "Umgebungstemperatur": f"{self._hardware.sbu_temperature:0.2f} °C",
-                        "Prozessortemperatur": f"{self._hardware.bcu_temperature:0.2f} °C",
-                        "Backup-HDD verfügbar": self._hardware.drive_available.value,
-                        "NAS-HDD verfügbar": self._backup_conductor.network_share.is_available.value,
-                    }
-                ),
-                "next_backup_due": self._schedule.next_backup_timestamp,
-                "shutdown_in": self._schedule.next_shutdown_seconds or "0",
-                "docked": self._hardware.docked,
-                "powered": self._hardware.powered,
-                "mounted": self._hardware.mounted,
-                "backup_running": self._backup_conductor.is_running_func(),
-                "backup_hdd_usage": self._hardware.drive_space_used,
-                "recent_warnings_count": LoggerFactory.get_warning_count(),
-                "log_tail": LoggerFactory.get_last_lines(),
-            }
-        )

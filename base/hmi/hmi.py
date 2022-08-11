@@ -5,7 +5,7 @@ from base.hardware.button import Button
 from base.hardware.sbu.sbu import SBU
 from base.hmi.display import Display
 from base.hmi.statemachine import HmiStates
-from base.logic.schedule import Schedule, Stringify
+from base.logic.schedule import Schedule, Visual
 
 
 class Hmi:
@@ -15,7 +15,7 @@ class Hmi:
         self._button_0 = Button()
         self._button_1 = Button()
         self._state = HmiStates.starting_up
-        self._stringify = Stringify(schedule)
+        self._stringify = Visual(schedule)
         self._display_map = {
             HmiStates.starting_up: self._display_starting_up,
             HmiStates.waiting_for_backup: self._display_waiting_for_backup,

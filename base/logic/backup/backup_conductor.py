@@ -42,6 +42,10 @@ class BackupConductor:
         self._backup_preparator = Optional[BackupPreparator]
 
     @property
+    def finished(self) -> bool:
+        raise NotImplementedError
+
+    @property
     def network_share(self) -> NetworkShare:
         return self._network_share
 

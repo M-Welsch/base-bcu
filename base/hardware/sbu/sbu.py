@@ -33,13 +33,23 @@ class SBU:
         return self._sbu_communicator.available
 
     def request_wakeup_reason(self) -> WakeupReason:
+        wakeup_reason_log_messages = {
+            WakeupReason.BACKUP_NOW: "Woke up for manual backup",
+            WakeupReason.SCHEDULED_BACKUP: "Woke up for scheduled backup",
+            WakeupReason.CONFIGURATION: "Woke up for configuration",
+            WakeupReason.HEARTBEAT_TIMEOUT: "BCU heartbeat timeout occurred",
+            WakeupReason.NO_REASON: "Woke up for no specific reason",
+        }
         wakeup_reason_code = "not obtained yet"
         try:
             wakeup_reason_code = self._sbu_communicator.query(SbuCommands.request_wakeup_reason)
             wakeup_raeson = WakeupReason(wakeup_reason_code)
+            LOG.info(wakeup_reason_log_messages[wakeup_raeson])
         except ValueError:
             wakeup_raeson = WakeupReason.NO_REASON
-            LOG.error(f"couldn't find out wakeup reason. Code was {wakeup_reason_code}. Defaulting to {wakeup_raeson}")
+            LOG.error(
+                f"Invalid wakeup reason. Did I fall from the shelf or what? Code was {wakeup_reason_code}. Defaulting to {wakeup_raeson}"
+            )
         return wakeup_raeson
 
     def set_wakeup_reason(self, reason: str) -> None:
