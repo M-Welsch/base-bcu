@@ -48,6 +48,11 @@ class System:
         LOG.info(f"obtaining free space on bu hdd with command: {' '.join(command)}. Received {free_space_on_bu_hdd}")
         return free_space_on_bu_hdd
 
+    @staticmethod
+    def system_clock_synchronized_with_ntp() -> bool:
+        timedate_status_raw = subprocess.check_output("timedatectl")
+        return "System clock synchronized: yes" in timedate_status_raw.decode()
+
 
 class SmbShareMount:
     def mount_smb_share(self, mount_point: str) -> None:
