@@ -13,7 +13,7 @@ class SbuCommands:
     write_to_display_line2 = SbuCommand(message_code="D2")
     set_display_brightness = SbuCommand(message_code="DB")
     set_led_brightness = SbuCommand(message_code="DL")
-    set_seconds_to_next_bu = SbuCommand(message_code="BU", response_keyword="CMP")
+    set_seconds_to_next_bu = SbuCommand(message_code="BU")
     get_seconds_to_next_bu = SbuCommand(message_code="BG")
     send_readable_timestamp_of_next_bu = SbuCommand(message_code="BR")
     read_readable_timestamp_of_next_bu = SbuCommand(message_code="BS")
