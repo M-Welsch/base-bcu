@@ -8,6 +8,7 @@ from base.common.exceptions import DockingError, MountError, NetworkError
 from base.common.logger import LoggerFactory
 from base.logic.backup.backup import Backup
 from base.logic.backup.backup_preparator import BackupPreparator
+from base.logic.backup.protocol import Protocol
 from base.logic.nas import Nas
 from base.logic.network_share import NetworkShare
 
@@ -40,6 +41,7 @@ class BackupConductor:
         self._nas = Nas()
         self._network_share = NetworkShare()
         self._backup_preparator = Optional[BackupPreparator]
+        self._protocol = Protocol(get_config("sync.json").protocol)
 
     @property
     def network_share(self) -> NetworkShare:
@@ -92,14 +94,19 @@ class BackupConductor:
                 LOG.info("...but backup conditions are not met.")
 
     def _attach_backup_datasource(self) -> None:
-        if get_config("sync.json").protocol == "smb":
+        if self._protocol in [Protocol.SMB, Protocol.NFS]:
             LOG.debug("Mounting data source via smb")
-            self._network_share.mount_datasource_via_smb()
+            self._network_share.mount_datasource()
         else:
             LOG.debug("Skipping mounting of datasource since we're backing up via ssh")
 
     def _attach_backup_target(self) -> None:
         self.hardware_engage_request.emit()
+
+    def _prepare_nas(self) -> None:
+        protocol = get_config("sync.json").protocol
+        if protocol == "ssh":
+            self._nas.start_rsync_daemon()
 
     def on_backup_abort(self, **kwargs):  # type: ignore
         if self._backup_preparator is not None:
@@ -126,5 +133,7 @@ class BackupConductor:
 
     def _return_to_default_state(self) -> None:
         self.hardware_disengage_request.emit()
-        if get_config("sync.json").protocol == "smb":
-            self._network_share.unmount_datasource_via_smb()
+        if self._protocol == Protocol.SMB:
+            self._network_share.unmount_datasource()
+        elif self._protocol == Protocol.SSH:
+            self._nas.stop_rsync_daemon()

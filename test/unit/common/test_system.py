@@ -6,7 +6,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from base.common.exceptions import NetworkError
-from base.common.system import SmbShareMount
+from base.common.system import NetworkShareMount
 
 
 def test_size_of_next_backup_increment() -> None:
@@ -33,7 +33,7 @@ def test_parse_process_output(
     caplog: LogCaptureFixture,
 ) -> None:
     def function_under_test(process_for_test: Popen) -> None:
-        SmbShareMount._parse_process_output(process_for_test)
+        NetworkShareMount._parse_process_output(process_for_test)
 
     process = Popen(f'echo "{str_in_stderr}" 1>&2', shell=True, stderr=PIPE, stdout=PIPE)
     with caplog.at_level(logging.DEBUG):

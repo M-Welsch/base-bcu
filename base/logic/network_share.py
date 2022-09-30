@@ -5,7 +5,7 @@ from base.common.config import Config, get_config
 from base.common.exceptions import NetworkError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
-from base.common.system import SmbShareMount
+from base.common.system import NetworkShareMount
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -23,7 +23,7 @@ class NetworkShare:
     def is_mounted(self) -> bool:
         return Path(self._config.local_nas_hdd_mount_point).is_mount()
 
-    def mount_datasource_via_smb(self) -> None:
+    def mount_datasource(self) -> None:
         if self.is_mounted:
             LOG.warning(f"datasource is already mounted at {self._config.local_nas_hdd_mount_point}")
         else:
@@ -31,7 +31,7 @@ class NetworkShare:
             self._perform_mount()
             self._available = HddState.available
 
-    def unmount_datasource_via_smb(self) -> None:
+    def unmount_datasource(self) -> None:
         if self.is_mounted:
             self._perform_unmount()
             self._available = HddState.not_available
@@ -48,14 +48,14 @@ class NetworkShare:
 
     def _perform_mount(self) -> None:
         try:
-            SmbShareMount().mount_smb_share(self._config.local_nas_hdd_mount_point)
+            NetworkShareMount().mount(self._config.local_nas_hdd_mount_point)
         except NetworkError as e:
             self._available = HddState.unknown
             raise NetworkError from e
 
     def _perform_unmount(self) -> None:
         try:
-            SmbShareMount().unmount_smb_share(self._config.local_nas_hdd_mount_point)
+            NetworkShareMount().unmount(self._config.local_nas_hdd_mount_point)
         except NetworkError as e:
             self._available = HddState.unknown
             raise NetworkError from e

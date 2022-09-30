@@ -7,6 +7,6 @@
     "local_nas_hdd_mount_point": "/media/NASHDD",
     "sample_interval": 0.2,
     "incremental": true,
-    "protocol": "smb",
+    "protocol": "nfs",
     "ssh_keyfile_path": "/home/base/.ssh/id_rsa"
 }
