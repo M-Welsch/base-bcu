@@ -1,9 +1,10 @@
 import subprocess
 from pathlib import Path
 from subprocess import PIPE, Popen, run
-from typing import IO, List
+from time import sleep, time
+from typing import List
 
-from base.common.exceptions import BackupSizeRetrievalError, NetworkError
+from base.common.exceptions import BackupSizeRetrievalError, NetworkError, TimeSynchronisationError
 from base.common.logger import LoggerFactory
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 
@@ -48,10 +49,19 @@ class System:
         LOG.info(f"obtaining free space on bu hdd with command: {' '.join(command)}. Received {free_space_on_bu_hdd}")
         return free_space_on_bu_hdd
 
+    def wait_for_ntp_update(self, timeout_seconds: float) -> None:
+        start = time()
+        while not self._system_clock_synchronized_with_ntp():
+            if time() - start > timeout_seconds:
+                raise TimeSynchronisationError(f"Waiting for NTP Update timed out (timeout = {timeout_seconds}s)")
+            sleep(0.5)
+
     @staticmethod
-    def system_clock_synchronized_with_ntp() -> bool:
-        timedate_status_raw = subprocess.check_output("timedatectl")
-        return "System clock synchronized: yes" in timedate_status_raw.decode()
+    def _system_clock_synchronized_with_ntp() -> bool:
+        timedate_status_raw = subprocess.check_output("timedatectl").decode()
+        if "System clock synchronized: " not in timedate_status_raw:
+            raise TimeSynchronisationError("NTP synchronisation status cannot be obtained!")
+        return "System clock synchronized: yes" in timedate_status_raw
 
 
 class SmbShareMount:
