@@ -1,5 +1,4 @@
 import logging
-import subprocess
 from subprocess import PIPE, Popen
 from typing import Optional, Type
 
