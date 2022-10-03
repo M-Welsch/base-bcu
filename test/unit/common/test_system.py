@@ -73,7 +73,7 @@ def test_system_clock_synchronized_with_ntp(timedatectl_output: bytes, result: b
     assert System._system_clock_synchronized_with_ntp() == result
 
 
-@pytest.mark.parametrize("timedatectl_output", [b"crab", b"cannot be synchronized"])
+@pytest.mark.parametrize("timedatectl_output", [b"crap", b"cannot be synchronized"])
 def test_system_clock_synchronized_with_ntp_unexpected_output(timedatectl_output: bytes, mocker: MockFixture) -> None:
     mocker.patch("subprocess.check_output", return_value=timedatectl_output)
     with pytest.raises(TimeSynchronisationError):

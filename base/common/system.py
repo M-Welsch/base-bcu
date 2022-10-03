@@ -59,9 +59,12 @@ class System:
     @staticmethod
     def _system_clock_synchronized_with_ntp() -> bool:
         timedate_status_raw = subprocess.check_output("timedatectl").decode()
-        if "System clock synchronized: " not in timedate_status_raw:
+        if "System clock synchronized: yes" in timedate_status_raw:
+            return True
+        elif "System clock synchronized: no" in timedate_status_raw:
+            return False
+        else:
             raise TimeSynchronisationError("NTP synchronisation status cannot be obtained!")
-        return "System clock synchronized: yes" in timedate_status_raw
 
 
 class SmbShareMount:
