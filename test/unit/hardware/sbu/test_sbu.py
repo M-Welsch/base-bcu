@@ -91,10 +91,10 @@ def test_condition_brightness_value(input_value: float, output_value: int, caplo
 
 def test_send_seconds_to_next_bu(sbu: SBU, mocker: MockerFixture) -> None:
     input_seconds = 10
-    patched_query = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.query", return_value=10)
+    patched_write = mocker.patch("base.hardware.sbu.communicator.SbuCommunicator.write")
     mocker.patch("base.hardware.sbu.sbu.SBU._assert_correct_rtc_setting")
     sbu.send_seconds_to_next_bu(input_seconds)
-    assert patched_query.called_once_with(SbuCommands.set_seconds_to_next_bu, str(input_seconds))
+    assert patched_write.called_once_with(SbuCommands.set_seconds_to_next_bu, str(input_seconds))
 
 
 @pytest.mark.parametrize("rtc_register, secs, error_log", [("1", 32, False), ("2", 32, True)])

@@ -82,7 +82,7 @@ class SBU:
         command = SbuCommands.set_seconds_to_next_bu
         payload = str(int(seconds))
         LOG.info(f"Command: message_code = {command.message_code}, payload = {payload}")
-        assertion_message = self._sbu_communicator.query(command, payload)
+        self._sbu_communicator.write(command, payload)
 
     @staticmethod
     def _assert_correct_rtc_setting(assertion_message: str, seconds: int) -> None:
