@@ -65,3 +65,23 @@ def test_extract_root_of_share(share_name: str, error: Optional[Type[NasSmbConfE
     config_parser.read_dict({"Backup": {"path": share_path}})
     root_of_share = Nas._extract_root_of_share(config_parser, share_name)
     assert root_of_share == Path(share_path)
+
+
+def test_start_rsync_daemon(nas: Nas, mocker: MockFixture):
+    mocked_close = mocker.patch("paramiko.SSHClient.close")
+    mocked_sshi_connect = mocker.patch("base.common.ssh_interface.SSHInterface.connect")
+    mocked_sshi_run_and_raise = mocker.patch("base.common.ssh_interface.SSHInterface.run_and_raise")
+    nas.start_rsync_daemon()
+    assert mocked_close.called_once()
+    assert mocked_sshi_connect.called_once()
+    assert mocked_sshi_run_and_raise.called_once_with("fsystemctl start base-rsync-daemon")
+
+
+def test_stop_rsync_daemon(nas: Nas, mocker: MockFixture):
+    mocked_close = mocker.patch("paramiko.SSHClient.close")
+    mocked_sshi_connect = mocker.patch("base.common.ssh_interface.SSHInterface.connect")
+    mocked_sshi_run_and_raise = mocker.patch("base.common.ssh_interface.SSHInterface.run_and_raise")
+    nas.stop_rsync_daemon()
+    assert mocked_close.called_once()
+    assert mocked_sshi_connect.called_once()
+    assert mocked_sshi_run_and_raise.called_once_with("fsystemctl stop base-rsync-daemon")

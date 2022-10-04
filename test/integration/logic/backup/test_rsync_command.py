@@ -8,7 +8,7 @@ from base.logic.backup.protocol import Protocol
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB, Protocol.NFS])
 def test_composition(protocol: Protocol) -> None:
     backup_environment_configuration = BackupTestEnvironmentInput(
         protocol=protocol,

@@ -19,8 +19,8 @@ def hmi() -> Generator[Hmi, None, None]:
 
 def test_display_waiting_for_backup(hmi: Hmi) -> None:
     line1, line2 = hmi._display_waiting_for_backup()
-    assert len(line1) == 16
-    assert len(line2) == 16
+    assert len(line1) <= 16
+    assert len(line2) <= 16
 
 
 @pytest.mark.parametrize(

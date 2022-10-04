@@ -44,7 +44,7 @@ base/test/utils/backup_environment/virtual_hard_drive >╌╌╌╮
 """
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB, Protocol.NFS])
 def test_backup_preparator(protocol: Protocol) -> None:
     """This testcase uses the following amounts of test-data:
     - 10 old backups with 100kiB each
@@ -76,7 +76,7 @@ def test_backup_preparator(protocol: Protocol) -> None:
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB, Protocol.NFS])
 def test_backup_preparator_with_deletion_of_old_bu(protocol: Protocol) -> None:
     """This testcase forces the preparator to delete old backups"""
 
