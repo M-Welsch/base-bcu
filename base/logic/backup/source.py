@@ -20,15 +20,15 @@ class BackupSource:
         return self._path
 
     def _backup_source_directory(self) -> Path:
-        if self._protocol == Protocol.SMB:
-            directory = self._backup_source_directory_for_smb()
+        if self._protocol in [Protocol.SMB, Protocol.NFS]:
+            directory = self._backup_source_directory_for_locally_mounted()
         elif self._protocol == Protocol.SSH:
             directory = self._backup_source_directory_for_ssh()
         else:
             raise NotImplementedError(f"Protocol {self._protocol} is not implemented")
         return directory
 
-    def _backup_source_directory_for_smb(self) -> Path:
+    def _backup_source_directory_for_locally_mounted(self) -> Path:
         """returns the backup source directory on the BaSe. Take the following example for explanation:
 
         directory Structure on NAS:
@@ -37,7 +37,7 @@ class BackupSource:
             └── files_to_backup    >╌╌╌╌╮           (directory within the share that contains the files to be backed up)
                 ├── files               │
                 └── more files ...      │
-                                        │mount (cifs/smb)
+                                        │mount (nfs/smb)
         directory Structure on BaSe:    │
         ============================    │
         /media                          │

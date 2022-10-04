@@ -66,7 +66,7 @@ def patch_configs_for_backup_conductor_tests(backup_env: BackupTestEnvironmentOu
     patch_config(BackupBrowser, backup_env.sync_config)
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB, Protocol.NFS])
 def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
     backup_environment_configuration = BackupTestEnvironmentInput(
         protocol=protocol,
@@ -81,7 +81,7 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
     with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
         backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
         patch_configs_for_backup_conductor_tests(backup_env)
-        patch_unmount_smb_share = mocker.patch("base.logic.network_share.NetworkShare.unmount_datasource_via_smb")
+        patch_unmount_smb_share = mocker.patch("base.logic.network_share.NetworkShare.unmount_datasource")
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_conductor.run()
         backup_conductor._backup.join()  # type: ignore
@@ -93,12 +93,12 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
 
 def mocking_procedure_network_share_not_available(mocker: MockFixture, *args) -> None:  # type: ignore
     error_process = Popen('echo "error(2)" 1>&2', shell=True, stderr=PIPE, stdout=PIPE)
-    mocker.patch("base.common.system.SmbShareMount.run_command", return_value=error_process)
+    mocker.patch("base.common.system.NetworkShareMount.run_command", return_value=error_process)
 
 
 def mocking_procedure_errant_ip_address(mocker: MockFixture, backup_env: BackupTestEnvironmentOutput) -> None:
     error_process = Popen('echo "could not resolve address" 1>&2', shell=True, stderr=PIPE, stdout=PIPE)
-    mocker.patch("base.common.system.SmbShareMount.run_command", return_value=error_process)
+    mocker.patch("base.common.system.NetworkShareMount.run_command", return_value=error_process)
 
 
 def mocking_procedure_invalid_backup_src(mocker: MockFixture, backup_env: BackupTestEnvironmentOutput) -> None:
@@ -206,7 +206,8 @@ def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
 @pytest.mark.parametrize(
     "protocol",
     [
-        (Protocol.SMB),
+        (Protocol.NFS),
+        #(Protocol.SMB),
         # (Protocol.SSH),
     ],
 )
