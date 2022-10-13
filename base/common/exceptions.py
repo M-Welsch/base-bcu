@@ -131,3 +131,7 @@ class BackupHddNotAvailable(CriticalException):
 
 class MountError(CriticalException):
     pass
+
+
+class TimeSynchronisationError(Exception):
+    pass

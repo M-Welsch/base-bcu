@@ -4,9 +4,11 @@ from typing import Optional, Type
 
 import pytest
 from _pytest.logging import LogCaptureFixture
+from pytest_mock import MockFixture
 
-from base.common.exceptions import NetworkError
-from base.common.system import SmbShareMount
+import base.common.system
+from base.common.exceptions import NetworkError, TimeSynchronisationError
+from base.common.system import SmbShareMount, System
 
 
 def test_size_of_next_backup_increment() -> None:
@@ -43,3 +45,36 @@ def test_parse_process_output(
         else:
             function_under_test(process)
         assert log_message in caplog.text
+
+
+def test_wait_for_ntp_update(mocker: MockFixture) -> None:
+    mocker.patch("base.common.system.System._system_clock_synchronized_with_ntp", return_value=True)
+    System().wait_for_ntp_update(0.01)
+    mocker.patch("base.common.system.System._system_clock_synchronized_with_ntp", return_value=False)
+    with pytest.raises(TimeSynchronisationError):
+        System().wait_for_ntp_update(0.01)
+
+
+@pytest.mark.parametrize(
+    "timedatectl_output, result",
+    [
+        (
+            b"               Local time: Di 2022-09-27 20:13:40 CEST\n           Universal time: Di 2022-09-27 18:13:40 UTC\n                 RTC time: Di 2022-09-27 18:13:40\n                Time zone: Europe/Berlin (CEST, +0200)\nSystem clock synchronized: yes\n              NTP service: active\n          RTC in local TZ: no\n",
+            True,
+        ),
+        (
+            b"               Local time: Di 2022-09-27 20:13:40 CEST\n           Universal time: Di 2022-09-27 18:13:40 UTC\n                 RTC time: Di 2022-09-27 18:13:40\n                Time zone: Europe/Berlin (CEST, +0200)\nSystem clock synchronized: no\n              NTP service: active\n          RTC in local TZ: no\n",
+            False,
+        ),
+    ],
+)
+def test_system_clock_synchronized_with_ntp(timedatectl_output: bytes, result: bool, mocker: MockFixture) -> None:
+    mocker.patch("subprocess.check_output", return_value=timedatectl_output)
+    assert System._system_clock_synchronized_with_ntp() == result
+
+
+@pytest.mark.parametrize("timedatectl_output", [b"crap", b"cannot be synchronized"])
+def test_system_clock_synchronized_with_ntp_unexpected_output(timedatectl_output: bytes, mocker: MockFixture) -> None:
+    mocker.patch("subprocess.check_output", return_value=timedatectl_output)
+    with pytest.raises(TimeSynchronisationError):
+        System._system_clock_synchronized_with_ntp()
