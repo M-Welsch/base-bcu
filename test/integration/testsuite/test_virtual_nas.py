@@ -1,4 +1,5 @@
 from pathlib import Path
+from subprocess import check_output
 from typing import Generator
 
 import pytest
@@ -17,5 +18,23 @@ def virtual_nas_config() -> Generator[vnas.VirtualNasConfig, None, None]:
     )
 
 
-def test_run_container(virtual_nas_config: vnas.VirtualNasConfig) -> None:
-    vnas.VirtualNas(virtual_nas_config)
+@pytest.fixture
+def virtual_nas(virtual_nas_config: vnas.VirtualNasConfig) -> Generator[vnas.VirtualNas, None, None]:
+    yield vnas.VirtualNas(virtual_nas_config)
+
+
+def test_run_container(virtual_nas: vnas.VirtualNas) -> None:
+    assert virtual_nas.running
+    virtual_nas.cleanup()
+    assert not virtual_nas.running
+
+
+def test_rsync_daemon_reachable(virtual_nas: vnas.VirtualNas) -> None:
+    ip = virtual_nas.ip
+    port = virtual_nas.port
+    outp = check_output(["rsync", f"{ip}::", f"--port={port}"])
+    assert "virtual_backup_source" in outp.decode()
+
+
+def test_nfs_share_reachable(virtual_nas: vnas.VirtualNas) -> None:
+    ...
