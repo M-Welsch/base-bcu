@@ -20,7 +20,9 @@ def virtual_nas_config() -> Generator[vnas.VirtualNasConfig, None, None]:
 
 @pytest.fixture
 def virtual_nas(virtual_nas_config: vnas.VirtualNasConfig) -> Generator[vnas.VirtualNas, None, None]:
-    yield vnas.VirtualNas(virtual_nas_config)
+    vnas_instance = vnas.VirtualNas(virtual_nas_config)
+    yield vnas_instance
+    vnas_instance.cleanup()
 
 
 def test_run_container(virtual_nas: vnas.VirtualNas) -> None:
@@ -34,7 +36,3 @@ def test_rsync_daemon_reachable(virtual_nas: vnas.VirtualNas) -> None:
     port = virtual_nas.port
     outp = check_output(["rsync", f"{ip}::", f"--port={port}"])
     assert "virtual_backup_source" in outp.decode()
-
-
-def test_nfs_share_reachable(virtual_nas: vnas.VirtualNas) -> None:
-    ...

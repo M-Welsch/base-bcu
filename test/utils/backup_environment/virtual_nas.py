@@ -30,10 +30,6 @@ read only = no
 list = yes
 """
 
-NFS_EXPORTS_TEMPLATE = """
-{{backup_source_directory}} {{client_ip}}(ro,sync,no_subtree_check,no_root_squash)
-"""
-
 DOCKERFILE_TEMPLATE = """
 FROM ubuntu
 
@@ -47,13 +43,7 @@ RUN chmod +x testfile_generator.sh
 RUN ./testfile_generator.sh
 RUN cp rsyncd.conf /etc/
 
-# NFS related
-RUN cp exports /etc/
-#RUN service nfs-kernel-server reload
-#RUN exportfs -arv
-
 EXPOSE {{rsync_daemon_port}}
-EXPOSE {{nfs_port}}
 
 CMD ["rsync", "--daemon", "--no-detach", "--port={{rsync_daemon_port}}"]
 
@@ -68,25 +58,22 @@ class VirtualNasConfig:
     amount_files_in_source: int
     bytesize_of_each_sourcefile: int
     rsync_daemon_port: int = 1234
-    nfs_port: int = 2049
 
 
 class VirtualNas:
     """The virtual NAS is a docker container that acts looks like an actual NAS for the Backup Server
 
     It supports:
-    - Backup via rsync daemon and NFS
-    - ... some more stuff ?!
+    - Backup via rsync daemon
+    - ... that's it :)
 
     It shall be configured with a VirtualNasConfig object
-
     """
 
     def __init__(self, config: VirtualNasConfig, cleanup_before: bool = True) -> None:
         self._config = config
         self._client = self._create_client()
         self._create_rsyncd_conf()
-        self._create_nfs_exports()
         self._create_testfile_generator()
         self._create_dockerfile()
         self.image = self._create_image(self._client)
@@ -121,15 +108,6 @@ class VirtualNas:
         with open(self._config.virtual_nas_docker_directory/"rsyncd.conf", "w") as rsynd_conf:
             rsynd_conf.write(rsyncd_conf_content)
 
-    def _create_nfs_exports(self) -> None:
-        client_ip = "172.17.0.1"
-        nfs_exports_content = Environment().from_string(NFS_EXPORTS_TEMPLATE).render(
-            backup_source_directory=self._config.backup_source_directory,
-            client_ip=client_ip
-        )
-        with open(self._config.virtual_nas_docker_directory/"exports", "w") as nfs_exports:
-            nfs_exports.write(nfs_exports_content)
-
     def _create_testfile_generator(self) -> None:
         testfile_generator_content = Environment().from_string(TESTFILE_GENERATOR_TEMPLATE).render(
             amount_files_in_source=self._config.amount_files_in_source,
@@ -142,8 +120,7 @@ class VirtualNas:
     def _create_dockerfile(self) -> None:
         dockerfile_content = Environment().from_string(DOCKERFILE_TEMPLATE).render(
             backup_source_directory=self._config.backup_source_directory,
-            rsync_daemon_port=self._config.rsync_daemon_port,
-            nfs_port=self._config.nfs_port
+            rsync_daemon_port=self._config.rsync_daemon_port
         )
         with open(self._config.virtual_nas_docker_directory/"Dockerfile", "w") as dockerfile:
             dockerfile.write(dockerfile_content)
@@ -156,9 +133,6 @@ class VirtualNas:
         return image
 
     def _run_container(self):
-        ports = {
-            f'{self._config.nfs_port}/tcp':self._config.nfs_port
-        }
         return self._client.containers.run(self.image, detach=True, publish_all_ports=True)
 
     def cleanup(self) -> None:
