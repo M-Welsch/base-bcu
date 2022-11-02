@@ -11,7 +11,7 @@ from base.common.config import Config, get_config
 from base.common.constants import BAUD_RATE
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SerialInterfaceError
 from base.common.logger import LoggerFactory
-from base.hardware.pin_interface import PinInterface
+from base.hardware.pin_interface import pin_interface
 from base.hardware.sbu.message import SbuMessage
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -28,13 +28,12 @@ class SerialInterface:
         self._port: Path = port
         self._baud_rate: int = baud_rate
         self._serial_connection: Optional[serial.Serial] = None
-        self._pin_interface: PinInterface = PinInterface.global_instance()
 
     def __enter__(self) -> SerialInterface:
         assert isinstance(self._config, Config)
         self._wait_for_channel_free()
         SerialInterface._channel_busy = True
-        self._connect_serial_communication_path()
+        pin_interface.connect_serial_communication_path()
         self._establish_serial_connection_or_raise()
         # self._serial_connection.open() is called implicitly!
         self.flush_sbu_channel()
@@ -45,7 +44,7 @@ class SerialInterface:
     ) -> None:
         self.flush_sbu_channel()
         self._close_connection()
-        self._pin_interface.disable_receiving_messages_from_sbu()
+        pin_interface.disable_receiving_messages_from_sbu()
         SerialInterface._channel_busy = False
 
     def _wait_for_channel_free(self) -> None:
@@ -56,11 +55,6 @@ class SerialInterface:
             sleep(0.05)
             if time() - time_start > channel_timeout:
                 raise SbuCommunicationTimeout(f"Waiting for longer than {channel_timeout} for channel to be free.")
-
-    def _connect_serial_communication_path(self) -> None:
-        self._pin_interface.set_sbu_serial_path_to_communication()
-        self._pin_interface.enable_receiving_messages_from_sbu()  # Fixme: this is not called when needed!
-        sleep(4e-8)  # t_on / t_off max of ADG734 (ensures signal switchover)
 
     def _establish_serial_connection_or_raise(self) -> None:
         assert isinstance(self._config, Config)

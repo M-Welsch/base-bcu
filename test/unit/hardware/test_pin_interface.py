@@ -1,13 +1,9 @@
-import sys
-from importlib import import_module
-
 import pytest
 
-from base.hardware.pin_interface import GPIO, PinInterface
+from base.hardware.pin_interface import GPIO, pin_interface
 
 
 def test_initialize_pins_and_check_pinout() -> None:
-    pin_interface = PinInterface.global_instance()
     pinout_for_verification = {
         # first entry: Pin number
         # second entry: Direction - 0: OUT, 1: IN
@@ -30,7 +26,6 @@ def test_initialize_pins_and_check_pinout() -> None:
 
 @pytest.mark.skip("fails the first time")
 def test_pushbutton_logic_inversion() -> None:
-    pin_interface = PinInterface.global_instance()
     # GPIO mockup returns HIGH (=True) the first times it's getting called. This emulates a Button in idle state
     # Therefore these methods will return False because all buttons are active low wired
     assert not pin_interface.docked
@@ -39,8 +34,3 @@ def test_pushbutton_logic_inversion() -> None:
     # Pushbutton pins will return False
     assert not pin_interface.button_0_pin_high
     assert not pin_interface.button_1_pin_high
-
-
-def test_singleton() -> None:
-    with pytest.raises(RuntimeError):
-        PinInterface()

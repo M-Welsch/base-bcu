@@ -1,16 +1,11 @@
-import logging
 from test.utils.patch_config import patch_config
 from typing import Generator
-from unittest.mock import PropertyMock
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
-import base.hardware.pin_interface
-from base.common.exceptions import DockingError
 from base.hardware.mechanics import Mechanics
-from base.hardware.pin_interface import PinInterface
+from base.hardware.pin_interface import pin_interface
 
 
 @pytest.fixture
@@ -34,7 +29,7 @@ def test_dock(mechanics: Mechanics, mocker: MockFixture) -> None:
     assert patched_stepper_step.call_count == 1
     assert patched_check_for_timeout.called
     assert patched_stepper_driver_off.called_once_with()
-    assert not PinInterface.global_instance().docked_sensor_pin_high
+    assert not pin_interface.docked_sensor_pin_high
 
 
 @pytest.mark.skip(reason="mocking doesnt work properly yet")
@@ -51,4 +46,4 @@ def test_undock(mechanics: Mechanics, mocker: MockFixture) -> None:
     assert patched_stepper_direction_undocking.called_once_with()
     assert patched_stepper_step.call_count == 1
     assert patched_stepper_driver_off.called_once_with()
-    assert not PinInterface.global_instance().undocked_sensor_pin_high
+    assert not pin_interface.undocked_sensor_pin_high

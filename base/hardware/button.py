@@ -1,4 +1,4 @@
-from base.hardware.pin_interface import PinInterface
+from base.hardware.pin_interface import pin_interface
 
 
 class Button:
