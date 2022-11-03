@@ -109,7 +109,22 @@ BackupTestEnvironmentOutput = namedtuple(
 
 
 class BackupTestEnvironment:
-    """creates a temporary structure like below and returns config files to interface with it
+    """creates a temporary test environment specified by "configuration" and returns config files to interface with it
+
+    Architecture of the backup source:
+    depending on the selected protocol, different things happen: if ssh is selected as protocol, the backup source will
+    be a docker container that hosts the rsync daemon. We then connect to it.
+    For all other protocols (currently nfs) we just use a temporary path, because from BaSe's perspective we are merely
+    copying local files. The local mountpoint and the NAS mountpoint will be the same in the config file
+
+    /tmp
+    ├── base_tmpshare
+    │   └── backup_source                          sync.json["remote_backup_source_location"]
+    │       └── random files ...
+
+    Architecture of the backup sink:
+
+
     Note: it's important that the virtual_hard_drive from backup_environment is used. This makes sure that we get write
     permissions on the drive!
 
@@ -122,11 +137,9 @@ class BackupTestEnvironment:
     │       ├── backup_2022_01_16-12_00_00          (directory that mimics preexisting backup)
     │       └── backup_2022_01_17-12_00_00          (directory that mimics preexisting backup)
     │
-    ├── base_tmpshare           >╌╌╌╮
-    │   └── backup_source           │               sync.json["remote_backup_source_location"] (in case of smb)
-    │       └── random files ...    │mount (smb)
-    │                               │
-    └── base_tmpshare_mntdir    <╌╌╌╯               sync.json["local_nas_hdd_mount_point"]
+    └── base_tmpshare                               sync.json["nfs_share_path"] and sync.json["local_nas_hdd_mount_point"]
+        └── backup_source                           sync.json["remote_backup_source_location"]
+            └── random files ...
     """
 
     def __init__(self, configuration: BackupTestEnvironmentInput) -> None:

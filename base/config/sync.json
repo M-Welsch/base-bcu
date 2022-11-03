@@ -8,5 +8,6 @@
     "sample_interval": 0.2,
     "incremental": true,
     "protocol": "nfs",
+    "nfs_share_path": "/mnt/",
     "ssh_keyfile_path": "/home/base/.ssh/id_rsa"
 }
