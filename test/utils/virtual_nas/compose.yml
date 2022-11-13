@@ -1,4 +1,5 @@
-version: "3"
+version: "3.4"
+
 services:
   testfile_generator:
     image: max/testfile_generator
@@ -7,22 +8,9 @@ services:
       - AMOUNT_TESTFILES_IN_SOURCE=10
       - BYTESIZE_OF_EACH_SOURCEFILE=1024
       - BACKUP_SOURCE_DIRECTORY=/mnt/hdd/backup_source
-  rsync_daemon:
-    image: max/rsync_daemon
-    container_name: rsync_daemon
-    environment:
-      - BACKUP_SOURCE_DIRECTORY=/mnt/hdd/backup_source
-      - RSYNC_DAEMON_PORT=1234
-  nfs:
-    image: itsthenetwork/nfs-server-alpine
-    container_name: nfs
-    privileged: true
-    environment:
-      - SHARED_DIRECTORY=/home/user/backup_source
-    ports:
-      - 2049:2049
     volumes:
-      - vnas:/home/user/backup_source
+      - vnas_hdd:/mnt
+
   ssh:
     image: corpusops/sshd
     container_name: ssh
@@ -35,5 +23,58 @@ services:
       - type: bind
         source: ~/.ssh/id_rsa.pub
         target: /etc/authorized_keys/max
+      - vnas_hdd:/mnt
+    networks:
+      vnas_network:
+        ipv4_address: 170.20.0.2
+      
+  nfs:
+    image: itsthenetwork/nfs-server-alpine
+    container_name: nfs
+    privileged: true
+    environment:
+      - SHARED_DIRECTORY=/mnt/hdd/backup_source
+    ports:
+      - 2049:2049
+    volumes:
+      - vnas_hdd:/mnt
+    networks:
+      vnas_network:
+        ipv4_address: 170.20.0.3
+
+  rsync_daemon:
+    image: max/rsync_daemon
+    container_name: rsync_daemon
+    environment:
+      - BACKUP_SOURCE_DIRECTORY=/mnt/hdd/backup_source
+      - RSYNC_DAEMON_PORT=1234
+    expose:
+      - "1234"
+    volumes:
+      - vnas_hdd:/mnt
+    networks:
+      vnas_network:
+        ipv4_address: 170.20.0.4
+
+  router:
+    image: max/nginx
+    container_name: router
+    environment:
+      - IP_ADDRESS_SSH_SERVER=172.20.0.2
+      - IP_ADDRESS_NFS_SERVER=172.20.0.3
+      - IP_ADDRESS_RSYNC_SERVER=172.20.0.4
+      - RSYNC_DAEMON_PORT=1234
+    networks:
+      vnas_network:
+        ipv4_address: 170.20.0.5
+
 volumes:
-  vnas:
+  vnas_hdd:
+
+networks:
+  vnas_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 170.20.0.0/16
+          gateway: 170.20.0.1
