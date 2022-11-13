@@ -1,0 +1,39 @@
+version: "3"
+services:
+  testfile_generator:
+    image: max/testfile_generator
+    container_name: testfile_generator
+    environment:
+      - AMOUNT_TESTFILES_IN_SOURCE=10
+      - BYTESIZE_OF_EACH_SOURCEFILE=1024
+      - BACKUP_SOURCE_DIRECTORY=/mnt/hdd/backup_source
+  rsync_daemon:
+    image: max/rsync_daemon
+    container_name: rsync_daemon
+    environment:
+      - BACKUP_SOURCE_DIRECTORY=/mnt/hdd/backup_source
+      - RSYNC_DAEMON_PORT=1234
+  nfs:
+    image: itsthenetwork/nfs-server-alpine
+    container_name: nfs
+    privileged: true
+    environment:
+      - SHARED_DIRECTORY=/home/user/backup_source
+    ports:
+      - 2049:2049
+    volumes:
+      - vnas:/home/user/backup_source
+  ssh:
+    image: corpusops/sshd
+    container_name: ssh
+    environment:
+      - SSH_USERS=max
+      - MOTD="just fooling around"
+      - MAX_RETRY=255
+      - SFTP_MODE=false
+    volumes:
+      - type: bind
+        source: ~/.ssh/id_rsa.pub
+        target: /etc/authorized_keys/max
+volumes:
+  vnas:
