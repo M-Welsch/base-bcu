@@ -9,6 +9,9 @@ stream {
   upstream rsyncd {
     server $IP_ADDRESS_RSYNC_SERVER:$RSYNC_DAEMON_PORT;
   }
+  upstream nfs {
+    server $IP_ADDRESS_NFS_SERVER:2049;
+  }
   server {
     listen 22;
     proxy_pass ssh;
@@ -17,6 +20,10 @@ stream {
     listen $RSYNC_DAEMON_PORT;
     proxy_pass rsyncd;
   }
+  server {
+    listen 2049;
+    proxy_pass nfs;
+  } 
 }
 " >> $NGINX_CONFIG_FILE
 cat $NGINX_CONFIG_FILE
