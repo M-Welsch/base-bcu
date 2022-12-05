@@ -19,6 +19,8 @@ services:
       - MOTD="just fooling around"
       - MAX_RETRY=255
       - SFTP_MODE=false
+    ports:
+      - 22:22
     volumes:
       - type: bind
         source: ~/.ssh/id_rsa.pub
@@ -60,9 +62,9 @@ services:
     image: max/nginx
     container_name: router
     environment:
-      - IP_ADDRESS_SSH_SERVER=172.20.0.2
-      - IP_ADDRESS_NFS_SERVER=172.20.0.3
-      - IP_ADDRESS_RSYNC_SERVER=172.20.0.4
+      - IP_ADDRESS_SSH_SERVER=170.20.0.2
+      - IP_ADDRESS_NFS_SERVER=170.20.0.3
+      - IP_ADDRESS_RSYNC_SERVER=170.20.0.4
       - RSYNC_DAEMON_PORT=1234
     networks:
       vnas_network:
