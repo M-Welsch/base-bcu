@@ -22,6 +22,7 @@ from py import path
 from base.common.constants import current_backup_timestring_format_for_directory
 from base.logic.backup.backup_browser import read_backups
 from base.logic.backup.protocol import Protocol
+from test.utils.backup_environment.virtual_nas import VirtualNas, VirtualNasConfig
 
 
 @pytest.fixture
@@ -112,10 +113,11 @@ class BackupTestEnvironment:
     """creates a temporary test environment specified by "configuration" and returns config files to interface with it
 
     Architecture of the backup source:
-    depending on the selected protocol, different things happen: if ssh is selected as protocol, the backup source will
-    be a docker container that hosts the rsync daemon. We then connect to it.
-    For all other protocols (currently nfs) we just use a temporary path, because from BaSe's perspective we are merely
-    copying local files. The local mountpoint and the NAS mountpoint will be the same in the config file
+    depending on the selected protocol, different things happen:
+    - if ssh is selected as protocol, the backup source will be a docker container that hosts the rsync daemon.
+      We then connect to it.
+    - For all other protocols (currently only nfs) we just use a temporary path, because from BaSe's perspective we are
+      merely copying local files. The local mountpoint and the NAS mountpoint will be the same in the config file
 
     /tmp
     ├── base_tmpshare
@@ -192,12 +194,13 @@ class BackupTestEnvironment:
         )
         self._prepare_sink()
         if self._configuration.protocol == Protocol.SSH:
-            backup_environment = self.prepare_for_ssh()
+            backup_environment = self._prepare_for_ssh()
         elif self._configuration.protocol == Protocol.SMB:
-            backup_environment = self.prepare_for_smb()
+            backup_environment = self._prepare_for_smb()
+        elif self._configuration.protocol == Protocol.NFS:
+            backup_environment = self._prepare_for_nfs()
         else:
             raise NotImplementedError
-        backup_environment.nas_config.update({"ssh_host": "127.0.0.1", "ssh_user": getuser()})
         backup_environment.sync_config.update({"ssh_keyfile_path": f"/home/{getuser()}/.ssh/id_rsa"})
         return backup_environment
 
@@ -236,7 +239,7 @@ class BackupTestEnvironment:
         for directory in directories:
             shutil.rmtree(directory)
 
-    def prepare_for_smb(self) -> BackupTestEnvironmentOutput:
+    def _prepare_for_smb(self) -> BackupTestEnvironmentOutput:
         sync_config = {
             "remote_backup_source_location": self._src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
@@ -244,6 +247,9 @@ class BackupTestEnvironment:
             "protocol": "smb",
         }
         nas_config = {
+            "ssh_host": "127.0.0.1",
+            "ssh_port": 22,
+            "ssh_user": getuser(),
             "smb_host": "127.0.0.1",
             "smb_user": "base",
             "smb_credentials_file": "/etc/base-credentials",
@@ -265,11 +271,37 @@ class BackupTestEnvironment:
             backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
         )
 
-    def prepare_for_ssh(self) -> BackupTestEnvironmentOutput:
+    def _prepare_for_ssh(self) -> BackupTestEnvironmentOutput:
+        virtual_nas_config = VirtualNasConfig(
+            backup_source_directory=self._src,
+            amount_files_in_source=self._configuration.amount_files_in_source,
+            bytesize_of_each_sourcefile=self._configuration.bytesize_of_each_sourcefile,
+        )
+        virtual_nas = VirtualNas(virtual_nas_config)
         sync_config = {
             "remote_backup_source_location": self._src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
             "protocol": "ssh",
+        }
+        nas_config = {
+            "ssh_host": virtual_nas.ip,
+            "ssh_port": virtual_nas.port,
+            "ssh_user": getuser(),
+        }
+        return BackupTestEnvironmentOutput(
+            sync_config=sync_config,
+            backup_config={},
+            nas_config=nas_config,
+            backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
+        )
+
+    def _prepare_for_nfs(self) -> BackupTestEnvironmentOutput:
+        sync_config = {
+            "remote_backup_source_location": self._src.as_posix(),
+            "local_backup_target_location": self._sink.as_posix(),
+            "local_nas_hdd_mount_point": SMB_SHARE_ROOT.as_posix(),
+            "protocol": "nfs",
+            "nfs_share_path": SMB_SHARE_ROOT.as_posix()
         }
         nas_config = {
             "ssh_host": "127.0.0.1",

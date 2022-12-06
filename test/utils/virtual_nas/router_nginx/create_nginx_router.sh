@@ -1,7 +1,21 @@
 #!/bin/bash
 
 NGINX_CONFIG_FILE="/etc/nginx/nginx.conf"
+BASE_VNAS_STREAM_REDIRECTION_FILE="/etc/nginx/vnas_stream_redirection.conf"
+
+# echo "include $BASE_VNAS_STREAM_REDIRECTION_FILE;" >> $NGINX_CONFIG_FILE
 echo "
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
 stream {
   upstream ssh {
     server $IP_ADDRESS_SSH_SERVER:22;
@@ -25,7 +39,8 @@ stream {
     proxy_pass nfs;
   } 
 }
-" >> $NGINX_CONFIG_FILE
+" > $NGINX_CONFIG_FILE
+
 cat $NGINX_CONFIG_FILE
 
 nginx -g "daemon off;"

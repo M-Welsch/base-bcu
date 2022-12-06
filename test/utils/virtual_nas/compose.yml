@@ -1,19 +1,20 @@
+
 version: "3.4"
 
 services:
   testfile_generator:
     image: max/testfile_generator
-    container_name: testfile_generator
+    container_name: base_virtual_nas_testfile_generator
     environment:
       - AMOUNT_TESTFILES_IN_SOURCE=10
       - BYTESIZE_OF_EACH_SOURCEFILE=1024
-      - BACKUP_SOURCE_DIRECTORY=/mnt/hdd/backup_source
+      - BACKUP_SOURCE_DIRECTORY=/mnt/user/backup_source
     volumes:
       - vnas_hdd:/mnt
 
   ssh:
     image: corpusops/sshd
-    container_name: ssh
+    container_name: base_virtual_nas_ssh
     environment:
       - SSH_USERS=max
       - MOTD="just fooling around"
@@ -27,40 +28,44 @@ services:
         target: /etc/authorized_keys/max
       - vnas_hdd:/mnt
     networks:
-      vnas_network:
-        ipv4_address: 170.20.0.2
-      
+        vnas_network:
+            ipv4_address: 170.20.0.2
+
   nfs:
     image: itsthenetwork/nfs-server-alpine
-    container_name: nfs
+    container_name: base_virtual_nas_nfs
     privileged: true
     environment:
-      - SHARED_DIRECTORY=/mnt/hdd/backup_source
+      - SHARED_DIRECTORY=/mnt/user/backup_source
     ports:
       - 2049:2049
+    depends_on:
+      - testfile_generator
     volumes:
       - vnas_hdd:/mnt
     networks:
-      vnas_network:
-        ipv4_address: 170.20.0.3
+        vnas_network:
+            ipv4_address: 170.20.0.3
 
   rsync_daemon:
     image: max/rsync_daemon
-    container_name: rsync_daemon
+    container_name: base_virtual_nas_rsync_daemon
     environment:
-      - BACKUP_SOURCE_DIRECTORY=/mnt/hdd/backup_source
+      - BACKUP_SOURCE_DIRECTORY=/mnt/user/backup_source
       - RSYNC_DAEMON_PORT=1234
     expose:
       - "1234"
     volumes:
       - vnas_hdd:/mnt
+    depends_on:
+      - testfile_generator
     networks:
-      vnas_network:
-        ipv4_address: 170.20.0.4
-
+        vnas_network:
+            ipv4_address: 170.20.0.4
+      
   router:
     image: max/nginx
-    container_name: router
+    container_name: base_virtual_nas_router
     environment:
       - IP_ADDRESS_SSH_SERVER=170.20.0.2
       - IP_ADDRESS_NFS_SERVER=170.20.0.3
@@ -72,7 +77,7 @@ services:
 
 volumes:
   vnas_hdd:
-
+  
 networks:
   vnas_network:
     driver: bridge

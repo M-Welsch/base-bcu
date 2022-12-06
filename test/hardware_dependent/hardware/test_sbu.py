@@ -14,7 +14,7 @@ from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 
 
 @pytest.fixture(scope="session")
-def sbu(tmpdir_factory: _pytest.tmpdir.TempdirFactory) -> Generator[SBU, None, None]:
+def sbu(tmpdir_factory) -> Generator[SBU, None, None]:  # type: ignore
     tmpdir = tmpdir_factory.mktemp("sbu_test_config_dir")
     config_path = Path("/home/base/base-bcu/base/config/")
     config_test_path = Path(tmpdir.mkdir("config"))
