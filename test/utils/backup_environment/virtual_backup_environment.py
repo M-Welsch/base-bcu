@@ -11,7 +11,6 @@ from math import ceil
 from pathlib import Path
 from shutil import copy, rmtree
 from subprocess import PIPE, Popen
-from test.utils.backup_environment.directories import SMB_MOUNTPOINT, SMB_SHARE_ROOT
 from test.utils.backup_environment.virtual_hard_drive import VirtualHardDrive
 from types import TracebackType
 from typing import Generator, List, Optional, Tuple, Type
@@ -168,7 +167,9 @@ class BackupTestEnvironment:
 
     @staticmethod
     def _get_source() -> Path:
-        src = Path("/mnt/backup_source")
+        NFS_MOUNTPOINT.mkdir(exist_ok=True)
+        src = SMB_SHARE_ROOT / "backup_source"
+        src.mkdir(exist_ok=True)
         return src
 
     def _get_sink(self, vhd_for_sink: bool, mount_sink: bool) -> Path:
@@ -241,7 +242,6 @@ class BackupTestEnvironment:
         )
         virtual_nas = VirtualNas(virtual_nas_config)
         sync_config = {
-            "remote_backup_source_location": self._src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
             "protocol": "ssh",
             "rsync_daemon_port": vnas_rsync_port,
@@ -317,3 +317,6 @@ class Verification:
         backup_target: list = read_backups(self._backup_test_environment.sink.as_posix())
         files_in_target = [file.stem for file in backup_target[-1].iterdir()]
         return set(files_in_source) == set(files_in_target)
+
+
+NFS_MOUNTPOINT = Path("/tmp/base_nfs_mntdir")

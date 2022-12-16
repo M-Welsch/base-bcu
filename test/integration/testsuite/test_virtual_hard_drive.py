@@ -1,5 +1,4 @@
-from test.utils.backup_environment.directories import VIRTUAL_FILESYSTEM_IMAGE
-from test.utils.backup_environment.virtual_hard_drive import VirtualHardDrive
+from test.utils.backup_environment.virtual_hard_drive import VirtualHardDrive, VIRTUAL_FILESYSTEM_IMAGE
 
 
 def test_virtual_hard_drive_default_mode() -> None:
