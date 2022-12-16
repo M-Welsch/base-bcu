@@ -2,15 +2,15 @@
 
 mkdir -p $BACKUP_SOURCE_DIRECTORY
 echo "use chroot = true
-hosts allow = 172.17.0.0/24
+hosts allow = $HOSTS_ALLOW
 
 transfer logging = true
 log file = /var/log/rsyncd.log
 log format = %h %o %f %l %b
 
-[virtual_backup_source]
+[$BACKUP_SOURCE_NAME]
 comment = Public Share
-path = "$BACKUP_SOURCE_DIRECTORY"
+path = $BACKUP_SOURCE_DIRECTORY
 read only = no
 list = yes" > /etc/rsyncd.conf
 

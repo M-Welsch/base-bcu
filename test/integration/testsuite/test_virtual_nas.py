@@ -28,7 +28,7 @@ def is_reachable(ip: str, port: int) -> bool:
 class TestVirtualNas:
     @staticmethod
     def test_rsync_daemon_reachable(virtual_nas_fixture) -> None:
-        ip = virtual_nas_fixture.config.vnas_ip
+        ip = virtual_nas_fixture.config.ip
         port = virtual_nas_fixture.config.rsync_daemon_port
         outp = check_output(["rsync", f"{ip}::", f"--port={port}"])
         assert is_reachable(ip, port)
@@ -36,18 +36,18 @@ class TestVirtualNas:
 
     @staticmethod
     def test_nfsd_reachable(virtual_nas_fixture) -> None:
-        ip = virtual_nas_fixture.config.vnas_ip
+        ip = virtual_nas_fixture.config.ip
         assert is_reachable(ip, 2049)
 
     @staticmethod
     def test_ssh_reachable(virtual_nas_fixture) -> None:
-        ip = virtual_nas_fixture.config.vnas_ip
+        ip = virtual_nas_fixture.config.ip
         assert is_reachable(ip, 22)
 
     @staticmethod
     def test_run_container(virtual_nas_fixture) -> None:
         states = virtual_nas_fixture.running
-        assert states[BaseVnasContainer.NFSD] == True
-        assert states[BaseVnasContainer.SSHD] == True
-        assert states[BaseVnasContainer.RSYNCD] == True
-        assert states[BaseVnasContainer.ROUTER] == True
+        assert states[BaseVnasContainer.NFSD]
+        assert states[BaseVnasContainer.SSHD]
+        assert states[BaseVnasContainer.RSYNCD]
+        assert states[BaseVnasContainer.ROUTER]

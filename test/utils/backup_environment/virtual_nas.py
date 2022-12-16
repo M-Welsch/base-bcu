@@ -64,7 +64,9 @@ services:
     container_name: base_virtual_nas_rsync_daemon
     environment:
       - BACKUP_SOURCE_DIRECTORY={{backup_source_directory}}
+      - BACKUP_SOURCE_NAME={{backup_source_name}}
       - RSYNC_DAEMON_PORT={{rsync_daemon_port}}
+      - HOSTS_ALLOW=170.20.0.0/24
     expose:
       - "{{rsync_daemon_port}}"
     volumes:
@@ -114,9 +116,14 @@ class VirtualNasConfig:
     backup_source_directory: Path
     amount_files_in_source: int
     bytesize_of_each_sourcefile: int
+    backup_source_name: str = "backup_source"
     virtual_nas_docker_directory: Path = Path.cwd()/"test/utils/virtual_nas/"
     rsync_daemon_port: int = 1234
-    vnas_ip: str = "170.20.0.5"
+    ip: str = "170.20.0.5"
+
+
+class VirtualNasError(Exception):
+    pass
 
 
 class VirtualNas:
@@ -140,10 +147,17 @@ class VirtualNas:
     def __init__(self, config: VirtualNasConfig, cleanup_before: bool = True) -> None:
         self._containers: Dict[BaseVnasContainer, bool]
         self._config = config
+        self.sanity_checks()
         self._create_compose_yml()
         if cleanup_before:
             self._stop_still_running_instances()
         self._start_virtual_nas()
+
+    def sanity_checks(self) -> None:
+        try:
+            self._config.backup_source_directory.relative_to("/mnt")
+        except ValueError as e:
+            raise VirtualNasError("backup source dir MUST be a subdirectory of /mnt") from e
 
     @property
     def running(self) -> Dict[BaseVnasContainer, bool]:
@@ -170,10 +184,11 @@ class VirtualNas:
         rsyncd_conf_content = Environment().from_string(COMPOSE_TEMPLATE).render(
             amount_files_in_source=self._config.amount_files_in_source,
             bytesize_of_each_sourcefile=self._config.bytesize_of_each_sourcefile,
+            backup_source_name=self._config.backup_source_name,
             backup_source_directory=self._config.backup_source_directory,
             rsync_daemon_port=self._config.rsync_daemon_port,
             ssh_user=getuser(),
-            vnas_ip=self._config.vnas_ip
+            vnas_ip=self._config.ip
         )
         with open(self._config.virtual_nas_docker_directory/"compose.yml", "w") as rsynd_conf:
             rsynd_conf.write(rsyncd_conf_content)

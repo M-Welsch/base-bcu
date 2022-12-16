@@ -77,11 +77,6 @@ def prepare_source_sink_dirs(
         copy(testfile_to_copy, sink)
 
 
-def create_directories_for_smb_testing() -> None:
-    for directory in [SMB_SHARE_ROOT, SMB_MOUNTPOINT]:
-        directory.mkdir(exist_ok=True)
-
-
 def list_mounts() -> List[str]:
     p = Popen("mount", stdout=PIPE)
     if p.stdout:
@@ -173,9 +168,7 @@ class BackupTestEnvironment:
 
     @staticmethod
     def _get_source() -> Path:
-        create_directories_for_smb_testing()
-        src = SMB_SHARE_ROOT / "backup_source"
-        src.mkdir(exist_ok=True)
+        src = Path("/mnt/backup_source")
         return src
 
     def _get_sink(self, vhd_for_sink: bool, mount_sink: bool) -> Path:
@@ -186,17 +179,15 @@ class BackupTestEnvironment:
         return sink
 
     def create(self) -> BackupTestEnvironmentOutput:
-        prepare_source_sink_dirs(
-            src=self._src,
-            sink=self._sink,
-            bytesize_of_each_file=self._configuration.bytesize_of_each_sourcefile,
-            amount_files_in_src=self._configuration.amount_files_in_source,
-        )
+        # prepare_source_sink_dirs(
+        #     src=self._src,
+        #     sink=self._sink,
+        #     bytesize_of_each_file=self._configuration.bytesize_of_each_sourcefile,
+        #     amount_files_in_src=self._configuration.amount_files_in_source,
+        # )
         self._prepare_sink()
         if self._configuration.protocol == Protocol.SSH:
             backup_environment = self._prepare_for_ssh()
-        elif self._configuration.protocol == Protocol.SMB:
-            backup_environment = self._prepare_for_smb()
         elif self._configuration.protocol == Protocol.NFS:
             backup_environment = self._prepare_for_nfs()
         else:
@@ -227,7 +218,7 @@ class BackupTestEnvironment:
         self._virtual_hard_drive.teardown()
 
     def _delete_files(self) -> None:
-        self._delete_content_of(self.source)
+        # self._delete_content_of(self.source)
         self._delete_content_of(self.sink)
 
     @staticmethod
@@ -239,53 +230,26 @@ class BackupTestEnvironment:
         for directory in directories:
             shutil.rmtree(directory)
 
-    def _prepare_for_smb(self) -> BackupTestEnvironmentOutput:
-        sync_config = {
-            "remote_backup_source_location": self._src.as_posix(),
-            "local_backup_target_location": self._sink.as_posix(),
-            "local_nas_hdd_mount_point": SMB_MOUNTPOINT.as_posix(),
-            "protocol": "smb",
-        }
-        nas_config = {
-            "ssh_host": "127.0.0.1",
-            "ssh_port": 22,
-            "ssh_user": getuser(),
-            "smb_host": "127.0.0.1",
-            "smb_user": "base",
-            "smb_credentials_file": "/etc/base-credentials",
-            "smb_share_name": "Backup",
-        }
-        if self._configuration.automount_data_source:
-            p = Popen("mount /tmp/base_tmpshare_mntdir/".split(), stderr=PIPE)
-            p.wait()
-            if p.stderr:
-                lines = [l.decode() for l in p.stderr.readlines()]
-                if any(["No such file or directory" in line for line in lines]):
-                    raise Exception(
-                        "Error in the Test Environment: please make sure /etc/samba/smb.conf is set up to have a share named 'Backup' on path '/tmp/base_tmpshare'"
-                    )
-        return BackupTestEnvironmentOutput(
-            sync_config=sync_config,
-            backup_config={},
-            nas_config=nas_config,
-            backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
-        )
-
     def _prepare_for_ssh(self) -> BackupTestEnvironmentOutput:
         virtual_nas_config = VirtualNasConfig(
             backup_source_directory=self._src,
+            backup_source_name=(backup_source_name := "backup_source"),
             amount_files_in_source=self._configuration.amount_files_in_source,
             bytesize_of_each_sourcefile=self._configuration.bytesize_of_each_sourcefile,
+            rsync_daemon_port=(vnas_rsync_port := 1234),
+            ip=(vnas_ip := "170.20.0.5")
         )
         virtual_nas = VirtualNas(virtual_nas_config)
         sync_config = {
             "remote_backup_source_location": self._src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
             "protocol": "ssh",
+            "rsync_daemon_port": vnas_rsync_port,
+            "rsync_share_name": backup_source_name
         }
         nas_config = {
-            "ssh_host": virtual_nas.ip,
-            "ssh_port": virtual_nas.port,
+            "ssh_host": vnas_ip,
+            "ssh_port": 22,
             "ssh_user": getuser(),
         }
         return BackupTestEnvironmentOutput(
