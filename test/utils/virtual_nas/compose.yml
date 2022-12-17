@@ -1,0 +1,89 @@
+
+version: "3.4"
+
+services:
+  testfile_generator:
+    image: max/testfile_generator
+    container_name: base_virtual_nas_testfile_generator
+    environment:
+      - AMOUNT_TESTFILES_IN_SOURCE=10
+      - BYTESIZE_OF_EACH_SOURCEFILE=1024
+      - BACKUP_SOURCE_DIRECTORY=/mnt/backup_source
+    volumes:
+      - vnas_hdd:/mnt
+
+  ssh:
+    image: corpusops/sshd
+    container_name: base_virtual_nas_ssh
+    environment:
+      - SSH_USERS=max
+      - MOTD="just fooling around"
+      - MAX_RETRY=255
+      - SFTP_MODE=false
+    ports:
+      - 22:22
+    volumes:
+      - type: bind
+        source: ~/.ssh/id_rsa.pub
+        target: /etc/authorized_keys/max
+      - vnas_hdd:/mnt
+    networks:
+        vnas_network:
+            ipv4_address: 170.20.0.2
+
+  nfs:
+    image: itsthenetwork/nfs-server-alpine
+    container_name: base_virtual_nas_nfs
+    privileged: true
+    environment:
+      - SHARED_DIRECTORY=/mnt/backup_source
+    ports:
+      - 2049:2049
+    depends_on:
+      - testfile_generator
+    volumes:
+      - vnas_hdd:/mnt
+    networks:
+        vnas_network:
+            ipv4_address: 170.20.0.3
+
+  rsync_daemon:
+    image: max/rsync_daemon
+    container_name: base_virtual_nas_rsync_daemon
+    environment:
+      - BACKUP_SOURCE_DIRECTORY=/mnt/backup_source
+      - BACKUP_SOURCE_NAME=backup_source
+      - RSYNC_DAEMON_PORT=1234
+      - HOSTS_ALLOW=170.20.0.0/24
+    expose:
+      - "1234"
+    volumes:
+      - vnas_hdd:/mnt
+    depends_on:
+      - testfile_generator
+    networks:
+        vnas_network:
+            ipv4_address: 170.20.0.4
+      
+  router:
+    image: max/nginx
+    container_name: base_virtual_nas_router
+    environment:
+      - IP_ADDRESS_SSH_SERVER=170.20.0.2
+      - IP_ADDRESS_NFS_SERVER=170.20.0.3
+      - IP_ADDRESS_RSYNC_SERVER=170.20.0.4
+      - RSYNC_DAEMON_PORT=1234
+    networks:
+      vnas_network:
+        ipv4_address: 170.20.0.5
+
+volumes:
+  vnas_hdd:
+  
+networks:
+  vnas_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 170.20.0.0/16
+          gateway: 170.20.0.1

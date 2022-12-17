@@ -8,11 +8,11 @@ from base.logic.backup.protocol import Protocol
 from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB, Protocol.NFS])
+@pytest.mark.parametrize("protocol", [Protocol.NFS])
 def test_composition(protocol: Protocol) -> None:
     backup_environment_configuration = BackupTestEnvironmentInput(
         protocol=protocol,
-        amount_files_in_source=10,
+        amount_files_in_source=(amount_files_in_source := 10),
         bytesize_of_each_sourcefile=1024,
         use_virtual_drive_for_sink=True,
         amount_old_backups=0,
@@ -26,12 +26,7 @@ def test_composition(protocol: Protocol) -> None:
             RsyncCommand, {"nas.json": backup_env_configs.nas_config, "sync.json": backup_env_configs.sync_config}
         )
         command = RsyncCommand().compose(virtual_backup_env.sink, virtual_backup_env.source)
-        Popen(command, shell=True).wait()
-        for source_file, sink_file in zip(
-            list(virtual_backup_env.source.iterdir()), list(virtual_backup_env.sink.iterdir())
-        ):
-            source_file_stat, sink_file_stat = source_file.stat(), sink_file.stat()
-            assert source_file_stat.st_mode == sink_file_stat.st_mode
-            assert source_file_stat.st_uid == sink_file_stat.st_uid
-            assert source_file_stat.st_gid == sink_file_stat.st_gid
-            assert source_file_stat.st_size == sink_file_stat.st_size
+        Popen(" ".join(command), shell=True).wait()
+        assert len(list(virtual_backup_env.sink.iterdir())) == amount_files_in_source
+        for file in virtual_backup_env.sink.iterdir():
+            assert file.stat().st_size == 1024

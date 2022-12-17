@@ -52,8 +52,13 @@ class BackupSource:
         remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
 
         try:
-            smb_share_root = Nas().root_of_share()
-            subfolder_on_mountpoint = remote_backup_source_location.relative_to(smb_share_root)
+            if self._protocol == Protocol.SMB:
+                share_root = Nas().root_of_share()
+            elif self._protocol == Protocol.NFS:
+                share_root = self._config_sync["nfs_share_path"]
+            else:
+                raise RuntimeError("this function should not be called for this backup protocol!")
+            subfolder_on_mountpoint = remote_backup_source_location.relative_to(share_root)
         except RemoteCommandError as e:
             LOG.critical(f"Couldn't connect to NAS. PYTHON says: {e}")
             raise CriticalException from e

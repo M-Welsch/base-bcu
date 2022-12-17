@@ -1,4 +1,5 @@
 import test.utils.backup_environment.directories as environment_directories
+import test.utils.backup_environment.virtual_hard_drive
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
@@ -27,8 +28,8 @@ def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) 
     vbec = BackupTestEnvironment(configuration=backup_environment_configuration)
     vbec.create()
     if use_vhd:
-        assert environment_directories.VIRTUAL_FILESYSTEM_IMAGE.exists()
-    assert environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT.exists()
+        assert test.utils.backup_environment.virtual_hard_drive.VIRTUAL_FILESYSTEM_IMAGE.exists()
+    assert test.utils.backup_environment.virtual_hard_drive.VIRTUAL_FILESYSTEM_MOUNTPOINT.exists()
     assert environment_directories.SMB_SHARE_ROOT.exists()
     assert environment_directories.SMB_MOUNTPOINT.exists()
     if protocol == Protocol.SMB:
@@ -58,5 +59,5 @@ def test_virtual_backup_environment_teardown() -> None:
     assert not any(vbec.sink.iterdir())
     vbec.teardown()
     active_mounts = list_mounts()
-    for mount_point in [environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT, environment_directories.SMB_MOUNTPOINT]:
+    for mount_point in [test.utils.backup_environment.virtual_hard_drive.VIRTUAL_FILESYSTEM_MOUNTPOINT, environment_directories.SMB_MOUNTPOINT]:
         assert not any([mount_point.as_posix() in active_mount for active_mount in active_mounts])
