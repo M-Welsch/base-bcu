@@ -99,6 +99,7 @@ class BackupConductor:
     backup_started = Signal()
     backup_finished = Signal()
     line_written = Signal(bytes)
+    critical = Signal()
 
     def __init__(self):
         self._backup_time: Optional[datetime] = None
@@ -111,8 +112,14 @@ class BackupConductor:
         self._backup_task = asyncio.create_task(self._start())
 
     async def _start(self):
-        await self._backup_countdown()
-        await self._do_backup()
+        try:
+            await self._backup_countdown()
+            await self._do_backup()
+        except Exception as e:
+            logging.error(f"Critical Error occurred: {e}")
+            self._backup_process.kill()
+            self._output_task.cancel()
+            self.critical.emit()
 
     async def _backup_countdown(self):
         while (remaining_seconds := (self._backup_time - datetime.now()).total_seconds()) > 0:
@@ -125,6 +132,7 @@ class BackupConductor:
         self.backup_started.emit()
         self._backup_process = await asyncio.create_subprocess_exec(*self._program, stdout=asyncio.subprocess.PIPE)
         self._output_task = asyncio.create_task(self._consume_output(self._backup_process.stdout))
+        raise RuntimeError("Oops!")
         logging.debug("Starting backup...")
         await self._backup_process.wait()
         logging.debug("Backup finished. Resetting shutdown countdown.")
@@ -151,6 +159,7 @@ class BaseApplication:
         self._backup_conductor.backup_started.connect(self._shutdown_manager.pause)
         self._backup_conductor.backup_finished.connect(self._shutdown_manager.reset)
         self._backup_conductor.line_written.connect(lambda line: print(line))
+        self._backup_conductor.critical.connect(self._shutdown_manager.reset)
 
     async def run(self):
         logging.debug("I am awake. But why?")
