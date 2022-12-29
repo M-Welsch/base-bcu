@@ -6,14 +6,14 @@ import pytest
 from pytest_mock import MockFixture
 
 from base.hardware.hardware import Hardware
-from base.hardware.mechanics import Mechanics
-from base.hardware.pin_interface import pin_interface
+from base.hardware.drivers.mechanics import MechanicsDriver
+from base.hardware.drivers.pin_interface import pin_interface
 
 
 @pytest.fixture(scope="class")
 def hardware() -> Generator[Hardware, None, None]:
     patch_config(Hardware, {"hdd_spindown_time": 1})
-    patch_config(Mechanics, {"maximum_docking_time": 1.5})
+    patch_config(MechanicsDriver, {"maximum_docking_time": 1.5})
     yield Hardware()
 
 

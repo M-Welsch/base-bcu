@@ -1,5 +1,3 @@
-import sys
-from importlib import import_module
 from pathlib import Path
 from time import time
 from typing import Generator
@@ -12,7 +10,7 @@ from base.common.config import Config
 from base.common.exceptions import SbuCommunicationTimeout, SerialInterfaceError
 from base.hardware.sbu.commands import SbuCommand
 from base.hardware.sbu.message import SbuMessage
-from base.hardware.sbu.serial_interface import SerialInterface
+from base.hardware.drivers.serial_interface import SerialInterface
 
 
 @pytest.fixture()

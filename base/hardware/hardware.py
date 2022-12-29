@@ -4,20 +4,16 @@ from typing import Optional
 from base.common.config import Config, get_config
 from base.common.exceptions import (
     BackupHddNotAvailable,
-    ComponentOffError,
-    CriticalException,
     DockingError,
-    InvalidBackupSource,
     MountError,
 )
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
-from base.hardware.mechanics import Mechanics
-from base.hardware.power import Power
+from base.hardware.drivers.mechanics import MechanicsDriver
+from base.hardware.drivers.hdd_power import HDDPower
 from base.hardware.sbu.communicator import SbuCommunicator
 from base.hardware.sbu.sbu import SBU, WakeupReason
-from base.logic.backup.backup_browser import BackupBrowser
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -27,8 +23,8 @@ class Hardware:
 
     def __init__(self) -> None:
         self._config: Config = get_config("hardware.json")
-        self._mechanics: Mechanics = Mechanics()
-        self._power: Power = Power()
+        self._mechanics: MechanicsDriver = MechanicsDriver()
+        self._power: HDDPower = HDDPower()
         self._sbu: SBU = SBU(SbuCommunicator())
         self._drive: Drive = Drive()
 
@@ -61,7 +57,7 @@ class Hardware:
         try:
             self._drive.unmount()
             self._power.hdd_power_off()
-            if self.docked:  # this step takes quite a time, so do it only if necessary
+            if self.is_docked:  # this step takes quite a time, so do it only if necessary
                 sleep(self._config.hdd_spindown_time)
             self._mechanics.undock()
             self._failed_once = False
@@ -84,11 +80,11 @@ class Hardware:
         return self._drive.is_available
 
     @property
-    def docked(self) -> bool:
-        return self._mechanics.docked
+    def is_docked(self) -> bool:
+        return self._mechanics.is_docked
 
     @property
-    def mounted(self) -> bool:
+    def is_mounted(self) -> bool:
         return self._drive.is_mounted
 
     @property
@@ -99,9 +95,9 @@ class Hardware:
         self._power.hdd_power_on()
 
     @property
-    def powered(self) -> bool:
+    def is_powered(self) -> bool:
         input_current = self._sbu.measure_base_input_current()
-        return False if input_current is None else self.docked and input_current > 0.3 or False
+        return False if input_current is None else self.is_docked and input_current > 0.3 or False
 
     def unpower(self) -> None:
         self._power.hdd_power_off()

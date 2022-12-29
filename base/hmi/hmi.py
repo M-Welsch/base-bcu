@@ -1,7 +1,6 @@
-from enum import Enum
 from typing import Tuple
 
-from base.hardware.button import Button
+from base.hardware.drivers.buttons import Button
 from base.hardware.sbu.sbu import SBU
 from base.hmi.display import Display
 from base.hmi.statemachine import HmiStates

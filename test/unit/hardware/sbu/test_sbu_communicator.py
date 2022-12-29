@@ -10,7 +10,7 @@ from base.common.config import Config
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SbuNotAvailableError
 from base.hardware.sbu.commands import SbuCommands
 from base.hardware.sbu.communicator import SbuCommunicator
-from base.hardware.sbu.serial_interface import SerialInterface
+from base.hardware.drivers.serial_interface import SerialInterface
 
 
 @pytest.mark.parametrize(

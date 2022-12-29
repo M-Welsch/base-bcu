@@ -2,5 +2,9 @@
     "maximum_docking_time": {
         "type": "float",
         "range": {"min": 1, "max": 5}
+    },
+    "step_interval_seconds": {
+        "type": "float",
+        "range": {"min": 0.0005, "max": 0.0005}
     }
 }

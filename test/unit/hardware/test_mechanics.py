@@ -4,18 +4,18 @@ from typing import Generator
 import pytest
 from pytest_mock import MockFixture
 
-from base.hardware.mechanics import Mechanics
-from base.hardware.pin_interface import pin_interface
+from base.hardware.drivers.mechanics import MechanicsDriver
+from base.hardware.drivers.pin_interface import pin_interface
 
 
 @pytest.fixture
-def mechanics() -> Generator[Mechanics, None, None]:
-    patch_config(Mechanics, {"maximum_docking_time": 1.5})
-    yield Mechanics()
+def mechanics() -> Generator[MechanicsDriver, None, None]:
+    patch_config(MechanicsDriver, {"maximum_docking_time": 1.5})
+    yield MechanicsDriver()
 
 
 @pytest.mark.skip(reason="mocking doesnt work properly yet")
-def test_dock(mechanics: Mechanics, mocker: MockFixture) -> None:
+def test_dock(mechanics: MechanicsDriver, mocker: MockFixture) -> None:
     patched_stepper_driver_on = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_on")
     patched_stepper_direction_docking = mocker.patch(
         "base.hardware.pin_interface.PinInterface.stepper_direction_docking"
@@ -33,7 +33,7 @@ def test_dock(mechanics: Mechanics, mocker: MockFixture) -> None:
 
 
 @pytest.mark.skip(reason="mocking doesnt work properly yet")
-def test_undock(mechanics: Mechanics, mocker: MockFixture) -> None:
+def test_undock(mechanics: MechanicsDriver, mocker: MockFixture) -> None:
     patched_stepper_driver_on = mocker.patch("base.hardware.pin_interface.PinInterface.stepper_driver_on")
     patched_stepper_direction_undocking = mocker.patch(
         "base.hardware.pin_interface.PinInterface.stepper_direction_undocking"

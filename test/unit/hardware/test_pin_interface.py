@@ -1,6 +1,6 @@
 import pytest
 
-from base.hardware.pin_interface import GPIO, pin_interface
+from base.hardware.drivers.pin_interface import GPIO, pin_interface
 
 
 def test_initialize_pins_and_check_pinout() -> None:

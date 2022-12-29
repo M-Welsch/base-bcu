@@ -17,5 +17,9 @@
   "serial_connection_timeout": {
     "type": "float",
     "range": {"min": 0.01, "max": 10}
+  },
+  "serial_connection_delay_seconds": {
+    "type": "float",
+    "range": {"min": 0.0, "max": 1e-7}
   }
 }

@@ -41,16 +41,15 @@ def control_hardware(
 ) -> None:
     cfg_path = Path("/home/base/base-bcu/base/config/")
     setup_logger(cfg_path)
-    from base.common.config import BoundConfig
 
     setup_config(cfg_path)
 
     from base.hardware.drive import Drive
-    from base.hardware.mechanics import Mechanics
-    from base.hardware.power import Power
+    from base.hardware.drivers.mechanics import MechanicsDriver
+    from base.hardware.drivers.hdd_power import HDDPower
 
-    power_unit = Power()
-    mechanics = Mechanics()
+    power_unit = HDDPower()
+    mechanics = MechanicsDriver()
     drive = Drive()
 
     if dock:

@@ -3,5 +3,6 @@
   "wait_for_channel_free_timeout": 2,
   "sbu_response_timeout": 1,
   "wait_for_measurement_result_timeout": 2,
-  "serial_connection_timeout": 1
+  "serial_connection_timeout": 1,
+  "serial_connection_delay_seconds": 4e-8
 }

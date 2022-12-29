@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 from pathlib import Path
@@ -25,7 +26,8 @@ def setup_logger(config_path: Path) -> None:
 def main() -> None:
     from base.hardware.sbu.updater import SbuUpdater
 
-    SbuUpdater().update()
+    updater = SbuUpdater()
+    asyncio.run(updater.update())
 
 
 if __name__ == "__main__":

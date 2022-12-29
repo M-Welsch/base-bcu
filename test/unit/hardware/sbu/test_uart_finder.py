@@ -1,7 +1,5 @@
 import logging
-import sys
 from contextlib import nullcontext
-from importlib import import_module
 from pathlib import Path
 from typing import ContextManager, Generator, Optional, Type, Union
 from unittest.mock import Mock
@@ -14,7 +12,7 @@ from pytest_mock import MockFixture
 from base.common.config import Config
 from base.common.exceptions import SbuNotAvailableError, SerialInterfaceError
 from base.hardware.sbu.message import PredefinedSbuMessages
-from base.hardware.sbu.serial_interface import SerialInterface
+from base.hardware.drivers.serial_interface import SerialInterface
 from base.hardware.sbu.uart_finder import (
     _challenge_interface,
     _test_uart_interface_for_echo,

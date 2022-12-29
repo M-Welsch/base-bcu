@@ -1,36 +1,22 @@
 import logging
-import sys
-from importlib import import_module
-from pathlib import Path
 from subprocess import PIPE, Popen
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
     BackupTestEnvironmentInput,
     BackupTestEnvironmentOutput,
     Verification,
-    prepare_source_sink_dirs,
 )
 from test.utils.patch_config import patch_config, patch_multiple_configs
-from test.utils.utils import derive_mock_string
 from threading import Thread
 from time import sleep
-from typing import Callable, Generator, List, Tuple, Type
+from typing import Callable, Generator, Type
 
 import pytest
-import serial
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockFixture
 
-import base.logic.backup.backup_conductor
 from base.common.constants import BackupDirectorySuffix
-from base.common.exceptions import BackupDeletionError, BackupSizeRetrievalError, InvalidBackupSource, NetworkError
-from base.common.system import System
-from base.hardware.drive import Drive
-from base.hardware.hardware import Hardware
-from base.hardware.mechanics import Mechanics
-from base.hardware.sbu.serial_interface import SerialInterface
-from base.hardware.sbu.uart_finder import get_sbu_uart_interface
-from base.logic.backup.backup import Backup
+from base.common.exceptions import InvalidBackupSource, NetworkError
 from base.logic.backup.backup_browser import BackupBrowser
 from base.logic.backup.backup_conductor import BackupConductor
 from base.logic.backup.protocol import Protocol

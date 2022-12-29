@@ -10,28 +10,28 @@ from base.common.exceptions import (
 )
 from base.common.logger import LoggerFactory
 from base.hardware.sbu.message import PredefinedSbuMessages
-from base.hardware.sbu.serial_interface import SerialInterface
+from base.hardware.drivers.serial_interface import SerialInterface
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
-def get_sbu_uart_interface() -> Path:
+async def get_sbu_uart_interface() -> Path:
     uart_interfaces = Path("/dev").glob("ttyS*")
-    uart_sbu = _test_uart_interfaces_for_echo(uart_interfaces)
+    uart_sbu = await _test_uart_interfaces_for_echo(uart_interfaces)
     LOG.info("SBU answers on UART Interface {}".format(uart_sbu))
     return uart_sbu
 
 
-def _test_uart_interfaces_for_echo(uart_interfaces: Generator[Path, None, None]) -> Path:
+async def _test_uart_interfaces_for_echo(uart_interfaces: Generator[Path, None, None]) -> Path:
     for uart_interface in uart_interfaces:
-        if _test_uart_interface_for_echo(uart_interface):
+        if await _test_uart_interface_for_echo(uart_interface):
             return uart_interface
     raise SbuNotAvailableError("UART interface not found!")
 
 
-def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
+async def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
     try:
-        response = _challenge_interface(uart_interface)
+        response = await _challenge_interface(uart_interface)
     except SerialInterfaceError:
         return False
     except SbuNoResponseError:
@@ -42,11 +42,11 @@ def _test_uart_interface_for_echo(uart_interface: Path) -> bool:
         return response.endswith("Echo")
 
 
-def _challenge_interface(uart_interface: Path) -> str:
-    with SerialInterface(port=uart_interface, baud_rate=BAUD_RATE) as ser:
+async def _challenge_interface(uart_interface: Path) -> str:
+    async with SerialInterface(port=uart_interface, baud_rate=BAUD_RATE) as ser:
         ser.reset_buffers()
         ser.flush_sbu_channel()
-        response = ser.query_from_sbu(message=PredefinedSbuMessages.test_for_echo)
+        response = await ser.query_from_sbu(message=PredefinedSbuMessages.test_for_echo)
         LOG.debug(f"interface: {str(uart_interface)}, response: {str(response)}")
         ser.reset_buffers()
     return response

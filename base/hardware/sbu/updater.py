@@ -1,21 +1,23 @@
+import asyncio
 import os
 from pathlib import Path
 from subprocess import PIPE, Popen
 from typing import Optional
 
 from base.common.logger import LoggerFactory
-from base.hardware.pin_interface import pin_interface
+from base.hardware.drivers.pin_interface import pin_interface
 from base.hardware.sbu.uart_finder import get_sbu_uart_interface
 
 LOG = LoggerFactory.get_logger(__name__)
 
 
 class SbuUpdater:
+    _serial_connection_delay_seconds: float = 4e-8
     # Todo: cleanup
 
-    def update(self, sbu_fw_filename: Optional[Path] = None) -> None:
-        pin_interface.connect_serial_update_path()
-        sbu_uart_channel = self._get_sbu_uart_channel()
+    async def update(self, sbu_fw_filename: Optional[Path] = None) -> None:
+        await pin_interface.connect_serial_update_path()
+        sbu_uart_channel = await self._get_sbu_uart_channel()
         if sbu_uart_channel is None:
             LOG.warning("SBU didn't respond on any UART Interface. Defaulting to /dev/ttyS1")
             sbu_uart_channel = Path("/dev/ttyS1")
@@ -42,8 +44,8 @@ class SbuUpdater:
             pin_interface.set_sbu_serial_path_to_communication()
 
     @staticmethod
-    def _get_sbu_uart_channel() -> Path:
-        sbu_uart_channel = get_sbu_uart_interface()
+    async def _get_sbu_uart_channel() -> Path:
+        sbu_uart_channel = await get_sbu_uart_interface()
         if not sbu_uart_channel:
             sbu_uart_channel = Path("/dev/ttyS1")
         return sbu_uart_channel
@@ -53,3 +55,9 @@ class SbuUpdater:
         list_of_sbc_fw_files = Path("/home/base/base-bcu/sbu_fw_files/").glob("*")
         latest_sbc_fw_file = max(list_of_sbc_fw_files, key=os.path.getctime)
         return latest_sbc_fw_file
+
+    async def connect_serial_update_path(self) -> None:
+        pin_interface.set_sbu_serial_path_to_sbu_fw_update()
+        pin_interface.enable_receiving_messages_from_sbu()
+        # t_on / t_off max of ADG734 (ensures signal switchover)
+        await asyncio.sleep(self._serial_connection_delay_seconds)

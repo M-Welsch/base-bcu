@@ -1,17 +1,18 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
-from time import sleep, time
+from time import time
 from types import TracebackType
 from typing import Optional, Tuple, Type
 
-import serial
+import serial  # TODO: Use https://pypi.org/project/pyserial-asyncio/ instead of serial
 
 from base.common.config import Config, get_config
 from base.common.constants import BAUD_RATE
 from base.common.exceptions import SbuCommunicationTimeout, SbuNoResponseError, SerialInterfaceError
 from base.common.logger import LoggerFactory
-from base.hardware.pin_interface import pin_interface
+from base.hardware.drivers.pin_interface import pin_interface
 from base.hardware.sbu.message import SbuMessage
 
 LOG = LoggerFactory.get_logger(__name__)
@@ -29,17 +30,17 @@ class SerialInterface:
         self._baud_rate: int = baud_rate
         self._serial_connection: Optional[serial.Serial] = None
 
-    def __enter__(self) -> SerialInterface:
+    async def __aenter__(self) -> SerialInterface:
         assert isinstance(self._config, Config)
-        self._wait_for_channel_free()
+        await self._wait_for_channel_free()
         SerialInterface._channel_busy = True
-        pin_interface.connect_serial_communication_path()
+        await pin_interface.connect_serial_communication_path()
         self._establish_serial_connection_or_raise()
         # self._serial_connection.open() is called implicitly!
         self.flush_sbu_channel()
         return self
 
-    def __exit__(
+    async def __aexit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
     ) -> None:
         self.flush_sbu_channel()
@@ -47,12 +48,12 @@ class SerialInterface:
         pin_interface.disable_receiving_messages_from_sbu()
         SerialInterface._channel_busy = False
 
-    def _wait_for_channel_free(self) -> None:
+    async def _wait_for_channel_free(self) -> None:
         assert isinstance(self._config, Config)
         channel_timeout: int = self._config.wait_for_channel_free_timeout
         time_start = time()
         while SerialInterface._channel_busy or not SerialInterface._sbu_ready:
-            sleep(0.05)
+            await asyncio.sleep(0.05)
             if time() - time_start > channel_timeout:
                 raise SbuCommunicationTimeout(f"Waiting for longer than {channel_timeout} for channel to be free.")
 
@@ -78,12 +79,12 @@ class SerialInterface:
     def flush_sbu_channel(self) -> None:
         self._send_message(b"\0")
 
-    def write_to_sbu(self, message: SbuMessage) -> None:
+    async def write_to_sbu(self, message: SbuMessage) -> None:
         self._send_message(message=message.binary)
         self._await_acknowledge(message.code)
         self._wait_for_sbu_ready()
 
-    def query_from_sbu(self, message: SbuMessage) -> str:
+    async def query_from_sbu(self, message: SbuMessage) -> str:
         self._send_message(message=message.binary)
         self._await_acknowledge(message.code)
         response_delay, response = self._wait_for_response(message.response_keyword)
@@ -117,3 +118,9 @@ class SerialInterface:
                 return duration, response.strip("\x00").strip()
             duration = time() - time_start
         raise SbuNoResponseError(f"waiting for {response_keyword} timed out. Took: {duration}")
+
+    async def connect_serial_communication_path(self) -> None:
+        pin_interface.set_sbu_serial_path_to_communication()
+        pin_interface.enable_receiving_messages_from_sbu()  # Fixme: this is not called when needed!
+        # t_on / t_off max of ADG734 (ensures signal switchover)
+        await asyncio.sleep(self._config.serial_connection_delay_seconds)

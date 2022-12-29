@@ -2,7 +2,7 @@ from enum import IntEnum
 from time import sleep
 from typing import Any
 
-from base.hardware.pins import Pins
+from base.hardware.drivers.pin_interface import Pins
 
 BOARD = None
 OUT = 0
@@ -34,10 +34,10 @@ def setup(pin: int = 0, direction: int = 0, pull_up_down: int = 0) -> None:
 
 def input(pin: IntEnum) -> bool:
     global PINS_N_SENSOR_DOCKED_OCCURRENCES, PINS_N_SENSOR_UNDOCKED_OCCURRENCES
-    if pin == Pins.nsensor_docked:
+    if pin == Pins.NSENSOR_DOCKED:
         PINS_N_SENSOR_DOCKED_OCCURRENCES += 1
         return HIGH if PINS_N_SENSOR_DOCKED_OCCURRENCES < DOCKED_AFTER_QUERIES else LOW
-    elif pin == Pins.nsensor_undocked:
+    elif pin == Pins.NSENSOR_UNDOCKED:
         PINS_N_SENSOR_UNDOCKED_OCCURRENCES += 1
         return HIGH if PINS_N_SENSOR_UNDOCKED_OCCURRENCES < UNDOCKED_AFTER_QUERIES else LOW
     else:
@@ -45,5 +45,5 @@ def input(pin: IntEnum) -> bool:
 
 
 def output(pin: IntEnum, value: IntEnum) -> None:
-    if pin == Pins.stepper_step:
+    if pin == Pins.STEPPER_STEP:
         sleep(0.1)
