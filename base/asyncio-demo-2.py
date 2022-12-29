@@ -102,12 +102,13 @@ class BackupConductor:
 
     def __init__(self):
         self._backup_time: Optional[datetime] = None
+        self._backup_task = Optional[Task]
         self._backup_process: Optional[Process] = None
         self._output_task: Optional[Task] = None
 
-    async def set(self, backup_time: datetime):
+    def set(self, backup_time: datetime):
         self._backup_time = backup_time
-        await self._start()
+        self._backup_task = asyncio.create_task(self._start())
 
     async def _start(self):
         await self._backup_countdown()
@@ -162,11 +163,9 @@ class BaseApplication:
             backup_time = datetime.now()
         else:
             backup_time = get_backup_time()
+        self._backup_conductor.set(backup_time)
 
-        await asyncio.gather(
-            self._backup_conductor.set(backup_time),
-            self._shutdown_manager.task
-        )
+        await self._shutdown_manager.task
 
 
 async def main():
