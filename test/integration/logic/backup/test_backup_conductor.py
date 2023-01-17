@@ -76,7 +76,7 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
         amount_old_backups=10,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
-        no_teardown=False,
+        teardown_afterwards=False,
     )
     with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
         backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
@@ -134,7 +134,7 @@ def test_backup_conductor_error_cases(
         amount_old_backups=10,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
-        no_teardown=False,
+        teardown_afterwards=False,
         automount_data_source=False,
         automount_virtual_drive=False,
     )
@@ -187,7 +187,7 @@ def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
         amount_old_backups=0,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
-        no_teardown=False,
+        teardown_afterwards=False,
     )
 
     with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
@@ -221,7 +221,7 @@ def test_backup_abort_then_continue(protocol: Protocol, caplog: LogCaptureFixtur
         amount_old_backups=0,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
-        no_teardown=False,
+        teardown_afterwards=False,
     )
 
     with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:

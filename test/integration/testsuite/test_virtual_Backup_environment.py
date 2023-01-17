@@ -13,7 +13,7 @@ from base.logic.backup.protocol import Protocol
 
 
 @pytest.mark.parametrize(
-    "protocol, use_vhd", [(Protocol.SMB, False), (Protocol.SMB, True), (Protocol.SSH, False), (Protocol.SSH, True)]
+    "protocol, use_vhd", [(Protocol.SSH, False), (Protocol.SSH, True)]
 )
 def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) -> None:
     backup_environment_configuration = BackupTestEnvironmentInput(
@@ -30,11 +30,11 @@ def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) 
     if use_vhd:
         assert test.utils.backup_environment.virtual_hard_drive.VIRTUAL_FILESYSTEM_IMAGE.exists()
     assert test.utils.backup_environment.virtual_hard_drive.VIRTUAL_FILESYSTEM_MOUNTPOINT.exists()
-    assert environment_directories.SMB_SHARE_ROOT.exists()
+    assert environment_directories.NFS_SHARE_ROOT.exists()
     assert environment_directories.SMB_MOUNTPOINT.exists()
     if protocol == Protocol.SMB:
         new_file = "newfile"
-        create_file_with_random_data(environment_directories.SMB_SHARE_ROOT / new_file, 100)
+        create_file_with_random_data(environment_directories.NFS_SHARE_ROOT / new_file, 100)
         assert (environment_directories.SMB_MOUNTPOINT / new_file).exists()
     assert vbec.source.exists()
     assert vbec.sink.exists()

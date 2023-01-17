@@ -32,7 +32,7 @@ class TestVirtualNas:
         port = virtual_nas_fixture.config.rsync_daemon_port
         outp = check_output(["rsync", f"{ip}::", f"--port={port}"])
         assert is_reachable(ip, port)
-        assert "virtual_backup_source" in outp.decode()
+        assert "backup_source" in outp.decode()
 
     @staticmethod
     def test_nfsd_reachable(virtual_nas_fixture) -> None:

@@ -8,7 +8,7 @@ services:
     environment:
       - AMOUNT_TESTFILES_IN_SOURCE=10
       - BYTESIZE_OF_EACH_SOURCEFILE=1024
-      - BACKUP_SOURCE_DIRECTORY=/mnt/backup_source
+      - BACKUP_SOURCE_DIRECTORY=/mnt/user/backup_source
     volumes:
       - vnas_hdd:/mnt
 
@@ -36,7 +36,7 @@ services:
     container_name: base_virtual_nas_nfs
     privileged: true
     environment:
-      - SHARED_DIRECTORY=/mnt/backup_source
+      - SHARED_DIRECTORY=/mnt/user/backup_source
     ports:
       - 2049:2049
     depends_on:
@@ -51,7 +51,7 @@ services:
     image: max/rsync_daemon
     container_name: base_virtual_nas_rsync_daemon
     environment:
-      - BACKUP_SOURCE_DIRECTORY=/mnt/backup_source
+      - BACKUP_SOURCE_DIRECTORY=/mnt/user/backup_source
       - BACKUP_SOURCE_NAME=backup_source
       - RSYNC_DAEMON_PORT=1234
       - HOSTS_ALLOW=170.20.0.0/24

@@ -102,6 +102,8 @@ networks:
 
 """
 
+# Todo: make addresspace configurable. Some machines need 172.126.0.xx
+
 
 class BaseVnasContainer(Enum):
     NFSD = "base_virtual_nas_nfs"
