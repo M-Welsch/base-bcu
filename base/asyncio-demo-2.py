@@ -175,6 +175,26 @@ class BaseApplication:
         await self._shutdown_manager
 
 
+class Heartbeat:
+    def __init__(self, frequency=1):
+        self._frequency = frequency
+        self._task: Optional[Task] = None
+
+    def __enter__(self):
+        self._task = asyncio.create_task(self._heartbeat())
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._task.cancel()
+
+    async def _heartbeat(self):
+        try:
+            while True:
+                await asyncio.sleep(self._frequency)
+                logging.debug("💓 Heartbeat")
+        except asyncio.CancelledError:
+            logging.debug("🖤 Heart stopped beating.")
+
+
 async def main():
     shutdown_manager = ShutdownManager(seconds=5)
     standby_unit = StandbyUnit()
@@ -182,7 +202,8 @@ async def main():
     app = BaseApplication(
         shutdown_manager=shutdown_manager, standby_unit=standby_unit, backup_conductor=backup_conductor
     )
-    await app.run()
+    with Heartbeat():
+        await app.run()
 
 
 if __name__ == "__main__":
