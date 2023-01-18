@@ -40,12 +40,14 @@ class ShutdownManager:
         self._barrier: asyncio.Event = asyncio.Event()
         self._task: Optional[Task] = None
 
+    def __await__(self):
+        try:
+            yield from self._task
+        except TypeError as e:
+            raise RuntimeError(f"{__class__.__name__} has to be started before it can be awaited!") from e
+
     def _calculate_shutdown_time(self) -> datetime:
         return datetime.now() + timedelta(seconds=self._seconds)
-
-    @property
-    def task(self) -> Task:
-        return self._task
 
     def start(self) -> None:
         logging.debug("⏳ Start shutdown countdown.")
@@ -79,8 +81,11 @@ class StandbyUnit:
         return WakeupReason("SCHEDULED")
 
 
-def get_backup_time():
-    return datetime.now() + timedelta(seconds=3)  # Get from config file instead
+def calculate_backup_time(wakeup_reason):
+    backup_time = datetime.now()
+    if wakeup_reason != WakeupReason.BACKUP_NOW:
+        backup_time += timedelta(seconds=3)  # Get from config file instead
+    return backup_time
 
 
 RSYNC_DUMMY = """
@@ -103,13 +108,13 @@ class BackupConductor:
 
     def __init__(self):
         self._backup_time: Optional[datetime] = None
-        self._backup_task = Optional[Task]
+        self._task: Optional[Task] = None
         self._backup_process: Optional[Process] = None
         self._output_task: Optional[Task] = None
 
     def set(self, backup_time: datetime):
         self._backup_time = backup_time
-        self._backup_task = asyncio.create_task(self._start())
+        self._task = asyncio.create_task(self._start())
 
     async def _start(self):
         try:
@@ -132,7 +137,6 @@ class BackupConductor:
         self.backup_started.emit()
         self._backup_process = await asyncio.create_subprocess_exec(*self._program, stdout=asyncio.subprocess.PIPE)
         self._output_task = asyncio.create_task(self._consume_output(self._backup_process.stdout))
-        raise RuntimeError("Oops!")
         logging.debug("Starting backup...")
         await self._backup_process.wait()
         logging.debug("Backup finished. Resetting shutdown countdown.")
@@ -141,7 +145,7 @@ class BackupConductor:
 
     async def _consume_output(self, stdout: StreamReader):
         try:
-            while (line := await stdout.readline()) != b'':
+            while (line := await stdout.readline()) != b"":
                 self.line_written.emit(line)
         except asyncio.CancelledError:
             logging.debug("Stop consuming stdout.")
@@ -167,14 +171,8 @@ class BaseApplication:
         logging.debug(f"Ah, because {wakeup_reason}")
 
         self._shutdown_manager.start()
-
-        if wakeup_reason == WakeupReason.BACKUP_NOW:
-            backup_time = datetime.now()
-        else:
-            backup_time = get_backup_time()
-        self._backup_conductor.set(backup_time)
-
-        await self._shutdown_manager.task
+        self._backup_conductor.set(backup_time=calculate_backup_time(wakeup_reason=wakeup_reason))
+        await self._shutdown_manager
 
 
 async def main():
@@ -185,6 +183,7 @@ async def main():
         shutdown_manager=shutdown_manager, standby_unit=standby_unit, backup_conductor=backup_conductor
     )
     await app.run()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
