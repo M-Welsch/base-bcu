@@ -6,6 +6,8 @@ from shutil import rmtree
 from types import TracebackType
 from typing import Optional, Type
 
+from .directories import VIRTUAL_HARD_DRIVE_IMAGE, VIRTUAL_HARD_DRIVE_MOUNTPOINT
+
 
 class VirtualHardDrive:
     def __init__(self, override_img_file_with: Optional[Path] = None, override_mount_point_with: Optional[Path] = None):
@@ -55,6 +57,3 @@ def create_ext4_filesystem(destination: Path, blocksize: str = "1M", block_count
     subprocess.Popen(f"dd if=/dev/urandom of={destination} bs={blocksize} count={block_count}".split()).wait()
     subprocess.Popen(f"mkfs -t ext4 {destination}".split()).wait()
 
-
-VIRTUAL_HARD_DRIVE_MOUNTPOINT = Path("/tmp/base_tmpfs_mntdir")
-VIRTUAL_HARD_DRIVE_IMAGE = Path("test/utils/backup_environment/virtual_hard_drive")

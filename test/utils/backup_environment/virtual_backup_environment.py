@@ -138,10 +138,11 @@ class BackupTestEnvironment:
         backup_source_directory: Path = Path('/mnt/user/backup_source'),
         teardown_afterwards: bool = True,
         automount_virtual_drive: bool = True,
-        automount_data_source: bool = True
+        automount_data_source: bool = True,
+        remote_backup_source: Path = Path("/mnt/backup_source")
     ) -> None:
         self._virtual_hard_drive = VirtualHardDrive()
-        self._src = Path("/mnt/backup_source")  # virtual NAS requires this to be under /mnt
+        self._src = remote_backup_source  # virtual NAS requires this to be under /mnt
         self._protocol: Protocol = protocol
         self._amount_files_in_source = amount_files_in_source
         self._bytesize_of_each_sourcefile = bytesize_of_each_sourcefile
@@ -215,10 +216,9 @@ class BackupTestEnvironment:
         sync_config = {
             "remote_backup_source_location": self._src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
-            "local_nas_hdd_mount_point": NFS_SHARE_ROOT.as_posix(),
+            "local_nas_hdd_mount_point": NFS_MOUNTPOINT.as_posix(),
             "rsync_daemon_port": self._virtual_nas.config.rsync_daemon_port,
             "rsync_share_name": self._virtual_nas.config.backup_source_name,
-            "nfs_share_path": NFS_SHARE_ROOT.as_posix()
         }
         sync_config.update({"protocol": self._protocol.value})
         nas_config = {
