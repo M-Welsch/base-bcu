@@ -25,8 +25,8 @@ def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) 
         amount_preexisting_source_files_in_latest_backup=0)
     vbec.create()
     if use_vhd:
-        assert test.utils.backup_environment.virtual_hard_drive.VIRTUAL_FILESYSTEM_IMAGE.exists()
-    assert test.utils.backup_environment.virtual_hard_drive.VIRTUAL_FILESYSTEM_MOUNTPOINT.exists()
+        assert test.utils.backup_environment.virtual_hard_drive.VIRTUAL_HARD_DRIVE_IMAGE.exists()
+    assert test.utils.backup_environment.virtual_hard_drive.VIRTUAL_HARD_DRIVE_MOUNTPOINT.exists()
 
     if protocol == Protocol.SMB:
         new_file = "newfile"
@@ -54,5 +54,5 @@ def test_virtual_backup_environment_teardown() -> None:
     assert not any(vbec.sink.iterdir())
     vbec.teardown()
     active_mounts = list_mounts()
-    for mount_point in [test.utils.backup_environment.virtual_hard_drive.VIRTUAL_FILESYSTEM_MOUNTPOINT, environment_directories.SMB_MOUNTPOINT]:
+    for mount_point in [test.utils.backup_environment.virtual_hard_drive.VIRTUAL_HARD_DRIVE_MOUNTPOINT, environment_directories.SMB_MOUNTPOINT]:
         assert not any([mount_point.as_posix() in active_mount for active_mount in active_mounts])
