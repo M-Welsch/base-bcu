@@ -86,28 +86,13 @@ def list_mounts() -> List[str]:
         raise RuntimeError("cannot list mounts")
 
 
-@dataclass
-class BackupTestEnvironmentInput:
-    protocol: Protocol
-    amount_files_in_source: int
-    bytesize_of_each_sourcefile: int
-    use_virtual_drive_for_sink: bool
-    amount_old_backups: int
-    bytesize_of_each_old_backup: int
-    amount_preexisting_source_files_in_latest_backup: int = 0
-    backup_source_directory: Path = Path('/mnt/user/backup_source')
-    teardown_afterwards: bool = True
-    automount_virtual_drive: bool = True
-    automount_data_source: bool = True
-
-
 BackupTestEnvironmentOutput = namedtuple(
     "BackupTestEnvironmentOutput", "sync_config backup_config nas_config backup_hdd_mount_point"
 )
 
 
 class BackupTestEnvironment:
-    """creates a temporary test environment specified by "configuration" and returns config files to interface with it
+    """creates a temporary test environment and returns config files to interface with it
 
     Architecture of the backup source:
     depending on the selected protocol, different things happen:
@@ -141,21 +126,43 @@ class BackupTestEnvironment:
             └── random files ...
     """
 
-    def __init__(self, configuration: BackupTestEnvironmentInput) -> None:
+    def __init__(
+        self,
+        protocol: Protocol,
+        amount_files_in_source: int,
+        bytesize_of_each_sourcefile: int,
+        use_virtual_drive_for_sink: bool,
+        amount_old_backups: int,
+        bytesize_of_each_old_backup: int,
+        amount_preexisting_source_files_in_latest_backup: int = 0,
+        backup_source_directory: Path = Path('/mnt/user/backup_source'),
+        teardown_afterwards: bool = True,
+        automount_virtual_drive: bool = True,
+        automount_data_source: bool = True
+    ) -> None:
         self._virtual_hard_drive = VirtualHardDrive()
-        # self._virtual_nas = VirtualNas(VirtualNasConfig(
-        #     backup_source_directory=configuration.backup_source_directory,
-        #     amount_files_in_source=configuration.amount_files_in_source,
-        #     bytesize_of_each_sourcefile=configuration.bytesize_of_each_sourcefile
-        # ))
-        self._virtual_nas: Optional[VirtualNas] = None
-        self._src = self._get_source()
-        self._sink = self._get_sink(configuration.use_virtual_drive_for_sink, configuration.automount_virtual_drive)
-        self._configuration = configuration
-
-    @property
-    def configuration(self) -> BackupTestEnvironmentInput:
-        return self._configuration
+        self._src = Path("/mnt/backup_source")  # virtual NAS requires this to be under /mnt
+        self._protocol: Protocol = protocol
+        self._amount_files_in_source = amount_files_in_source
+        self._bytesize_of_each_sourcefile = bytesize_of_each_sourcefile
+        self._use_virtual_drive_for_sink = use_virtual_drive_for_sink
+        self._amount_old_backups = amount_old_backups
+        self._bytesize_of_each_old_backup = bytesize_of_each_old_backup
+        self._amount_preexisting_source_files_in_latest_backup = amount_preexisting_source_files_in_latest_backup
+        self._backup_source_directory = backup_source_directory
+        self._teardown_afterwards = teardown_afterwards
+        self._automount_virtual_drive = automount_virtual_drive
+        self._automount_data_source = automount_data_source
+        virtual_nas_config = VirtualNasConfig(
+            backup_source_directory=self._src,
+            backup_source_name="backup_source",
+            amount_files_in_source=self._amount_files_in_source,
+            bytesize_of_each_sourcefile=self._bytesize_of_each_sourcefile,
+            rsync_daemon_port=1234,
+            ip="170.20.0.5"
+        )
+        self._virtual_nas = VirtualNas(virtual_nas_config)
+        self._sink = self._get_sink()
 
     @property
     def source(self) -> Path:
@@ -178,7 +185,7 @@ class BackupTestEnvironment:
     def __exit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
     ) -> None:
-        if self._configuration.teardown_afterwards:
+        if self._teardown_afterwards:
             self.teardown()
 
     @staticmethod
@@ -190,9 +197,9 @@ class BackupTestEnvironment:
         src.mkdir(exist_ok=True)  # here too
         return src  # that's just a return god dammit!
 
-    def _get_sink(self, vhd_for_sink: bool, mount_sink: bool) -> Path:
+    def _get_sink(self) -> Path:
         """provide the path where the backups shall be located. BaSe will create subdirectories here for the backups"""
-        if vhd_for_sink and mount_sink:  # Todo: make vhd_for_sink the only option?
+        if self._use_virtual_drive_for_sink and self._automount_virtual_drive:
             self._virtual_hard_drive.mount()
         sink = self._virtual_hard_drive.mount_point / "backup_target"
         sink.mkdir(exist_ok=True)
@@ -205,26 +212,17 @@ class BackupTestEnvironment:
         return backup_environment
 
     def _prepare_source(self) -> BackupTestEnvironmentOutput:
-        virtual_nas_config = VirtualNasConfig(
-            backup_source_directory=self._src,
-            backup_source_name=(backup_source_name := "backup_source"),
-            amount_files_in_source=self._configuration.amount_files_in_source,
-            bytesize_of_each_sourcefile=self._configuration.bytesize_of_each_sourcefile,
-            rsync_daemon_port=(vnas_rsync_port := 1234),
-            ip=(vnas_ip := "170.20.0.5")
-        )
-        self._virtual_nas = VirtualNas(virtual_nas_config)
         sync_config = {
             "remote_backup_source_location": self._src.as_posix(),
             "local_backup_target_location": self._sink.as_posix(),
             "local_nas_hdd_mount_point": NFS_SHARE_ROOT.as_posix(),
-            "rsync_daemon_port": vnas_rsync_port,
-            "rsync_share_name": backup_source_name,
+            "rsync_daemon_port": self._virtual_nas.config.rsync_daemon_port,
+            "rsync_share_name": self._virtual_nas.config.backup_source_name,
             "nfs_share_path": NFS_SHARE_ROOT.as_posix()
         }
-        sync_config.update({"protocol": self._configuration.protocol.value})
+        sync_config.update({"protocol": self._protocol.value})
         nas_config = {
-            "ssh_host": vnas_ip,
+            "ssh_host": self._virtual_nas.config.ip,
             "ssh_port": 22,
             "ssh_user": getuser(),
         }
@@ -238,8 +236,8 @@ class BackupTestEnvironment:
     def _prepare_sink(self) -> None:
         create_old_backups(
             base_path=self._sink,
-            amount=self._configuration.amount_old_backups,
-            respective_file_size_bytes=self._configuration.bytesize_of_each_old_backup,
+            amount=self._amount_old_backups,
+            respective_file_size_bytes=self._bytesize_of_each_old_backup,
         )
 
     @staticmethod
@@ -253,7 +251,7 @@ class BackupTestEnvironment:
     def teardown(self, delete_files: bool = True) -> None:
         if delete_files:
             self._delete_files()
-        if self._configuration.protocol == Protocol.NFS:
+        if self._protocol == Protocol.NFS:
             self.unmount_nfs()
         self._virtual_hard_drive.teardown()
 
@@ -272,17 +270,17 @@ class BackupTestEnvironment:
 
     def mount_all(self) -> None:
         self._virtual_hard_drive.mount()
-        if self._configuration.protocol == Protocol.NFS:
+        if self._protocol == Protocol.NFS:
             self.mount_nfs()
 
     def unmount_all(self) -> None:
         self._virtual_hard_drive.unmount()
-        if self._configuration.protocol == Protocol.NFS:
+        if self._protocol == Protocol.NFS:
             self.unmount_nfs()
 
     def is_everything_necessary_mounted(self) -> bool:
         all_mounted = self._virtual_hard_drive.mount_point.is_mount()
-        if self._configuration.protocol == Protocol.NFS:
+        if self._protocol == Protocol.NFS:
             all_mounted &= NFS_MOUNTPOINT.is_mount()
         return all_mounted
 
