@@ -1,14 +1,13 @@
 import subprocess
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict, Any, List
-
-from jinja2 import Environment
+from getpass import getuser
 from pathlib import Path
 from subprocess import call
-import docker
-from getpass import getuser
+from typing import Any, Dict, List, Optional
 
+import docker
+from jinja2 import Environment
 
 COMPOSE_TEMPLATE = """
 version: "3.4"
@@ -76,7 +75,7 @@ services:
     networks:
         vnas_network:
             ipv4_address: 170.20.0.4
-      
+
   router:
     image: max/nginx
     container_name: base_virtual_nas_router
@@ -91,7 +90,7 @@ services:
 
 volumes:
   vnas_hdd:
-  
+
 networks:
   vnas_network:
     driver: bridge
@@ -119,7 +118,7 @@ class VirtualNasConfig:
     amount_files_in_source: int
     bytesize_of_each_sourcefile: int
     backup_source_name: str = "backup_source"
-    virtual_nas_docker_directory: Path = Path.cwd()/"test/utils/virtual_nas/"
+    virtual_nas_docker_directory: Path = Path.cwd() / "test/utils/virtual_nas/"
     rsync_daemon_port: int = 1234
     ip: str = "170.20.0.5"
 
@@ -183,20 +182,24 @@ class VirtualNas:
         subprocess.call(command)
 
     def _create_compose_yml(self) -> None:
-        rsyncd_conf_content = Environment().from_string(COMPOSE_TEMPLATE).render(
-            amount_files_in_source=self._config.amount_files_in_source,
-            bytesize_of_each_sourcefile=self._config.bytesize_of_each_sourcefile,
-            backup_source_name=self._config.backup_source_name,
-            backup_source_directory=self._config.backup_source_directory,
-            rsync_daemon_port=self._config.rsync_daemon_port,
-            ssh_user=getuser(),
-            vnas_ip=self._config.ip
+        rsyncd_conf_content = (
+            Environment()
+            .from_string(COMPOSE_TEMPLATE)
+            .render(
+                amount_files_in_source=self._config.amount_files_in_source,
+                bytesize_of_each_sourcefile=self._config.bytesize_of_each_sourcefile,
+                backup_source_name=self._config.backup_source_name,
+                backup_source_directory=self._config.backup_source_directory,
+                rsync_daemon_port=self._config.rsync_daemon_port,
+                ssh_user=getuser(),
+                vnas_ip=self._config.ip,
+            )
         )
-        with open(self._config.virtual_nas_docker_directory/"compose.yml", "w") as rsynd_conf:
+        with open(self._config.virtual_nas_docker_directory / "compose.yml", "w") as rsynd_conf:
             rsynd_conf.write(rsyncd_conf_content)
 
     def cleanup(self) -> None:
         self._stop_still_running_instances()
 
-    def _start_virtual_nas(self):
+    def _start_virtual_nas(self) -> None:
         subprocess.run(["docker-compose", "up", "-d"], cwd="test/utils/virtual_nas")

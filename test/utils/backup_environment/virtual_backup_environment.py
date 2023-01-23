@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import glob
 import os
 import shutil
 import subprocess
@@ -11,7 +12,9 @@ from math import ceil
 from pathlib import Path
 from shutil import copy, rmtree
 from subprocess import PIPE, Popen
+from test.utils.backup_environment.directories import *
 from test.utils.backup_environment.virtual_hard_drive import VirtualHardDrive
+from test.utils.backup_environment.virtual_nas import VirtualNas, VirtualNasConfig
 from types import TracebackType
 from typing import Generator, List, Optional, Tuple, Type
 
@@ -19,10 +22,8 @@ import pytest
 from py import path
 
 from base.common.constants import current_backup_timestring_format_for_directory
-from test.utils.backup_environment.directories import *
 from base.logic.backup.backup_browser import read_backups
 from base.logic.backup.protocol import Protocol
-from test.utils.backup_environment.virtual_nas import VirtualNas, VirtualNasConfig
 
 
 @pytest.fixture
@@ -91,6 +92,15 @@ BackupTestEnvironmentOutput = namedtuple(
 )
 
 
+def copy_preexisting_sourcefiles_into_latest_backup(backup_source_dir: Path, backup_target_base_dir: Path,
+                                                    amount_preexisting_source_files_in_latest_backup: int) -> None:
+
+    latest_backup = max(glob.glob('*'))
+    source_files = backup_source_dir.glob("*")
+    for _ in range(amount_preexisting_source_files_in_latest_backup):
+        copy(next(source_files), latest_backup)
+
+
 class BackupTestEnvironment:
     """creates a temporary test environment and returns config files to interface with it
 
@@ -135,11 +145,11 @@ class BackupTestEnvironment:
         amount_old_backups: int,
         bytesize_of_each_old_backup: int,
         amount_preexisting_source_files_in_latest_backup: int = 0,
-        backup_source_directory: Path = Path('/mnt/user/backup_source'),
+        backup_source_directory: Path = Path("/mnt/user/backup_source"),
         teardown_afterwards: bool = True,
         automount_virtual_drive: bool = True,
         automount_data_source: bool = True,
-        remote_backup_source: Path = Path("/mnt/backup_source")
+        remote_backup_source: Path = Path("/mnt/backup_source"),
     ) -> None:
         self._virtual_hard_drive = VirtualHardDrive()
         self._src = remote_backup_source  # virtual NAS requires this to be under /mnt
@@ -160,7 +170,7 @@ class BackupTestEnvironment:
             amount_files_in_source=self._amount_files_in_source,
             bytesize_of_each_sourcefile=self._bytesize_of_each_sourcefile,
             rsync_daemon_port=1234,
-            ip="170.20.0.5"
+            ip="170.20.0.5",
         )
         self._virtual_nas = VirtualNas(virtual_nas_config)
         self._sink = self._get_sink()
@@ -239,6 +249,16 @@ class BackupTestEnvironment:
             amount=self._amount_old_backups,
             respective_file_size_bytes=self._bytesize_of_each_old_backup,
         )
+        if self._amount_preexisting_source_files_in_latest_backup > 0:
+            if self._amount_old_backups == 0:
+                raise RuntimeError(f"This configuation doesn't make sense: how shall I copy {self._amount_preexisting_source_files_in_latest_backup} files from source to the latest backup if there is no old backup?")
+            self.mount_nfs()
+            copy_preexisting_sourcefiles_into_latest_backup(
+                backup_source_dir=NFS_MOUNTPOINT,
+                backup_target_base_dir=self._sink,
+                amount_preexisting_source_files_in_latest_backup=self._amount_preexisting_source_files_in_latest_backup
+            )
+            self.unmount_nfs()
 
     @staticmethod
     def mount_nfs() -> None:

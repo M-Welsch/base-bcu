@@ -37,7 +37,7 @@ stream {
   server {
     listen 2049;
     proxy_pass nfs;
-  } 
+  }
 }
 " > $NGINX_CONFIG_FILE
 

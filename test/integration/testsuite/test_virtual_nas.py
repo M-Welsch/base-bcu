@@ -1,22 +1,21 @@
 import subprocess
 from pathlib import Path
-from subprocess import check_output, STDOUT
+from subprocess import STDOUT, check_output
+from test.utils.backup_environment.directories import NFS_MOUNTPOINT
+from test.utils.backup_environment.virtual_nas import BaseVnasContainer, VirtualNas, VirtualNasConfig
 from typing import Generator
 
 import paramiko
 import pytest
 
-from test.utils.backup_environment.directories import NFS_MOUNTPOINT
-from test.utils.backup_environment.virtual_nas import VirtualNas, VirtualNasConfig, BaseVnasContainer
-
 
 @pytest.fixture(scope="class")
 def virtual_nas_fixture() -> Generator[VirtualNas, None, None]:
     virtual_nas_config = VirtualNasConfig(
-        virtual_nas_docker_directory=Path.cwd()/"test/utils/virtual_nas/",
+        virtual_nas_docker_directory=Path.cwd() / "test/utils/virtual_nas/",
         backup_source_directory=Path("/mnt/user/backup_source"),
         amount_files_in_source=10,
-        bytesize_of_each_sourcefile=1024
+        bytesize_of_each_sourcefile=1024,
     )
     vnas_instance = VirtualNas(virtual_nas_config)
     yield vnas_instance
@@ -58,19 +57,21 @@ class TestVirtualNas:
     @staticmethod
     def test_nfsd_share_mountable() -> None:
         NFS_MOUNTPOINT.mkdir(exist_ok=True)  # it's not vnas' responsiblity to provide the mountpoint
-                                             # on base. Therefore we make sure
+        # on base. Therefore we make sure
         subprocess.call(f"mount {NFS_MOUNTPOINT.as_posix()}".split())
         assert NFS_MOUNTPOINT.as_posix() in subprocess.check_output("mount").decode(), "please check /etc/fstab"
         subprocess.call(f"umount {NFS_MOUNTPOINT.as_posix()}".split())
 
     @staticmethod
     def test_rsyncd_shares_reachable(virtual_nas_fixture) -> None:
-        probe = subprocess.check_output(f"rsync {virtual_nas_fixture.config.ip}:: --port={virtual_nas_fixture.config.rsync_daemon_port}".split())
+        probe = subprocess.check_output(
+            f"rsync {virtual_nas_fixture.config.ip}:: --port={virtual_nas_fixture.config.rsync_daemon_port}".split()
+        )
         assert virtual_nas_fixture.config.backup_source_name in probe.decode()
 
     @staticmethod
     def test_rsyncd_synchronization(virtual_nas_fixture, tmp_path) -> None:
-        tmp_target = tmp_path/"target"
+        tmp_target = tmp_path / "target"
         tmp_target.mkdir()
         sync_command = f"rsync {virtual_nas_fixture.config.ip}::{virtual_nas_fixture.config.backup_source_name}/* {tmp_target.as_posix()} --port={virtual_nas_fixture.config.rsync_daemon_port}"
         subprocess.call(sync_command.split())

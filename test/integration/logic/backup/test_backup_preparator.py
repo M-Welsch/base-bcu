@@ -2,7 +2,6 @@ import telnetlib
 from pathlib import Path
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
-    BackupTestEnvironmentInput,
     create_old_backups,
     temp_source_sink_dirs,
 )
@@ -52,7 +51,8 @@ def test_backup_preparator(protocol: Protocol) -> None:
     - size of target drive is about 40MiB
 
     => no deletion of old backups is necessary!"""
-    backup_environment_configuration = BackupTestEnvironmentInput(
+
+    with BackupTestEnvironment(
         protocol=protocol,
         amount_files_in_source=10,
         bytesize_of_each_sourcefile=1024,
@@ -60,8 +60,7 @@ def test_backup_preparator(protocol: Protocol) -> None:
         amount_old_backups=10,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
-    )
-    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
+    ) as virtual_backup_env:
         backup_env_configs = virtual_backup_env.create()
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,
@@ -80,7 +79,7 @@ def test_backup_preparator(protocol: Protocol) -> None:
 def test_backup_preparator_with_deletion_of_old_bu(protocol: Protocol) -> None:
     """This testcase forces the preparator to delete old backups"""
 
-    backup_environment_configuration = BackupTestEnvironmentInput(
+    with BackupTestEnvironment(
         protocol=protocol,
         amount_files_in_source=10,
         bytesize_of_each_sourcefile=1024,
@@ -88,8 +87,7 @@ def test_backup_preparator_with_deletion_of_old_bu(protocol: Protocol) -> None:
         amount_old_backups=5,
         bytesize_of_each_old_backup=5000000,
         amount_preexisting_source_files_in_latest_backup=0,
-    )
-    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
+    ) as virtual_backup_env:
         backup_env = virtual_backup_env.create()
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,

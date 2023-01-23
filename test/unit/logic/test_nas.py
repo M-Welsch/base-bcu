@@ -67,7 +67,7 @@ def test_extract_root_of_share(share_name: str, error: Optional[Type[NasSmbConfE
     assert root_of_share == Path(share_path)
 
 
-def test_start_rsync_daemon(nas: Nas, mocker: MockFixture):
+def test_start_rsync_daemon(nas: Nas, mocker: MockFixture) -> None:
     mocked_close = mocker.patch("paramiko.SSHClient.close")
     mocked_sshi_connect = mocker.patch("base.common.ssh_interface.SSHInterface.connect")
     mocked_sshi_run_and_raise = mocker.patch("base.common.ssh_interface.SSHInterface.run_and_raise")
@@ -77,7 +77,7 @@ def test_start_rsync_daemon(nas: Nas, mocker: MockFixture):
     assert mocked_sshi_run_and_raise.called_once_with("fsystemctl start base-rsync-daemon")
 
 
-def test_stop_rsync_daemon(nas: Nas, mocker: MockFixture):
+def test_stop_rsync_daemon(nas: Nas, mocker: MockFixture) -> None:
     mocked_close = mocker.patch("paramiko.SSHClient.close")
     mocked_sshi_connect = mocker.patch("base.common.ssh_interface.SSHInterface.connect")
     mocked_sshi_run_and_raise = mocker.patch("base.common.ssh_interface.SSHInterface.run_and_raise")

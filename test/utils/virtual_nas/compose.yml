@@ -6,7 +6,7 @@ services:
     image: max/testfile_generator
     container_name: base_virtual_nas_testfile_generator
     environment:
-      - AMOUNT_TESTFILES_IN_SOURCE=1
+      - AMOUNT_TESTFILES_IN_SOURCE=0
       - BYTESIZE_OF_EACH_SOURCEFILE=1024
       - BACKUP_SOURCE_DIRECTORY=/mnt/backup_source
     volumes:
@@ -64,7 +64,7 @@ services:
     networks:
         vnas_network:
             ipv4_address: 170.20.0.4
-      
+
   router:
     image: max/nginx
     container_name: base_virtual_nas_router
@@ -79,7 +79,7 @@ services:
 
 volumes:
   vnas_hdd:
-  
+
 networks:
   vnas_network:
     driver: bridge
