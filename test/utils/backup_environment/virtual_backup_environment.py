@@ -79,14 +79,6 @@ def prepare_source_sink_dirs(
         copy(testfile_to_copy, sink)
 
 
-def list_mounts() -> List[str]:
-    p = Popen("mount", stdout=PIPE)
-    if p.stdout:
-        return [line.decode().strip() for line in p.stdout.readlines()]
-    else:
-        raise RuntimeError("cannot list mounts")
-
-
 BackupTestEnvironmentOutput = namedtuple(
     "BackupTestEnvironmentOutput", "sync_config backup_config nas_config backup_hdd_mount_point"
 )

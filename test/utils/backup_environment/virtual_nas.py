@@ -24,7 +24,7 @@ services:
       - vnas_hdd:/mnt
 
   ssh:
-    image: corpusops/sshd
+    image: base_vnas/sshd
     container_name: base_virtual_nas_ssh
     environment:
       - SSH_USERS={{ssh_user}}
