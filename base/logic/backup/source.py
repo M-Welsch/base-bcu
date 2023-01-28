@@ -20,7 +20,7 @@ class BackupSource:
         return self._path
 
     def _backup_source_directory(self) -> Path:
-        if self._protocol in [Protocol.SMB, Protocol.NFS]:
+        if self._protocol == Protocol.NFS:
             directory = self._backup_source_directory_for_locally_mounted()
         elif self._protocol == Protocol.SSH:
             directory = self._backup_source_directory_for_ssh()
@@ -52,9 +52,7 @@ class BackupSource:
         remote_backup_source_location = Path(self._config_sync.remote_backup_source_location)
 
         try:
-            if self._protocol == Protocol.SMB:
-                share_root = Nas().root_of_share()
-            elif self._protocol == Protocol.NFS:
+            if self._protocol == Protocol.NFS:
                 share_root = self._config_sync["nfs_share_path"]
             else:
                 raise RuntimeError("this function should not be called for this backup protocol!")

@@ -4,6 +4,7 @@ from enum import Enum
 from getpass import getuser
 from pathlib import Path
 from subprocess import call
+from time import sleep
 from typing import Any, Dict, List, Optional
 
 import docker
@@ -13,15 +14,15 @@ COMPOSE_TEMPLATE = """
 version: "3.4"
 
 services:
-  testfile_generator:
-    image: max/testfile_generator
-    container_name: base_virtual_nas_testfile_generator
-    environment:
-      - AMOUNT_TESTFILES_IN_SOURCE={{amount_files_in_source}}
-      - BYTESIZE_OF_EACH_SOURCEFILE={{bytesize_of_each_sourcefile}}
-      - BACKUP_SOURCE_DIRECTORY={{backup_source_directory}}
-    volumes:
-      - vnas_hdd:/mnt
+#  testfile_generator:
+#    image: max/testfile_generator
+#    container_name: base_virtual_nas_testfile_generator
+#    environment:
+#      - AMOUNT_TESTFILES_IN_SOURCE={{amount_files_in_source}}
+#      - BYTESIZE_OF_EACH_SOURCEFILE={{bytesize_of_each_sourcefile}}
+#      - BACKUP_SOURCE_DIRECTORY={{backup_source_directory}}
+#    volumes:
+#      - vnas_hdd:/mnt
 
   ssh:
     image: base_vnas/sshd
@@ -50,8 +51,8 @@ services:
       - SHARED_DIRECTORY={{backup_source_directory}}
     ports:
       - 2049:2049
-    depends_on:
-      - testfile_generator
+#    depends_on:
+#      - testfile_generator
     volumes:
       - vnas_hdd:/mnt
     networks:
@@ -70,8 +71,8 @@ services:
       - "{{rsync_daemon_port}}"
     volumes:
       - vnas_hdd:/mnt
-    depends_on:
-      - testfile_generator
+#    depends_on:
+#      - testfile_generator
     networks:
         vnas_network:
             ipv4_address: 170.20.0.4
@@ -115,8 +116,6 @@ class BaseVnasContainer(Enum):
 @dataclass
 class VirtualNasConfig:
     backup_source_directory: Path
-    amount_files_in_source: int
-    bytesize_of_each_sourcefile: int
     backup_source_name: str = "backup_source"
     virtual_nas_docker_directory: Path = Path.cwd() / "test/utils/virtual_nas/"
     rsync_daemon_port: int = 1234
@@ -167,6 +166,20 @@ class VirtualNas:
             containers_runstate[container] = self.is_running(container)
         return containers_runstate
 
+    def create_testfiles(self, amount_files_in_source: int, bytesize_of_each_sourcefile: int) -> None:
+        subprocess.call(  # call waits for subprocess to finish
+            f"docker run "
+            f"-e AMOUNT_TESTFILES_IN_SOURCE={amount_files_in_source} "
+            f"-e BYTESIZE_OF_EACH_SOURCEFILE={bytesize_of_each_sourcefile} "
+            f"-e BACKUP_SOURCE_DIRECTORY={self._config.backup_source_directory} "
+            f"-v virtual_nas_vnas_hdd:/mnt "
+            f"max/testfile_generator".split()
+        )
+
+    def fix_nfs_stale_file_handle_error(self) -> None:
+        # see https://unix.stackexchange.com/questions/433051/mount-nfs-stale-file-handle-error-cannot-umount#447581
+        subprocess.call(["docker", "exec", "-i", "base_virtual_nas_nfs", "bash", "-c", "exportfs -ua; exportfs -a"])
+
     @staticmethod
     def is_running(container: BaseVnasContainer) -> bool:
         return b"running" in subprocess.check_output(f"docker inspect {container.value} | grep Status", shell=True)
@@ -186,8 +199,8 @@ class VirtualNas:
             Environment()
             .from_string(COMPOSE_TEMPLATE)
             .render(
-                amount_files_in_source=self._config.amount_files_in_source,
-                bytesize_of_each_sourcefile=self._config.bytesize_of_each_sourcefile,
+                amount_files_in_source=0,  # Todo: remove these two dummy values after refactor
+                bytesize_of_each_sourcefile=0,
                 backup_source_name=self._config.backup_source_name,
                 backup_source_directory=self._config.backup_source_directory,
                 rsync_daemon_port=self._config.rsync_daemon_port,

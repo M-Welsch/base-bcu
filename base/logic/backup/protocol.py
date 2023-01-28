@@ -8,7 +8,6 @@ LOG = LoggerFactory.get_logger(__name__)
 
 
 class Protocol(Enum):
-    SMB = "smb"
     SSH = "ssh"
     NFS = "nfs"
 

@@ -16,15 +16,19 @@ def finished(*args, **kwargs):  # type: ignore
 
 @pytest.fixture
 def backup_environment() -> Generator[BackupTestEnvironmentOutput, None, None]:
-    yield BackupTestEnvironment(
-        protocol=Protocol.SMB,
-        amount_files_in_source=10,
-        bytesize_of_each_sourcefile=1024,
+    bu_env = BackupTestEnvironment(
+        protocol=Protocol.NFS,
         use_virtual_drive_for_sink=True,
         amount_old_backups=0,
         bytesize_of_each_old_backup=0,
         amount_preexisting_source_files_in_latest_backup=0,
-    ).create()
+    )
+    bu_env_output = bu_env.create()
+    bu_env.create_testfiles(
+        amount_files_in_source=10,
+        bytesize_of_each_sourcefile=1024,
+    )
+    yield bu_env_output
 
 
 @pytest.fixture

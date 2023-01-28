@@ -2,15 +2,15 @@
 version: "3.4"
 
 services:
-  testfile_generator:
-    image: max/testfile_generator
-    container_name: base_virtual_nas_testfile_generator
-    environment:
-      - AMOUNT_TESTFILES_IN_SOURCE=10
-      - BYTESIZE_OF_EACH_SOURCEFILE=1024
-      - BACKUP_SOURCE_DIRECTORY=/mnt/user/backup_source
-    volumes:
-      - vnas_hdd:/mnt
+#  testfile_generator:
+#    image: max/testfile_generator
+#    container_name: base_virtual_nas_testfile_generator
+#    environment:
+#      - AMOUNT_TESTFILES_IN_SOURCE=0
+#      - BYTESIZE_OF_EACH_SOURCEFILE=0
+#      - BACKUP_SOURCE_DIRECTORY=/mnt/user/backup_source
+#    volumes:
+#      - vnas_hdd:/mnt
 
   ssh:
     image: base_vnas/sshd
@@ -39,8 +39,8 @@ services:
       - SHARED_DIRECTORY=/mnt/user/backup_source
     ports:
       - 2049:2049
-    depends_on:
-      - testfile_generator
+#    depends_on:
+#      - testfile_generator
     volumes:
       - vnas_hdd:/mnt
     networks:
@@ -59,8 +59,8 @@ services:
       - "1234"
     volumes:
       - vnas_hdd:/mnt
-    depends_on:
-      - testfile_generator
+#    depends_on:
+#      - testfile_generator
     networks:
         vnas_network:
             ipv4_address: 170.20.0.4

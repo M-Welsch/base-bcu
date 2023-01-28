@@ -37,7 +37,7 @@ class RsyncCommand:
         return cmd
 
     def compose_list(self, local_target_location: Path, source_location: Path, dry: bool = False) -> List[str]:
-        if self._protocol in [Protocol.SMB, Protocol.NFS]:
+        if self._protocol == Protocol.NFS:
             cmd = [
                 "rsync",
                 "-aH",
@@ -60,7 +60,7 @@ class RsyncCommand:
         return cmd
 
     def _protocol_specific(self, local_target_location: Path, source_location: Path) -> str:
-        if self._protocol in [Protocol.SMB, Protocol.NFS]:
+        if self._protocol == Protocol.NFS:
             return f"{source_location.as_posix()}/. {local_target_location}"
         else:
             return f'-e "ssh -i {self._sync_config.ssh_keyfile_path}" {self._nas_config.ssh_host}::{source_location.as_posix()}/. {local_target_location}'

@@ -94,7 +94,7 @@ class BackupConductor:
                 LOG.info("...but backup conditions are not met.")
 
     def _attach_backup_datasource(self) -> None:
-        if self._protocol in [Protocol.SMB, Protocol.NFS]:
+        if self._protocol in [Protocol.NFS]:
             LOG.debug("Mounting data source via smb")
             self._network_share.mount_datasource()
         else:
@@ -133,7 +133,7 @@ class BackupConductor:
 
     def _return_to_default_state(self) -> None:
         self.hardware_disengage_request.emit()
-        if self._protocol == Protocol.SMB:
+        if self._protocol == Protocol.NFS:
             self._network_share.unmount_datasource()
         elif self._protocol == Protocol.SSH:
             self._nas.stop_rsync_daemon()

@@ -1,13 +1,9 @@
 import subprocess
-from time import sleep
-
 import test.utils.backup_environment.directories as environment_directories
 import test.utils.backup_environment.virtual_hard_drive
 from pathlib import Path
-from test.utils.backup_environment.virtual_backup_environment import (
-    BackupTestEnvironment,
-    create_file_with_random_data,
-)
+from test.utils.backup_environment.virtual_backup_environment import BackupTestEnvironment, create_file_with_random_data
+from time import sleep
 
 import pytest
 
@@ -17,8 +13,6 @@ from base.logic.backup.protocol import Protocol
 def test_virtual_backup_environment_config_files() -> None:
     with BackupTestEnvironment(
         protocol=Protocol.SSH,
-        amount_files_in_source=1,
-        bytesize_of_each_sourcefile=1024,
         use_virtual_drive_for_sink=True,
         amount_old_backups=0,
         bytesize_of_each_old_backup=0,
@@ -46,8 +40,6 @@ def test_virtual_backup_environment_creation(
 ) -> None:
     with BackupTestEnvironment(
         protocol=Protocol.NFS,
-        amount_files_in_source=amount_files_in_source,
-        bytesize_of_each_sourcefile=1024,
         use_virtual_drive_for_sink=True,
         amount_old_backups=amount_old_backups,
         bytesize_of_each_old_backup=0,
@@ -55,8 +47,9 @@ def test_virtual_backup_environment_creation(
         remote_backup_source=(backup_source_path := Path("/mnt/backup_source")),
     ) as vbec:
         configs = vbec.create()
+        vbec.create_testfiles(amount_files_in_source=amount_files_in_source, bytesize_of_each_sourcefile=1024)
         vbec.mount_all()
-        sleep(0.2)  # give the OS some time
+        sleep(1)  # give the OS some time
         assert f"{environment_directories.NFS_MOUNTPOINT}" in subprocess.check_output("mount").decode()
         source_directory = environment_directories.NFS_MOUNTPOINT
         assert len(list(source_directory.glob("testfile*"))) == amount_files_in_source
@@ -67,8 +60,6 @@ def test_virtual_backup_environment_creation(
 def test_virtual_backup_environment_teardown() -> None:
     with BackupTestEnvironment(
         protocol=Protocol.SSH,
-        amount_files_in_source=1,
-        bytesize_of_each_sourcefile=1024,
         use_virtual_drive_for_sink=True,
         amount_old_backups=0,
         bytesize_of_each_old_backup=0,
@@ -83,8 +74,6 @@ def test_virtual_backup_environment_teardown() -> None:
 def test_virtual_backup_environment_mount_hdd() -> None:
     with BackupTestEnvironment(
         protocol=Protocol.SSH,
-        amount_files_in_source=1,
-        bytesize_of_each_sourcefile=1024,
         use_virtual_drive_for_sink=True,
         amount_old_backups=0,
         bytesize_of_each_old_backup=0,
@@ -93,4 +82,4 @@ def test_virtual_backup_environment_mount_hdd() -> None:
     ) as vbec:
         vbec.create()
         assert f"{environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT}" in subprocess.check_output("mount").decode()
-        assert (environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT/"backup_target").exists()
+        assert (environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT / "backup_target").exists()

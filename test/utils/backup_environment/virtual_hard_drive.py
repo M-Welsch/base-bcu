@@ -41,10 +41,14 @@ class VirtualHardDrive:
             print("overwriting the global virtual test drive will crash other tests! Aborting.")
 
     def mount(self) -> None:
-        subprocess.Popen(f"mount {self._image_file}".split()).wait()
+        cmd = f"mount {self._image_file}"
+        print(f"mount nfs with {cmd}")
+        subprocess.Popen(cmd.split()).wait()
 
     def unmount(self) -> None:
-        subprocess.Popen(f"umount {self._image_file}".split()).wait()
+        cmd = f"umount {self._image_file}"
+        print(f"unmount VHD with {cmd}")
+        subprocess.Popen(cmd.split()).wait()
 
     def teardown(self, delete_files: bool = False) -> None:
         self.unmount()

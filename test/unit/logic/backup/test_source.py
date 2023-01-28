@@ -44,7 +44,7 @@ def test_path(bu_source: BuSourceStruct) -> None:
     assert bu_source.mocked_backup_source_directory.called_once()
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SMB, Protocol.SSH, Protocol.NFS])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.NFS])
 def test_backup_source_directory(mocker: MockFixture, protocol: Protocol) -> None:
     patch_config(
         BackupSource,

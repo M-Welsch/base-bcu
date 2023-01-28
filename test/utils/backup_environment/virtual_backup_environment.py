@@ -84,10 +84,11 @@ BackupTestEnvironmentOutput = namedtuple(
 )
 
 
-def copy_preexisting_sourcefiles_into_latest_backup(backup_source_dir: Path, backup_target_base_dir: Path,
-                                                    amount_preexisting_source_files_in_latest_backup: int) -> None:
+def copy_preexisting_sourcefiles_into_latest_backup(
+    backup_source_dir: Path, backup_target_base_dir: Path, amount_preexisting_source_files_in_latest_backup: int
+) -> None:
 
-    latest_backup = max(glob.glob('*'))
+    latest_backup = max(glob.glob("*"))
     source_files = backup_source_dir.glob("*")
     for _ in range(amount_preexisting_source_files_in_latest_backup):
         copy(next(source_files), latest_backup)
@@ -131,8 +132,6 @@ class BackupTestEnvironment:
     def __init__(
         self,
         protocol: Protocol,
-        amount_files_in_source: int,
-        bytesize_of_each_sourcefile: int,
         use_virtual_drive_for_sink: bool,
         amount_old_backups: int,
         bytesize_of_each_old_backup: int,
@@ -146,8 +145,6 @@ class BackupTestEnvironment:
         self._virtual_hard_drive = VirtualHardDrive()
         self._src = remote_backup_source  # virtual NAS requires this to be under /mnt
         self._protocol: Protocol = protocol
-        self._amount_files_in_source = amount_files_in_source
-        self._bytesize_of_each_sourcefile = bytesize_of_each_sourcefile
         self._use_virtual_drive_for_sink = use_virtual_drive_for_sink
         self._amount_old_backups = amount_old_backups
         self._bytesize_of_each_old_backup = bytesize_of_each_old_backup
@@ -159,17 +156,35 @@ class BackupTestEnvironment:
         virtual_nas_config = VirtualNasConfig(
             backup_source_directory=self._src,
             backup_source_name="backup_source",
-            amount_files_in_source=self._amount_files_in_source,
-            bytesize_of_each_sourcefile=self._bytesize_of_each_sourcefile,
             rsync_daemon_port=1234,
             ip="170.20.0.5",
         )
         self._virtual_nas = VirtualNas(virtual_nas_config)
         self._sink = self._get_sink()
+        self._sync_config = {
+            "remote_backup_source_location": self._src.as_posix(),
+            "local_backup_target_location": self._sink.as_posix(),
+            "local_nas_hdd_mount_point": NFS_MOUNTPOINT.as_posix(),
+            "rsync_daemon_port": self._virtual_nas.config.rsync_daemon_port,
+            "rsync_share_name": self._virtual_nas.config.backup_source_name,
+            "protocol": self._protocol.value
+        }
+        self._nas_config = {
+            "ssh_host": self._virtual_nas.config.ip,
+            "ssh_port": 22,
+            "ssh_user": getuser(),
+        }
+
+    def use_protocol(self, protocol: Protocol) -> None:
+        self._protocol = protocol
 
     @property
-    def source(self) -> Path:
+    def source_on_vnas(self) -> Path:
         return self._src
+
+    @property
+    def source_on_host(self):
+        return NFS_MOUNTPOINT
 
     @property
     def sink(self) -> Path:
@@ -211,8 +226,12 @@ class BackupTestEnvironment:
     def create(self) -> BackupTestEnvironmentOutput:
         backup_environment = self._prepare_source()
         self._prepare_sink()
+        self._sync_config.update({"ssh_keyfile_path": f"/home/{getuser()}/.ssh/id_rsa"})
         backup_environment.sync_config.update({"ssh_keyfile_path": f"/home/{getuser()}/.ssh/id_rsa"})
         return backup_environment
+
+    def create_testfiles(self, amount_files_in_source: int, bytesize_of_each_sourcefile: int) -> None:
+        self._virtual_nas.create_testfiles(amount_files_in_source, bytesize_of_each_sourcefile)
 
     def _prepare_source(self) -> BackupTestEnvironmentOutput:
         sync_config = {
@@ -235,6 +254,14 @@ class BackupTestEnvironment:
             backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
         )
 
+    @property
+    def sync_config(self) -> dict:
+        return self._sync_config
+
+    @property
+    def nas_config(self):
+        return self._nas_config
+
     def _prepare_sink(self) -> None:
         create_old_backups(
             base_path=self._sink,
@@ -243,22 +270,29 @@ class BackupTestEnvironment:
         )
         if self._amount_preexisting_source_files_in_latest_backup > 0:
             if self._amount_old_backups == 0:
-                raise RuntimeError(f"This configuation doesn't make sense: how shall I copy {self._amount_preexisting_source_files_in_latest_backup} files from source to the latest backup if there is no old backup?")
+                raise RuntimeError(
+                    f"This configuation doesn't make sense: how shall I copy {self._amount_preexisting_source_files_in_latest_backup} files from source to the latest backup if there is no old backup?"
+                )
             self.mount_nfs()
             copy_preexisting_sourcefiles_into_latest_backup(
                 backup_source_dir=NFS_MOUNTPOINT,
                 backup_target_base_dir=self._sink,
-                amount_preexisting_source_files_in_latest_backup=self._amount_preexisting_source_files_in_latest_backup
+                amount_preexisting_source_files_in_latest_backup=self._amount_preexisting_source_files_in_latest_backup,
             )
             self.unmount_nfs()
 
     @staticmethod
     def mount_nfs() -> None:
-        Popen(f"mount {NFS_MOUNTPOINT}".split()).wait()
+        NFS_MOUNTPOINT.mkdir(exist_ok=True)
+        cmd = f"mount {NFS_MOUNTPOINT}"
+        print(f"mount nfs with {cmd}")
+        Popen(cmd.split()).wait()
 
     @staticmethod
     def unmount_nfs() -> None:
-        Popen(f"umount {NFS_MOUNTPOINT}".split()).wait()
+        cmd = f"umount {NFS_MOUNTPOINT}"
+        print(f"unmount nfs with :{cmd}")
+        Popen(cmd.split()).wait()
 
     def teardown(self, delete_files: bool = True) -> None:
         if delete_files:
@@ -283,6 +317,7 @@ class BackupTestEnvironment:
     def mount_all(self) -> None:
         self._virtual_hard_drive.mount()
         if self._protocol == Protocol.NFS:
+            self._virtual_nas.fix_nfs_stale_file_handle_error()
             self.mount_nfs()
 
     def unmount_all(self) -> None:
@@ -314,7 +349,7 @@ class Verification:
             self._backup_test_environment.unmount_all()
 
     def all_files_transferred(self) -> bool:
-        files_in_source = [file.stem for file in self._backup_test_environment.source.iterdir()]
+        files_in_source = [file.stem for file in self._backup_test_environment.source_on_vnas.iterdir()]
         backup_target: list = read_backups(self._backup_test_environment.sink.as_posix())
         files_in_target = [file.stem for file in backup_target[-1].iterdir()]
         return set(files_in_source) == set(files_in_target)
