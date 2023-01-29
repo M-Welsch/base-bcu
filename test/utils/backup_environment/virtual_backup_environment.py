@@ -167,6 +167,7 @@ class BackupTestEnvironment:
             "local_nas_hdd_mount_point": NFS_MOUNTPOINT.as_posix(),
             "rsync_daemon_port": self._virtual_nas.config.rsync_daemon_port,
             "rsync_share_name": self._virtual_nas.config.backup_source_name,
+            "nfs_share_path": self._virtual_nas.config.backup_source_directory,
             "protocol": self._protocol.value
         }
         self._nas_config = {
@@ -240,6 +241,7 @@ class BackupTestEnvironment:
             "local_nas_hdd_mount_point": NFS_MOUNTPOINT.as_posix(),
             "rsync_daemon_port": self._virtual_nas.config.rsync_daemon_port,
             "rsync_share_name": self._virtual_nas.config.backup_source_name,
+            "nfs_share_path": self._virtual_nas.config.backup_source_directory
         }
         sync_config.update({"protocol": self._protocol.value})
         nas_config = {
