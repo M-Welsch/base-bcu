@@ -83,6 +83,7 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
         backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
         patch_configs_for_backup_conductor_tests(backup_env)
         patch_unmount_smb_share = mocker.patch("base.logic.network_share.NetworkShare.unmount_datasource")
+        mocker.patch("base.logic.nas.Nas._interact_with_rsync_daemon")
 
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_conductor.run()

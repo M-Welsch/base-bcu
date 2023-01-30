@@ -121,9 +121,9 @@ class BackupConductor:
         try:
             self._return_to_default_state()
         except DockingError as e:
-            LOG.error(e)
+            LOG.error(str(e))
         except NetworkError as e:
-            LOG.error(e)
+            LOG.error(str(e))
         finally:
             self.backup_finished_notification.emit()
 

@@ -2,9 +2,7 @@
 
 # globals
 fstab="/etc/fstab"
-smbconf="/etc/samba/smb.conf"
-smbcredentials="/etc/base-credentials"
-additional_hints=""
+additional_hints="please make sure, docker is installed. If not, here are the instructions: https://docs.docker.com/engine/install"
 
 echo_info () {
   NORMAL='\033[0;39m'
@@ -14,7 +12,7 @@ echo_info () {
 }
 
 install_packages () {
-  packages_to_install="rsync samba openssh-server"
+  packages_to_install="rsync"
   echo_info "installing packages that are required for testing: '$packages_to_install'"
   sudo apt update
   sudo apt install $packages_to_install
@@ -34,27 +32,6 @@ add_entry_to_file () {
   then
     echo "$line_to_add" | sudo tee -a  "$target" > /dev/null
   fi;
-}
-
-configure_samba () {
-  echo_info "Add linux-user 'base' and smb-user 'base' in order to simulate a backup from a samba-source. Please enter a password you can remember"
-  sudo useradd base
-  sudo smbpasswd -a base
-  echo_info "Adding entry to smb.conf"
-  backup_entry="[Backup]
-    path = /tmp/base_tmpshare
-    browsable = yes
-    writable = no
-    valid users = base"
-  add_entry_to_file "$smbconf" "[Backup]" "$backup_entry"
-  echo "username=base
-password=<the password for the smb user 'base' from above>
-domain=WORKGROUP
-  " | sudo tee "$smbcredentials" > /dev/null
-  sudo chmod 606 "$smbcredentials"
-  RED='\033[1;31m'
-  NORMAL='\033[0;39m'
-  additional_hints="$additional_hints${RED}Important !! Go to the file $smbcredentials and enter the correct for the base-samba share. This is the same password you entered earlier${NORMAL}. Set permissions to 404 afterwards by 'sudo chmod 404 $smbcredentials'."
 }
 
 setup_virtual_hard_drive () {
@@ -86,7 +63,6 @@ make_backup_sink_writable () {
 
 install_packages
 configure_ssh
-configure_samba
 setup_virtual_hard_drive
 setup_virtual_smb_share
 make_backup_sink_writable
