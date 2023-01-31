@@ -14,15 +14,6 @@ COMPOSE_TEMPLATE = """
 version: "3.4"
 
 services:
-#  testfile_generator:
-#    image: max/testfile_generator
-#    container_name: base_virtual_nas_testfile_generator
-#    environment:
-#      - AMOUNT_TESTFILES_IN_SOURCE={{amount_files_in_source}}
-#      - BYTESIZE_OF_EACH_SOURCEFILE={{bytesize_of_each_sourcefile}}
-#      - BACKUP_SOURCE_DIRECTORY={{backup_source_directory}}
-#    volumes:
-#      - vnas_hdd:/mnt
 
   ssh:
     image: base_vnas/sshd
@@ -51,8 +42,6 @@ services:
       - SHARED_DIRECTORY={{backup_source_directory}}
     ports:
       - 2049:2049
-#    depends_on:
-#      - testfile_generator
     volumes:
       - vnas_hdd:/mnt
     networks:
@@ -71,8 +60,6 @@ services:
       - "{{rsync_daemon_port}}"
     volumes:
       - vnas_hdd:/mnt
-#    depends_on:
-#      - testfile_generator
     networks:
         vnas_network:
             ipv4_address: 170.20.0.4
@@ -113,11 +100,11 @@ class BaseVnasContainer(Enum):
     TESTFILE_GENERATOR = "base_virtual_nas_testfile_generator"
 
 
-@dataclass
+@dataclass(frozen=True)
 class VirtualNasConfig:
     backup_source_directory: Path
     backup_source_name: str = "backup_source"
-    virtual_nas_docker_directory: Path = Path.cwd() / "test/utils/virtual_nas/"
+    virtual_nas_docker_directory: Path = Path.cwd() / "test/utils/backup_environment/virtual_nas/"
     rsync_daemon_port: int = 1234
     ip: str = "170.20.0.5"
 
@@ -142,10 +129,7 @@ class VirtualNas:
     It shall be configured with a VirtualNasConfig object
     """
 
-    relevant_images = ["max/rsync_daemon", "itsthenetwork/nfs-server-alpine", "corpusops/sshd"]
-
     def __init__(self, config: VirtualNasConfig, cleanup_before: bool = True) -> None:
-        self._containers: Dict[BaseVnasContainer, bool]
         self._config = config
         self.sanity_checks()
         self._create_compose_yml()
@@ -199,8 +183,6 @@ class VirtualNas:
             Environment()
             .from_string(COMPOSE_TEMPLATE)
             .render(
-                amount_files_in_source=0,  # Todo: remove these two dummy values after refactor
-                bytesize_of_each_sourcefile=0,
                 backup_source_name=self._config.backup_source_name,
                 backup_source_directory=self._config.backup_source_directory,
                 rsync_daemon_port=self._config.rsync_daemon_port,
@@ -215,4 +197,4 @@ class VirtualNas:
         self._stop_still_running_instances()
 
     def _start_virtual_nas(self) -> None:
-        subprocess.run(["docker-compose", "up", "-d"], cwd="test/utils/virtual_nas")
+        subprocess.run(["docker-compose", "up", "-d"], cwd=self._config.virtual_nas_docker_directory)

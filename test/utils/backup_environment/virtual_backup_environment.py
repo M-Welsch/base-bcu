@@ -132,24 +132,20 @@ class BackupTestEnvironment:
     def __init__(
         self,
         protocol: Protocol,
-        use_virtual_drive_for_sink: bool,
         amount_old_backups: int,
         bytesize_of_each_old_backup: int,
         amount_preexisting_source_files_in_latest_backup: int = 0,
-        backup_source_directory: Path = Path("/mnt/user/backup_source"),
         teardown_afterwards: bool = True,
         automount_virtual_drive: bool = True,
         automount_data_source: bool = True,
-        remote_backup_source: Path = Path("/mnt/backup_source"),
+        backup_source_on_nas: Path = Path("/mnt/backup_source"),
     ) -> None:
         self._virtual_hard_drive = VirtualHardDrive()
-        self._src = remote_backup_source  # virtual NAS requires this to be under /mnt
+        self._src = backup_source_on_nas  # virtual NAS requires this to be under /mnt
         self._protocol: Protocol = protocol
-        self._use_virtual_drive_for_sink = use_virtual_drive_for_sink
         self._amount_old_backups = amount_old_backups
         self._bytesize_of_each_old_backup = bytesize_of_each_old_backup
         self._amount_preexisting_source_files_in_latest_backup = amount_preexisting_source_files_in_latest_backup
-        self._backup_source_directory = backup_source_directory
         self._teardown_afterwards = teardown_afterwards
         self._automount_virtual_drive = automount_virtual_drive
         self._automount_data_source = automount_data_source
@@ -218,43 +214,18 @@ class BackupTestEnvironment:
 
     def _get_sink(self) -> Path:
         """provide the path where the backups shall be located. BaSe will create subdirectories here for the backups"""
-        if self._use_virtual_drive_for_sink and self._automount_virtual_drive:
+        if self._automount_virtual_drive:
             self._virtual_hard_drive.mount()
         sink = self._virtual_hard_drive.mount_point / "backup_target"
         sink.mkdir(exist_ok=True)
         return sink
 
-    def create(self) -> BackupTestEnvironmentOutput:
-        backup_environment = self._prepare_source()
-        self._prepare_sink()
+    def create(self) -> None:
+        self._prepare_sink()  # Fixme: make sure is called after create_testfiles!
         self._sync_config.update({"ssh_keyfile_path": f"/home/{getuser()}/.ssh/id_rsa"})
-        backup_environment.sync_config.update({"ssh_keyfile_path": f"/home/{getuser()}/.ssh/id_rsa"})
-        return backup_environment
 
     def create_testfiles(self, amount_files_in_source: int, bytesize_of_each_sourcefile: int) -> None:
         self._virtual_nas.create_testfiles(amount_files_in_source, bytesize_of_each_sourcefile)
-
-    def _prepare_source(self) -> BackupTestEnvironmentOutput:
-        sync_config = {
-            "remote_backup_source_location": self._src.as_posix(),
-            "local_backup_target_location": self._sink.as_posix(),
-            "local_nas_hdd_mount_point": NFS_MOUNTPOINT.as_posix(),
-            "rsync_daemon_port": self._virtual_nas.config.rsync_daemon_port,
-            "rsync_share_name": self._virtual_nas.config.backup_source_name,
-            "nfs_share_path": self._virtual_nas.config.backup_source_directory
-        }
-        sync_config.update({"protocol": self._protocol.value})
-        nas_config = {
-            "ssh_host": self._virtual_nas.config.ip,
-            "ssh_port": 22,
-            "ssh_user": getuser(),
-        }
-        return BackupTestEnvironmentOutput(
-            sync_config=sync_config,
-            backup_config={},
-            nas_config=nas_config,
-            backup_hdd_mount_point=self._virtual_hard_drive.mount_point,
-        )
 
     @property
     def sync_config(self) -> dict:
@@ -283,6 +254,23 @@ class BackupTestEnvironment:
             )
             self.unmount_nfs()
 
+    def mount_all(self) -> None:
+        self.mount_virtual_hard_drive()
+        if self._protocol == Protocol.NFS:
+            self._virtual_nas.fix_nfs_stale_file_handle_error()
+            self.mount_nfs()
+
+    def unmount_all(self) -> None:
+        self.unmount_virtual_hard_drive()
+        if self._protocol == Protocol.NFS:
+            self.unmount_nfs()
+
+    def mount_virtual_hard_drive(self) -> None:
+        self._virtual_hard_drive.mount()
+
+    def unmount_virtual_hard_drive(self) -> None:
+        self._virtual_hard_drive.unmount()
+
     @staticmethod
     def mount_nfs() -> None:
         NFS_MOUNTPOINT.mkdir(exist_ok=True)
@@ -298,34 +286,19 @@ class BackupTestEnvironment:
 
     def teardown(self, delete_files: bool = True) -> None:
         if delete_files:
-            self._delete_files()
+            self._delete_files_in_sink()
         if self._protocol == Protocol.NFS:
             self.unmount_nfs()
         self._virtual_hard_drive.teardown()
 
-    def _delete_files(self) -> None:
-        # self._delete_content_of(self.source)
-        self._delete_content_of(self.sink)
-
-    @staticmethod
-    def _delete_content_of(directory: Path) -> None:
+    def _delete_files_in_sink(self) -> None:
+        directory = self.sink
         files = [item for item in directory.iterdir() if item.is_file()]
         directories = [item for item in directory.iterdir() if item.is_dir()]
         for file in files:
             file.unlink()
         for directory in directories:
             shutil.rmtree(directory)
-
-    def mount_all(self) -> None:
-        self._virtual_hard_drive.mount()
-        if self._protocol == Protocol.NFS:
-            self._virtual_nas.fix_nfs_stale_file_handle_error()
-            self.mount_nfs()
-
-    def unmount_all(self) -> None:
-        self._virtual_hard_drive.unmount()
-        if self._protocol == Protocol.NFS:
-            self.unmount_nfs()
 
     def is_everything_necessary_mounted(self) -> bool:
         all_mounted = self._virtual_hard_drive.mount_point.is_mount()

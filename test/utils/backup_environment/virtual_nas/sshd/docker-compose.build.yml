@@ -2,5 +2,5 @@
 version: "3.7"
 services:
   sshd:
-    build: {context: "."}
+    build: {context: "" }
 

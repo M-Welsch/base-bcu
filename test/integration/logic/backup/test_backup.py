@@ -18,7 +18,6 @@ def finished(*args, **kwargs):  # type: ignore
 def backup_environment() -> Generator[BackupTestEnvironment, None, None]:
     with BackupTestEnvironment(
         protocol=Protocol.NFS,
-        use_virtual_drive_for_sink=True,
         amount_old_backups=0,
         bytesize_of_each_old_backup=0,
         amount_preexisting_source_files_in_latest_backup=0,

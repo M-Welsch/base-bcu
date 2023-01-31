@@ -12,7 +12,6 @@ from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 def backup_environment():
     with BackupTestEnvironment(
         protocol=Protocol.SSH,
-        use_virtual_drive_for_sink=True,
         amount_old_backups=0,
         bytesize_of_each_old_backup=0,
         amount_preexisting_source_files_in_latest_backup=0,

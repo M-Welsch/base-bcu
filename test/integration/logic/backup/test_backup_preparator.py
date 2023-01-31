@@ -54,7 +54,6 @@ def test_backup_preparator(protocol: Protocol) -> None:
 
     with BackupTestEnvironment(
         protocol=protocol,
-        use_virtual_drive_for_sink=True,
         amount_old_backups=10,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
@@ -83,7 +82,6 @@ def test_backup_preparator_with_deletion_of_old_bu(protocol: Protocol) -> None:
 
     with BackupTestEnvironment(
         protocol=protocol,
-        use_virtual_drive_for_sink=True,
         amount_old_backups=5,
         bytesize_of_each_old_backup=5000000,
         amount_preexisting_source_files_in_latest_backup=0,

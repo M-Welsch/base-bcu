@@ -70,7 +70,6 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
 
     with BackupTestEnvironment(
         protocol=protocol,
-        use_virtual_drive_for_sink=True,
         amount_old_backups=10,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
@@ -131,7 +130,6 @@ def test_backup_conductor_error_cases(
 ) -> None:
     with BackupTestEnvironment(
         protocol=protocol,
-        use_virtual_drive_for_sink=True,
         amount_old_backups=10,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
@@ -184,7 +182,6 @@ class BackupKiller(Thread):
 def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
     with BackupTestEnvironment(
         protocol=protocol,
-        use_virtual_drive_for_sink=False,
         amount_old_backups=0,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,
@@ -217,7 +214,6 @@ def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
 def test_backup_abort_then_continue(protocol: Protocol, caplog: LogCaptureFixture) -> None:
     with BackupTestEnvironment(
         protocol=protocol,
-        use_virtual_drive_for_sink=False,
         amount_old_backups=0,
         bytesize_of_each_old_backup=100000,
         amount_preexisting_source_files_in_latest_backup=0,

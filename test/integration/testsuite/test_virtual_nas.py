@@ -13,7 +13,6 @@ from py import path
 @pytest.fixture(scope="class")
 def virtual_nas_fixture() -> Generator[VirtualNas, None, None]:
     virtual_nas_config = VirtualNasConfig(
-        virtual_nas_docker_directory=Path.cwd() / "test/utils/virtual_nas/",
         backup_source_directory=Path("/mnt/user/backup_source"),
     )
     vnas_instance = VirtualNas(virtual_nas_config)

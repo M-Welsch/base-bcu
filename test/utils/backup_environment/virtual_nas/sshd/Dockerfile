@@ -10,7 +10,7 @@ RUN apk update && \
 COPY fail2ban-supervisor.sh entry.sh /
 ADD supervisor.d/* /etc/supervisor.d/
 ADD sshd_config.in /etc/ssh/
-ADD ./fail2ban/ /fail2ban/
+ADD fail2ban /fail2ban/
 RUN mkdir -p /etc/ssh/keys /etc/ssh/keys.in /etc/authorized_keys.in /etc/authorized_keys
 COPY systemctl /usr/bin
 RUN chmod 777 /usr/bin/systemctl

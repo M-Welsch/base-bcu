@@ -42,7 +42,6 @@ def backup_environment() -> BackupTestEnvironment:
         protocol=Protocol.SMB,
         amount_files_in_source=10,
         bytesize_of_each_sourcefile=1024,
-        use_virtual_drive_for_sink=True,
         amount_old_backups=0,
         bytesize_of_each_old_backup=0,
         amount_preexisting_source_files_in_latest_backup=0,

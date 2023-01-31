@@ -1,4 +1,4 @@
-#	$OpenBSD: sshd_config,v 1.103 2018/04/09 20:41:22 tj Exp $
+#    $OpenBSD: sshd_config,v 1.103 2018/04/09 20:41:22 tj Exp $
 
 # This is the sshd server system-wide configuration file.  See
 # sshd_config(5) for more information.
@@ -34,7 +34,7 @@ PermitRootLogin prohibit-password
 
 # The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2
 # but this is overridden so installations will only check .ssh/authorized_keys
-AuthorizedKeysFile	.ssh/authorized_keys /etc/authorized_keys/%u
+AuthorizedKeysFile    .ssh/authorized_keys /etc/authorized_keys/%u
 
 #AuthorizedPrincipalsFile none
 
@@ -112,16 +112,16 @@ ForceCommand internal-sftp
 ChrootDirectory {{.Env.SFTP_CHROOT_PATH|default "/home"}}
 {{ end }}
 {{ else }}
-Subsystem	sftp	/usr/lib/ssh/sftp-server
+Subsystem    sftp    /usr/lib/ssh/sftp-server
 {{ end }}
 
 
 # Example of overriding settings on a per-user basis
 #Match User anoncvs
-#	X11Forwarding no
-#	AllowTcpForwarding no
-#	PermitTTY no
-#	ForceCommand cvs server
+#    X11Forwarding no
+#    AllowTcpForwarding no
+#    PermitTTY no
+#    ForceCommand cvs server
 Port 22
 
 HostKey /etc/ssh/keys/ssh_host_rsa_key

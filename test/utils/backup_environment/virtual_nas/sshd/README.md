@@ -11,7 +11,7 @@ Mount your .ssh credentials (RSA public keys) at `/root/.ssh/` in order to
 access the container via root ssh or mount each user's key in
 `/etc/authorized_keys/<username>` and set `SSH_USERS` config to create user accounts (see below).
 
-- Optionally mount [sshd_config.in](./sshd_config.in) as a custom sshd config at `/etc/ssh/sshd_config.in`.<br/>
+- Optionally mount [sshd_config.in](sshd_config.in) as a custom sshd config at `/etc/ssh/sshd_config.in`.<br/>
   You can override in the compose setup the template location via the `SSHD_CONFIG` env var.
 
 - By default the image is in SFTP only mode.
@@ -104,7 +104,7 @@ docker run -it corpusops/sshd rsync google.com
 ## entrypoint hooks
 - The image support hooks to be executed thorough the entry point execution
 - Everything inside the scripts dirs will be executed
-- Read the [entry.sh](./entry.sh) script to know where you want to hook in
+- Read the [entry.sh](entry.sh) script to know where you want to hook in
     - `/hooks/pre/*`
     - `/hooks/pre_keys/*`
     - `/hooks/pre_users/*`

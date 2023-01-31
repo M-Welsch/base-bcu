@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 on_die()
 {
-	fail2ban-client stop
-	exit 0
+    fail2ban-client stop
+    exit 0
 }
 trap 'on_die' TERM
 
