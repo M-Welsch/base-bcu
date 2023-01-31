@@ -22,7 +22,7 @@ def virtual_nas_fixture() -> Generator[VirtualNas, None, None]:
     )
     yield vnas_instance
     print("shutting down all containers ... this may take a while")
-    vnas_instance.cleanup()
+    vnas_instance.stop_virtual_nas()
 
 
 def is_reachable(ip: str, port: int) -> bool:

@@ -54,23 +54,24 @@ def test_backup_preparator(protocol: Protocol) -> None:
 
     with BackupTestEnvironment(
         protocol=protocol,
-        amount_old_backups=10,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
     ) as virtual_backup_env:
-        virtual_backup_env.create_testfiles(
+        virtual_backup_env.prepare_source(
             amount_files_in_source=10,
             bytesize_of_each_sourcefile=1024,
         )
-        backup_env_configs = virtual_backup_env.create()
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=10,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,
-            {"nas.json": backup_env_configs.nas_config, "sync.json": backup_env_configs.sync_config},
+            {"nas.json": virtual_backup_env.nas_config, "sync.json": virtual_backup_env.sync_config},
         )
-        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env_configs.sync_config)
+        patch_config(base.logic.backup.backup_browser.BackupBrowser, virtual_backup_env.sync_config)
         backup = Backup()
         backup.source = virtual_backup_env.source_on_vnas
-        backup.target = Path(backup_env_configs.sync_config["local_backup_target_location"]) / "new_backup"
+        backup.target = Path(virtual_backup_env.sync_config["local_backup_target_location"]) / "new_backup"
         backup_preparator = BackupPreparator(backup=backup)  # type: ignore
         backup_preparator.prepare()
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix
@@ -82,23 +83,24 @@ def test_backup_preparator_with_deletion_of_old_bu(protocol: Protocol) -> None:
 
     with BackupTestEnvironment(
         protocol=protocol,
-        amount_old_backups=5,
-        bytesize_of_each_old_backup=5000000,
-        amount_preexisting_source_files_in_latest_backup=0,
     ) as virtual_backup_env:
-        virtual_backup_env.create_testfiles(
+        virtual_backup_env.prepare_source(
             amount_files_in_source=10,
             bytesize_of_each_sourcefile=1024,
         )
-        backup_env = virtual_backup_env.create()
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=5,
+            bytesize_of_each_old_backup=5000000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,
-            {"nas.json": backup_env.nas_config, "sync.json": backup_env.sync_config},
+            {"nas.json": virtual_backup_env.nas_config, "sync.json": virtual_backup_env.sync_config},
         )
-        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env.sync_config)
+        patch_config(base.logic.backup.backup_browser.BackupBrowser, virtual_backup_env.sync_config)
         backup = Backup()
         backup.source = virtual_backup_env.source_on_vnas
-        backup.target = Path(backup_env.sync_config["local_backup_target_location"]) / "new_backup"
+        backup.target = Path(virtual_backup_env.sync_config["local_backup_target_location"]) / "new_backup"
         backup_preparator = BackupPreparator(backup=backup)  # type: ignore
         backup_preparator.prepare()
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix

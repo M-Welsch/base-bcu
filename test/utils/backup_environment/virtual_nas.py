@@ -129,12 +129,10 @@ class VirtualNas:
     It shall be configured with a VirtualNasConfig object
     """
 
-    def __init__(self, config: VirtualNasConfig, cleanup_before: bool = True) -> None:
+    def __init__(self, config: VirtualNasConfig) -> None:
         self._config = config
         self.sanity_checks()
         self._create_compose_yml()
-        if cleanup_before:
-            self._stop_still_running_instances()
         self._start_virtual_nas()
 
     def sanity_checks(self) -> None:
@@ -172,12 +170,6 @@ class VirtualNas:
     def config(self) -> VirtualNasConfig:
         return self._config
 
-    def _stop_still_running_instances(self) -> None:
-        containers: List[str] = [container.value for container in BaseVnasContainer]
-        command = ["docker", "stop"]
-        command.extend(containers)
-        subprocess.call(command)
-
     def _create_compose_yml(self) -> None:
         rsyncd_conf_content = (
             Environment()
@@ -193,8 +185,16 @@ class VirtualNas:
         with open(self._config.virtual_nas_docker_directory / "compose.yml", "w") as rsynd_conf:
             rsynd_conf.write(rsyncd_conf_content)
 
-    def cleanup(self) -> None:
-        self._stop_still_running_instances()
-
     def _start_virtual_nas(self) -> None:
         subprocess.run(["docker-compose", "up", "-d"], cwd=self._config.virtual_nas_docker_directory)
+        while not all([self.is_running(container) for container in [
+            BaseVnasContainer.SSHD, BaseVnasContainer.NFSD, BaseVnasContainer.ROUTER, BaseVnasContainer.RSYNCD
+        ]]):
+            print("waiting for containers to come up")
+            sleep(0.5)
+
+    def stop_virtual_nas(self) -> None:
+        containers: List[str] = [container.value for container in BaseVnasContainer]
+        command = ["docker", "stop"]
+        command.extend(containers)
+        subprocess.call(command)

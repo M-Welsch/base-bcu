@@ -12,9 +12,6 @@ from base.logic.backup.synchronisation.rsync_command import RsyncCommand
 def backup_environment():
     with BackupTestEnvironment(
         protocol=Protocol.SSH,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=0,
-        amount_preexisting_source_files_in_latest_backup=0,
     ) as virtual_backup_env:
         yield virtual_backup_env
 
@@ -23,12 +20,13 @@ class TestComposition:
     @staticmethod
     @pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.NFS])
     def test_composition(protocol: Protocol, backup_environment: BackupTestEnvironment) -> None:
-        backup_environment.create_testfiles(
+        backup_environment.prepare_source(
             amount_files_in_source=(amount_files_in_source := 10),
             bytesize_of_each_sourcefile=1024,
         )
+
         backup_environment.mount_all()
-        backup_env_configs = backup_environment.create()
+        backup_env_configs = backup_environment.prepare_sink()
 
         patch_multiple_configs(
             RsyncCommand, {"nas.json": backup_environment.nas_config, "sync.json": backup_environment.sync_config}

@@ -70,17 +70,18 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
 
     with BackupTestEnvironment(
         protocol=protocol,
-        amount_old_backups=10,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
         teardown_afterwards=False,
     ) as virtual_backup_env:
-        virtual_backup_env.create_testfiles(
+        virtual_backup_env.prepare_source(
             amount_files_in_source=10,
             bytesize_of_each_sourcefile=1024,
         )
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
-        patch_configs_for_backup_conductor_tests(backup_env)
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=10,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        patch_configs_for_backup_conductor_tests(virtual_backup_env)
         patch_unmount_smb_share = mocker.patch("base.logic.network_share.NetworkShare.unmount_datasource")
         mocker.patch("base.logic.nas.Nas._interact_with_rsync_daemon")
 
@@ -130,20 +131,21 @@ def test_backup_conductor_error_cases(
 ) -> None:
     with BackupTestEnvironment(
         protocol=protocol,
-        amount_old_backups=10,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
         teardown_afterwards=False,
         automount_data_source=False,
         automount_virtual_drive=False,
     ) as virtual_backup_env:
-        virtual_backup_env.create_testfiles(
+        virtual_backup_env.prepare_source(
             amount_files_in_source=10,
             bytesize_of_each_sourcefile=1024,
         )
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
-        mocking_procedure(mocker, backup_env)
-        patch_configs_for_backup_conductor_tests(backup_env)
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=10,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        mocking_procedure(mocker, virtual_backup_env)
+        patch_configs_for_backup_conductor_tests(virtual_backup_env)
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         with caplog.at_level(logging.WARNING):
             with pytest.raises(side_effect):
@@ -182,17 +184,18 @@ class BackupKiller(Thread):
 def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
     with BackupTestEnvironment(
         protocol=protocol,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
         teardown_afterwards=False,
     ) as virtual_backup_env:
-        virtual_backup_env.create_testfiles(
+        virtual_backup_env.prepare_source(
             amount_files_in_source=2,
             bytesize_of_each_sourcefile=1024 * 1024 * 1024,
         )
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
-        patch_configs_for_backup_conductor_tests(backup_env)
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=0,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        patch_configs_for_backup_conductor_tests(virtual_backup_env)
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_killer = BackupKiller(backup_conductor.is_running_func, backup_conductor.on_backup_abort)
         with caplog.at_level(logging.INFO):
@@ -214,14 +217,15 @@ def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
 def test_backup_abort_then_continue(protocol: Protocol, caplog: LogCaptureFixture) -> None:
     with BackupTestEnvironment(
         protocol=protocol,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
         teardown_afterwards=False,
     ) as virtual_backup_env:
-        virtual_backup_env.create_testfiles(amount_files_in_source=2, bytesize_of_each_sourcefile=1024 * 1024 * 1024)
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
-        patch_configs_for_backup_conductor_tests(backup_env)
+        virtual_backup_env.prepare_source(amount_files_in_source=2, bytesize_of_each_sourcefile=1024 * 1024 * 1024)
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=0,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        patch_configs_for_backup_conductor_tests(virtual_backup_env)
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_killer = BackupKiller(backup_conductor.is_running_func, backup_conductor.on_backup_abort)
         with caplog.at_level(logging.INFO):

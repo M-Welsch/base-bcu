@@ -32,7 +32,7 @@ class VirtualHardDrive:
         exc_value: Optional[BaseException],
         exc_traceback: Optional[TracebackType],
     ) -> None:
-        self.teardown()
+        self.unmount()
 
     def create(self, blocksize: str = "1M", block_count: int = 40) -> None:
         if self._new_image:
@@ -49,12 +49,6 @@ class VirtualHardDrive:
         cmd = f"umount {self._image_file}"
         print(f"unmount VHD with {cmd}")
         subprocess.Popen(cmd.split()).wait()
-
-    def teardown(self, delete_files: bool = False) -> None:
-        self.unmount()
-        if delete_files:
-            self._image_file.unlink(missing_ok=True)
-            rmtree(VIRTUAL_HARD_DRIVE_MOUNTPOINT)
 
 
 def create_ext4_filesystem(destination: Path, blocksize: str = "1M", block_count: int = 40) -> None:

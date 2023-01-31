@@ -4,9 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from shutil import copytree
 from test.utils.backup_environment.virtual_backup_environment import (
+    VIRTUAL_HARD_DRIVE_MOUNTPOINT,
     BackupTestEnvironment,
-    BackupTestEnvironmentInput,
-    BackupTestEnvironmentOutput,
     Verification,
 )
 from test.utils.patch_config import next_backup_timestamp
@@ -38,17 +37,11 @@ def setup_temporary_config_dir(tmp_config_dir: Path, keys_to_update: Dict[str, d
 
 
 def backup_environment() -> BackupTestEnvironment:
-    backup_environment_configuration = BackupTestEnvironmentInput(
-        protocol=Protocol.SMB,
-        amount_files_in_source=10,
-        bytesize_of_each_sourcefile=1024,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=0,
-        amount_preexisting_source_files_in_latest_backup=0,
+    return BackupTestEnvironment(
+        protocol=Protocol.NFS,
         automount_virtual_drive=False,
         automount_data_source=False,
     )
-    return BackupTestEnvironment(backup_environment_configuration)
 
 
 @dataclass
@@ -154,14 +147,13 @@ def test_scheduled_backup_in_test_env(
     else:
         seconds_to_next_backup = 60
     bu_env: BackupTestEnvironment = backup_environment()
-    bu_env_output: BackupTestEnvironmentOutput = bu_env.create()
     temp_config_dir = Path(tmp_path) / "config"
     setup_temporary_config_dir(
         temp_config_dir,
         {
             "schedule_backup.json": next_backup_timestamp(seconds_to_next_backup),
-            "sync.json": bu_env_output.sync_config,
-            "nas.json": bu_env_output.nas_config,
+            "sync.json": bu_env.sync_config,
+            "nas.json": bu_env.nas_config,
             "schedule_config.json": {"shutdown_delay_minutes": 2},
             "drive.json": {
                 "backup_hdd_mount_point": "/tmp/base_tmpfs_mntdir",
@@ -174,7 +166,7 @@ def test_scheduled_backup_in_test_env(
     )
     inject_shutdown_delay(seconds_to_shutdown, mocker)
     inject_wakeup_reason(wakeup_reason, mocker)
-    mocks = mock_hardware(mocker, bu_env_output.backup_hdd_mount_point)
+    mocks = mock_hardware(mocker, VIRTUAL_HARD_DRIVE_MOUNTPOINT)
     BoundConfig.set_config_base_path(temp_config_dir)
     with caplog.at_level(logging.DEBUG):
         app = BaSeApplication()

@@ -18,9 +18,6 @@ def finished(*args, **kwargs):  # type: ignore
 def backup_environment() -> Generator[BackupTestEnvironment, None, None]:
     with BackupTestEnvironment(
         protocol=Protocol.NFS,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=0,
-        amount_preexisting_source_files_in_latest_backup=0,
     ) as backup_environment:
         yield backup_environment
 
@@ -28,8 +25,8 @@ def backup_environment() -> Generator[BackupTestEnvironment, None, None]:
 class TestBackup:
     @staticmethod
     def test_backup(backup_environment: BackupTestEnvironment) -> None:
-        backup_environment.create()
-        backup_environment.create_testfiles(
+        backup_environment.prepare_sink()
+        backup_environment.prepare_source(
             amount_files_in_source=10,
             bytesize_of_each_sourcefile=1024,
         )
