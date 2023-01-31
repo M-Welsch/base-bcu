@@ -42,7 +42,7 @@ class VirtualHardDrive:
 
     def mount(self) -> None:
         cmd = f"mount {self._image_file}"
-        print(f"mount nfs with {cmd}")
+        print(f"mount virtual hard drive with {cmd}")
         subprocess.Popen(cmd.split()).wait()
 
     def unmount(self) -> None:

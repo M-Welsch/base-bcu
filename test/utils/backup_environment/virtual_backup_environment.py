@@ -94,38 +94,39 @@ def copy_preexisting_sourcefiles_into_latest_backup(
 
 
 class BackupTestEnvironment:
-    """creates a temporary test environment and returns config files to interface with it
+    """creates
+     - virtual hard drive
+     - virtual nas
+     - config files for the modules under test
 
-    Architecture of the backup source:
-    depending on the selected protocol, different things happen:
-    - if ssh is selected as protocol, the backup source will be a docker container that hosts the rsync daemon.
-      We then connect to it.
-    - For all other protocols (currently only nfs) we just use a temporary path, because from BaSe's perspective we are
-      merely copying local files. The local mountpoint and the NAS mountpoint will be the same in the config file
-
+    Virtual NAS side:
     /tmp
-    ├── base_tmpshare
-    │   └── backup_source                          sync.json["remote_backup_source_location"]
-    │       └── random files ...
-
-    Architecture of the backup sink:
-
-
-    Note: it's important that the virtual_hard_drive from backup_environment is used. This makes sure that we get write
-    permissions on the drive!
-
-    base/test/utils/backup_environment/virtual_hard_drive >╌╌╌╮
-                                    ╭╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
-    /tmp                            │mount (ext4)
-    ├── base_tmpfs_mntdir       <╌╌╌╯               sync.json["local_backup_target_location"]
-    │   └── backup_target
-    │       ├── backup_2022_01_15-12_00_00          (directory that mimics preexisting backup)
-    │       ├── backup_2022_01_16-12_00_00          (directory that mimics preexisting backup)
-    │       └── backup_2022_01_17-12_00_00          (directory that mimics preexisting backup)
+    └── backup_source         >╌╌╌╌╮               sync.json["remote_backup_source_location"] and sync.json["nfs_share_path"]
+        └── random files ...       │
+                                   │
+    Host side:                     │mount (nfs)
+    /tmp                           │
+    ├── base_nfs_mntdir       <╌╌╌╌╯               sync.json["local_nas_hdd_mount_point"]
+    │   └── random files ...
     │
-    └── base_tmpshare                               sync.json["nfs_share_path"] and sync.json["local_nas_hdd_mount_point"]
-        └── backup_source                           sync.json["remote_backup_source_location"]
-            └── random files ...
+    │
+    ├── base_tmpfs_mntdir       <╌╌╌╌╌╌╌╌╌╌╌╌╮      sync.json["local_backup_target_location"]
+    │   └── backup_target                    │
+    │       ├── backup_2022_01_15-12_00_00   │      (directory that mimics preexisting backup)
+    │       ├── backup_2022_01_16-12_00_00   │      (directory that mimics preexisting backup)
+    │       └── backup_2022_01_17-12_00_00   │      (directory that mimics preexisting backup)
+    .                                        │mount (ext4)
+    .                                        +╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
+    PROJECT_DIR/base/test/utils/backup_environment/virtual_hard_drive >╌╌╌╯
+
+    Access to the backup data sources:
+    - nfs
+      - mount nfs datasource first
+      - source data in /tmp/base_nfs_mntdir
+    - ssh
+      - rsync <nas-ip>::backup_source/* target_directory --port=1234   (complete sync command as example)
+
+
     """
 
     def __init__(
