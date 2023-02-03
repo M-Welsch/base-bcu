@@ -27,7 +27,7 @@ services:
     container_name: base_virtual_nas_nfs
     privileged: true
     environment:
-      - SHARED_DIRECTORY=/mnt/backup_source
+      - SHARED_DIRECTORY=/mnt/user/backup_source
     ports:
       - 2049:2049
     volumes:
@@ -40,7 +40,7 @@ services:
     image: max/rsync_daemon
     container_name: base_virtual_nas_rsync_daemon
     environment:
-      - BACKUP_SOURCE_DIRECTORY=/mnt/backup_source
+      - BACKUP_SOURCE_DIRECTORY=/mnt/user/backup_source
       - BACKUP_SOURCE_NAME=backup_source
       - RSYNC_DAEMON_PORT=1234
       - HOSTS_ALLOW=170.20.0.0/24

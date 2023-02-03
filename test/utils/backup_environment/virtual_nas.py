@@ -171,7 +171,7 @@ class VirtualNas:
         return self._config
 
     def _create_compose_yml(self) -> None:
-        rsyncd_conf_content = (
+        compose_yml_content = (
             Environment()
             .from_string(COMPOSE_TEMPLATE)
             .render(
@@ -182,8 +182,8 @@ class VirtualNas:
                 vnas_ip=self._config.ip,
             )
         )
-        with open(self._config.virtual_nas_docker_directory / "compose.yml", "w") as rsynd_conf:
-            rsynd_conf.write(rsyncd_conf_content)
+        with open(self._config.virtual_nas_docker_directory / "compose.yml", "w") as compose_yml:
+            compose_yml.write(compose_yml_content)
 
     def _start_virtual_nas(self) -> None:
         subprocess.run(["docker-compose", "up", "-d"], cwd=self._config.virtual_nas_docker_directory)

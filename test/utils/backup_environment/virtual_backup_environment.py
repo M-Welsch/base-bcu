@@ -12,6 +12,8 @@ from math import ceil
 from pathlib import Path
 from shutil import copy, rmtree
 from subprocess import PIPE, Popen
+from time import sleep
+
 from test.utils.backup_environment.directories import *
 from test.utils.backup_environment.virtual_hard_drive import VirtualHardDrive
 from test.utils.backup_environment.virtual_nas import VirtualNas, VirtualNasConfig
@@ -45,7 +47,7 @@ def create_old_backups(base_path: Path, amount: int, respective_file_size_bytes:
         )
         old_backup = base_path / f"backup_{timestamp}"
         old_backup.mkdir(exist_ok=True)
-        if respective_file_size_bytes is not None:
+        if respective_file_size_bytes:
             create_file_with_random_data(old_backup / "bulk", respective_file_size_bytes)
         old_backups.append(old_backup)
     return old_backups
@@ -87,10 +89,17 @@ BackupTestEnvironmentOutput = namedtuple(
 def copy_preexisting_sourcefiles_into_latest_backup(
     backup_source_dir: Path, backup_target_base_dir: Path, amount_preexisting_source_files_in_latest_backup: int
 ) -> None:
-    latest_backup = max(glob.glob("*"))
+    latest_backup = max(backup_target_base_dir.glob("*"))
+    (latest_backup/"bulk").unlink(missing_ok=True)  # remove the bulk file if it exists
     source_files = backup_source_dir.glob("*")
     for _ in range(amount_preexisting_source_files_in_latest_backup):
-        copy(next(source_files), latest_backup)
+        try:
+            next_sourcefile = next(source_files)
+            p = subprocess.Popen(["cp", next_sourcefile.as_posix(), latest_backup.as_posix(), "--verbose"])
+            p.wait()  # Fixme: this may take really long. But if we don't wait, the files won't be there.
+        except StopIteration:
+            print("not enough files in source to copy to target!")
+            break
 
 
 class BackupTestEnvironment:
@@ -102,9 +111,16 @@ class BackupTestEnvironment:
     Virtual NAS side:
     /tmp
     └── backup_source         >╌╌╌╌╮               sync.json["remote_backup_source_location"] and sync.json["nfs_share_path"]
-        └── random files ...       │
+        ├── testfile0 ...          │
+        ├── testfile1 ...          │
+        ├── testfile2 ...          │
+        ┆   ..                     │
+        └── testfileN ...          │mount (nfs)
                                    │
-    Host side:                     │mount (nfs)
+    Virtual NAS side               │                                          Virtual NAS side
+    ===============================│====================================================================================
+    Host side                      │                                          Host side (the machine you're sitting at)
+                                   │
     /tmp                           │
     ├── base_nfs_mntdir       <╌╌╌╌╯               sync.json["local_nas_hdd_mount_point"]
     │   └── random files ...
@@ -113,10 +129,14 @@ class BackupTestEnvironment:
     ├── base_tmpfs_mntdir       <╌╌╌╌╌╌╌╌╌╌╌╌╮      sync.json["local_backup_target_location"]
     │   └── backup_target                    │
     │       ├── backup_2022_01_15-12_00_00   │      (directory that mimics preexisting backup)
+    │       │   └── bulk                     │      (file that occupies some space)
     │       ├── backup_2022_01_16-12_00_00   │      (directory that mimics preexisting backup)
+    │       │   └── bulk                     │      (file that occupies some space)
     │       └── backup_2022_01_17-12_00_00   │      (directory that mimics preexisting backup)
-    .                                        │mount (ext4)
-    .                                        +╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
+    ┆           ├── testfile0                │      (most recent backup may contain files from source)
+    ┆           └── testfile1                │
+    ┆                                        ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
+    ┆                                                                     │mount (ext4)
     PROJECT_DIR/base/test/utils/backup_environment/virtual_hard_drive >╌╌╌╯
 
     Access to the backup data sources:
@@ -125,15 +145,13 @@ class BackupTestEnvironment:
       - source data in /tmp/base_nfs_mntdir
     - ssh
       - rsync <nas-ip>::backup_source/* target_directory --port=1234   (complete sync command as example)
-
-
     """
 
     def __init__(
         self,
         protocol: Protocol,
         teardown_afterwards: bool = True,
-        automount_virtual_drive: bool = True,
+        automount_virtual_drive: bool = False,
         automount_data_source: bool = True,
         backup_source_directory_on_nas: Path = Path("/mnt/backup_source"),
     ) -> None:
@@ -184,6 +202,9 @@ class BackupTestEnvironment:
     def sink(self) -> Path:
         return self._sink
 
+    def get_latest_backup_dir(self) -> Path:
+        return max(self._sink.glob("*"))
+
     @property
     def virtual_nas(self) -> VirtualNas:
         return self._virtual_nas
@@ -211,9 +232,8 @@ class BackupTestEnvironment:
         bytesize_of_each_old_backup: int,
         amount_preexisting_source_files_in_latest_backup: int = 0,
     ) -> None:
+        self._virtual_hard_drive.mount()
         self._sink.mkdir(exist_ok=True)
-        if self._automount_virtual_drive:
-            self._virtual_hard_drive.mount()
         create_old_backups(
             base_path=self._sink,
             amount=amount_old_backups,
@@ -231,6 +251,8 @@ class BackupTestEnvironment:
                 amount_preexisting_source_files_in_latest_backup=amount_preexisting_source_files_in_latest_backup,
             )
             self.unmount_nfs()
+        self._virtual_hard_drive.unmount()
+        sleep(0.2)  # give the OS some time to perform unmounting
 
     @property
     def sync_config(self) -> dict:
@@ -271,6 +293,8 @@ class BackupTestEnvironment:
         Popen(cmd.split()).wait()
 
     def _delete_files_in_sink(self) -> None:
+        if wasnt_mounted := not VIRTUAL_HARD_DRIVE_MOUNTPOINT.is_mount():
+            self._virtual_hard_drive.mount()
         directory = self.sink
         files = [item for item in directory.iterdir() if item.is_file()]
         directories = [item for item in directory.iterdir() if item.is_dir()]
@@ -278,6 +302,8 @@ class BackupTestEnvironment:
             file.unlink()
         for directory in directories:
             shutil.rmtree(directory)
+        if wasnt_mounted:
+            self._virtual_hard_drive.unmount()
 
     def is_everything_necessary_mounted(self) -> bool:
         all_mounted = self._virtual_hard_drive.mount_point.is_mount()
