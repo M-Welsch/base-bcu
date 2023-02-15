@@ -4,19 +4,9 @@ from asyncio import Task, StreamReader
 from asyncio.subprocess import Process
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Callable, List, Any
+from typing import Optional
 
-
-class Signal:
-    def __init__(self, slot_signature=None) -> None:
-        self._slots: List[Callable] = []
-
-    def connect(self, slot: Callable) -> None:
-        self._slots.append(slot)
-
-    def emit(self, *args: Any, **kwargs: Any) -> None:
-        for slot in self._slots:
-            slot(*args, **kwargs)
+from base.common.observer import Signal
 
 
 class WakeupReason(Enum):
@@ -160,9 +150,12 @@ class BaseApplication:
         self._connect_signals()
 
     def _connect_signals(self):
+        def print_bytes(line: bytes) -> None:
+            print(line)
+
         self._backup_conductor.backup_started.connect(self._shutdown_manager.pause)
         self._backup_conductor.backup_finished.connect(self._shutdown_manager.reset)
-        self._backup_conductor.line_written.connect(lambda line: print(line))
+        self._backup_conductor.line_written.connect(print_bytes)
         self._backup_conductor.critical.connect(self._shutdown_manager.reset)
 
     async def run(self):
