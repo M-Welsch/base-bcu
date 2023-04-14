@@ -1,7 +1,6 @@
 from abc import ABC
-from datetime import datetime, time
-from enum import Enum
-from typing import Optional, Iterable, Protocol, Any, Set, runtime_checkable
+from dataclasses import dataclass
+from typing import Optional, Iterable, Protocol, Any, Set, runtime_checkable, Dict, Union
 from pydantic import BaseModel
 
 
@@ -38,6 +37,12 @@ class ComponentStateMixin(BaseModel, ABC):
         for observer in self.observers:
             observer.update(self.__class__.__name__, key, value)
 
+    def get(self, attribute: str) -> Any:
+        if attribute not in self.__fields__:
+            print(f"Warning! Someone tried to retrieve the value for non-existing attribute '{attribute}'!")
+            return None
+        return getattr(self, attribute)
+
 
 class DiagnoseData(ComponentStateMixin, BaseModel):
     voltage: Optional[float]
@@ -52,15 +57,42 @@ class BackupDriveState(ComponentStateMixin, BaseModel):
     usage_percent: Optional[float]
 
 
+Query = Dict[str, Set[str]]
+Response = Dict[str, Dict[str, Any]]
+
+
+@dataclass
 class State:
-    def __init__(self):
-        self._diagnose_data = DiagnoseData(
-            name="diagnose_data", notify=lambda name, val: print(f"{name} has new value {val}")
-        )
-        self._backup_drive_state = BackupDriveState(
-            name="backup_drive_state", notify=lambda name, val: print(f"{name} has new value {val}"),
-            is_docked=False, is_powered=False, is_mounted=False
-        )
+    diagnose_data: DiagnoseData
+    backup_drive_state: BackupDriveState
+
+    def __post_init__(self):
+        self._components: Dict[str, ComponentStateMixin] = {
+            cls.__name__: getattr(self, attribute) for attribute, cls in self.__annotations__.items()
+        }
+
+    def _get_component(self, component_name: str) -> Union[ComponentStateMixin, Dict]:  # TODO: No Union, no Dict, but common Protocol
+        if component_name not in self._components:
+            print(f"Warning! Someone tried to access the non-existing component state '{component_name}'!")
+            return {}
+        return self._components.get(component_name)
+
+    def get(self, query: Query) -> Response:
+        return {
+            component_name: {key: self._get_component(component_name).get(key) for key in keys}
+            for component_name, keys in query.items()
+        }
+
+
+if __name__ == "__main__":
+    observers = [HardwareUI(SerialInterface(), {"voltage", "current"})]
+    dd = DiagnoseData(observers=observers)
+    bds = BackupDriveState(observers=observers, is_docked=True, is_powered=True, is_mounted=False)
+    state = State(diagnose_data=dd, backup_drive_state=bds)
+
+    dd.voltage = 42
+    dd.temperature = 42
+    print(state.get({"DiagnoseData": {"voltage", "current"}, "BackupDriveState": {"is_docked"}}))
 
 
 
@@ -71,10 +103,7 @@ class State:
 
 
 
-
-
-
-
+"""
 
 class BackupInterval(Enum):
     MONTHLY = 0
@@ -151,7 +180,7 @@ class Volatile(BaseModel):
 #     persistent: Persistent
 #     volatile: Optional[Volatile] = None
 
-
+"""
 """
 State
     Persistent
