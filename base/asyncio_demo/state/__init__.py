@@ -26,6 +26,14 @@ class HardwareUI:
             self._serial_interface.send(component_name, key, value)
 
 
+class ComponentState(Protocol):
+    def __setattr__(self, key: str, value: Any) -> None:
+        ...
+
+    def get(self, attribute: str) -> Any:
+        ...
+
+
 class ComponentStateMixin(BaseModel, ABC):
     observers: Iterable[StateObserver]
 
@@ -67,19 +75,19 @@ class State:
     backup_drive_state: BackupDriveState
 
     def __post_init__(self):
-        self._components: Dict[str, ComponentStateMixin] = {
+        self._component_states: Dict[str, ComponentState] = {
             cls.__name__: getattr(self, attribute) for attribute, cls in self.__annotations__.items()
         }
 
-    def _get_component(self, component_name: str) -> Union[ComponentStateMixin, Dict]:  # TODO: No Union, no Dict, but common Protocol
-        if component_name not in self._components:
+    def _get_component_state(self, component_name: str) -> ComponentState:
+        if component_name not in self._component_states:
             print(f"Warning! Someone tried to access the non-existing component state '{component_name}'!")
             return {}
-        return self._components.get(component_name)
+        return self._component_states.get(component_name)
 
     def get(self, query: Query) -> Response:
         return {
-            component_name: {key: self._get_component(component_name).get(key) for key in keys}
+            component_name: {key: self._get_component_state(component_name).get(key) for key in keys}
             for component_name, keys in query.items()
         }
 
