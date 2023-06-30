@@ -7,6 +7,9 @@
     "local_nas_hdd_mount_point": "/media/NASHDD",
     "sample_interval": 0.2,
     "incremental": true,
-    "protocol": "smb",
-    "ssh_keyfile_path": "/home/base/.ssh/id_rsa"
+    "protocol": "nfs",
+    "nfs_share_path": "/mnt/",
+    "ssh_keyfile_path": "/home/base/.ssh/id_rsa",
+    "rsync_daemon_port": 1234,
+    "rsync_share_name": "backup_source"
 }

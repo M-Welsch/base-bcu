@@ -1,62 +1,91 @@
+import subprocess
 import test.utils.backup_environment.directories as environment_directories
-from test.utils.backup_environment.virtual_backup_environment import (
-    BackupTestEnvironment,
-    BackupTestEnvironmentInput,
-    create_file_with_random_data,
-    list_mounts,
-)
+import test.utils.backup_environment.virtual_hard_drive
+from pathlib import Path
+from test.utils.backup_environment.virtual_backup_environment import BackupTestEnvironment, create_file_with_random_data
+from time import sleep
 
 import pytest
 
 from base.logic.backup.protocol import Protocol
 
 
+def test_virtual_backup_environment_config_files() -> None:
+    with BackupTestEnvironment(
+        protocol=Protocol.SSH,
+        backup_source_directory_on_nas=(backup_source_path := Path("/mnt/backup_source")),
+    ) as vbec:
+        vbec.prepare_sink(
+            amount_old_backups=0,
+            bytesize_of_each_old_backup=0,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        assert vbec.sync_config["remote_backup_source_location"] == backup_source_path.as_posix()
+        assert (
+            vbec.sync_config["local_backup_target_location"]
+            == (environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT / "backup_target").as_posix()
+        )
+        assert vbec.sync_config["local_nas_hdd_mount_point"] == environment_directories.NFS_MOUNTPOINT.as_posix()
+        assert vbec.sync_config["rsync_daemon_port"] == vbec.virtual_nas.config.rsync_daemon_port
+        assert vbec.sync_config["rsync_share_name"] == vbec.virtual_nas.config.backup_source_name
+        assert vbec.nas_config["ssh_host"] == vbec.virtual_nas.config.ip
+
+
 @pytest.mark.parametrize(
-    "protocol, use_vhd", [(Protocol.SMB, False), (Protocol.SMB, True), (Protocol.SSH, False), (Protocol.SSH, True)]
+    "amount_files_in_source, amount_old_backups, amount_preexisting_source_files_in_latest_backup",
+    [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1), (0, 0, 0)],
 )
-def test_virtual_backup_environment_creation(protocol: Protocol, use_vhd: bool) -> None:
-    backup_environment_configuration = BackupTestEnvironmentInput(
-        protocol=protocol,
-        amount_files_in_source=0,
-        bytesize_of_each_sourcefile=0,
-        use_virtual_drive_for_sink=True,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=0,
-        amount_preexisting_source_files_in_latest_backup=0,
-    )
-    vbec = BackupTestEnvironment(configuration=backup_environment_configuration)
-    vbec.create()
-    if use_vhd:
-        assert environment_directories.VIRTUAL_FILESYSTEM_IMAGE.exists()
-    assert environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT.exists()
-    assert environment_directories.SMB_SHARE_ROOT.exists()
-    assert environment_directories.SMB_MOUNTPOINT.exists()
-    if protocol == Protocol.SMB:
-        new_file = "newfile"
-        create_file_with_random_data(environment_directories.SMB_SHARE_ROOT / new_file, 100)
-        assert (environment_directories.SMB_MOUNTPOINT / new_file).exists()
-    assert vbec.source.exists()
-    assert vbec.sink.exists()
+def test_virtual_backup_environment_creation(
+    amount_files_in_source: int, amount_old_backups: int, amount_preexisting_source_files_in_latest_backup: int
+) -> None:
+    with BackupTestEnvironment(
+        protocol=Protocol.NFS,
+        backup_source_directory_on_nas=(backup_source_path := Path("/mnt/backup_source")),
+    ) as vbec:
+        vbec.prepare_source(amount_files_in_source=amount_files_in_source, bytesize_of_each_sourcefile=1024)
+        vbec.prepare_sink(
+            amount_old_backups=amount_old_backups,
+            bytesize_of_each_old_backup=0,
+            amount_preexisting_source_files_in_latest_backup=amount_preexisting_source_files_in_latest_backup,
+        )
+        sleep(1)  # give the OS some time
+        vbec.mount_all()
+        sleep(1)  # give the OS some time
+        assert f"{environment_directories.NFS_MOUNTPOINT}" in subprocess.check_output("mount").decode()
+        assert f"{environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT}" in subprocess.check_output("mount").decode()
+        source_directory = environment_directories.NFS_MOUNTPOINT
+        assert len(list(source_directory.glob("testfile*"))) == amount_files_in_source
+        if amount_old_backups:
+            assert len(list(vbec.sink.glob("*"))) == amount_old_backups
+            target_directory = vbec.get_latest_backup_dir()
+            assert len(list(target_directory.glob("*"))) == amount_preexisting_source_files_in_latest_backup
 
 
 def test_virtual_backup_environment_teardown() -> None:
-    backup_environment_configuration = BackupTestEnvironmentInput(
-        protocol=Protocol.SMB,  # never mind
-        amount_files_in_source=1,
-        bytesize_of_each_sourcefile=1024,
-        use_virtual_drive_for_sink=True,
-        amount_old_backups=1,
-        bytesize_of_each_old_backup=1024,
-        amount_preexisting_source_files_in_latest_backup=0,
-    )
-    vbec = BackupTestEnvironment(configuration=backup_environment_configuration)
-    vbec.create()
-    assert len(list(vbec.source.iterdir())) == 1
-    assert len(list(vbec.sink.iterdir())) == 1
-    vbec._delete_files()
-    assert not any(vbec.source.iterdir())
-    assert not any(vbec.sink.iterdir())
-    vbec.teardown()
-    active_mounts = list_mounts()
-    for mount_point in [environment_directories.VIRTUAL_FILESYSTEM_MOUNTPOINT, environment_directories.SMB_MOUNTPOINT]:
-        assert not any([mount_point.as_posix() in active_mount for active_mount in active_mounts])
+    with BackupTestEnvironment(
+        protocol=Protocol.SSH,
+        backup_source_directory_on_nas=(backup_source_path := Path("/mnt/backup_source")),
+    ) as vbec:
+        vbec.prepare_sink(
+            amount_old_backups=0,
+            bytesize_of_each_old_backup=0,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        vbec.mount_virtual_hard_drive()
+        assert f"{environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT}" in subprocess.check_output("mount").decode()
+    assert f"{environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT}" not in subprocess.check_output("mount").decode()
+
+
+def test_virtual_backup_environment_mount_hdd() -> None:
+    with BackupTestEnvironment(
+        protocol=Protocol.SSH,
+        backup_source_directory_on_nas=(backup_source_path := Path("/mnt/backup_source")),
+    ) as vbec:
+        vbec.prepare_sink(
+            amount_old_backups=0,
+            bytesize_of_each_old_backup=0,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        vbec.mount_virtual_hard_drive()
+        assert f"{environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT}" in subprocess.check_output("mount").decode()
+        assert (environment_directories.VIRTUAL_HARD_DRIVE_MOUNTPOINT / "backup_target").exists()

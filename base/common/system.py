@@ -67,13 +67,13 @@ class System:
             raise TimeSynchronisationError("NTP synchronisation status cannot be obtained!")
 
 
-class SmbShareMount:
-    def mount_smb_share(self, mount_point: str) -> None:
+class NetworkShareMount:
+    def mount(self, mount_point: str) -> None:
         command = f"mount {mount_point}".split()
         LOG.info(f"mount datasource with command: {command}")
         self._parse_process_output(self.run_command(command))
 
-    def unmount_smb_share(self, mount_point: str) -> None:
+    def unmount(self, mount_point: str) -> None:
         command = f"umount {mount_point}".split()
         LOG.info(f"unmount datasource with command: {command}")
         self._parse_process_output(self.run_command(command))

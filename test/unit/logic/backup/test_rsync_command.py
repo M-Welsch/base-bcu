@@ -17,7 +17,7 @@ def test_compose_rsync_command(mocker: MockFixture, dry: Optional[bool], dry_com
     patch_multiple_configs(
         class_=RsyncCommand,
         config_content={
-            "sync.json": {},
+            "sync.json": {"protocol": "something"},
             "nas.json": {},
         },
     )
@@ -44,6 +44,11 @@ def test_compose_rsync_command(mocker: MockFixture, dry: Optional[bool], dry_com
 @pytest.mark.parametrize(
     "sync_cfg, nas_cfg, command",
     [
+        (
+            {"protocol": "nfs", "ssh_keyfile_path": ""},
+            {"ssh_host": "", "ssh_user": ""},
+            [f"{source_location}/", str(local_target_location)],
+        ),
         (
             {"protocol": "smb", "ssh_keyfile_path": ""},
             {"ssh_host": "", "ssh_user": ""},

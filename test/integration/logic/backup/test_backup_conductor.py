@@ -5,7 +5,6 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
-    BackupTestEnvironmentInput,
     BackupTestEnvironmentOutput,
     Verification,
     prepare_source_sink_dirs,
@@ -66,26 +65,30 @@ def patch_configs_for_backup_conductor_tests(backup_env: BackupTestEnvironmentOu
     patch_config(BackupBrowser, backup_env.sync_config)
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.NFS])
 def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
-    backup_environment_configuration = BackupTestEnvironmentInput(
+
+    with BackupTestEnvironment(
         protocol=protocol,
-        amount_files_in_source=10,
-        bytesize_of_each_sourcefile=1024,
-        use_virtual_drive_for_sink=True,
-        amount_old_backups=10,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
-        no_teardown=False,
-    )
-    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
-        patch_configs_for_backup_conductor_tests(backup_env)
-        patch_unmount_smb_share = mocker.patch("base.logic.network_share.NetworkShare.unmount_datasource_via_smb")
+        teardown_afterwards=False,
+    ) as virtual_backup_env:
+        virtual_backup_env.prepare_source(
+            amount_files_in_source=10,
+            bytesize_of_each_sourcefile=1024,
+        )
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=10,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        patch_configs_for_backup_conductor_tests(virtual_backup_env)
+        patch_unmount_smb_share = mocker.patch("base.logic.network_share.NetworkShare.unmount_datasource")
+        mocker.patch("base.logic.nas.Nas._interact_with_rsync_daemon")
+
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_conductor.run()
         backup_conductor._backup.join()  # type: ignore
-        if protocol == Protocol.SMB:
+        if protocol == Protocol.NFS:
             assert patch_unmount_smb_share.called_once_with()
         with Verification(virtual_backup_env) as veri:
             assert veri.all_files_transferred()
@@ -93,12 +96,12 @@ def test_backup_conductor(mocker: MockFixture, protocol: Protocol) -> None:
 
 def mocking_procedure_network_share_not_available(mocker: MockFixture, *args) -> None:  # type: ignore
     error_process = Popen('echo "error(2)" 1>&2', shell=True, stderr=PIPE, stdout=PIPE)
-    mocker.patch("base.common.system.SmbShareMount.run_command", return_value=error_process)
+    mocker.patch("base.common.system.NetworkShareMount.run_command", return_value=error_process)
 
 
 def mocking_procedure_errant_ip_address(mocker: MockFixture, backup_env: BackupTestEnvironmentOutput) -> None:
     error_process = Popen('echo "could not resolve address" 1>&2', shell=True, stderr=PIPE, stdout=PIPE)
-    mocker.patch("base.common.system.SmbShareMount.run_command", return_value=error_process)
+    mocker.patch("base.common.system.NetworkShareMount.run_command", return_value=error_process)
 
 
 def mocking_procedure_invalid_backup_src(mocker: MockFixture, backup_env: BackupTestEnvironmentOutput) -> None:
@@ -112,9 +115,9 @@ def mocking_procedure_backup_deletion_error(mocker: MockFixture, backup_env: Bac
 @pytest.mark.parametrize(
     "mocking_procedure, side_effect, protocol, consequence, log_message",
     [
-        (mocking_procedure_network_share_not_available, NetworkError, Protocol.SMB, "", "Network share not available"),
-        (mocking_procedure_errant_ip_address, NetworkError, Protocol.SMB, "", "could not resolve address"),
-        (mocking_procedure_invalid_backup_src, InvalidBackupSource, Protocol.SMB, "", "not within smb share point"),
+        (mocking_procedure_network_share_not_available, NetworkError, Protocol.NFS, "", "Network share not available"),
+        (mocking_procedure_errant_ip_address, NetworkError, Protocol.NFS, "", "could not resolve address"),
+        (mocking_procedure_invalid_backup_src, InvalidBackupSource, Protocol.NFS, "", "not within smb share point"),
     ],
 )
 def test_backup_conductor_error_cases(
@@ -126,23 +129,23 @@ def test_backup_conductor_error_cases(
     consequence: str,
     log_message: str,
 ) -> None:
-    backup_environment_configuration = BackupTestEnvironmentInput(
+    with BackupTestEnvironment(
         protocol=protocol,
-        amount_files_in_source=10,
-        bytesize_of_each_sourcefile=1024,
-        use_virtual_drive_for_sink=True,
-        amount_old_backups=10,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
-        no_teardown=False,
+        teardown_afterwards=False,
         automount_data_source=False,
         automount_virtual_drive=False,
-    )
-    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
-
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
-        mocking_procedure(mocker, backup_env)
-        patch_configs_for_backup_conductor_tests(backup_env)
+    ) as virtual_backup_env:
+        virtual_backup_env.prepare_source(
+            amount_files_in_source=10,
+            bytesize_of_each_sourcefile=1024,
+        )
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=10,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        mocking_procedure(mocker, virtual_backup_env)
+        patch_configs_for_backup_conductor_tests(virtual_backup_env)
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         with caplog.at_level(logging.WARNING):
             with pytest.raises(side_effect):
@@ -174,25 +177,25 @@ class BackupKiller(Thread):
 @pytest.mark.parametrize(
     "protocol",
     [
-        (Protocol.SMB),
+        (Protocol.NFS),
         (Protocol.SSH),
     ],
 )
 def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
-    backup_environment_configuration = BackupTestEnvironmentInput(
+    with BackupTestEnvironment(
         protocol=protocol,
-        amount_files_in_source=2,
-        bytesize_of_each_sourcefile=1024 * 1024 * 1024,
-        use_virtual_drive_for_sink=False,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
-        no_teardown=False,
-    )
-
-    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
-        patch_configs_for_backup_conductor_tests(backup_env)
+        teardown_afterwards=False,
+    ) as virtual_backup_env:
+        virtual_backup_env.prepare_source(
+            amount_files_in_source=2,
+            bytesize_of_each_sourcefile=1024 * 1024 * 1024,
+        )
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=0,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        patch_configs_for_backup_conductor_tests(virtual_backup_env)
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_killer = BackupKiller(backup_conductor.is_running_func, backup_conductor.on_backup_abort)
         with caplog.at_level(logging.INFO):
@@ -206,26 +209,23 @@ def test_backup_abort(protocol: Protocol, caplog: LogCaptureFixture) -> None:
 @pytest.mark.parametrize(
     "protocol",
     [
-        (Protocol.SMB),
+        (Protocol.NFS),
         # (Protocol.SSH),
     ],
 )
 @pytest.mark.skip(reason="doesn't work yet. Not important for this milestone")
 def test_backup_abort_then_continue(protocol: Protocol, caplog: LogCaptureFixture) -> None:
-    backup_environment_configuration = BackupTestEnvironmentInput(
+    with BackupTestEnvironment(
         protocol=protocol,
-        amount_files_in_source=2,
-        bytesize_of_each_sourcefile=1024 * 1024 * 1024,
-        use_virtual_drive_for_sink=False,
-        amount_old_backups=0,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
-        no_teardown=False,
-    )
-
-    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
-        backup_env: BackupTestEnvironmentOutput = virtual_backup_env.create()
-        patch_configs_for_backup_conductor_tests(backup_env)
+        teardown_afterwards=False,
+    ) as virtual_backup_env:
+        virtual_backup_env.prepare_source(amount_files_in_source=2, bytesize_of_each_sourcefile=1024 * 1024 * 1024)
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=0,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
+        patch_configs_for_backup_conductor_tests(virtual_backup_env)
         backup_conductor = BackupConductor(is_maintenance_mode_on=maintainance_mode_is_on)
         backup_killer = BackupKiller(backup_conductor.is_running_func, backup_conductor.on_backup_abort)
         with caplog.at_level(logging.INFO):

@@ -44,7 +44,7 @@ def test_path(bu_source: BuSourceStruct) -> None:
     assert bu_source.mocked_backup_source_directory.called_once()
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SMB, Protocol.SSH])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.NFS])
 def test_backup_source_directory(mocker: MockFixture, protocol: Protocol) -> None:
     patch_config(
         BackupSource,
@@ -56,7 +56,7 @@ def test_backup_source_directory(mocker: MockFixture, protocol: Protocol) -> Non
     )
     protocol_independent_source_dir = Path()
     mocked_backup_source_directory_for_current_protocol = mocker.patch(
-        f"base.logic.backup.source.BackupSource._backup_source_directory_for_{protocol.value}",
+        f"base.logic.backup.source.BackupSource._backup_source_directory",
         return_value=protocol_independent_source_dir,
     )
     bu_source_dir = BackupSource()._backup_source_directory()
@@ -85,7 +85,7 @@ def test_backup_source_directory_for_smb(
     mocked_root_of_share = mocker.patch("base.logic.nas.Nas.root_of_share", return_value=remote_share_point)
 
     def func_under_test() -> Path:
-        return backup_source._backup_source_directory_for_smb()
+        return backup_source._backup_source_directory_for_locally_mounted()
 
     if error:
         with pytest.raises(error):

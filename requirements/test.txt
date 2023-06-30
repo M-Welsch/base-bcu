@@ -2,3 +2,5 @@
 freezegun
 pytest
 pytest-mock
+jinja2
+docker

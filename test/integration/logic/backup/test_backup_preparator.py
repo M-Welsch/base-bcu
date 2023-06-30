@@ -2,7 +2,6 @@ import telnetlib
 from pathlib import Path
 from test.utils.backup_environment.virtual_backup_environment import (
     BackupTestEnvironment,
-    BackupTestEnvironmentInput,
     create_old_backups,
     temp_source_sink_dirs,
 )
@@ -44,7 +43,7 @@ base/test/utils/backup_environment/virtual_hard_drive >╌╌╌╮
 """
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.NFS])
 def test_backup_preparator(protocol: Protocol) -> None:
     """This testcase uses the following amounts of test-data:
     - 10 old backups with 100kiB each
@@ -52,53 +51,56 @@ def test_backup_preparator(protocol: Protocol) -> None:
     - size of target drive is about 40MiB
 
     => no deletion of old backups is necessary!"""
-    backup_environment_configuration = BackupTestEnvironmentInput(
+
+    with BackupTestEnvironment(
         protocol=protocol,
-        amount_files_in_source=10,
-        bytesize_of_each_sourcefile=1024,
-        use_virtual_drive_for_sink=True,
-        amount_old_backups=10,
-        bytesize_of_each_old_backup=100000,
-        amount_preexisting_source_files_in_latest_backup=0,
-    )
-    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
-        backup_env_configs = virtual_backup_env.create()
+    ) as virtual_backup_env:
+        virtual_backup_env.prepare_source(
+            amount_files_in_source=10,
+            bytesize_of_each_sourcefile=1024,
+        )
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=10,
+            bytesize_of_each_old_backup=100000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,
-            {"nas.json": backup_env_configs.nas_config, "sync.json": backup_env_configs.sync_config},
+            {"nas.json": virtual_backup_env.nas_config, "sync.json": virtual_backup_env.sync_config},
         )
-        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env_configs.sync_config)
+        patch_config(base.logic.backup.backup_browser.BackupBrowser, virtual_backup_env.sync_config)
         backup = Backup()
-        backup.source = virtual_backup_env.source
-        backup.target = Path(backup_env_configs.sync_config["local_backup_target_location"]) / "new_backup"
+        backup.source = virtual_backup_env.source_on_vnas
+        backup.target = Path(virtual_backup_env.sync_config["local_backup_target_location"]) / "new_backup"
         backup_preparator = BackupPreparator(backup=backup)  # type: ignore
         backup_preparator.prepare()
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix
 
 
-@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.SMB])
+@pytest.mark.parametrize("protocol", [Protocol.SSH, Protocol.NFS])
 def test_backup_preparator_with_deletion_of_old_bu(protocol: Protocol) -> None:
     """This testcase forces the preparator to delete old backups"""
 
-    backup_environment_configuration = BackupTestEnvironmentInput(
+    with BackupTestEnvironment(
         protocol=protocol,
-        amount_files_in_source=10,
-        bytesize_of_each_sourcefile=1024,
-        use_virtual_drive_for_sink=True,
-        amount_old_backups=5,
-        bytesize_of_each_old_backup=5000000,
-        amount_preexisting_source_files_in_latest_backup=0,
-    )
-    with BackupTestEnvironment(backup_environment_configuration) as virtual_backup_env:
-        backup_env = virtual_backup_env.create()
+    ) as virtual_backup_env:
+        virtual_backup_env.prepare_source(
+            amount_files_in_source=10,
+            bytesize_of_each_sourcefile=1024,
+        )
+        virtual_backup_env.prepare_sink(
+            amount_old_backups=5,
+            bytesize_of_each_old_backup=5000000,
+            amount_preexisting_source_files_in_latest_backup=0,
+        )
         patch_multiple_configs(
             base.logic.backup.synchronisation.rsync_command.RsyncCommand,
-            {"nas.json": backup_env.nas_config, "sync.json": backup_env.sync_config},
+            {"nas.json": virtual_backup_env.nas_config, "sync.json": virtual_backup_env.sync_config},
         )
-        patch_config(base.logic.backup.backup_browser.BackupBrowser, backup_env.sync_config)
+        patch_config(base.logic.backup.backup_browser.BackupBrowser, virtual_backup_env.sync_config)
         backup = Backup()
-        backup.source = virtual_backup_env.source
-        backup.target = Path(backup_env.sync_config["local_backup_target_location"]) / "new_backup"
+        backup.source = virtual_backup_env.source_on_vnas
+        backup.target = Path(virtual_backup_env.sync_config["local_backup_target_location"]) / "new_backup"
         backup_preparator = BackupPreparator(backup=backup)  # type: ignore
         backup_preparator.prepare()
         assert backup.target.suffix == BackupDirectorySuffix.while_backing_up.suffix

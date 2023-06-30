@@ -131,9 +131,9 @@ class WebappServer:
         BoundConfig.reload_all()
         self.reschedule_request.emit()
 
-    def _display_brightness(self, payload: float) -> None:
+    def _display_brightness(self, payload: str) -> None:
         try:
-            self._hardware.set_display_brightness(payload)
+            self._hardware.set_display_brightness(float(payload))
         except ValueError:
             LOG.warning(f"cannot process brightness value: {payload}")
 

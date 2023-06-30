@@ -19,6 +19,17 @@ class Nas:
             reachable = False
         return reachable
 
+    def start_rsync_daemon(self) -> None:
+        self._interact_with_rsync_daemon("start")
+
+    def stop_rsync_daemon(self) -> None:
+        self._interact_with_rsync_daemon("stop")
+
+    def _interact_with_rsync_daemon(self, start_or_stop: str) -> None:
+        with SSHInterface() as sshi:
+            sshi.connect(self._config.ssh_host, self._config.ssh_user)
+            sshi.run_and_raise(f"systemctl {start_or_stop} base-rsync-daemon")
+
     def root_of_share(self, share_name: str = "Backup") -> Path:
         with SSHInterface() as sshi:
             sshi.connect(self._config.ssh_host, self._config.ssh_user)
