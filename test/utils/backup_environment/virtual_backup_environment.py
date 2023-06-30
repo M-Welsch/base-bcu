@@ -224,7 +224,7 @@ class BackupTestEnvironment:
 
     def prepare_source(self, amount_files_in_source: int, bytesize_of_each_sourcefile: int) -> None:
         NFS_MOUNTPOINT.mkdir(exist_ok=True)
-        self._virtual_nas.create_testfiles(amount_files_in_source, bytesize_of_each_sourcefile)
+        self._virtual_nas.recreate_testfiles(amount_files_in_source, bytesize_of_each_sourcefile)
 
     def prepare_sink(
         self,

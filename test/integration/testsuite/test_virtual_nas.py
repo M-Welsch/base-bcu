@@ -16,7 +16,7 @@ def virtual_nas_fixture() -> Generator[VirtualNas, None, None]:
         backup_source_directory=Path("/mnt/user/backup_source"),
     )
     vnas_instance = VirtualNas(virtual_nas_config)
-    vnas_instance.create_testfiles(
+    vnas_instance.recreate_testfiles(
         amount_files_in_source=10,
         bytesize_of_each_sourcefile=1024,
     )

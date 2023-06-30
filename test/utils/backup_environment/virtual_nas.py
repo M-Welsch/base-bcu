@@ -148,7 +148,7 @@ class VirtualNas:
             containers_runstate[container] = self.is_running(container)
         return containers_runstate
 
-    def create_testfiles(self, amount_files_in_source: int, bytesize_of_each_sourcefile: int) -> None:
+    def recreate_testfiles(self, amount_files_in_source: int, bytesize_of_each_sourcefile: int) -> None:
         subprocess.call(  # call waits for subprocess to finish
             f"docker run "
             f"-e AMOUNT_TESTFILES_IN_SOURCE={amount_files_in_source} "
