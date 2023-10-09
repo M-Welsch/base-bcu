@@ -1,11 +1,13 @@
 import asyncio
-import logging
-from asyncio import Task, StreamReader
+from asyncio import StreamReader, Task
 from asyncio.subprocess import Process
 from datetime import datetime
 from typing import Optional
 
+from base.asyncio_demo.logger import get_logger
 from base.common.observer import Signal
+
+log = get_logger(__name__)
 
 
 _RSYNC_DUMMY = """
@@ -36,36 +38,39 @@ class BackupConductor:
         self._backup_time = backup_time
         self._task = asyncio.create_task(self._start())
 
+    def start_backup_now(self):
+        self._backup_time = datetime.now()
+
     async def _start(self):
         try:
             await self._backup_countdown()
             await self._do_backup()
         except Exception as e:
-            logging.error(f"Critical Error occurred: {e}")
+            log.error(f"Critical Error occurred: {e}")
             self._backup_process.kill()
             self._output_task.cancel()
-            self.critical.emit()
+            await self.critical.emit()
 
     async def _backup_countdown(self):
         while (remaining_seconds := (self._backup_time - datetime.now()).total_seconds()) > 0:
-            logging.debug(f"Backup in {remaining_seconds} seconds...")
+            log.debug(f"Backup in {remaining_seconds} seconds...")
             await asyncio.sleep(1)
-        logging.debug("Backup time!")
+        log.debug("Backup time!")
 
     async def _do_backup(self):
-        logging.debug("Pausing shutdown countdown.")
-        self.backup_started.emit()
+        log.debug("Pausing shutdown countdown.")
+        await self.backup_started.emit()
         self._backup_process = await asyncio.create_subprocess_exec(*self._program, stdout=asyncio.subprocess.PIPE)
         self._output_task = asyncio.create_task(self._consume_output(self._backup_process.stdout))
-        logging.debug("Starting backup...")
+        log.debug("Starting backup...")
         await self._backup_process.wait()
-        logging.debug("Backup finished. Resetting shutdown countdown.")
+        log.debug("Backup finished. Resetting shutdown countdown.")
         self._output_task.cancel()
-        self.backup_finished.emit()
+        await self.backup_finished.emit()
 
     async def _consume_output(self, stdout: StreamReader):
         try:
             while (line := await stdout.readline()) != b"":
-                self.line_written.emit(line)
+                await self.line_written.emit(line)
         except asyncio.CancelledError:
-            logging.debug("Stop consuming stdout.")
+            log.debug("Stop consuming stdout.")

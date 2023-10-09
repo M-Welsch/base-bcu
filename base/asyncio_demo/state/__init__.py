@@ -1,6 +1,7 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import Optional, Iterable, Protocol, Any, Set, runtime_checkable, Dict, Union
+from typing import Any, Dict, Iterable, Optional, Protocol, Set, runtime_checkable
+
 from pydantic import BaseModel
 
 
@@ -65,6 +66,10 @@ class BackupDriveState(ComponentStateMixin, BaseModel):
     usage_percent: Optional[float]
 
 
+class WebClientCommunicator(ComponentStateMixin, BaseModel):
+    ...
+
+
 Query = Dict[str, Set[str]]
 Response = Dict[str, Dict[str, Any]]
 
@@ -101,14 +106,6 @@ if __name__ == "__main__":
     dd.voltage = 42
     dd.temperature = 42
     print(state.get({"DiagnoseData": {"voltage", "current"}, "BackupDriveState": {"is_docked"}}))
-
-
-
-
-
-
-
-
 
 
 """

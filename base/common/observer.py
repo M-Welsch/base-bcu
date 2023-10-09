@@ -1,5 +1,5 @@
-from typing import Iterable, Type, Callable, Any, List
-
+import asyncio
+from typing import Any, Callable, Iterable, List, Type
 
 Signature = Iterable[Type]
 Slot = Callable[..., Any]
@@ -17,10 +17,10 @@ class Signal:
         else:
             raise ValueError(f"Slot signature {slot_signature} doesn't match Signal signature {self._signature}")
 
-    def emit(self, *args: Any) -> None:
+    async def emit(self, *args: Any) -> None:
         for slot_ in self._slots:
             if all(isinstance(argument, type_) for argument, type_ in zip(args, self._signature)):
-                slot_(*args)
+                await slot_(*args)
             else:
                 raise ValueError(f"Arguments {args} don't match the expected signature {self._signature}")
 
@@ -71,20 +71,22 @@ class Signal:
 
 
 if __name__ == "__main__":
+
     class _Publisher:
         sig = Signal(int, float)
 
         def __init__(self, subscriber):
             self.sig.connect(subscriber.slt)
 
-
     class _Subscriber:
         # @slot()
-        def slt(self, a: int, b: float):
+        async def slt(self, a: int, b: float):
             print(a, b)
 
+    async def main():
+        sub = _Subscriber()
+        pub = _Publisher(sub)
+        await pub.sig.emit(1, 2.3)
+        # pub.connect(sub)
 
-    sub = _Subscriber()
-    pub = _Publisher(sub)
-    pub.sig.emit(1, 2.3)
-    # pub.connect(sub)
+    asyncio.run(main())

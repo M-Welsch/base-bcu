@@ -1,11 +1,17 @@
 import asyncio
-import logging
 from asyncio import Task
 from datetime import datetime, timedelta
 from typing import Optional
 
+from base.asyncio_demo.logger import get_logger
+from base.common.observer import Signal
+
+log = get_logger(__name__)
+
 
 class ShutdownManager:
+    seconds_changed = Signal(float)
+
     def __init__(self, seconds: int) -> None:
         self._seconds: int = seconds
         self._shutdown_time: datetime = self._calculate_shutdown_time()
@@ -22,26 +28,27 @@ class ShutdownManager:
         return datetime.now() + timedelta(seconds=self._seconds)
 
     def start(self) -> None:
-        logging.debug("⏳ Start shutdown countdown.")
+        log.debug("⏳ Start shutdown countdown.")
         self._task = asyncio.create_task(self._shutdown_countdown())
         self._barrier.set()
 
-    def pause(self):
-        logging.debug("⏳ Pause shutdown countdown.")
+    async def pause(self):
+        log.debug("⏳ Pause shutdown countdown.")
         self._barrier.clear()
 
     def _resume(self):
-        logging.debug("⏳ Resume shutdown countdown.")
+        log.debug("⏳ Resume shutdown countdown.")
         self._barrier.set()
 
-    def reset(self):
-        logging.debug("⏳ Reset shutdown countdown.")
+    async def reset(self):
+        log.debug("⏳ Reset shutdown countdown.")
         self._shutdown_time = self._calculate_shutdown_time()
         self._resume()
 
     async def _shutdown_countdown(self) -> None:
         while (remaining_seconds := (self._shutdown_time - datetime.now()).total_seconds()) > 0:
-            logging.debug(f"⏻ Shutdown in {remaining_seconds} seconds...")
+            log.debug(f"⏻ Shutdown in {remaining_seconds} seconds...")
+            await self.seconds_changed.emit(remaining_seconds)
             await asyncio.sleep(1)
             await self._barrier.wait()
-        logging.debug("⌛ Time is up! Starting shutdown sequence...")
+        log.debug("⌛ Time is up! Starting shutdown sequence...")

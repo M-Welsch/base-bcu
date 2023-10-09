@@ -1,7 +1,10 @@
 import asyncio
-import logging
 from asyncio import Task
 from typing import Optional
+
+from base.asyncio_demo.logger import get_logger
+
+log = get_logger(__name__)
 
 
 class Heartbeat:
@@ -19,6 +22,6 @@ class Heartbeat:
         try:
             while True:
                 await asyncio.sleep(self._frequency)
-                logging.debug("💓 Heartbeat")
+                log.debug("💓 Heartbeat")
         except asyncio.CancelledError:
-            logging.debug("🖤 Heart stopped beating.")
+            log.debug("🖤 Heart stopped beating.")
