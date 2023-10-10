@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from time import sleep
 from typing import Optional
 
@@ -12,8 +13,7 @@ from base.common.status import HddState
 from base.hardware.drive import Drive
 from base.hardware.drivers.mechanics import MechanicsDriver
 from base.hardware.drivers.hdd_power import HDDPower
-from base.hardware.sbu.communicator import SbuCommunicator
-from base.hardware.sbu.sbu import SBU, WakeupReason
+import base.hardware.pcu as pcu
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -25,28 +25,23 @@ class Hardware:
         self._config: Config = get_config("hardware.json")
         self._mechanics: MechanicsDriver = MechanicsDriver()
         self._power: HDDPower = HDDPower()
-        self._sbu: SBU = SBU(SbuCommunicator())
         self._drive: Drive = Drive()
 
-    @property
-    def sbu(self) -> SBU:
-        return self._sbu
+    async def get_wakeup_reason(self) -> pcu.WakeupReason:
+        return await pcu.get.wakeup_reason()
 
-    def get_wakeup_reason(self) -> WakeupReason:
-        return self._sbu.request_wakeup_reason()
-
-    def engage(self, **kwargs):  # type: ignore
+    async def engage(self, **kwargs):  # type: ignore
         LOG.debug("engaging hardware")
         try:
-            self._mechanics.dock()
-            self._power.hdd_power_on()
+            await pcu.cmd.dock()
+            await pcu.cmd.power.hdd.on()
             self._drive.mount()
             self._failed_once = False
         except (DockingError, BackupHddNotAvailable, MountError) as e:
             if not self._failed_once:
                 LOG.error(f"Engaging Backup-HDD failed due to: {e}. Retrying.")
                 self._failed_once = True
-                self.engage()
+                await self.engage()
             else:
                 LOG.critical(f"Engaging Backup HDD failed after retrying due to {e}. Aborting.")
                 self._failed_once = False
@@ -56,10 +51,10 @@ class Hardware:
         LOG.debug("Disengaging hardware")
         try:
             self._drive.unmount()
-            self._power.hdd_power_off()
+            pcu.cmd.power.hdd.off()
             if self.is_docked:  # this step takes quite a time, so do it only if necessary
                 sleep(self._config.hdd_spindown_time)
-            self._mechanics.undock()
+            pcu.cmd.undock()
             self._failed_once = False
         except DockingError as e:
             if not self._failed_once:
@@ -70,18 +65,19 @@ class Hardware:
                 self._failed_once = False
                 LOG.critical(f"Disengaging Backup HDD failed after retrying due to {e}. Proceeding anyway!")
 
-    def send_next_backup_info_to_sbu(self, timestamp: str, seconds: int) -> None:
-        LOG.info(f"Preparing SBU for shutdown. Wake up in {seconds}s. Transferring timestamp: {timestamp}")
-        self._sbu.send_readable_timestamp(timestamp)
-        self._sbu.send_seconds_to_next_bu(seconds)
+    def send_next_backup_info_to_sbu(self, backup_time: datetime) -> None:
+        LOG.info(f"Preparing PCU for shutdown. Set alarmclock for {backup_time}")
+        pcu.set.date.now(datetime.now())
+        pcu.set.date.backup(backup_time)
+        pcu.set.date.wakeup(backup_time - timedelta(minutes=5))
 
     @property
     def drive_available(self) -> HddState:
         return self._drive.is_available
 
     @property
-    def is_docked(self) -> bool:
-        return self._mechanics.is_docked
+    async def is_docked(self) -> bool:
+        return await pcu.get.digital.docked()
 
     @property
     def is_mounted(self) -> bool:
@@ -91,22 +87,21 @@ class Hardware:
     def drive_space_used(self) -> float:
         return self._drive.space_used_percent()
 
-    def power(self) -> None:
-        self._power.hdd_power_on()
+    async def power(self) -> None:
+        await pcu.cmd.power.hdd.on()
 
     @property
-    def is_powered(self) -> bool:
-        input_current = self._sbu.measure_base_input_current()
-        return False if input_current is None else self.is_docked and input_current > 0.3 or False
+    async def is_powered(self) -> bool:
+        return await pcu.is_powered()
 
-    def unpower(self) -> None:
-        self._power.hdd_power_off()
+    async def unpower(self) -> None:
+        await pcu.cmd.power.hdd.off()
 
-    def dock(self) -> None:
-        self._mechanics.dock()
+    async def dock(self) -> None:
+        await pcu.cmd.dock()
 
-    def undock(self) -> None:
-        self._mechanics.undock()
+    async def undock(self) -> None:
+        await pcu.cmd.undock()
 
     def mount(self) -> None:
         self._drive.mount()
@@ -115,25 +110,14 @@ class Hardware:
         self._drive.unmount()
 
     def set_display_brightness(self, brightness, **kwargs):  # type: ignore
-        self._sbu.set_display_brightness_percent(brightness)
-
-    def write_to_display_old(self, text, **kwargs):  # type: ignore
-        self._sbu.write_to_display(text[:16], text[16:])
+        pcu.set.display.brightness(brightness)
 
     def write_to_display(self, line1: str, line2: str) -> None:
-        self._sbu.write_to_display(line1, line2)
+        pcu.set.display.text(line1 + '\n' + line2)
 
     @property
-    def input_current(self) -> Optional[float]:
-        return self._sbu.measure_base_input_current()
-
-    @property
-    def system_voltage_vcc3v(self) -> Optional[float]:
-        return self._sbu.measure_vcc3v_voltage()
-
-    @property
-    def sbu_temperature(self) -> Optional[float]:
-        return self._sbu.measure_sbu_temperature()
+    async def sbu_temperature(self) -> Optional[float]:
+        return await pcu.get.temperature()
 
     @property
     def bcu_temperature(self) -> float:
@@ -142,5 +126,3 @@ class Hardware:
                 return float(f.read().strip()) / 1000
         except Exception:
             return 0
-
-    # Todo: Heartbeat. Implement as Daemon Thread (because it dies with baseApplication) or toggle pin in mainloop

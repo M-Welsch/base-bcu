@@ -120,6 +120,10 @@ class get:
         async def docked():
             return await _get_digital(DigitalMeasurement.DOCKED)
 
+    @staticmethod
+    async def temperature():
+        raise NotImplementedError
+
 
 class set:
     class date:
@@ -134,6 +138,28 @@ class set:
         @staticmethod
         def backup(timestamp: datetime):
             return _set_date(date_kind=DateKind.backup, date=timestamp)
+
+    class display:
+        @staticmethod
+        async def text(content: str):
+            raise NotImplementedError
+
+        @staticmethod
+        async def brightness(percent: float):
+            raise NotImplementedError
+
+    class led:
+        @staticmethod
+        async def on():
+            raise NotImplementedError
+
+        @staticmethod
+        async def off():
+            raise NotImplementedError
+
+        @staticmethod
+        async def brightness(percent: float):
+            raise NotImplementedError
 
 
 async def call_pcu(command: str) -> str:
@@ -295,3 +321,7 @@ class DesiredState(Enum):
 async def power(rail: VoltageRail, state: DesiredState):
     command = "cmd power " + rail.value + " " + state.value
     return await call_pcu(command)
+
+
+async def is_powered():
+    return await get.dockingstate() == DockingState.pcu_dockingState3_allDockedPwrOn

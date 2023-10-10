@@ -96,8 +96,8 @@ class Schedule:
             self._scheduler.cancel(self._shutdown_job)
 
     @property
-    def next_backup_timestamp(self) -> str:
-        return tc.next_backup_timestring(self._schedule)
+    def next_backup_timestamp(self) -> datetime:
+        return tc.next_backup(self._schedule)
 
     @property
     def next_backup_timedelta(self) -> timedelta:

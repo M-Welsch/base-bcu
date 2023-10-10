@@ -200,9 +200,7 @@ class BaSeApplication:
         self._hardware.disengage()
         self._hmi.set_status(HmiStates.shutting_down)
         self._hmi.display_status()
-        self._hardware.send_next_backup_info_to_sbu(
-            self._schedule.next_backup_timestamp, self._schedule.next_backup_seconds  # Todo: wake BCU a little earlier?
-        )
+        self._hardware.send_next_backup_info_to_sbu(self._schedule.next_backup_timestamp)
 
     def prepare_immediate_shutdown(self) -> None:
         """sbu waits about 30secs before it cuts power. Nothing time-consuming may happen here"""
@@ -228,8 +226,6 @@ class BaSeApplication:
             {
                 "diagnose": OrderedDict(
                     {
-                        "Stromaufnahme": f"{self._hardware.input_current:0.2f} A",
-                        "Systemspannung": f"{self._hardware.system_voltage_vcc3v:0.2f} V",
                         "Umgebungstemperatur": f"{self._hardware.sbu_temperature:0.2f} °C",
                         "Prozessortemperatur": f"{self._hardware.bcu_temperature:0.2f} °C",
                         "Backup-HDD verfügbar": self._hardware.drive_available.value,
