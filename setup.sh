@@ -21,16 +21,6 @@ install_apt_packages () {
   sudo apt install $packages_to_install
 }
 
-install_bpi_gpio () {
-  echo_info "Installing GPIO Package for Bananapi"
-  cd ~
-  git clone https://github.com/LeMaker/RPi.GPIO_BP -b bananapi
-  cd RPi.GPIO_BP
-  sudo apt-get install python3-dev -y
-  python3 setup.py install
-  sudo python3 setup.py install
-}
-
 install_pyupdi () {
   cd ~
   git clone https://github.com/mraardvark/pyupdi.git
@@ -49,7 +39,6 @@ install_packages_deprecated () {
 
 install_packages() {
   install_apt_packages
-  install_bpi_gpio
   install_pyupdi
   # install_packages_deprecated  # hopefully this won't be necessary anymore!
 }
@@ -171,11 +160,10 @@ enable_access_to_hardware () {
   echo_info "enabling user base to access hardware without sudo permissions"
   echo 'SUBSYSTEMS=="mem", MODE="0666"' | sudo tee /etc/udev/rules.d/99-backup_server.rules > /dev/null
   sudo setcap CAP_SYS_RAWIO+ep /usr/bin/python3.8
-}
 
-program_sbu () {
-  echo_info "programing Standby Control Unit (SBU)"
-  sudo python3 ./sbu_interface/sbu_updater.py
+  echo_info "creating udev rule for Periperal Control Unit (PCU)"
+  echo 'SUBSYSTEM=="tty", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="b45e", SYMLINK+="ttyBASEPCU"' | sudo tee -a /etc/udev/rules.d/99-backup_server.rules > /dev/null
+
 }
 
 restart_services () {
@@ -199,6 +187,5 @@ create_directories
 create_aliases
 create_files
 enable_access_to_hardware
-program_sbu
 restart_services
 create_mail_credentials_file_template
