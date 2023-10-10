@@ -2,18 +2,14 @@ from datetime import datetime, timedelta
 from time import sleep
 from typing import Optional
 
+import base.hardware.pcu as pcu
 from base.common.config import Config, get_config
-from base.common.exceptions import (
-    BackupHddNotAvailable,
-    DockingError,
-    MountError,
-)
+from base.common.exceptions import BackupHddNotAvailable, DockingError, MountError
 from base.common.logger import LoggerFactory
 from base.common.status import HddState
 from base.hardware.drive import Drive
-from base.hardware.drivers.mechanics import MechanicsDriver
 from base.hardware.drivers.hdd_power import HDDPower
-import base.hardware.pcu as pcu
+from base.hardware.drivers.mechanics import MechanicsDriver
 
 LOG = LoggerFactory.get_logger(__name__)
 
@@ -65,11 +61,11 @@ class Hardware:
                 self._failed_once = False
                 LOG.critical(f"Disengaging Backup HDD failed after retrying due to {e}. Proceeding anyway!")
 
-    def send_next_backup_info_to_sbu(self, backup_time: datetime) -> None:
+    async def send_next_backup_info_to_sbu(self, backup_time: datetime) -> None:
         LOG.info(f"Preparing PCU for shutdown. Set alarmclock for {backup_time}")
-        pcu.set.date.now(datetime.now())
-        pcu.set.date.backup(backup_time)
-        pcu.set.date.wakeup(backup_time - timedelta(minutes=5))
+        await pcu.set.date.now(datetime.now())
+        await pcu.set.date.backup(backup_time)
+        await pcu.set.date.wakeup(backup_time - timedelta(minutes=5))
 
     @property
     def drive_available(self) -> HddState:
@@ -109,11 +105,11 @@ class Hardware:
     def unmount(self) -> None:
         self._drive.unmount()
 
-    def set_display_brightness(self, brightness, **kwargs):  # type: ignore
-        pcu.set.display.brightness(brightness)
+    async def set_display_brightness(self, brightness, **kwargs):  # type: ignore
+        await pcu.set.display.brightness(brightness)
 
-    def write_to_display(self, line1: str, line2: str) -> None:
-        pcu.set.display.text(line1 + '\n' + line2)
+    async def write_to_display(self, line1: str, line2: str) -> None:
+        await pcu.set.display.text(line1 + "\n" + line2)
 
     @property
     async def sbu_temperature(self) -> Optional[float]:
